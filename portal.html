@@ -431,7 +431,8 @@ async function cargarAlumno(id){
 async function cargarDocente(p){
   const r=await api('/rest/v1/rpc/ac_docente_alumnos',{method:'POST',body:{}});const al=r.ok?await r.json():[];
   const mats=await rows('ac_materiales','order=creado.desc&limit=500&select=*');
-  return{perfil:p.docente,alumnos:al,mats,uid:jwtSub(),para:''};
+  const [ta,ev,es,cl]=await Promise.all([rows('ac_tareas','select=estudiante_id,estado'),rows('ac_evaluaciones','select=estudiante_id,puntos,maximo'),rows('ac_estudiantes','select=id,xp,racha'),rows('ac_clases','select=estudiante_id,fecha,titulo,estado&order=fecha.asc')]);
+  return{perfil:p.docente,alumnos:al,mats,uid:jwtSub(),para:'',ta,ev,es,cl};
 }
 async function cargarCliente(id){
   const [k,d,m]=await Promise.all([rows('cl_clientes','id=eq.'+id+'&select=*'),rows('cl_documentos','cliente_id=eq.'+id+'&order=creado.desc'),rows('cl_mensajes','cliente_id=eq.'+id+'&order=creado.asc&limit=200')]);
@@ -678,8 +679,13 @@ P['d-archivos'].bind=()=>{
   $$('[data-del]').forEach(b=>b.onclick=async()=>{if(!confirm('¿Quitar este material? Tus alumnos ya no lo verán.'))return;
     try{const r=await api('/rest/v1/ac_materiales?id=eq.'+b.dataset.del,{method:'DELETE',headers:{Prefer:'return=minimal'}});if(!r.ok)throw 0;
       S.doc.mats=S.doc.mats.filter(m=>m.id!==b.dataset.del);aviso('Material quitado');render()}catch(e){aviso('No se pudo quitar')}})};
+function dProg(d,id){
+  const e=(d.es||[]).find(x=>x.id===id)||{},t=(d.ta||[]).filter(x=>x.estudiante_id===id),v=(d.ev||[]).filter(x=>x.estudiante_id===id);
+  const rev=t.filter(x=>x.estado==='hecha').length,hoy=hoyISO(),pr=(d.cl||[]).find(c=>c.estudiante_id===id&&(c.estado==='programada'||c.estado==='reprogramada')&&c.fecha>=hoy);
+  const prom=v.length?Math.round(v.reduce((a,x)=>a+Number(x.puntos)/Number(x.maximo)*100,0)/v.length):null;
+  return '<small>Nivel '+(Math.floor((e.xp||0)/100)+1)+' · '+(e.xp||0)+' XP · racha '+(e.racha||0)+' · '+t.filter(x=>x.estado==='pendiente'||x.estado==='en_curso').length+' tareas en curso'+(rev?' · <b>'+rev+' por revisar</b>':'')+(prom==null?'':' · promedio '+prom+'%')+(pr?' · próxima clase '+esc(corta(pr.fecha)):'')+'</small>'}
 P['d-alumnos']=()=>{const d=S.doc;
-  return '<section class="page"><div class="ph"><h1>Alumnos</h1><p>Tus alumnos activos. Toca uno para subirle material.</p></div><div class="card">'+(d.alumnos.length?'<div class="ls">'+d.alumnos.map(a=>'<div class="it">'+ic('users')+'<div>'+esc(a.nombre)+'<small>'+(a.area==='ingles'?'Inglés':'Música')+(a.detalle?' · '+esc(a.detalle):'')+' · '+d.mats.filter(m=>m.estudiante_id===a.id&&m.subido_por==='academy').length+' archivos</small></div><button class="btn ghost" type="button" data-para="'+a.id+'">'+ic('up')+'Subir</button></div>').join('')+'</div>':vacio('Aún no hay alumnos activos.'))+'</div></section>'};
+  return '<section class="page"><div class="ph"><h1>Alumnos</h1><p>Tus alumnos asignados y cómo van. Toca uno para subirle material.</p></div><div class="card">'+(d.alumnos.length?'<div class="ls">'+d.alumnos.map(a=>'<div class="it">'+ic('users')+'<div>'+esc(a.nombre)+'<small>'+(a.area==='ingles'?'Inglés':'Música')+(a.detalle?' · '+esc(a.detalle):'')+' · '+d.mats.filter(m=>m.estudiante_id===a.id&&m.subido_por==='academy').length+' archivos</small>'+dProg(d,a.id)+'</div><button class="btn ghost" type="button" data-para="'+a.id+'">'+ic('up')+'Subir</button></div>').join('')+'</div>':vacio('Aún no hay alumnos activos.'))+'</div></section>'};
 P['d-alumnos'].bind=()=>$$('[data-para]').forEach(b=>b.onclick=()=>{S.doc.para=b.dataset.para;go('d-subir')});
 
 /* ---------- efectos ---------- */

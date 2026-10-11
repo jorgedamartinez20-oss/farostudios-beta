@@ -438,7 +438,7 @@ const IC={
 };
 const ico=(n,cls)=>'<svg class="sv'+(cls?' '+cls:'')+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+(IC[n]||IC.file)+'</svg>';
 function icoEl(n,cls){const s=document.createElement('span');s.className='ico';s.innerHTML=ico(n,cls);return s}
-const ENT_IC={est:'cap',enc:'users',doc:'user',vin:'link',acc:'key',tar:'clipboard',eva:'edit',hab:'star',logro:'award',reco:'bulb',clase:'calendar',mat:'book',dip:'award',fac:'card',cli:'camera',cldoc:'file',chat:'message',clchat:'message'};
+const ENT_IC={tabl:'chart',asg:'link',est:'cap',enc:'users',doc:'user',vin:'link',acc:'key',tar:'clipboard',eva:'edit',hab:'star',logro:'award',reco:'bulb',clase:'calendar',mat:'book',dip:'award',fac:'card',cli:'camera',cldoc:'file',chat:'message',clchat:'message'};
 $$('[data-i]').forEach(e=>{e.innerHTML=ico(e.dataset.i)});
 const isoD=(y,m,d)=>new Date(Date.UTC(y,m,d)).toISOString().slice(0,10);
 const today=()=>new Date().toLocaleDateString('en-CA',{timeZone:'America/Guatemala'});
@@ -673,7 +673,7 @@ function renderCot(){
 function render(){renderCal();renderDay();renderRes();renderSem();renderAcc();renderCot();try{renderDash()}catch(e){console.error(e)}try{avisosPintar()}catch(e){}}
 
 /* ---------- ACADEMY · CLIENTES · SITIO (portales y configuración) ---------- */
-const AC={ok:true,list:{},sel:{ac:'est',cl:'cli'},edit:null,filtro:'',chat:{est:'',canal:'alumno',cli:''},cfg:{}};
+const AC={ok:true,list:{},sel:{ac:'tabl',cl:'cli'},edit:null,filtro:'',chat:{est:'',canal:'alumno',cli:''},cfg:{}};
 const AREAS=[['musica','Música'],['ingles','Inglés']];
 const PORTAL_URL='farostudios.net/portal.html';
 const ENT={
@@ -696,10 +696,13 @@ const ENT={
   vin:{g:'ac',tabla:'ac_vinculos',t:'Vínculos',ico:'🔗',pk:['encargado_id','estudiante_id'],noedit:1,f:[
     {k:'encargado_id',l:'Encargado',t:'enc',req:1},{k:'estudiante_id',l:'Alumno',t:'est',req:1},{k:'parentesco',l:'Parentesco (madre, padre, tutor…)'}],
     row:r=>[acN('enc',r.encargado_id)+'  →  '+acN('est',r.estudiante_id),r.parentesco||'']},
+  asg:{g:'ac',tabla:'ac_asignaciones',t:'Docente de cada alumno',ico:'🧑‍🏫',pk:['docente_id','estudiante_id'],noedit:1,opt:1,f:[
+    {k:'docente_id',l:'Docente',t:'doc',req:1},{k:'estudiante_id',l:'Alumno',t:'est',req:1}],
+    row:r=>[acN('doc',r.docente_id)+'  →  '+acN('est',r.estudiante_id),'El docente ve el progreso y puede subir material a este alumno']},
   acc:{g:'ac',tabla:'ac_cuentas',t:'Accesos',ord:'creado.desc',ico:'🔑',pk:['user_id'],noedit:1,nofrm:1,
     row:r=>[(r.rol==='cliente'?'Correo ':'Usuario ')+r.usuario+(r.activo?'':' (desactivado)'),({alumno:'Alumno',encargado:'Encargado',docente:'Docente',cliente:'Cliente'})[r.rol]+': '+(r.rol==='alumno'?acN('est',r.estudiante_id):r.rol==='encargado'?acN('enc',r.encargado_id):r.rol==='docente'?acN('doc',r.docente_id):acN('cli',r.cliente_id))],
     acts:r=>[[r.activo?'Desactivar':'Activar',async()=>{const x=await api('/rest/v1/ac_cuentas?user_id=eq.'+r.user_id,{method:'PATCH',body:{activo:!r.activo},headers:{Prefer:'return=minimal'}});if(!x.ok){toast(await errText(x));return}toast(r.activo?'Acceso desactivado':'Acceso activado');await loadAc()}]]},
-  tar:{g:'ac',tabla:'ac_tareas',t:'Tablero',ord:'creado.desc',ico:'📋',byEst:1,f:[
+  tar:{g:'ac',tabla:'ac_tareas',t:'Tareas',ord:'creado.desc',ico:'📋',byEst:1,f:[
     {k:'estudiante_id',l:'Alumno',t:'est',req:1},{k:'titulo',l:'Tarea',req:1},{k:'descripcion',l:'Instrucciones',t:'area'},
     {k:'vence',l:'Fecha límite',t:'date'},{k:'xp',l:'XP que gana',t:'number',def:10},
     {k:'estado',l:'Estado',t:'sel',o:[['pendiente','Por hacer'],['en_curso','En curso'],['hecha','Entregada'],['revisada','Revisada']],def:'pendiente'}],
@@ -757,7 +760,7 @@ const ENT={
     {k:'titulo',l:'Título',req:1},{k:'ruta',l:'Archivo (máx. 50 MB)',t:'file',folder:''}],
     row:r=>[r.titulo+' · '+r.tipo,acN('cli',r.cliente_id)]}
 };
-const GRP={ac:['est','enc','doc','vin','acc','tar','eva','hab','logro','reco','clase','mat','dip','fac','chat'],cl:['cli','cldoc','clchat']};
+const GRP={ac:['tabl','est','enc','doc','asg','vin','acc','tar','eva','hab','logro','reco','clase','mat','dip','fac','chat'],cl:['cli','cldoc','clchat']};
 function acN(k,id){const x=(AC.list[k]||[]).find(r=>r.id===id);return x?(x.apodo||x.nombre):'(borrado)'}
 function accHas(fk,id){return (AC.list.acc||[]).some(c=>c[fk]===id)}
 function accTxt(rol,fk,id,tok){const c=(AC.list.acc||[]).find(x=>x[fk]===id);return c?((tok?'acceso con ':'usuario ')+c.usuario+(c.activo?'':' (desactivado)')):'sin acceso todavía'}
@@ -767,7 +770,7 @@ async function loadAc(){
   await Promise.all(Object.keys(ENT).map(async k=>{
     const e=ENT[k];
     try{const r=await api('/rest/v1/'+e.tabla+'?select=*'+(e.ord?'&order='+e.ord:'')+'&limit=1000');
-      if(r.ok)AC.list[k]=await r.json();else{AC.list[k]=[];falta=true}}catch(x){AC.list[k]=[];falta=true}}));
+      if(r.ok)AC.list[k]=await r.json();else{AC.list[k]=[];if(!e.opt)falta=true}}catch(x){AC.list[k]=[];if(!e.opt)falta=true}}));
   for(const [k,t] of [['chat','ac_mensajes'],['clchat','cl_mensajes']]){
     try{const r=await api('/rest/v1/'+t+'?select=*&order=creado.asc&limit=1000');AC.list[k]=r.ok?await r.json():[];if(!r.ok)falta=true}catch(x){AC.list[k]=[];falta=true}}
   try{const r=await api('/rest/v1/sitio_config?select=*');AC.cfg={};if(r.ok)(await r.json()).forEach(x=>AC.cfg[x.clave]=x.valor);else falta=true}catch(x){falta=true}
@@ -803,10 +806,11 @@ function acField(f,val,g){
   const id='acf-'+g+'-'+f.k;let inp;const v=val==null?'':val;
   if(f.t==='check'){inp=el('input',{type:'checkbox',id,style:'width:auto;justify-self:start;transform:scale(1.4);margin:6px 4px'});inp.checked=!!v;return el('div',{class:'field'},el('label',{for:id},f.l),inp)}
   if(f.t==='area'){inp=el('textarea',{id,rows:'3',maxlength:'1500'});inp.value=v}
-  else if(['sel','est','enc','cli'].includes(f.t)){
+  else if(['sel','est','enc','cli','doc'].includes(f.t)){
     inp=el('select',{id});let opts=f.o||[];
     if(f.t==='est')opts=[['','— elige —'],...(AC.list.est||[]).map(a=>[a.id,a.nombre+(a.apodo?' ('+a.apodo+')':'')])];
     if(f.t==='enc')opts=[['','— elige —'],...(AC.list.enc||[]).map(a=>[a.id,a.nombre])];
+    if(f.t==='doc')opts=[['','— elige —'],...(AC.list.doc||[]).filter(a=>a.activo).map(a=>[a.id,a.nombre])];
     if(f.t==='cli')opts=[['','— elige —'],...(AC.list.cli||[]).map(a=>[a.id,a.nombre+(a.proyecto?' · '+a.proyecto:'')])];
     opts.forEach(o=>inp.append(el('option',{value:o[0]},o[1])));inp.value=v}
   else if(f.t==='file'){
@@ -949,9 +953,10 @@ function renderGrp(g){
   const box=$('#'+g+'-body'),chips=$('#'+g+'-chips');if(!box)return;box.textContent='';chips.textContent='';
   $('#'+g+'-warn').hidden=AC.ok;
   GRP[g].forEach(k=>{
-    const lab=[icoEl(ENT_IC[k]||'file'),' '+(k==='chat'?'Mensajes':k==='clchat'?'Buzón':ENT[k].t)];
+    const lab=[icoEl(ENT_IC[k]||'file'),' '+(k==='tabl'?'Tablero del alumno':k==='chat'?'Mensajes':k==='clchat'?'Buzón':ENT[k].t)];
     chips.append(el('button',{type:'button',class:'chip','aria-pressed':String(AC.sel[g]===k),onclick:()=>{AC.sel[g]=k;AC.edit=null;AC.filtro='';renderGrp(g)}},lab))});
   const k=AC.sel[g];
+  if(k==='tabl')return renderTablero(box);
   if(k==='chat'||k==='clchat')return renderChat(box,k);
   const e=ENT[k];let rows=AC.list[k]||[];
   const left=el('div',{class:'card'},el('h2',{},e.t));
@@ -981,6 +986,84 @@ function renderGrp(g){
     el('button',{class:'btn btn-gold',id:'acgo-'+g,type:'button',onclick:()=>acSave(g,k)},cur?'Guardar cambios':'Guardar'),
     cur?el('button',{class:'btn btn-ghost',type:'button',onclick:()=>{AC.edit=null;renderGrp(g)}},'Cancelar'):null));
   box.append(el('div',{class:'grid2'},left,right));
+}
+
+/* ---------- TABLERO DEL ALUMNO (resumen + cambios del director) ---------- */
+AC.tabAlu='';
+function tabIr(k,id){AC.sel.ac=k;AC.filtro=id||'';AC.edit=null;renderGrp('ac')}
+async function tabAsignar(est,doc){
+  const r=await api('/rest/v1/ac_asignaciones?on_conflict=docente_id,estudiante_id',{method:'POST',body:{docente_id:doc,estudiante_id:est},headers:{Prefer:'return=minimal,resolution=ignore-duplicates'}});
+  if(!r.ok){toast(await errText(r));return}toast('Docente asignado');await loadAc()}
+async function tabQuitarDoc(est,doc){
+  const r=await api('/rest/v1/ac_asignaciones?docente_id=eq.'+doc+'&estudiante_id=eq.'+est,{method:'DELETE',headers:{Prefer:'return=minimal'}});
+  if(!r.ok){toast(await errText(r));return}toast('Docente quitado');await loadAc()}
+async function tabVincular(est,enc,par){
+  const r=await api('/rest/v1/ac_vinculos?on_conflict=encargado_id,estudiante_id',{method:'POST',body:{encargado_id:enc,estudiante_id:est,parentesco:par||null},headers:{Prefer:'return=minimal,resolution=merge-duplicates'}});
+  if(!r.ok){toast(await errText(r));return}toast('Encargado vinculado');await loadAc()}
+async function tabDesvincular(est,enc){
+  const r=await api('/rest/v1/ac_vinculos?encargado_id=eq.'+enc+'&estudiante_id=eq.'+est,{method:'DELETE',headers:{Prefer:'return=minimal'}});
+  if(!r.ok){toast(await errText(r));return}toast('Encargado desvinculado');await loadAc()}
+function renderTablero(box){
+  const L=AC.list,alus=L.est||[];
+  const sel=el('select',{onchange:ev=>{AC.tabAlu=ev.target.value;renderGrp('ac')}},el('option',{value:''},'Elige un alumno'));
+  alus.forEach(a=>sel.append(el('option',{value:a.id},a.nombre+(a.activo?'':' (inactivo)'))));
+  if(!alus.some(a=>a.id===AC.tabAlu))AC.tabAlu=alus.length===1?alus[0].id:'';
+  sel.value=AC.tabAlu;
+  box.append(el('div',{class:'card'},el('h2',{},'Tablero del alumno'),el('div',{class:'field'},sel),
+    !alus.length?el('p',{class:'muted'},'Primero registra un alumno en la pestaña Alumnos.'):null));
+  const a=alus.find(x=>x.id===AC.tabAlu);if(!a)return;
+  const mine=k=>(L[k]||[]).filter(r=>r.estudiante_id===a.id);
+  const tar=mine('tar'),eva=mine('eva'),hab=mine('hab'),cla=mine('clase'),fac=mine('fac'),log=mine('logro');
+  const hoy=today();
+  const prox=cla.filter(c=>(c.estado==='programada'||c.estado==='reprogramada')&&c.fecha>=hoy).sort((x,y)=>x.fecha<y.fecha?-1:1)[0];
+  const prom=eva.length?Math.round(eva.reduce((t,e)=>t+Number(e.puntos)/Number(e.maximo)*100,0)/eva.length):null;
+  const saldo=fac.filter(f=>f.estado==='pendiente').reduce((t,f)=>t+Number(f.monto||0),0);
+  const sinLeer=(L.chat||[]).filter(m=>m.estudiante_id===a.id&&m.de!=='academy'&&!m.leido_admin).length;
+  const nTar=e=>tar.filter(t=>t.estado===e).length;
+  const tile=(n,t,k)=>el('button',{type:'button',class:'item',style:'text-align:left;cursor:pointer',onclick:()=>tabIr(k,a.id)},el('b',{style:'font-size:1.6rem'},String(n)),el('small',{},t));
+  const stats=el('div',{class:'grid2',style:'margin-top:14px'},
+    tile('Nivel '+(Math.floor((a.xp||0)/100)+1),(a.xp||0)+' XP · racha '+(a.racha||0)+' d','est'),
+    tile(nTar('pendiente')+nTar('en_curso')+' por hacer',nTar('hecha')+' entregadas por revisar · '+nTar('revisada')+' revisadas','tar'),
+    tile(prom==null?'—':prom+'%',eva.length+' evaluaciones','eva'),
+    tile(prox?prox.fecha:'—',prox?'Próxima clase: '+prox.titulo:'Sin clase programada','clase'),
+    tile('Q'+saldo.toFixed(2),'Saldo pendiente · '+fac.length+' facturas','fac'),
+    tile(sinLeer,'mensajes sin leer · '+log.length+' insignias · '+hab.length+' habilidades','chat'));
+  box.append(el('div',{class:'card',style:'margin-top:18px'},el('h2',{},a.nombre+(a.apodo?' · '+a.apodo:'')),
+    el('p',{class:'muted'},(a.area==='musica'?'Música':'Inglés')+' · '+(a.detalle||'sin detalle')+' · '+(a.modalidad==='online'?'en línea':'presencial')+' · '+accTxt('alumno','estudiante_id',a.id)),stats,
+    hab.length?el('div',{class:'uchips',style:'margin-top:12px'},...hab.map(h=>el('span',{class:'chip'},h.habilidad+' '+'★'.repeat(h.nivel)))):null));
+
+  /* docentes asignados */
+  const asg=(L.asg||[]).filter(r=>r.estudiante_id===a.id),libres=(L.doc||[]).filter(d=>d.activo&&!asg.some(r=>r.docente_id===d.id));
+  const dsel=el('select',{id:'tab-doc'},el('option',{value:''},libres.length?'— agregar docente —':'No hay más docentes'));libres.forEach(d=>dsel.append(el('option',{value:d.id},d.nombre)));
+  const cd=el('div',{class:'card',style:'margin-top:18px'},el('h3',{style:'font-size:1.6rem'},'Docentes de este alumno'),
+    el('p',{class:'muted'},'Cada docente solo ve a los alumnos que tiene asignados; así su avance aparece en su portal. Puedes asignar varios o cambiar de docente.'));
+  if(!asg.length)cd.append(el('p',{class:'muted'},'Sin docente asignado todavía.'));
+  asg.forEach(r=>cd.append(el('div',{class:'item'},el('b',{},acN('doc',r.docente_id)),el('div',{class:'acts'},
+    el('button',{class:'btn btn-red btn-sm',type:'button',onclick:()=>tabQuitarDoc(a.id,r.docente_id)},'Quitar')))));
+  cd.append(el('div',{class:'row',style:'margin-top:12px'},el('div',{class:'field'},dsel),
+    el('button',{class:'btn btn-gold',type:'button',onclick:()=>{if(!dsel.value){toast('Elige un docente');return}tabAsignar(a.id,dsel.value)}},'Asignar'),
+    el('button',{class:'btn btn-ghost',type:'button',onclick:()=>{AC.sel.ac='doc';AC.edit=null;renderGrp('ac')}},'Nuevo docente')));
+  /* encargados vinculados */
+  const vin=(L.vin||[]).filter(r=>r.estudiante_id===a.id),encL=(L.enc||[]).filter(e=>!vin.some(r=>r.encargado_id===e.id));
+  const esel=el('select',{id:'tab-enc'},el('option',{value:''},encL.length?'— agregar encargado —':'No hay más encargados'));encL.forEach(e=>esel.append(el('option',{value:e.id},e.nombre)));
+  const par=el('input',{type:'text',id:'tab-par',placeholder:'Parentesco (madre, padre…)',maxlength:'40'});
+  const ce=el('div',{class:'card',style:'margin-top:18px'},el('h3',{style:'font-size:1.6rem'},'Encargados'));
+  if(!vin.length)ce.append(el('p',{class:'muted'},'Sin encargado vinculado.'));
+  vin.forEach(r=>ce.append(el('div',{class:'item'},el('b',{},acN('enc',r.encargado_id)),el('small',{},r.parentesco||''),el('div',{class:'acts'},
+    el('button',{class:'btn btn-red btn-sm',type:'button',onclick:()=>tabDesvincular(a.id,r.encargado_id)},'Desvincular')))));
+  ce.append(el('div',{class:'row',style:'margin-top:12px'},el('div',{class:'field'},esel),el('div',{class:'field'},par),
+    el('button',{class:'btn btn-gold',type:'button',onclick:()=>{if(!esel.value){toast('Elige un encargado');return}tabVincular(a.id,esel.value,par.value.trim())}},'Vincular')));
+  box.append(el('div',{class:'grid2'},cd,ce));
+
+  /* editar datos */
+  const F=ENT.est.f,ed=el('div',{class:'card',style:'margin-top:18px',id:'ac-form'},el('h3',{style:'font-size:1.6rem'},'Editar datos del alumno'));
+  F.forEach(f=>ed.append(acField(f,a[f.k],'tb')));
+  ed.append(el('div',{style:'display:flex;gap:10px;margin-top:16px;flex-wrap:wrap'},
+    el('button',{class:'btn btn-gold',id:'acgo-tb',type:'button',onclick:async()=>{
+      const body={};for(const f of F){const v=acVal(f,'tb');if(f.req&&(v==null||v==='')){toast('Falta: '+f.l);return}body[f.k]=v}
+      try{await acPatch('ac_estudiantes',a.id,body);toast('Cambios guardados');await loadAc()}catch(e){toast(e.message||'No se pudo guardar')}}},'Guardar cambios'),
+    ...[['tar','Tareas'],['eva','Evaluaciones'],['hab','Habilidades'],['clase','Clases'],['mat','Material'],['fac','Facturas']].map(([k,t])=>el('button',{class:'btn btn-ghost',type:'button',onclick:()=>tabIr(k,a.id)},t))));
+  box.append(ed);
 }
 function renderChat(box,k){
   const cl=k==='clchat',lst=AC.list[k]||[],fk=cl?'cliente_id':'estudiante_id',ek=cl?'cli':'est',stKey=cl?'cli':'est';
