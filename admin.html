@@ -362,8 +362,8 @@ button,.btn,.chip,.nav,.tab,.stab,.seg{-webkit-user-select:none;user-select:none
 @media (hover:none){*{-webkit-tap-highlight-color:transparent}}
 /* ---------- pantalla de acceso: sin campanita ni selector de tema, isotipo fantasma de textura ---------- */
 body:has(#v-login:not([hidden])) :is(#bell,#notif,#tema){display:none!important}
-body:has(#v-login:not([hidden]))::before{content:"";position:fixed;right:clamp(18px,9vw,140px);bottom:calc(env(safe-area-inset-bottom) + 6vh);height:min(31vh,340px);aspect-ratio:850/1595;z-index:0;pointer-events:none;
- background:var(--text);opacity:.11;-webkit-mask:url(isotipo-fantasma.png) center/contain no-repeat;mask:url(isotipo-fantasma.png) center/contain no-repeat}
+body:has(#v-login:not([hidden]))::before{content:"";position:fixed;right:-14vw;bottom:-6vh;height:min(100vh,1200px);aspect-ratio:850/1595;z-index:0;pointer-events:none;
+ background:var(--text);opacity:.075;-webkit-mask:url(isotipo-fantasma.png) center/contain no-repeat;mask:url(isotipo-fantasma.png) center/contain no-repeat}
 body:has(#v-login:not([hidden])) .wrap{position:relative;z-index:1}
 
 /* ---------- móvil: fondo liso, sin velo blanco bajo el encabezado ---------- */
