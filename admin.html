@@ -2241,7 +2241,7 @@ function usrCard(f){
     f.ultima_actividad?el('p',{class:'ulast'},'Último cambio: '+f.ultima_actividad+' · '+hace(f.ultima_actividad_en)):null,
     el('div',{class:'acts'},
       el('button',{class:'btn btn-gold btn-sm',type:'button',onclick:()=>usrEditor(f)},icoEl('edit'),' Permisos'),
-      el('button',{class:'btn btn-ghost btn-sm',type:'button',onclick:()=>usrVer(f)},icoEl('key'),' Ver acceso'),
+      el('button',{class:'btn btn-ghost btn-sm',type:'button',onclick:()=>usrNuevaClave(f)},icoEl('key'),' Nueva contraseña'),
       el('button',{class:'btn btn-ghost btn-sm',type:'button',onclick:()=>usrActivo(f,!f.activo)},f.activo?'Desactivar':'Activar'),
       el('button',{class:'btn btn-ghost btn-sm',type:'button',onclick:()=>usrQuitar(f),'aria-label':'Quitar a '+f.nombre},icoEl('trash'))));
   return c;
@@ -2250,15 +2250,31 @@ async function usrActivo(f,v){
   const r=await api('/rest/v1/admin_equipo?user_id=eq.'+f.user_id,{method:'PATCH',body:{activo:v},headers:{Prefer:'return=minimal'}});
   if(!r.ok){toast(await errText(r));return}f.activo=v;toast(v?'Usuario activado':'Usuario desactivado');usrPintar();
 }
-async function usrQuitar(f){
-  if(!confirm('¿Quitar a '+f.nombre+'? Ya no podrá entrar al panel. Si la necesitas otra vez, creas un acceso nuevo.'))return;
-  const r=await api('/rest/v1/admin_equipo?user_id=eq.'+f.user_id,{method:'DELETE',headers:{Prefer:'return=minimal'}});
-  if(!r.ok){toast(await errText(r));return}USR.list=USR.list.filter(x=>x.user_id!==f.user_id);toast('Usuario quitado');usrPintar();
+async function usrFuncion(body){
+  const r=await api('/functions/v1/admin-usuarios',{method:'POST',body});
+  const j=await r.json().catch(()=>({}));
+  if(!r.ok||!j.ok)throw new Error(j.error||('No se pudo completar ('+r.status+'). ¿Está publicada la función admin-usuarios?'));
+  return j;
 }
-function usrVer(f){
-  const v=vaultGet()[f.user_id];
-  if(!v){alert('La contraseña de "'+f.usuario+'" no está guardada en este navegador (se creó en otro equipo o se borraron los datos del navegador). Quítalo y crea el acceso otra vez para generar una nueva.');return}
-  usrMostrar(f.nombre,v.usuario,v.clave,f.permisos,false);
+async function usrQuitar(f){
+  if(!confirm('¿Quitar a '+f.nombre+'? Se borra su acceso por completo y ya no podrá entrar. Si la necesitas otra vez, creas un acceso nuevo.'))return;
+  try{await usrFuncion({accion:'quitar',user_id:f.user_id})}catch(e){toast(e.message);return}
+  USR.list=USR.list.filter(x=>x.user_id!==f.user_id);toast('Usuario quitado');usrPintar();
+}
+function usrNuevaClave(f){
+  const m=$('#acc-modal');m.textContent='';
+  const c=el('input',{type:'text',id:'unc-c',maxlength:'72',autocomplete:'off',spellcheck:'false'});c.value=grp(3);
+  const err=el('div',{class:'msg',style:'display:none;background:rgba(160,30,30,.12)'});
+  const ok=el('button',{class:'btn btn-gold',type:'button',onclick:async()=>{
+    const clave=c.value;if(clave.length<8){err.textContent='La contraseña necesita al menos 8 caracteres.';err.style.display='';return}
+    ok.disabled=true;ok.textContent='Cambiando…';
+    try{await usrFuncion({accion:'clave',user_id:f.user_id,clave});toast('Contraseña cambiada');usrMostrar(f.nombre,f.usuario,clave,f.permisos,false)}
+    catch(e){err.textContent=e.message;err.style.display='';ok.disabled=false;ok.textContent='Cambiar contraseña'}}},'Cambiar contraseña');
+  m.append(el('div',{class:'box',style:'max-width:520px'},el('h2',{style:'font-size:2rem'},'Nueva contraseña · '+f.nombre),
+    el('div',{class:'msg'},'Puedes dejar la que sugerimos o escribir la tuya (mínimo 8 caracteres). La anterior deja de funcionar. Esta no se guarda en ningún lado: cópiala y envíasela.'),
+    el('div',{class:'field'},el('label',{for:'unc-c'},'Contraseña nueva'),c),err,
+    el('div',{class:'acts',style:'margin-top:16px'},ok,el('button',{class:'btn btn-ghost',type:'button',onclick:()=>{c.value=grp(3)}},'Sugerir otra'),el('button',{class:'btn btn-ghost',type:'button',onclick:()=>{m.hidden=true;m.textContent=''}},'Cancelar'))));
+  m.hidden=false;setTimeout(()=>c.focus(),50);
 }
 function usrMsg(nombre,usuario,clave,permisos){
   const ver=(permisos||[]).map(k=>(PERMISOS.find(p=>p.k===k)||{}).n).filter(Boolean);
@@ -2268,7 +2284,7 @@ function usrMostrar(nombre,usuario,clave,permisos,copiado){
   const msg=usrMsg(nombre,usuario,clave,permisos),m=$('#acc-modal');m.textContent='';
   m.append(el('div',{class:'box',style:'max-width:520px'},
     el('h2',{style:'font-size:2rem'},'Acceso de '+nombre),
-    el('div',{class:'msg',style:'background:rgba(226,190,70,.18);border-color:var(--amar)'},(copiado?'Ya quedó copiado el mensaje. ':'')+'La contraseña queda guardada solo en este navegador para que puedas volver a verla con “Ver acceso”.'),
+    el('div',{class:'msg',style:'background:rgba(226,190,70,.18);border-color:var(--amar)'},(copiado?'Ya quedó copiado el mensaje. ':'')+'Cópiala ahora: por seguridad la contraseña no se guarda en ningún lado. Si se pierde, usa “Nueva contraseña” y generas otra.'),
     el('div',{class:'field'},el('span',{class:'lab'},'Usuario'),el('div',{class:'item',style:'font:700 1.4rem/1.2 monospace;letter-spacing:.06em;word-break:break-all'},usuario)),
     el('div',{class:'field'},el('span',{class:'lab'},'Contraseña'),el('div',{class:'item',style:'font:700 1.4rem/1.2 monospace;letter-spacing:.06em'},clave)),
     el('div',{class:'acts',style:'margin-top:16px'},
@@ -2280,15 +2296,7 @@ function usrMostrar(nombre,usuario,clave,permisos,copiado){
   m.hidden=false;
 }
 async function usrCrear(v){
-  const email=loginEmail(v.usuario);
-  const r=await fetch(SB.url+'/auth/v1/signup',{method:'POST',headers:{apikey:SB.key,'Content-Type':'application/json'},body:JSON.stringify({email,password:v.clave})});
-  const j=await r.json().catch(()=>({}));
-  if(!r.ok){const t=j.msg||j.error_description||j.message||'';throw new Error(/already|registered|exists/i.test(t)?'Ese usuario ya existe. Elige otro nombre de usuario.':(t||'No se pudo crear el acceso ('+r.status+')'))}
-  const uid=(j.user&&j.user.id)||j.id;if(!uid)throw new Error('Supabase no devolvió el usuario. Revisa Authentication > Providers > Email.');
-  if(!j.access_token)alert('Se creó el usuario, pero Supabase pide confirmar el correo y esa persona NO podrá entrar.\n\nEn Supabase: Authentication > Sign In / Providers > Email > desactiva "Confirm email". Luego quita este usuario y créalo otra vez.');
-  const x=await api('/rest/v1/admin_equipo',{method:'POST',body:{user_id:uid,usuario:v.usuario,nombre:v.nombre,etiqueta:v.etiqueta||null,permisos:v.permisos,enlace_subida:v.enlace||null},headers:{Prefer:'return=minimal'}});
-  if(!x.ok){const t=await errText(x);throw new Error(/duplicate|unique/i.test(t)?'Ese usuario ya está en uso. Elige otro nombre de usuario.':t+' (¿corriste sql/equipo.sql?)')}
-  vaultSet(uid,{usuario:v.usuario,clave:v.clave,email,rol:'equipo',nombre:v.nombre,fecha:new Date().toISOString()});
+  return usrFuncion({accion:'crear',usuario:v.usuario,clave:v.clave,nombre:v.nombre,etiqueta:v.etiqueta,permisos:v.permisos,enlace:v.enlace});
 }
 function usrEditor(f){
   const nuevo=!f;f=f||{nombre:'',usuario:'',etiqueta:'',permisos:[],enlace_subida:''};
@@ -2331,7 +2339,7 @@ function usrEditor(f){
       if(nuevo){
         const usuario=$('#u-u').value.trim().toLowerCase(),clave=$('#u-c').value;
         if(!/^[a-z0-9][a-z0-9._-]{2,59}$/.test(usuario))throw new Error('El usuario solo puede tener letras minúsculas sin acento, números, punto, guion o guion bajo (mínimo 3).');
-        if(clave.length<6)throw new Error('La contraseña necesita al menos 6 caracteres.');
+        if(clave.length<8)throw new Error('La contraseña necesita al menos 8 caracteres.');
         if(USR.list.some(x=>x.usuario.toLowerCase()===usuario))throw new Error('Ya hay un usuario con ese nombre.');
         await usrCrear({nombre,usuario,clave,etiqueta,permisos,enlace});
         cerrar();await usrCargar();usrPintar();
