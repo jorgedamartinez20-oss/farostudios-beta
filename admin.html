@@ -362,6 +362,11 @@ button,.btn,.chip,.nav,.tab,.stab,.seg{-webkit-user-select:none;user-select:none
 @media (hover:none){*{-webkit-tap-highlight-color:transparent}}
 /* ---------- pantalla de acceso: sin campanita ni selector de tema, isotipo fantasma de textura ---------- */
 body:has(#v-login:not([hidden])) :is(#bell,#notif,#tema){display:none!important}
+/* app instalada: el fondo detrás del encabezado es borgoña, así el difuminado de iOS en el borde superior se funde con el encabezado y no se ve el velo rosado */
+@media (max-width:900px) and (display-mode:standalone){
+ html{background:var(--borgona)}
+ body{min-height:100vh;min-height:100dvh}
+}
 .login .welcome{margin:0 0 6px;font-weight:700;font-size:.95rem;letter-spacing:.16em;text-transform:uppercase;color:var(--oro-t)}.login h1{font-size:clamp(2.1rem,10vw,2.8rem)}
 body:has(#v-login:not([hidden]))::before{content:"";position:fixed;right:-9vw;bottom:-6vh;height:min(100vh,1200px);aspect-ratio:850/1595;z-index:0;pointer-events:none;
  background:var(--text);opacity:.15;-webkit-mask:url(isotipo-fantasma.png) center/contain no-repeat;mask:url(isotipo-fantasma.png) center/contain no-repeat}
