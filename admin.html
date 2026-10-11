@@ -599,7 +599,7 @@ const IC={
 };
 const ico=(n,cls)=>'<svg class="sv'+(cls?' '+cls:'')+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+(IC[n]||IC.file)+'</svg>';
 function icoEl(n,cls){const s=document.createElement('span');s.className='ico';s.innerHTML=ico(n,cls);return s}
-const ENT_IC={tabl:'chart',asg:'link',est:'cap',enc:'users',doc:'user',vin:'link',acc:'key',tar:'clipboard',eva:'edit',prac:'mic',hab:'star',logro:'award',reco:'bulb',clase:'calendar',mat:'book',dip:'award',fac:'card',cli:'camera',cldoc:'file',chat:'message',clchat:'message'};
+const ENT_IC={tabl:'chart',asg:'link',est:'cap',enc:'users',doc:'user',vin:'link',acc:'key',tar:'clipboard',eva:'edit',prac:'mic',hab:'star',logro:'award',reco:'bulb',clase:'calendar',mat:'book',dip:'award',fac:'card',cli:'camera',clacc:'key',cldoc:'file',chat:'message',clchat:'message'};
 $$('[data-i]').forEach(e=>{e.innerHTML=ico(e.dataset.i)});
 const isoD=(y,m,d)=>new Date(Date.UTC(y,m,d)).toISOString().slice(0,10);
 const today=()=>new Date().toLocaleDateString('en-CA',{timeZone:'America/Guatemala'});
@@ -1019,13 +1019,13 @@ const ENT={
     {k:'nombre',l:'Nombre del cliente',req:1},{k:'correo',l:'Correo (el que dio al reservar; con él entra)',t:'email'},{k:'whatsapp',l:'WhatsApp (para avisarle por mensaje)'},{k:'proyecto',l:'Proyecto (Boda Ana y Luis, Graduación…)'},{k:'tipo',l:'Tipo de servicio'},
     {k:'fecha',l:'Fecha del proyecto',t:'date'},{k:'galeria_url',l:'Enlace a su galería en Pixieset',t:'url'},
     {k:'nota',l:'Mensaje de bienvenida (lo ve el cliente)',t:'area'},{k:'activo',l:'Activo',t:'check',def:true}],
-    row:r=>[r.nombre+(r.proyecto?' · '+r.proyecto:'')+(r.activo?'':' (inactivo)'),(r.galeria_url?'Galería lista':'Sin galería')]},   /* el portal es solo de Academy: los clientes ya no tienen acceso de portal */
+    row:r=>[r.nombre+(r.proyecto?' · '+r.proyecto:'')+(r.activo?'':' (inactivo)'),(r.galeria_url?'Galería lista':'Sin galería')+' · '+accTxt('cliente','cliente_id',r.id)]},
   cldoc:{g:'cl',tabla:'cl_documentos',t:'Documentos y entregas',ord:'creado.desc',ico:'📄',byCli:1,bucket:'clientes',f:[
     {k:'cliente_id',l:'Cliente',t:'cli',req:1},{k:'tipo',l:'Qué es',t:'sel',o:[['contrato','Contrato'],['entrega','Entrega (fotos, video, audio)'],['factura','Factura'],['enlace','Enlace'],['otro','Otro']],def:'entrega'},
     {k:'titulo',l:'Título',req:1},{k:'ruta',l:'Archivo (máx. 50 MB)',t:'file',folder:''}],
     row:r=>[r.titulo+' · '+r.tipo,acN('cli',r.cliente_id)]}
 };
-const GRP={ac:['tabl','est','enc','doc','asg','vin','acc','tar','eva','prac','hab','logro','reco','clase','mat','dip','fac','chat'],cl:['cli','cldoc','clchat']};
+const GRP={ac:['tabl','est','enc','doc','asg','vin','acc','tar','eva','prac','hab','logro','reco','clase','mat','dip','fac','chat'],cl:['cli','clacc','cldoc','clchat']};
 function acN(k,id){const x=(AC.list[k]||[]).find(r=>r.id===id);return x?(x.apodo||x.nombre):'(borrado)'}
 function accHas(fk,id){return (AC.list.acc||[]).some(c=>c[fk]===id)}
 function accTxt(rol,fk,id,tok){const c=(AC.list.acc||[]).find(x=>x[fk]===id);return c?((tok?'acceso con ':'usuario ')+c.usuario+(c.activo?'':' (desactivado)')):'sin acceso todavía'}
@@ -1142,7 +1142,7 @@ function autoGet(){try{return localStorage.getItem('faro_autocopy')!=='0'}catch(
 function autoSet(v){try{localStorage.setItem('faro_autocopy',v?'1':'0')}catch(e){}}
 function acMsg(rol,nombre,usuario,clave){
   return rol==='cliente'
-    ?'Hola '+nombre+', este es tu acceso para ver tu galería, tu contrato y tus entregas de Faro Studios:\n\nCorreo: '+usuario+'\nCódigo: '+clave+'\n\nEntra en '+PORTAL_URL+' y toca “Cliente Studios”.'
+    ?'Hola '+nombre+', este es tu acceso para ver tu galería, tu contrato y tus entregas de Faro Studios:\n\nCorreo: '+usuario+'\nCódigo: '+clave+'\n\nEntra en farostudios.net, toca “Mi espacio” e ingresa tu correo y tu código (o directo en '+PORTAL_URL+'?r=cl).'
     :'Hola, este es el acceso '+(rol==='alumno'?'de '+nombre+' a Faro Academy':rol==='docente'?'de docente de Faro Academy para '+nombre:'para el seguimiento de '+nombre+' en Faro Academy')+':\n\nUsuario: '+usuario+'\nContraseña: '+clave+'\n\nEntra en '+PORTAL_URL+' y toca “'+(rol==='alumno'?'Estudiante':rol==='docente'?'Docente':'Encargado')+'”.';
 }
 function acVer(rol,fk,ent){
@@ -1250,7 +1250,7 @@ const ACG=[
   ['seg','Seguimiento','chart','Tablero, tareas, evaluaciones y logros',['tabl','tar','eva','prac','hab','logro','reco']],
   ['cla','Clases y material','calendar','Programa, material y diplomas',['clase','mat','dip']],
   ['cob','Cobros y mensajes','card','Facturas, saldos y chats',['fac','chat']]];
-const acEtq=k=>k==='tabl'?'Tablero del alumno':k==='chat'?'Mensajes':k==='clchat'?'Buzón':ENT[k].t;
+const acEtq=k=>k==='tabl'?'Tablero del alumno':k==='chat'?'Mensajes':k==='clchat'?'Buzón':k==='clacc'?'Accesos de clientes':ENT[k].t;
 function acNav(chips){
   chips.className='acnav';
   const act=ACG.find(x=>x[4].includes(AC.sel.ac))||ACG[0];
@@ -1271,6 +1271,7 @@ function renderGrp(g){
   const k=AC.sel[g];
   if(k==='tabl')return renderTablero(box);
   if(k==='prac')return renderPracticas(box);
+  if(k==='clacc')return renderClAccesos(box);
   if(k==='chat'||k==='clchat')return renderChat(box,k);
   const e=ENT[k];let rows=AC.list[k]||[];
   const left=el('div',{class:'card'},el('h2',{},e.t));
@@ -1377,12 +1378,12 @@ function accFila(rol,fk,ent,etq,par){
   fila.append(el('div',{style:'min-width:150px'},el('small',{},etq+(par?' · '+par:'')),el('br'),el('b',{},ent.nombre)));
   if(!c){fila.append(el('span',{class:'muted'},'Sin acceso todavía'),el('div',{class:'acts'},el('button',{class:'btn btn-gold btn-sm',type:'button',onclick:()=>acGenerar(rol,ent)},'Crear acceso')));return fila}
   let ver=false;const clv=el('code',{style:'font:700 1rem monospace;letter-spacing:.06em'},v?'••••••••':'(no guardada en este equipo)');
-  fila.append(el('div',{style:'flex:1;min-width:170px'},el('small',{},'Usuario'),el('br'),el('code',{style:'font:700 1rem monospace;word-break:break-all'},c.usuario+(c.activo?'':' (desactivado)'))),
-    el('div',{style:'flex:1;min-width:150px'},el('small',{},'Contraseña'),el('br'),clv));
+  fila.append(el('div',{style:'flex:1;min-width:170px'},el('small',{},rol==='cliente'?'Correo':'Usuario'),el('br'),el('code',{style:'font:700 1rem monospace;word-break:break-all'},c.usuario+(c.activo?'':' (desactivado)'))),
+    el('div',{style:'flex:1;min-width:150px'},el('small',{},rol==='cliente'?'Código':'Contraseña'),el('br'),clv));
   const acts=el('div',{class:'acts'});
   if(v){acts.append(el('button',{class:'btn btn-ghost btn-sm',type:'button',onclick:ev=>{ver=!ver;clv.textContent=ver?v.clave:'••••••••';ev.target.textContent=ver?'Ocultar':'Ver'}},'Ver'),
     el('button',{class:'btn btn-ghost btn-sm',type:'button',onclick:()=>copyTxt(acMsg(rol,nom,v.usuario,v.clave))},'Copiar mensaje'))}
-  acts.append(el('button',{class:'btn btn-ghost btn-sm',type:'button',onclick:()=>acGenerar(rol,ent)},v?'Regenerar':'Nueva contraseña'));
+  acts.append(el('button',{class:'btn btn-ghost btn-sm',type:'button',onclick:()=>acGenerar(rol,ent)},v?'Regenerar':(rol==='cliente'?'Nuevo código':'Nueva contraseña')));
   fila.append(acts);return fila;
 }
 async function tabNuevoEnc(est,nombre,wa,par){
@@ -1394,6 +1395,21 @@ async function tabNuevoEnc(est,nombre,wa,par){
   if(!v.ok){toast(await errText(v));return}
   toast('Encargado creado y vinculado');await loadAc();
   const ent=(AC.list.enc||[]).find(x=>x.id===e.id);if(ent)acGenerar('encargado',ent);
+}
+function renderClAccesos(box){
+  const cods=D.cfg.codigo_agenda||'',cl=AC.list.cli||[];
+  let ver=false;const cv=el('code',{style:'font:700 1.1rem monospace;letter-spacing:.08em'},cods?'••••••••••••':'(sin código)');
+  const acts=el('div',{class:'acts'});
+  if(cods)acts.append(el('button',{class:'btn btn-ghost btn-sm',type:'button',onclick:ev=>{ver=!ver;cv.textContent=ver?cods:'••••••••••••';ev.target.textContent=ver?'Ocultar':'Ver'}},'Ver'),
+    el('button',{class:'btn btn-ghost btn-sm',type:'button',onclick:()=>copyTxt(cods)},'Copiar'));
+  acts.append(el('button',{class:'btn btn-gold btn-sm',type:'button',onclick:()=>{if(cods&&!confirm('Se reemplaza el código actual: el anterior dejará de funcionar para agendar. ¿Continuar?'))return;saveCfg('codigo_agenda',genCodigo(),'Código de agenda nuevo').then(()=>renderGrp('cl'))}},'Generar código nuevo'));
+  box.append(el('div',{class:'card'},el('h2',{},'Código de agenda'),el('p',{class:'muted'},'Lo usan los clientes para reservar sesión en la agenda del sitio.'),el('div',{class:'item',style:'flex-wrap:wrap;gap:8px'},el('div',{style:'flex:1;min-width:150px'},el('small',{},'Código actual'),el('br'),cv),acts)));
+  const lista=el('div',{class:'card'},el('h2',{},'Acceso a “Mi espacio”'),el('p',{class:'muted'},'Cada cliente entra en farostudios.net → Mi espacio con su correo y un código personal. Ahí ve su galería, contrato y entregas.'));
+  if(!cl.length)lista.append(el('p',{class:'muted'},'Aún no hay clientes. Regístralos en la pestaña Clientes.'));
+  cl.forEach(c=>{
+    if(!c.correo){lista.append(el('div',{class:'item'},el('b',{},c.nombre),el('small',{},'Sin correo: agrégalo en Clientes → Editar para darle acceso.')));return}
+    lista.append(accFila('cliente','cliente_id',c,'Cliente',c.proyecto||''))});
+  box.append(lista);
 }
 function renderTablero(box){
   const L=AC.list,alus=L.est||[];

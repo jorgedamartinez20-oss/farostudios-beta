@@ -1076,7 +1076,7 @@ const TXT={do:['Ingreso de docentes','Escribe el usuario y la contraseña que te
 function loginUI(msg){
   const t=S.tab,cl=t==='cl';
   $('#login').innerHTML='<div class="lg-card"><div class="mascot"><span class="iso"></span></div>'
-   +'<div class="chips" role="tablist" aria-label="Tipo de acceso" style="justify-content:center">'+[['al','Estudiante'],['pa','Encargado'],['do','Docente']].map(x=>'<button class="chip" type="button" role="tab" data-t="'+x[0]+'" aria-pressed="'+(t===x[0])+'">'+x[1]+'</button>').join('')+'</div>'
+   +(cl?'':'<div class="chips" role="tablist" aria-label="Tipo de acceso" style="justify-content:center">'+[['al','Estudiante'],['pa','Encargado'],['do','Docente']].map(x=>'<button class="chip" type="button" role="tab" data-t="'+x[0]+'" aria-pressed="'+(t===x[0])+'">'+x[1]+'</button>').join('')+'</div>')
    +'<h1>'+TXT[t][0]+'</h1><p class="sub">'+TXT[t][1]+'</p>'
    +'<form id="lf" autocomplete="on" style="display:grid;gap:14px;width:100%">'
    +(cl?'<label>Correo<input id="lu" type="email" placeholder="tucorreo@ejemplo.com" autocomplete="email" required></label><label>Código<input id="lp" placeholder="XXXX-XXXX" autocomplete="off" autocapitalize="characters" required></label>'
@@ -1101,11 +1101,12 @@ function loginUI(msg){
     await iniciar(S.tab)};
 }
 /* Cada acceso entra solo por su pestaña: un docente no puede entrar como estudiante ni al revés */
-const ROL_TAB={alumno:'al',encargado:'pa',docente:'do'},ROL_NOM={alumno:'Estudiante',encargado:'Encargado',docente:'Docente'};
+const ROL_TAB={alumno:'al',encargado:'pa',docente:'do',cliente:'cl'},ROL_NOM={alumno:'Estudiante',encargado:'Encargado',docente:'Docente',cliente:'Cliente'};
 async function iniciar(esperado){
   try{const r=await api('/rest/v1/rpc/ac_mi_perfil',{method:'POST',body:{}});const p=r.ok?await r.json():{};
     if(!p||!p.rol){salir(true);loginUI('Tu acceso no está activo. Escríbenos por WhatsApp y lo revisamos.');return}
-    if(!ROL_TAB[p.rol]){salir(true);loginUI(p.rol==='cliente'?'Este portal ahora es solo de Faro Academy. Para tu galería y entregas escríbenos por WhatsApp.':'Tu acceso no corresponde a este portal. Escríbenos por WhatsApp.');return}
+    if(!ROL_TAB[p.rol]){salir(true);loginUI('Tu acceso no corresponde a este portal. Escríbenos por WhatsApp.');return}
+    if(p.rol==='cliente'&&esperado&&esperado!=='cl'){salir(true);loginUI('Ese acceso es de Faro Studios (clientes). Entra desde «Mi espacio» en farostudios.net.');return}
     if(esperado&&ROL_TAB[p.rol]!==esperado){const t=ROL_TAB[p.rol];salir(true);S.tab=t;loginUI('Ese usuario es de '+ROL_NOM[p.rol].toUpperCase()+'. Te pasamos a la pestaña «'+ROL_NOM[p.rol]+'»: escribe tu usuario y contraseña ahí.');return}
     if((p.rol==='alumno'&&!p.alumno)||(p.rol==='docente'&&!p.docente)){salir(true);loginUI('Tu acceso todavía no tiene un espacio asignado ('+ROL_NOM[p.rol].toLowerCase()+'). Escríbenos por WhatsApp para vincularlo.');return}
     S.perfil=p;S.rol=p.rol;
@@ -1123,7 +1124,7 @@ $('#out').onclick=()=>salir();
 ['pointerdown','keydown','touchstart','scroll'].forEach(ev=>addEventListener(ev,()=>{if(SES)actMarca()},{passive:true,capture:true}));
 function vigilaInact(){if(SES&&Date.now()-actGet()>INACT){salir(true);loginUI('Cerramos tu sesión por inactividad. Entra de nuevo.')}}
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)vigilaInact()});setInterval(vigilaInact,60000);
-(function(){const q=new URLSearchParams(location.search).get('r');if(['al','pa','do'].includes(q))S.tab=q;
+(function(){const q=new URLSearchParams(location.search).get('r');if(['al','pa','do','cl'].includes(q))S.tab=q;
   if(SES&&SES.access)iniciar();else render()})();
 
 /* ---------- textura de papel ---------- */
