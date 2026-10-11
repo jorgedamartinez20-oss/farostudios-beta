@@ -905,12 +905,14 @@ async function matInit(){
   const top=el('div',{class:'card',style:'margin-bottom:18px'},el('h2',{},'Materiales · archivos en Cloudflare R2'),
     el('p',{class:'muted'},'Un solo lugar para los archivos de Faro Studios, Faro Academy y el landing. Quién es quién sigue en Supabase; aquí solo viven los archivos.'));
   const inp=el('input',{type:'url',placeholder:'https://faro-archivos.TU-CUENTA.workers.dev',value:FILES,autocomplete:'off'});
-  top.append(el('div',{class:'field'},el('label',{},'Dirección del servicio de archivos'),inp),
+  const cfg=el('div',{});
+  cfg.append(el('div',{class:'field'},el('label',{},'Dirección del servicio de archivos'),inp),
     el('div',{style:'display:flex;gap:10px;flex-wrap:wrap;margin-top:12px'},
       el('button',{class:'btn btn-gold',type:'button',onclick:()=>{const v=inp.value.trim().replace(/\/+$/,'');
         if(v&&!/^https:\/\//.test(v)){toast('La dirección debe empezar con https://');return}
         try{localStorage.setItem(FILES_LS,v)}catch(e){}FILES=v;MAT.destinos=[];toast(v?'Conectado a esta dirección':'Desconectado');matInit()}},'Conectar'),
       FILES?el('button',{class:'btn btn-ghost',type:'button',onclick:async()=>{try{const j=await fjson('/api/init',{method:'POST'});toast('Carpetas listas ('+j.carpetas+')')}catch(e){toast(e.message)}}},'Preparar carpetas'):null));
+  if(FILES)top.append(el('p',{style:'margin-top:10px'},'✓ Conectado'),el('details',{style:'margin-top:8px'},el('summary',{class:'muted',style:'cursor:pointer'},'Ajustes del servicio (ya está conectado, no hace falta tocar)'),cfg));else top.append(cfg);
   box.append(top);
   if(!FILES){box.append(el('div',{class:'card'},el('p',{class:'muted'},'Todavía no está conectado. Publica el servicio con los pasos de worker/LEEME.md, pega aquí su dirección y toca “Conectar”. Mientras tanto, “Sitio web” sigue subiendo archivos como antes.')));return}
   try{await matArbol()}catch(e){top.append(el('div',{class:'msg',style:'margin-top:12px'},e.message+'. Revisa la dirección y que el servicio esté publicado.'));return}
