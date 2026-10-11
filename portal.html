@@ -666,7 +666,7 @@ async function pracMontar(root){
       const mt=['audio/webm;codecs=opus','audio/mp4','audio/webm','audio/ogg;codecs=opus'].find(m=>MediaRecorder.isTypeSupported(m))||'';
       const mr=new MediaRecorder(stream,mt?{mimeType:mt}:undefined),ch=[];
       REC={mr,stream,t0:Date.now()};mime=mr.mimeType||mt||'audio/webm';
-      try{const AC=window.AudioContext||window.webkitAudioContext,ac=new AC(),an=ac.createAnalyser();an.fftSize=512;ac.createMediaStreamSource(stream).connect(an);REC.ac=ac;const b=new Uint8Array(an.fftSize);
+      try{const AC=window.AudioContext||window.webkitAudioContext,ac=new AC(),an=ac.createAnalyser();an.fftSize=512;ac.createMediaStreamSource(stream).connect(an);try{const z=ac.createGain();z.gain.value=0;an.connect(z);z.connect(ac.destination)}catch(e){}REC.ac=ac;const b=new Uint8Array(an.fftSize);
         const loop=()=>{if(!REC)return;REC.raf=requestAnimationFrame(loop);an.getByteTimeDomainData(b);let m=0;for(const v of b)m=Math.max(m,Math.abs(v-128));$r('#rc-lv').style.width=Math.min(100,m/128*180)+'%'};loop()}catch(e){}
       mr.ondataavailable=e=>{if(e.data&&e.data.size)ch.push(e.data)};
       mr.onstop=()=>{const me=REC;if(!me||me.cancel)return;dur=Math.round((Date.now()-me.t0)/1000);clearInterval(me.timer);cancelAnimationFrame(me.raf);me.stream.getTracks().forEach(t=>t.stop());try{me.ac&&me.ac.close()}catch(e){}
