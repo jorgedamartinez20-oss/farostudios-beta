@@ -382,6 +382,10 @@ body:has(#v-login:not([hidden]),#v-wait:not([hidden])) .wrap{position:relative;z
 /* app instalada: encabezado más alto, el logo y los botones quedan debajo de la franja que iOS difumina */
 html.is-app{--top-extra:30px}
 html.is-app .top{padding-top:calc(10px + var(--top-extra) + env(safe-area-inset-top))}
+/* admin en móvil (app y web): sin hora en el encabezado; en computadora se queda con día y hora */
+@media (max-width:900px){.hclock{display:none!important}}
+/* logo del encabezado un poco más grande */
+.top img{height:48px}
 </style>
 <script>if(navigator.standalone||(window.matchMedia&&matchMedia("(display-mode:standalone)").matches))document.documentElement.classList.add("is-app")</script>
 </head>
