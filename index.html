@@ -560,6 +560,25 @@ header.open .menu-btn i::after{transform:translateY(-6px) rotate(-45deg)}
 #inicio.hero-light .btn-solid{background:var(--borgona);color:var(--marfil)}
 #inicio.hero-light .btn-ghost{color:var(--pizarra);border-color:rgba(37,37,40,.35)}
 
+/* barra: borgoña en Studios, marfil en Academy */
+header.nav{transition:background-color .45s var(--ease),color .45s}
+header.nav[data-side="academy"]{background:var(--marfil);color:var(--pizarra);box-shadow:inset 0 -1px 0 rgba(160,120,69,.55),0 14px 34px -16px rgba(37,37,40,.38)}
+header.nav[data-side="academy"] .brand{color:var(--pizarra)}
+header.nav[data-side="academy"] .brand img{filter:brightness(.152)}
+header.nav[data-side="academy"] .brand:hover img{filter:brightness(.152) drop-shadow(0 0 12px rgba(184,160,106,.7))}
+header.nav[data-side="academy"] .brand-tag{color:var(--pizarra);border-left-color:var(--bronce)}
+header.nav[data-side="academy"] .nav-links a,header.nav[data-side="academy"] .nav-links button{color:rgba(37,37,40,.82)}
+header.nav[data-side="academy"] .nav-links a:hover,header.nav[data-side="academy"] .nav-links button:hover{background:rgba(79,90,42,.12);color:var(--pizarra);box-shadow:0 10px 18px -12px rgba(37,37,40,.35)}
+header.nav[data-side="academy"] .nav-links [aria-current="page"]{background:rgba(79,90,42,.14);box-shadow:inset 0 0 0 1px rgba(79,90,42,.55);color:var(--pizarra)}
+header.nav[data-side="academy"] .sw{border-color:rgba(37,37,40,.35)}
+header.nav[data-side="academy"] .sw:hover{border-color:var(--oliva);box-shadow:0 0 0 4px rgba(79,90,42,.18)}
+header.nav[data-side="academy"] .sw::before{background:var(--oliva);box-shadow:0 8px 18px -6px rgba(37,37,40,.4)}
+header.nav[data-side="academy"] .sw button{color:var(--pizarra)}
+header.nav[data-side="academy"] .sw button[aria-selected="true"]{color:var(--marfil)}
+header.nav[data-side="academy"] .menu-btn{border-color:rgba(37,37,40,.35);background:rgba(37,37,40,.06);color:var(--pizarra)}
+html[data-page="academy"] .split{background:var(--marfil)}
+@media (max-width:960px){header.open[data-side="academy"] .nav-links:not([hidden]){background:var(--marfil);box-shadow:0 30px 60px -20px rgba(37,37,40,.45)}}
+
 /* sec-head: línea larga y viva */
 .sec-head .rule{width:min(100%,980px);height:3px;position:relative;overflow:hidden;background:linear-gradient(90deg,var(--hi),rgba(184,160,106,.2) 85%,transparent)}
 .sec-head .rule::after{content:"";position:absolute;top:0;bottom:0;width:140px;left:-160px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.9),transparent);animation:glint 5s 1.2s ease-in-out infinite}
@@ -1533,6 +1552,7 @@ function applyPage(p){
   $$('.sw button').forEach(b=>b.setAttribute('aria-selected',b.dataset.side===side));
   $('.sw').dataset.on=side;
   $('#brand-tag').hidden=side!=='academy';
+  $('header.nav').dataset.side=side;
   $$('.nav-links [data-page-go]').forEach(b=>{if(b.dataset.pageGo===p)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current')});
   if(p==='reservas')rvOpen();
   $('#foot').classList.toggle('eng',p==='english');
