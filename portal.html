@@ -361,9 +361,16 @@ const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;'
 const SBU='https://keivqvsgdfhthouzlqxo.supabase.co',SBK='sb_publishable_5nj3M7rjQs3phGU6u2uNqw_3tjTL6PE';
 const WA='https://wa.me/50252695592';
 const MESES=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
-let SES=null;try{SES=JSON.parse(sessionStorage.getItem('faro_portal')||'null')}catch(e){}
+/* sesión que se recuerda: sobrevive a salir de la app unos segundos; se cierra tras 1 hora sin usarla */
+const INACT=60*60*1000;
+const recOn=()=>{try{return localStorage.getItem('faro_rec')!=='0'}catch(e){return true}};
+const stor=()=>{try{return recOn()?localStorage:sessionStorage}catch(e){return sessionStorage}};
+const actGet=()=>{try{return +localStorage.getItem('faro_portal_act')||0}catch(e){return 0}};
+let actUlt=0;function actMarca(f){const n=Date.now();if(!f&&n-actUlt<15000)return;actUlt=n;try{localStorage.setItem('faro_portal_act',String(n))}catch(e){}}
+let SES=null;try{SES=JSON.parse(localStorage.getItem('faro_portal')||sessionStorage.getItem('faro_portal')||'null')}catch(e){}
+if(SES&&Date.now()-actGet()>INACT){SES=null;try{localStorage.removeItem('faro_portal');sessionStorage.removeItem('faro_portal')}catch(e){}}
 function jwtSub(){try{return JSON.parse(atob(SES.access.split('.')[1].replace(/-/g,'+').replace(/_/g,'/'))).sub}catch(e){return null}}
-function saveSes(){try{sessionStorage.setItem('faro_portal',JSON.stringify(SES))}catch(e){}}
+function saveSes(){try{stor().setItem('faro_portal',JSON.stringify(SES))}catch(e){}actMarca(true)}
 var LASTERR='';
 async function signIn(email,pass){
   try{const r=await fetch(SBU+'/auth/v1/token?grant_type=password',{method:'POST',headers:{apikey:SBK,'Content-Type':'application/json'},body:JSON.stringify({email,password:pass})});
@@ -710,12 +717,15 @@ function loginUI(msg){
    +'<form id="lf" autocomplete="on" style="display:grid;gap:14px;width:100%">'
    +(cl?'<label>Correo<input id="lu" type="email" placeholder="tucorreo@ejemplo.com" autocomplete="email" required></label><label>Código<input id="lp" placeholder="XXXX-XXXX" autocomplete="off" autocapitalize="characters" required></label>'
        :'<label>Usuario<input id="lu" placeholder="'+(t==='pa'?'enc-ana-k7m':t==='do'?'doc-ana-k7m':'ana-k7m')+'" autocomplete="username" autocapitalize="none" required></label><label>Contraseña<input id="lp" type="password" placeholder="XXXX-XXXX-XXXX" autocomplete="current-password" required></label>')
+   +'<label style="display:flex;gap:8px;align-items:center;font-weight:400"><input type="checkbox" id="lr" style="width:auto"'+(recOn()?' checked':'')+'> Recordarme en este dispositivo</label>'
    +'<p id="le" class="sub" role="alert" style="color:var(--borgona);min-height:1.2em;text-align:center">'+esc(msg||'')+'</p>'
    +'<button class="btn '+(cl?'y':'')+'" type="submit" id="lb">Entrar</button></form>'
    +'<a class="btn wa" target="_blank" rel="noopener" href="'+WA+'">¿No tienes acceso? Escríbenos</a></div>';
+  try{const u=localStorage.getItem('faro_portal_u_'+t);if(u&&$('#lu')&&recOn())$('#lu').value=u}catch(e){}
   $$('#login [data-t]').forEach(b=>b.onclick=()=>{S.tab=b.dataset.t;loginUI()});
   $('#lf').onsubmit=async e=>{e.preventDefault();const b=$('#lb');b.disabled=true;b.textContent='Entrando…';
     const u=$('#lu').value.trim(),p=$('#lp').value;let ok=false;
+    try{localStorage.setItem('faro_rec',$('#lr').checked?'1':'0');if($('#lr').checked)localStorage.setItem('faro_portal_u_'+S.tab,u);else localStorage.removeItem('faro_portal_u_'+S.tab)}catch(e){}
     try{let email;
       if(cl){const r=await fetch(SBU+'/rest/v1/rpc/cl_email_acceso',{method:'POST',headers:{apikey:SBK,Authorization:'Bearer '+SBK,'Content-Type':'application/json'},body:JSON.stringify({p_correo:u})});
         email=r.ok?await r.json():null}
@@ -736,8 +746,11 @@ async function iniciar(){
     render()}
   catch(e){if(e.message!=='sesion'){salir(true);loginUI('No pudimos entrar ahora. Intenta de nuevo en un momento.')}}
 }
-function salir(silencio){SES=null;try{sessionStorage.removeItem('faro_portal')}catch(e){}S.rol=null;S.D={};S.cli=null;S.doc=null;S.perfil=null;if(!silencio){render()}}
+function salir(silencio){SES=null;try{sessionStorage.removeItem('faro_portal');localStorage.removeItem('faro_portal')}catch(e){}S.rol=null;S.D={};S.cli=null;S.doc=null;S.perfil=null;if(!silencio){render()}}
 $('#out').onclick=()=>salir();
+['pointerdown','keydown','touchstart','scroll'].forEach(ev=>addEventListener(ev,()=>{if(SES)actMarca()},{passive:true,capture:true}));
+function vigilaInact(){if(SES&&Date.now()-actGet()>INACT){salir(true);loginUI('Cerramos tu sesión por inactividad. Entra de nuevo.')}}
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)vigilaInact()});setInterval(vigilaInact,60000);
 (function(){const q=new URLSearchParams(location.search).get('r');if(['al','pa','do','cl'].includes(q))S.tab=q;
   if(SES&&SES.access)iniciar();else render()})();
 

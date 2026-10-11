@@ -253,6 +253,7 @@ h1,h2,h3{font-weight:300;letter-spacing:-.005em}
     <div id="lstep1">
     <div class="field"><label for="em">Correo o usuario</label><input id="em" type="text" autocomplete="username" autocapitalize="none" spellcheck="false"></div>
     <div class="field"><label for="pw">Contraseña</label><input id="pw" type="password" autocomplete="current-password"><label style="font-weight:400;display:flex;gap:8px;align-items:center;margin-top:4px"><input type="checkbox" id="spw" style="width:auto"> Mostrar contraseña</label></div>
+    <label style="font-weight:400;display:flex;gap:8px;align-items:center;margin-top:10px"><input type="checkbox" id="rec" style="width:auto"> Recordarme en este dispositivo</label>
     <div class="msg" id="lerr" hidden></div>
     <button class="btn btn-gold" id="lgo" type="button" style="margin-top:18px;width:100%;justify-content:center">Entrar</button>
     </div>
@@ -458,8 +459,15 @@ const addH=(t,h)=>{const [a,b]=String(t).split(':').map(Number);const m=a*60+b+h
 
 /* ---------- sesión ---------- */
 let S=null;
-try{S=JSON.parse(sessionStorage.getItem('faro_adm')||'null')}catch(e){}
-function saveS(j){S={access:j.access_token,refresh:j.refresh_token,exp:Date.now()+(j.expires_in||3600)*1000};try{sessionStorage.setItem('faro_adm',JSON.stringify(S))}catch(e){}}
+/* sesión que se recuerda: sobrevive a salir de la app unos segundos; se cierra tras 1 hora sin usarla */
+const INACT=60*60*1000;
+const recOn=()=>{try{return localStorage.getItem('faro_rec')!=='0'}catch(e){return true}};
+const stor=()=>{try{return recOn()?localStorage:sessionStorage}catch(e){return sessionStorage}};
+const actGet=()=>{try{return +localStorage.getItem('faro_adm_act')||0}catch(e){return 0}};
+let actUlt=0;function actMarca(f){const n=Date.now();if(!f&&n-actUlt<15000)return;actUlt=n;try{localStorage.setItem('faro_adm_act',String(n))}catch(e){}}
+try{S=JSON.parse(localStorage.getItem('faro_adm')||sessionStorage.getItem('faro_adm')||'null')}catch(e){}
+if(S&&Date.now()-actGet()>INACT){S=null;try{localStorage.removeItem('faro_adm');sessionStorage.removeItem('faro_adm')}catch(e){}}
+function saveS(j){S={access:j.access_token,refresh:j.refresh_token,exp:Date.now()+(j.expires_in||3600)*1000};try{stor().setItem('faro_adm',JSON.stringify(S))}catch(e){}actMarca(true)}
 async function refresh(){
   if(!S)return false;
   const r=await fetch(SB.url+'/auth/v1/token?grant_type=refresh_token',{method:'POST',headers:{apikey:SB.key,'Content-Type':'application/json'},body:JSON.stringify({refresh_token:S.refresh})});
@@ -475,11 +483,12 @@ async function api(path,o){
   return r;
 }
 async function errText(r){try{const j=await r.json();return j.message||j.msg||('Error '+r.status)}catch(e){return 'Error '+r.status}}
-function logout(){S=null;try{sessionStorage.removeItem('faro_adm')}catch(e){}$('#v-app').hidden=true;$('#v-login').hidden=false;$('#out').hidden=true}
+function logout(){S=null;try{sessionStorage.removeItem('faro_adm');localStorage.removeItem('faro_adm')}catch(e){}$('#v-app').hidden=true;$('#v-login').hidden=false;$('#out').hidden=true}
 $('#out').addEventListener('click',logout);
 async function doLogin(){
   const e=$('#lerr');e.hidden=true;const b=$('#lgo');if(b.disabled)return;b.disabled=true;b.textContent='Entrando…';
   try{
+    try{localStorage.setItem('faro_rec',$('#rec').checked?'1':'0');if($('#rec').checked)localStorage.setItem('faro_adm_u',$('#em').value.trim());else localStorage.removeItem('faro_adm_u')}catch(x){}
     const r=await fetch(SB.url+'/auth/v1/token?grant_type=password',{method:'POST',headers:{apikey:SB.key,'Content-Type':'application/json'},body:JSON.stringify({email:loginEmail($('#em').value),password:$('#pw').value})});
     if(!r.ok){e.hidden=false;let m='';try{const j=await r.json();m=(j.error_description||j.msg||j.message||'')}catch(x){}
       e.textContent=/not confirmed/i.test(m)?'Ese usuario existe pero su correo no está confirmado. En Supabase > Authentication > Users, abre el usuario y confirma el correo (o créalo con “Auto Confirm User”).':
@@ -489,7 +498,11 @@ async function doLogin(){
   }catch(x){e.hidden=false;e.textContent='No hay conexión con el servidor. Abre este archivo desde tu navegador (no desde una vista previa).'}
   finally{b.disabled=false;b.textContent='Entrar'}
 }
+try{$('#rec').checked=recOn();const u=localStorage.getItem('faro_adm_u');if(u&&recOn())$('#em').value=u}catch(e){}
 $('#lgo').addEventListener('click',doLogin);
+['pointerdown','keydown','touchstart','scroll'].forEach(ev=>addEventListener(ev,()=>{if(S)actMarca()},{passive:true,capture:true}));
+function vigilaInact(){if(S&&Date.now()-actGet()>INACT){logout();const e=$('#lerr');e.hidden=false;e.textContent='Cerramos tu sesión por inactividad. Entra de nuevo.'}}
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)vigilaInact()});setInterval(vigilaInact,60000);
 $('#spw').addEventListener('change',e=>{$('#pw').type=e.target.checked?'text':'password'});
 ['em','pw'].forEach(i=>$('#'+i).addEventListener('keydown',e=>{if(e.key==='Enter')doLogin()}));
 
@@ -510,14 +523,17 @@ async function loadAll(){
 }
 
 /* ---------- seguridad en 2 pasos (TOTP de Supabase) ---------- */
-const MFA={factor:null};
+const MFA={factor:null,HORAS:5};
+const mfaKey=()=>'faro_mfa_'+((jwtDatos()||{}).uid||'');
+function mfaFresco(){try{return Date.now()-(+localStorage.getItem(mfaKey())||0)<MFA.HORAS*3600*1000}catch(e){return false}}
+function mfaMarca(){try{localStorage.setItem(mfaKey(),String(Date.now()))}catch(e){}}
 function jwtAal(){try{return JSON.parse(atob(S.access.split('.')[1].replace(/-/g,'+').replace(/_/g,'/'))).aal||'aal1'}catch(e){return 'aal1'}}
 async function mfaFactores(){
   try{const r=await api('/auth/v1/user');if(!r.ok)return[];const u=await r.json();return (u.factors||[]).filter(f=>f.factor_type==='totp')}catch(e){return[]}}
 /* true = puede pasar; false = se pidió el código */
 async function mfaOk(){
   const f=(await mfaFactores()).find(x=>x.status==='verified');
-  if(!f||jwtAal()==='aal2')return true;
+  if(!f||jwtAal()==='aal2'&&mfaFresco()||mfaFresco())return true;
   MFA.factor=f.id;$('#v-app').hidden=true;$('#v-login').hidden=false;$('#out').hidden=true;
   $('#lstep1').hidden=true;$('#mfa-box').hidden=false;$('#merr').hidden=true;$('#mfa').value='';setTimeout(()=>{try{$('#mfa').focus()}catch(e){}},50);
   return false}
@@ -527,7 +543,7 @@ async function mfaCodigo(factor,code){
   const cj=await c.json();
   const v=await api('/auth/v1/factors/'+factor+'/verify',{method:'POST',body:{challenge_id:cj.id,code:String(code).replace(/\s/g,'')}});
   if(!v.ok)throw new Error('Código incorrecto o vencido. Revisa la hora de tu teléfono e intenta con el siguiente código.');
-  saveS(await v.json())}
+  saveS(await v.json());mfaMarca()}
 async function mfaVerificar(){
   const e=$('#merr'),b=$('#mgo');e.hidden=true;if(b.disabled)return;
   const code=$('#mfa').value.replace(/\D/g,'');if(code.length!==6){e.hidden=false;e.textContent='Escribe los 6 dígitos.';return}
@@ -546,7 +562,7 @@ async function mfaCard(card){
     if(ok){
       body.append(setRow('Código en el teléfono: activado','Al entrar te pedimos el código de 6 dígitos de tu app de autenticación.',el('span',{class:'tag confirmada'},'Activo')),
         el('button',{class:'btn btn-ghost btn-sm',type:'button',style:'margin-top:10px',onclick:async()=>{
-          if(jwtAal()!=='aal2'){toast('Vuelve a entrar con tu código para poder desactivarlo');return}
+          if(jwtAal()!=='aal2'){toast('Cierro tu sesión: entra de nuevo con tu código y vuelve a pulsar Desactivar');try{localStorage.removeItem(mfaKey())}catch(e){}logout();return}
           if(!confirm('¿Desactivar la verificación en 2 pasos? Tu cuenta quedará protegida solo por contraseña.'))return;
           const r=await api('/auth/v1/factors/'+ok.id,{method:'DELETE'});
           if(!r.ok){toast(await errText(r));return}toast('Verificación en 2 pasos desactivada');pintar()}},'Desactivar'));
