@@ -1,0 +1,11 @@
+{
+  "name": "Faro Academy",
+  "short_name": "Faro",
+  "start_url": "./portal.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F6F2EA",
+  "theme_color": "#252528",
+  "icons": [{"src": "portal-icon.png", "sizes": "180x180", "type": "image/png", "purpose": "any"}]
+}

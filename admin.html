@@ -2,7 +2,13 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Faro Admin">
+<meta name="format-detection" content="telephone=no">
+
 <meta name="robots" content="noindex,nofollow">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#8B1A2A">
@@ -245,6 +251,19 @@ h1,h2,h3{font-weight:300;letter-spacing:-.005em}
 .plegend{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}.prow2{display:flex;gap:10px;align-items:flex-start}
 .usteps{margin:0;padding-left:20px;display:grid;gap:6px;color:var(--text)}
 @media (max-width:900px){.wgrid{grid-template-columns:1fr}.wcol{min-height:0}}
+
+/* ===== modo app (iPhone «Añadir a pantalla de inicio»): sin zoom, sin saltos, sin movimientos raros ===== */
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%;scroll-behavior:auto;overscroll-behavior-y:none}
+body{min-height:100vh;min-height:100dvh;-webkit-tap-highlight-color:transparent;overscroll-behavior-y:none}
+a,button,select,summary,label,[role=tab],[onclick]{touch-action:manipulation}
+button,.btn,.chip,.nav,.tab,.stab,.seg{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+@media (pointer:coarse){input,select,textarea{font-size:max(16px,1em)!important;touch-action:manipulation}}
+.top{padding-top:calc(10px + env(safe-area-inset-top));padding-left:max(clamp(14px,3vw,36px),env(safe-area-inset-left));padding-right:max(clamp(14px,3vw,36px),env(safe-area-inset-right))}
+.toast{bottom:calc(22px + env(safe-area-inset-bottom))}
+.drawer{height:100dvh;padding-bottom:env(safe-area-inset-bottom)}
+@media (hover:none),(pointer:coarse){.btn:hover,.kpi:hover{transform:none}}
+
+@media (hover:none){*{-webkit-tap-highlight-color:transparent}}
 </style>
 </head>
 <body>
@@ -505,6 +524,7 @@ try{$('#rec').checked=recOn();const u=localStorage.getItem('faro_adm_u');if(u&&r
 $('#lgo').addEventListener('click',doLogin);
 ['pointerdown','keydown','touchstart','scroll'].forEach(ev=>addEventListener(ev,()=>{if(S)actMarca()},{passive:true,capture:true}));
 function vigilaInact(){if(S&&Date.now()-actGet()>INACT){logout();const e=$('#lerr');e.hidden=false;e.textContent='Cerramos tu sesión por inactividad. Entra de nuevo.'}}
+['gesturestart','gesturechange','gestureend'].forEach(g=>document.addEventListener(g,e=>e.preventDefault()));
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)vigilaInact()});setInterval(vigilaInact,60000);
 $('#spw').addEventListener('change',e=>{$('#pw').type=e.target.checked?'text':'password'});
 ['em','pw'].forEach(i=>$('#'+i).addEventListener('keydown',e=>{if(e.key==='Enter')doLogin()}));
