@@ -2185,7 +2185,7 @@ async function ctCargar(){
   let c,s,m,r,a;
   try{[c,s,m,r,a]=await Promise.all([get('contenido','fecha.asc'),get('contenido_sesiones','fecha_ini.asc'),get('contenido_material','fecha_limite.asc'),get('recordatorios','creado.asc'),get('avisos_clientes','creado.desc')])}catch(e){c=null;s=null}
   CT.err=(puede('contenido')&&(c===null||s===null))?'tablas':null;CT.cont=c||[];CT.ses=s||[];CT.mat=m||[];CT.rec=r||[];CT.avs=(a||[]).slice(0,40);
-  if(r===null)CT.errRec=true;CT.cargando=false;CT.cargado=true;
+  CT.errRec=(r===null);CT.cargando=false;CT.cargado=true;
   if(!CT.mes)CT.mes=today().slice(0,7);if(!CT.sem)CT.sem=wkStart(today());
   try{avisosPintar()}catch(e){}if(CT.tab)ctPintar();
 }
