@@ -223,6 +223,20 @@ h1,h2,h3{font-weight:300;letter-spacing:-.005em}
 .dfl input,.dfl select,.dfl textarea{width:100%;padding:8px 10px;border-radius:10px;border:1px solid var(--line);background:var(--input);color:var(--text);font-size:.9rem}
 .dg2{display:grid;grid-template-columns:1fr 1fr;gap:10px}.dchk{display:flex;flex-wrap:wrap;gap:4px 14px;padding:8px 0;border-bottom:1px dashed var(--line)}.dchk .wchk{padding:2px 0}
 .dft{display:flex;gap:8px;padding:12px 18px;border-top:1px solid var(--line)}
+.ugrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;margin-top:14px}
+.ucard{display:grid;gap:10px;align-content:start}.ucard.off{opacity:.62}.ucard.dir{border-color:var(--oro)}
+.uhead{display:flex;gap:12px;align-items:center}
+.uav{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(135deg,var(--borgona),#5b1020);color:#fff;font:700 1rem var(--body);flex:none;box-shadow:0 6px 14px -6px rgba(0,0,0,.6)}.uav.dirav{background:linear-gradient(135deg,var(--oro),#85703C)}
+.un{display:block;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.uchips{display:flex;flex-wrap:wrap;gap:6px}.upc{display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border-radius:999px;background:var(--soft);border:1px solid var(--line);font-size:.85rem}
+.ulast{font-size:.86rem;color:var(--muted);margin:0}
+.pchk{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border:1px solid var(--line);border-radius:12px;cursor:pointer;background:var(--soft)}
+.pchk:has(input:checked){border-color:var(--oro);background:rgba(184,160,106,.16)}
+.pchk input{margin-top:3px;width:18px;height:18px;flex:none;accent-color:var(--oro)}
+.pchk b,.prow2 b{display:block;font-weight:700;font-size:.95rem}.pchk small,.prow2 small{display:block;color:var(--muted);font-size:.84rem;margin-top:2px}
+.pi{flex:none;color:var(--oro-t);margin-top:1px}.prs{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.plegend{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}.prow2{display:flex;gap:10px;align-items:flex-start}
+.usteps{margin:0;padding-left:20px;display:grid;gap:6px;color:var(--text)}
 @media (max-width:900px){.wgrid{grid-template-columns:1fr}.wcol{min-height:0}}
 </style>
 </head>
@@ -232,7 +246,7 @@ h1,h2,h3{font-weight:300;letter-spacing:-.005em}
 <main class="wrap">
   <section id="v-login" class="card login">
     <h1>Entrar</h1><p class="muted">Espacio privado de administración de Faro.</p>
-    <div class="field"><label for="em">Correo</label><input id="em" type="email" autocomplete="username"></div>
+    <div class="field"><label for="em">Correo o usuario</label><input id="em" type="text" autocomplete="username" autocapitalize="none" spellcheck="false"></div>
     <div class="field"><label for="pw">Contraseña</label><input id="pw" type="password" autocomplete="current-password"><label style="font-weight:400;display:flex;gap:8px;align-items:center;margin-top:4px"><input type="checkbox" id="spw" style="width:auto"> Mostrar contraseña</label></div>
     <div class="msg" id="lerr" hidden></div>
     <button class="btn btn-gold" id="lgo" type="button" style="margin-top:18px;width:100%;justify-content:center">Entrar</button>
@@ -262,8 +276,10 @@ h1,h2,h3{font-weight:300;letter-spacing:-.005em}
       <h4>Archivos y web</h4>
       <button class="tab" role="tab" data-t="mat" aria-selected="false"><span class="ni" data-i="folder"></span><span class="nl">Materiales</span></button>
       <button class="tab" role="tab" data-t="sit" aria-selected="false"><span class="ni" data-i="globe"></span><span class="nl">Sitio web</span></button>
+      <button class="tab" role="tab" data-t="sub" aria-selected="false"><span class="ni" data-i="upload"></span><span class="nl">Subir material</span></button>
       <h4>Ajustes</h4>
       <button class="tab" role="tab" data-t="acc" aria-selected="false"><span class="ni" data-i="lock"></span><span class="nl">Acceso y reglas</span></button>
+      <button class="tab" role="tab" data-t="usr" aria-selected="false"><span class="ni" data-i="users"></span><span class="nl">Usuarios y permisos</span></button>
       <button class="tab" role="tab" data-t="pre" aria-selected="false"><span class="ni" data-i="sliders"></span><span class="nl">Preferencias</span></button>
    </nav></aside>
    <div class="main">
@@ -345,6 +361,8 @@ h1,h2,h3{font-weight:300;letter-spacing:-.005em}
     <div id="t-rec" hidden><div id="rec-body"></div></div>
     <div id="t-avs" hidden><div id="avs-body"></div></div>
     <div id="t-pre" hidden><div id="pre-body"></div></div>
+    <div id="t-sub" hidden><div id="sub-body"></div></div>
+    <div id="t-usr" hidden><div id="usr-body"></div></div>
     <div id="t-acc" hidden>
       <div class="grid2">
         <div class="card"><h2>Código de acceso</h2><p class="muted">Es el código que piden los clientes para entrar a la agenda. Si lo cambias, el anterior deja de servir.</p>
@@ -448,6 +466,7 @@ async function api(path,o){
   let r=await go();
   if(r.status===401&&await refresh())r=await go();
   if(r.status===401){logout();throw new Error('sesion')}
+  try{equipoRastro(path,o,r)}catch(e){}
   return r;
 }
 async function errText(r){try{const j=await r.json();return j.message||j.msg||('Error '+r.status)}catch(e){return 'Error '+r.status}}
@@ -456,7 +475,7 @@ $('#out').addEventListener('click',logout);
 async function doLogin(){
   const e=$('#lerr');e.hidden=true;const b=$('#lgo');if(b.disabled)return;b.disabled=true;b.textContent='Entrando…';
   try{
-    const r=await fetch(SB.url+'/auth/v1/token?grant_type=password',{method:'POST',headers:{apikey:SB.key,'Content-Type':'application/json'},body:JSON.stringify({email:$('#em').value.trim(),password:$('#pw').value})});
+    const r=await fetch(SB.url+'/auth/v1/token?grant_type=password',{method:'POST',headers:{apikey:SB.key,'Content-Type':'application/json'},body:JSON.stringify({email:loginEmail($('#em').value),password:$('#pw').value})});
     if(!r.ok){e.hidden=false;let m='';try{const j=await r.json();m=(j.error_description||j.msg||j.message||'')}catch(x){}
       e.textContent=/not confirmed/i.test(m)?'Ese usuario existe pero su correo no está confirmado. En Supabase > Authentication > Users, abre el usuario y confirma el correo (o créalo con “Auto Confirm User”).':
         /invalid login|invalid_credentials/i.test(m)||r.status===400?'Correo o contraseña incorrectos. Si no recuerdas la contraseña o el usuario no existe, créalo o cámbiala en Supabase > Authentication > Users.':
@@ -481,10 +500,18 @@ async function loadAll(){
   D.agenda=a.ok?await a.json():[];D.bloq=b.ok?await b.json():[];D.sem=s.ok?await s.json():[];
   const cj=c.ok?await c.json():[];D.cfg={};cj.forEach(x=>D.cfg[x.clave]=x.valor);
   const w=$('#warn');
-  if(!b.ok||!s.ok||!c.ok||!cj.length){w.hidden=false;w.textContent='Faltan permisos o tablas. Corre agenda-bloqueos.sql en Supabase y confirma que entraste con el correo de administrador (reservas@farostudios.net).'}else w.hidden=true;
+  if(ME.owner&&(!b.ok||!s.ok||!c.ok||!cj.length)){w.hidden=false;w.textContent='Faltan permisos o tablas. Corre agenda-bloqueos.sql en Supabase y confirma que entraste con el correo de administrador (reservas@farostudios.net).'}else w.hidden=true;
   render();loadAc();
 }
-async function start(){$('#v-login').hidden=true;$('#v-app').hidden=false;$('#out').hidden=false;showTab('ini');if(!cy){const t=today();cy=+t.slice(0,4);cm=+t.slice(5,7)-1}await loadAll();ctCargar().catch(()=>{})}
+async function start(){
+  $('#v-login').hidden=true;$('#v-app').hidden=false;$('#out').hidden=false;
+  await identificar();
+  if(!ME.ok){logout();const e=$('#lerr');e.hidden=false;e.textContent='Esta cuenta todavía no tiene permisos en el panel (o fue desactivada). Pídele al director que te los active.';return}
+  aplicarPermisos();showTab(ME.owner?'ini':primeraPestana());
+  if(!cy){const t=today();cy=+t.slice(0,4);cm=+t.slice(5,7)-1}
+  await loadAll();if(puede('contenido'))ctCargar().catch(()=>{});
+  if(!ME.owner)equipoLatido();
+}
 
 /* ---------- calendario ---------- */
 let cy=0,cm=0,selDay='';
@@ -630,7 +657,7 @@ $('#cgo').addEventListener('click',()=>{const v=$('#cod').value.trim();if(!/^[A-
 $('#mgo').addEventListener('click',()=>{const v=parseInt($('#mar').value,10);if(!(v>=0&&v<=12)){toast('Escribe un número de 0 a 12');return}saveCfg('margen_horas',v,'Margen actualizado')});
 
 /* ---------- pestañas ---------- */
-function showTab(t){$$('.tab').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.t===t)));['ini','ast','aac','crm','red','cal','res','cot','aca','cli','mat','sit','sem','acc','pre','con','rec','avs'].forEach(x=>$('#t-'+x).hidden=x!==t);if(t==='mat')matInit();if(t==='ini')renderDash();if(['ast','aac','crm','red'].includes(t))anTab(t);if(t==='pre')renderPre();if(['con','rec','avs'].includes(t))ctTab(t);window.scrollTo({top:0})}
+function showTab(t){if(!permiteTab(t)){toast('No tienes permiso para esta sección');return}$$('.tab').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.t===t)));['ini','ast','aac','crm','red','cal','res','cot','aca','cli','mat','sit','sem','acc','pre','con','rec','avs','sub','usr'].forEach(x=>$('#t-'+x).hidden=x!==t);if(t==='mat')matInit();if(t==='ini')renderDash();if(['ast','aac','crm','red'].includes(t))anTab(t);if(t==='pre')renderPre();if(['con','rec','avs'].includes(t))ctTab(t);if(t==='usr')usrInit();if(t==='sub')renderSub();window.scrollTo({top:0})}
 $$('.tab').forEach(b=>b.addEventListener('click',()=>showTab(b.dataset.t)));
 const ESTC=['nueva','contactada','cotizada','ganada','perdida'];
 function renderCot(){
@@ -1849,7 +1876,7 @@ async function ctCargar(){
   const get=async(t,o)=>{try{const r=await api('/rest/v1/'+t+'?select=*&order='+o+'&limit=2000');if(!r.ok)throw 0;return await r.json()}catch(e){return null}};
   let c,s,m,r,a;
   try{[c,s,m,r,a]=await Promise.all([get('contenido','fecha.asc'),get('contenido_sesiones','fecha_ini.asc'),get('contenido_material','fecha_limite.asc'),get('recordatorios','creado.asc'),get('avisos_clientes','creado.desc')])}catch(e){c=null;s=null}
-  CT.err=(c===null||s===null)?'tablas':null;CT.cont=c||[];CT.ses=s||[];CT.mat=m||[];CT.rec=r||[];CT.avs=(a||[]).slice(0,40);
+  CT.err=(puede('contenido')&&(c===null||s===null))?'tablas':null;CT.cont=c||[];CT.ses=s||[];CT.mat=m||[];CT.rec=r||[];CT.avs=(a||[]).slice(0,40);
   if(r===null)CT.errRec=true;CT.cargando=false;CT.cargado=true;
   if(!CT.mes)CT.mes=today().slice(0,7);if(!CT.sem)CT.sem=wkStart(today());
   try{avisosPintar()}catch(e){}if(CT.tab)ctPintar();
@@ -2107,6 +2134,218 @@ function renderAvs(){
     el('p',{class:'sub'},'Los clientes de Studios necesitan su número: agrégalo en Clientes (campo WhatsApp).'));
   const hist=el('div',{class:'plist'});CT.avs.slice(0,8).forEach(a=>hist.append(el('div',{class:'prow'},el('span',{style:'flex:1;min-width:0'},el('b',{style:'display:block;font-weight:400'},a.destinatario),el('small',{class:'muted'},(WA_PLANT.find(x=>x[0]===a.plantilla)||[0,a.plantilla])[1]+' · '+new Date(a.creado).toLocaleString('es-GT',{timeZone:'America/Guatemala',day:'numeric',month:'short',hour:'numeric',minute:'2-digit'}))))));
   side.append(el('h3',{style:'margin-top:14px'},'Últimos avisos'),CT.avs.length?hist:el('p',{class:'muted'},'Aún no has mandado ninguno desde aquí.'));g.append(side);
+}
+
+/* ========== EQUIPO · usuarios con permisos que elige el director ========== */
+const DIRECTOR='reservas@farostudios.net';
+const ADMIN_URL=location.href.split('#')[0].split('?')[0];
+const PERMISOS=[
+  {k:'agenda',n:'Agenda y reservas',d:'Calendario, reservas y bloqueos de fechas',i:'calendar'},
+  {k:'contenido',n:'Planificación de contenido',d:'Calendario de publicaciones, grabaciones y material',i:'clipboard'},
+  {k:'clientes',n:'Clientes y cotizaciones',d:'Fichas, documentos, buzón, cotizaciones y avisos',i:'camera'},
+  {k:'academy',n:'Academy: alumnos y clases',d:'Alumnos, encargados, docentes, clases, tareas, progreso y mensajes',i:'cap'},
+  {k:'academy_accesos',n:'Crear accesos del portal',d:'Dar usuario y contraseña a alumnos, encargados, docentes y clientes',i:'key'},
+  {k:'academy_facturas',n:'Facturas y pagos de Academy',d:'Ver y registrar las facturas de las clases',i:'card'},
+  {k:'metricas',n:'Estadísticas y redes',d:'Visitas, alcance y seguimiento de redes sociales',i:'chart'},
+  {k:'subir_material',n:'Subir material (solo carga)',d:'Solo ve su enlace personal para subir archivos; no ve ni borra nada',i:'upload'}];
+const PRESETS=[['Docente',['academy']],['Fotógrafo (solo subir)',['subir_material']],['Administración',['agenda','clientes','academy','academy_facturas']],['Contenido y redes',['contenido','metricas']]];
+/* qué permiso abre cada pestaña · lo que no aparece aquí es solo del director · '*' = todos */
+const TAB_PERM={ast:'metricas',aac:'metricas',red:'metricas',crm:'clientes',con:'contenido',cal:'agenda',res:'agenda',sem:'agenda',cot:'clientes',cli:'clientes',aca:'academy',avs:'clientes',sub:'subir_material',pre:'*'};
+const PRIMERA=['sub','con','cal','res','cot','cli','aca','avs','crm','ast','aac','red','pre'];
+const ME={owner:false,ok:false,perms:new Set(),nombre:'',uid:'',email:'',fila:null};
+const puede=p=>ME.owner||ME.perms.has(p);
+function permiteTab(t){
+  if(ME.owner)return t!=='sub';
+  const p=TAB_PERM[t];return p==='*'||!!(p&&ME.perms.has(p));
+}
+/* correo e id de quien está conectado, leídos de su sesión (solo para mostrar el menú; la seguridad real la pone la base de datos) */
+function jwtDatos(){try{const p=JSON.parse(atob(S.access.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')));return p&&p.email&&p.sub?{email:String(p.email).toLowerCase(),uid:p.sub}:null}catch(e){return null}}
+async function identificar(){
+  ME.owner=false;ME.ok=false;ME.perms=new Set();ME.fila=null;ME.nombre='';
+  const j=jwtDatos();
+  if(j){ME.email=j.email;ME.uid=j.uid}
+  else{try{const r=await api('/auth/v1/user');if(r.ok){const u=await r.json();ME.email=String(u.email||'').toLowerCase();ME.uid=u.id||''}}catch(e){}}
+  if(ME.email===DIRECTOR){ME.owner=true;ME.ok=true;ME.nombre='Director';return}
+  try{
+    const r=await api('/rest/v1/admin_equipo?select=*&user_id=eq.'+encodeURIComponent(ME.uid));
+    const f=r.ok?(await r.json())[0]:null;
+    if(f&&f.activo){ME.ok=true;ME.fila=f;ME.perms=new Set(f.permisos||[]);ME.nombre=f.nombre||''}
+  }catch(e){}
+}
+function aplicarPermisos(){
+  $$('.tab').forEach(b=>{b.hidden=!permiteTab(b.dataset.t)});
+  $$('.nav h4').forEach(h=>{let n=h.nextElementSibling,alguno=false;while(n&&n.tagName==='BUTTON'){if(!n.hidden)alguno=true;n=n.nextElementSibling}h.hidden=!alguno});
+}
+const primeraPestana=()=>PRIMERA.find(permiteTab)||'pre';
+function equipoLatido(){
+  const ping=()=>api('/rest/v1/rpc/equipo_registrar',{method:'POST',body:{}}).catch(()=>{});
+  ping();setInterval(ping,120000);
+}
+/* resumen corto (≈5 palabras) de lo último que cambió esta persona */
+const ETQ_TABLA={contenido:'publicación',contenido_sesiones:'sesión de grabación',contenido_material:'material de contenido',agenda:'reserva',bloqueos:'bloqueo de agenda',bloqueos_semanales:'bloqueo semanal',reservas:'reserva',cl_clientes:'cliente',cl_documentos:'documento de cliente',cl_mensajes:'mensaje a cliente',cotizaciones:'cotización',avisos_clientes:'aviso a cliente',ac_estudiantes:'alumno',ac_encargados:'encargado',ac_docentes:'docente',ac_vinculos:'vínculo alumno–encargado',ac_clases:'clase',ac_materiales:'material de clase',ac_tareas:'tarea',ac_evaluaciones:'evaluación',ac_habilidades:'habilidad',ac_logros:'logro',ac_recomendaciones:'recomendación',ac_diplomas:'diploma',ac_mensajes:'mensaje de Academy',ac_cuentas:'acceso del portal',ac_facturas:'factura',redes_stats:'estadística de redes'};
+let rastroT=null,rastroTxt='';
+function equipoRastro(path,o,r){
+  if(ME.owner||!r.ok)return;const m=(o&&o.method)||'GET';if(m==='GET')return;
+  const t=(String(path).match(/\/rest\/v1\/([a-z_]+)/)||[])[1];if(!t||!ETQ_TABLA[t])return;
+  rastroTxt=(m==='POST'?'Creó ':m==='DELETE'?'Borró ':'Editó ')+ETQ_TABLA[t];
+  clearTimeout(rastroT);rastroT=setTimeout(()=>{api('/rest/v1/rpc/equipo_registrar',{method:'POST',body:{p_actividad:rastroTxt}}).catch(()=>{})},4000);
+}
+const loginEmail=v=>{v=String(v||'').trim();return v.includes('@')?v:v.toLowerCase()+'@acceso.farostudios.net'};
+
+/* ---------- Subir material (para quien solo carga) ---------- */
+function enlaceSeguro(u){try{const x=new URL(String(u||''));return x.protocol==='https:'?x.href:''}catch(e){return ''}}
+function renderSub(){
+  const root=$('#sub-body');if(!root)return;root.textContent='';
+  const f=ME.fila||{},url=enlaceSeguro(f.enlace_subida);
+  root.append(el('div',{class:'dh'},el('div',{},el('h1',{},'Subir material'),el('p',{class:'muted'},'Solo carga: puedes enviar tus archivos, pero no ves ni borras lo que ya está en la carpeta.'))));
+  const c=el('div',{class:'card',style:'max-width:620px;display:grid;gap:14px'});
+  if(url){
+    c.append(el('a',{class:'btn btn-gold',href:url,target:'_blank',rel:'noopener noreferrer',style:'justify-content:center;font-size:1.05rem;padding:14px'},icoEl('upload'),' Abrir mi carpeta de subida'),
+      el('ol',{class:'usteps'},el('li',{},'Toca el botón: se abre tu carpeta en OneDrive.'),el('li',{},'Arrastra tus archivos (o toca “Agregar archivos”).'),el('li',{},'Espera a que termine la barra de carga. Listo.')));
+  }else c.append(el('div',{class:'msg'},'Todavía no tienes un enlace de subida. Pídeselo al director y aparecerá aquí.'));
+  root.append(c);
+}
+
+/* ---------- Usuarios y permisos (solo director) ---------- */
+const USR={list:[],err:null,t:null};
+function usrInit(){usrPintar();usrCargar().then(usrPintar);clearInterval(USR.t);USR.t=setInterval(()=>{if($('#t-usr').hidden){clearInterval(USR.t);return}usrCargar().then(usrPintar)},30000)}
+async function usrCargar(){
+  try{const r=await api('/rest/v1/admin_equipo?select=*&order=creado.asc');if(!r.ok)throw 0;USR.list=await r.json();USR.err=null}catch(e){USR.err='tabla'}
+}
+function hace(iso){if(!iso)return 'nunca';const s=(Date.now()-new Date(iso))/1000;if(s<90)return 'ahora mismo';if(s<3600)return 'hace '+Math.round(s/60)+' min';if(s<86400)return 'hace '+Math.round(s/3600)+' h';return 'hace '+Math.round(s/86400)+' d'}
+const enLinea=f=>!!(f.activo&&f.ultimo_acceso&&Date.now()-new Date(f.ultimo_acceso)<3*60*1000);
+const chipsPerm=(lista)=>{const w=el('div',{class:'uchips'});(lista||[]).forEach(k=>{const p=PERMISOS.find(x=>x.k===k);if(p)w.append(el('span',{class:'upc'},icoEl(p.i),p.n))});if(!w.children.length)w.append(el('span',{class:'muted'},'Sin permisos todavía'));return w};
+function usrPintar(){
+  const root=$('#usr-body');if(!root)return;root.textContent='';
+  root.append(el('div',{class:'dh'},el('div',{},el('h1',{},'Usuarios y permisos'),el('p',{class:'muted'},'Tú eliges, con casillas, qué puede ver y hacer cada persona. Esta sección solo la ves tú.')),
+    el('button',{class:'btn btn-gold btn-sm',type:'button',onclick:()=>usrEditor(null)},icoEl('plus'),' Nuevo usuario')));
+  if(USR.err)root.append(el('div',{class:'msg',style:'margin:12px 0'},'Falta crear la tabla del equipo: corre sql/equipo.sql en Supabase (una sola vez) y recarga.'));
+  const g=el('div',{class:'ugrid'});
+  g.append(el('div',{class:'card ucard dir'},el('div',{class:'uhead'},el('span',{class:'uav dirav'},icoEl('star')),el('div',{style:'min-width:0;flex:1'},el('b',{class:'un'},'Tú · Director'),el('small',{class:'muted'},DIRECTOR)),el('span',{class:'tag confirmada'},'Activo ahora')),
+    el('div',{class:'uchips'},el('span',{class:'upc'},icoEl('lock'),'Control total')),el('p',{class:'ulast'},'Solo tú puedes crear usuarios, dar permisos, ver recordatorios, materiales en la nube, el sitio web y las reglas.')));
+  USR.list.forEach(f=>g.append(usrCard(f)));
+  root.append(g);
+  if(!USR.err&&!USR.list.length)root.append(el('p',{class:'muted',style:'margin-top:14px'},'Aún no has creado usuarios. Toca “Nuevo usuario”, marca lo que puede hacer y le generas su acceso.'));
+  const leg=el('div',{class:'card',style:'margin-top:18px'},el('h3',{},'Qué da cada casilla'),el('p',{class:'sub'},'Marcas solo lo necesario. Los permisos se pueden cambiar o quitar cuando quieras.'));
+  const l=el('div',{class:'plegend'});PERMISOS.forEach(p=>l.append(el('div',{class:'prow2'},el('span',{class:'pi'},icoEl(p.i)),el('span',{},el('b',{},p.n),el('small',{},p.d)))));
+  leg.append(l,el('p',{class:'ulast',style:'margin-top:10px'},'Solo director (no se pueden dar): resumen de inicio, usuarios y permisos, recordatorios, materiales en la nube, sitio web y reglas de agenda.'));
+  root.append(leg);
+}
+function usrCard(f){
+  const c=el('div',{class:'card ucard'+(f.activo?'':' off')});
+  const ini=String(f.nombre||'?').trim().split(/\s+/).map(x=>x[0]).slice(0,2).join('').toUpperCase();
+  c.append(el('div',{class:'uhead'},el('span',{class:'uav'},ini),el('div',{style:'min-width:0;flex:1'},el('b',{class:'un'},f.nombre),el('small',{class:'muted'},'@'+f.usuario+(f.etiqueta?' · '+f.etiqueta:''))),
+    el('span',{class:'tag '+(!f.activo?'vencida':enLinea(f)?'confirmada':'pendiente')},!f.activo?'Desactivado':enLinea(f)?'Activo ahora':'Desconectado')),
+    chipsPerm(f.permisos),
+    el('p',{class:'ulast'},'Última conexión: '+hace(f.ultimo_acceso)),
+    f.ultima_actividad?el('p',{class:'ulast'},'Último cambio: '+f.ultima_actividad+' · '+hace(f.ultima_actividad_en)):null,
+    el('div',{class:'acts'},
+      el('button',{class:'btn btn-gold btn-sm',type:'button',onclick:()=>usrEditor(f)},icoEl('edit'),' Permisos'),
+      el('button',{class:'btn btn-ghost btn-sm',type:'button',onclick:()=>usrVer(f)},icoEl('key'),' Ver acceso'),
+      el('button',{class:'btn btn-ghost btn-sm',type:'button',onclick:()=>usrActivo(f,!f.activo)},f.activo?'Desactivar':'Activar'),
+      el('button',{class:'btn btn-ghost btn-sm',type:'button',onclick:()=>usrQuitar(f),'aria-label':'Quitar a '+f.nombre},icoEl('trash'))));
+  return c;
+}
+async function usrActivo(f,v){
+  const r=await api('/rest/v1/admin_equipo?user_id=eq.'+f.user_id,{method:'PATCH',body:{activo:v},headers:{Prefer:'return=minimal'}});
+  if(!r.ok){toast(await errText(r));return}f.activo=v;toast(v?'Usuario activado':'Usuario desactivado');usrPintar();
+}
+async function usrQuitar(f){
+  if(!confirm('¿Quitar a '+f.nombre+'? Ya no podrá entrar al panel. Si la necesitas otra vez, creas un acceso nuevo.'))return;
+  const r=await api('/rest/v1/admin_equipo?user_id=eq.'+f.user_id,{method:'DELETE',headers:{Prefer:'return=minimal'}});
+  if(!r.ok){toast(await errText(r));return}USR.list=USR.list.filter(x=>x.user_id!==f.user_id);toast('Usuario quitado');usrPintar();
+}
+function usrVer(f){
+  const v=vaultGet()[f.user_id];
+  if(!v){alert('La contraseña de "'+f.usuario+'" no está guardada en este navegador (se creó en otro equipo o se borraron los datos del navegador). Quítalo y crea el acceso otra vez para generar una nueva.');return}
+  usrMostrar(f.nombre,v.usuario,v.clave,f.permisos,false);
+}
+function usrMsg(nombre,usuario,clave,permisos){
+  const ver=(permisos||[]).map(k=>(PERMISOS.find(p=>p.k===k)||{}).n).filter(Boolean);
+  return 'Hola '+nombre+', este es tu acceso al panel de Faro Studios:\n\nPágina: '+ADMIN_URL+'\nUsuario: '+usuario+'\nContraseña: '+clave+(ver.length?'\n\nPodrás usar: '+ver.join(', ')+'.':'');
+}
+function usrMostrar(nombre,usuario,clave,permisos,copiado){
+  const msg=usrMsg(nombre,usuario,clave,permisos),m=$('#acc-modal');m.textContent='';
+  m.append(el('div',{class:'box',style:'max-width:520px'},
+    el('h2',{style:'font-size:2rem'},'Acceso de '+nombre),
+    el('div',{class:'msg',style:'background:rgba(226,190,70,.18);border-color:var(--amar)'},(copiado?'Ya quedó copiado el mensaje. ':'')+'La contraseña queda guardada solo en este navegador para que puedas volver a verla con “Ver acceso”.'),
+    el('div',{class:'field'},el('span',{class:'lab'},'Usuario'),el('div',{class:'item',style:'font:700 1.4rem/1.2 monospace;letter-spacing:.06em;word-break:break-all'},usuario)),
+    el('div',{class:'field'},el('span',{class:'lab'},'Contraseña'),el('div',{class:'item',style:'font:700 1.4rem/1.2 monospace;letter-spacing:.06em'},clave)),
+    el('div',{class:'acts',style:'margin-top:16px'},
+      el('button',{class:'btn btn-gold',type:'button',onclick:()=>copyTxt(msg)},'Copiar mensaje para enviar'),
+      el('button',{class:'btn btn-ghost',type:'button',onclick:async ev=>{const bt=ev.target;bt.textContent='Probando…';
+        try{const r=await fetch(SB.url+'/auth/v1/token?grant_type=password',{method:'POST',headers:{apikey:SB.key,'Content-Type':'application/json'},body:JSON.stringify({email:loginEmail(usuario),password:clave})});
+          const j=await r.json().catch(()=>({}));bt.textContent=r.ok&&j.access_token?'✓ Entra bien':'✗ Falla: '+((j.error_code||j.msg||j.error_description||r.status)+'')}catch(e){bt.textContent='✗ Sin conexión'}}},'Probar entrada'),
+      el('button',{class:'btn btn-ghost',type:'button',onclick:()=>{m.hidden=true;m.textContent=''}},'Cerrar'))));
+  m.hidden=false;
+}
+async function usrCrear(v){
+  const email=loginEmail(v.usuario);
+  const r=await fetch(SB.url+'/auth/v1/signup',{method:'POST',headers:{apikey:SB.key,'Content-Type':'application/json'},body:JSON.stringify({email,password:v.clave})});
+  const j=await r.json().catch(()=>({}));
+  if(!r.ok){const t=j.msg||j.error_description||j.message||'';throw new Error(/already|registered|exists/i.test(t)?'Ese usuario ya existe. Elige otro nombre de usuario.':(t||'No se pudo crear el acceso ('+r.status+')'))}
+  const uid=(j.user&&j.user.id)||j.id;if(!uid)throw new Error('Supabase no devolvió el usuario. Revisa Authentication > Providers > Email.');
+  if(!j.access_token)alert('Se creó el usuario, pero Supabase pide confirmar el correo y esa persona NO podrá entrar.\n\nEn Supabase: Authentication > Sign In / Providers > Email > desactiva "Confirm email". Luego quita este usuario y créalo otra vez.');
+  const x=await api('/rest/v1/admin_equipo',{method:'POST',body:{user_id:uid,usuario:v.usuario,nombre:v.nombre,etiqueta:v.etiqueta||null,permisos:v.permisos,enlace_subida:v.enlace||null},headers:{Prefer:'return=minimal'}});
+  if(!x.ok){const t=await errText(x);throw new Error(/duplicate|unique/i.test(t)?'Ese usuario ya está en uso. Elige otro nombre de usuario.':t+' (¿corriste sql/equipo.sql?)')}
+  vaultSet(uid,{usuario:v.usuario,clave:v.clave,email,rol:'equipo',nombre:v.nombre,fecha:new Date().toISOString()});
+}
+function usrEditor(f){
+  const nuevo=!f;f=f||{nombre:'',usuario:'',etiqueta:'',permisos:[],enlace_subida:''};
+  const ya=document.querySelector('.drawer-bg');if(ya)ya.remove();
+  const bg=el('div',{class:'drawer-bg'}),dr=el('div',{class:'drawer',role:'dialog','aria-label':'Usuario y permisos'});bg.append(dr);
+  const k=e=>{if(e.key==='Escape')cerrar()};const cerrar=()=>{bg.remove();document.removeEventListener('keydown',k)};
+  document.addEventListener('keydown',k);bg.addEventListener('click',e=>{if(e.target===bg)cerrar()});
+  const campo=(id,l,v,extra)=>{const i=el('input',Object.assign({id,type:'text',autocomplete:'off',autocapitalize:'none',spellcheck:'false'},extra||{}));i.value=v||'';return el('label',{class:'dfl'},l,i)};
+  dr.append(el('div',{class:'dhd'},el('h3',{},nuevo?'Nuevo usuario':'Permisos de '+f.nombre),el('button',{class:'btn btn-ghost btn-sm',type:'button',onclick:cerrar,'aria-label':'Cerrar'},'✕')));
+  const form=el('div',{class:'dbody'});dr.append(form);
+  const err=el('div',{class:'msg',style:'display:none;background:rgba(160,30,30,.12)'});
+  form.append(campo('u-n','Nombre de la persona',f.nombre,{maxlength:'80'}));
+  if(nuevo){
+    form.append(el('div',{class:'dg2'},campo('u-u','Usuario (para entrar)','',{maxlength:'60'}),campo('u-c','Contraseña',grp(3),{maxlength:'60'})),
+      el('button',{class:'btn btn-ghost btn-sm',type:'button',style:'justify-self:start',onclick:()=>{$('#u-c').value=grp(3)}},'Sugerir otra contraseña'));
+  }else form.append(el('p',{class:'muted',style:'font-size:.85rem'},'Usuario: @'+f.usuario));
+  form.append(campo('u-e','Rol (solo para mostrar, opcional)',f.etiqueta,{maxlength:'40',list:'u-roles'}),
+    el('datalist',{id:'u-roles'},...['Docente','Fotógrafo','Administración','Colaborador'].map(x=>el('option',{value:x}))));
+  const marcas=[];
+  const rowsP=el('div',{style:'display:grid;gap:8px'});
+  PERMISOS.forEach(p=>{const cb=el('input',{type:'checkbox'});cb.checked=(f.permisos||[]).includes(p.k);cb.dataset.k=p.k;marcas.push(cb);
+    cb.addEventListener('change',visEnlace);
+    rowsP.append(el('label',{class:'pchk'},cb,el('span',{class:'pi'},icoEl(p.i)),el('span',{},el('b',{},p.n),el('small',{},p.d))))});
+  const poner=ks=>{marcas.forEach(c=>{c.checked=ks.includes(c.dataset.k)});visEnlace()};
+  const pres=el('div',{class:'prs'},el('span',{class:'muted',style:'font-size:.85rem'},'Marcar rápido:'),...PRESETS.map(([n,ks])=>el('button',{class:'btn btn-ghost btn-sm',type:'button',onclick:()=>poner(ks)},n)),
+    el('button',{class:'btn btn-ghost btn-sm',type:'button',onclick:()=>poner(PERMISOS.map(p=>p.k))},'Todo'),el('button',{class:'btn btn-ghost btn-sm',type:'button',onclick:()=>poner([])},'Nada'));
+  const enl=campo('u-l','Enlace personal de OneDrive (“Solicitar archivos”)',f.enlace_subida,{type:'url',placeholder:'https://1drv.ms/…'});
+  function visEnlace(){enl.style.display=marcas.find(c=>c.dataset.k==='subir_material').checked?'':'none'}
+  form.append(el('h4',{style:'margin:8px 0 0;font:700 .85rem var(--body);letter-spacing:.1em;text-transform:uppercase;color:var(--muted)'},'¿Qué puede hacer?'),pres,rowsP,enl,
+    el('p',{class:'muted',style:'font-size:.85rem'},'Nadie con permisos puede cambiar los permisos de otras personas: eso solo lo haces tú.'),err);visEnlace();
+  const mostrar=t=>{err.textContent=t;err.style.display=''};
+  const guardar=el('button',{class:'btn btn-gold',type:'button',onclick:async()=>{
+    const nombre=$('#u-n').value.trim(),etiqueta=$('#u-e').value.trim(),permisos=marcas.filter(c=>c.checked).map(c=>c.dataset.k);
+    let enlace=$('#u-l').value.trim();
+    if(!nombre){mostrar('Escribe el nombre de la persona.');return}
+    if(enlace&&!enlaceSeguro(enlace)){mostrar('El enlace de OneDrive debe empezar con https://');return}
+    if(!permisos.includes('subir_material'))enlace='';
+    guardar.disabled=true;const txt=guardar.textContent;guardar.textContent='Guardando…';
+    try{
+      if(nuevo){
+        const usuario=$('#u-u').value.trim().toLowerCase(),clave=$('#u-c').value;
+        if(!/^[a-z0-9][a-z0-9._-]{2,59}$/.test(usuario))throw new Error('El usuario solo puede tener letras minúsculas sin acento, números, punto, guion o guion bajo (mínimo 3).');
+        if(clave.length<6)throw new Error('La contraseña necesita al menos 6 caracteres.');
+        if(USR.list.some(x=>x.usuario.toLowerCase()===usuario))throw new Error('Ya hay un usuario con ese nombre.');
+        await usrCrear({nombre,usuario,clave,etiqueta,permisos,enlace});
+        cerrar();await usrCargar();usrPintar();
+        let copiado=false;try{await navigator.clipboard.writeText(usrMsg(nombre,usuario,clave,permisos));copiado=true}catch(e){}
+        usrMostrar(nombre,usuario,clave,permisos,copiado);
+      }else{
+        const r=await api('/rest/v1/admin_equipo?user_id=eq.'+f.user_id,{method:'PATCH',body:{nombre,etiqueta:etiqueta||null,permisos,enlace_subida:enlace||null},headers:{Prefer:'return=minimal'}});
+        if(!r.ok)throw new Error(await errText(r));
+        Object.assign(f,{nombre,etiqueta:etiqueta||null,permisos,enlace_subida:enlace||null});cerrar();usrPintar();toast('Permisos guardados');
+      }
+    }catch(e){mostrar(e.message||'No se pudo guardar');guardar.disabled=false;guardar.textContent=txt}
+  }},nuevo?'Crear usuario':'Guardar permisos');
+  dr.append(el('div',{class:'dft'},guardar,el('button',{class:'btn btn-ghost',type:'button',onclick:cerrar},'Cancelar')));
+  document.body.append(bg);setTimeout(()=>{const x=$('#u-n');if(x)x.focus()},50);
 }
 
 if(S){start().catch(()=>logout())}
