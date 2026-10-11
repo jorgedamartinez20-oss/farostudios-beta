@@ -1425,7 +1425,7 @@ dialog.apl.pal-academy{--ap-acc:#5C6A30;--ap-acc2:#B8A06A}
 .ftabs{right:0;left:auto;top:34%;bottom:auto;flex-direction:column;align-items:flex-end;gap:10px;max-width:100vw}
 .ftab{transform:none;transform-origin:right center}
 .ftab:hover,.ftab:focus-visible{transform:translateX(-6px) scale(1.03);padding-right:18px}
-body:has(.wa-wrap.open) .ftabs{opacity:0;pointer-events:none;transition:opacity .25s}
+@media (max-height:720px){body:has(.wa-wrap.open) .ftabs{top:10%}}
 @media (max-width:760px){
   .ftabs{right:0;left:auto;top:30%;bottom:auto;flex-direction:column;align-items:flex-end;gap:8px}
   .ftab{flex:none;justify-content:flex-start;text-align:left;border-radius:14px 0 0 14px;padding:9px 12px 9px 10px;font-size:.72rem;gap:7px;transform:none}
@@ -1566,6 +1566,23 @@ header.nav.sc::before{opacity:1;-webkit-backdrop-filter:none;backdrop-filter:non
 
 .ph{aspect-ratio:auto;min-height:0;height:clamp(320px,36vw,540px)}
 @media (max-width:520px){.ph{height:300px}}
+
+
+/* ===== v15 · píldora tipo interruptor: una perilla que se desliza entre Studios y Academy ===== */
+.sw,header.nav .sw,header.nav[data-side="academy"] .sw{border:0!important;padding:3px;background:rgba(0,0,0,.3)!important;box-shadow:inset 0 2px 6px rgba(0,0,0,.5),0 1px 0 rgba(255,255,255,.12)!important;transition:background .5s ease!important}
+.sw[data-on="academy"],header.nav[data-side="academy"] .sw[data-on="academy"]{background:linear-gradient(180deg,#4F5A2A,#6E7A3D)!important;box-shadow:inset 0 2px 6px rgba(0,0,0,.4),0 1px 0 rgba(255,255,255,.5)!important}
+.sw::after{display:none!important}
+.sw::before,.sw[data-on]::before,.sw[data-on]:has(button:hover)::before,header.nav[data-side] .sw::before,header.nav[data-side] .sw:has(button:hover)::before{content:"";position:absolute;top:3px;bottom:3px;left:3px;width:calc(50% - 3px);border-radius:999px;opacity:1!important;background:linear-gradient(180deg,#FFFFFF,#E9E2D3)!important;box-shadow:0 5px 10px -2px rgba(0,0,0,.45),inset 0 -2px 3px rgba(0,0,0,.08),inset 0 1px 0 #fff!important;transform:none!important;transition:transform .5s cubic-bezier(.65,0,.25,1)!important}
+.sw[data-on="academy"]::before,.sw[data-on="academy"]:has(button:hover)::before,header.nav[data-side] .sw[data-on="academy"]::before,header.nav[data-side] .sw[data-on="academy"]:has(button:hover)::before{transform:translateX(100%)!important}
+.sw button,header.nav .sw button,header.nav[data-side="academy"] .sw button{background:none!important;box-shadow:none!important;color:rgba(245,242,238,.92)!important;text-shadow:none;transform:none!important;transition:color .35s!important}
+.sw button:hover{color:#fff!important;text-shadow:0 0 12px rgba(255,255,255,.7)}
+.sw button[data-side="studios"][aria-selected="true"],header.nav .sw button[data-side="studios"][aria-selected="true"]{color:#8B1A2A!important;text-shadow:none}
+.sw button[data-side="academy"][aria-selected="true"],header.nav .sw button[data-side="academy"][aria-selected="true"]{color:#4F5A2A!important;text-shadow:none}
+
+
+/* ===== v15 · libros: al pasar el mouse se asoman las hojas de lado ===== */
+.bkc-cv{transform-origin:left center;transition:transform .55s var(--ease),box-shadow .55s var(--ease)}
+.bkc:hover .bkc-cv,.bkc:focus-visible .bkc-cv{transform:rotateY(-16deg) translateY(-8px);box-shadow:-6px 0 0 rgba(0,0,0,.28) inset,4px 1px 0 -1px #F6F1E6,7px 2px 0 -1px #CFC6B2,10px 3px 0 -1px #F6F1E6,13px 4px 0 -1px #CFC6B2,16px 5px 0 -1px #F6F1E6,19px 6px 0 -1px #CFC6B2,0 34px 38px -14px rgba(0,0,0,.9)}
 
 </style>
 </head>
