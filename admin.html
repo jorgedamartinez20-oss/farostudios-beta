@@ -279,6 +279,28 @@ button,.btn,.chip,.nav,.tab,.stab,.seg{-webkit-user-select:none;user-select:none
 .acs[aria-pressed="true"] .av{background:var(--pizarra);color:var(--oro);border-color:var(--pizarra)}
 .acs.off{opacity:.55}
 @media (max-width:520px){.acg{grid-template-columns:1fr 1fr}.acgc{flex-direction:column;align-items:flex-start;gap:8px;padding:12px}.acgc small{display:none}}
+.sg{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:16px}
+.sgc{display:flex;flex-direction:column;align-items:flex-start;gap:4px;text-align:left;padding:12px;border-radius:16px;border:1px solid var(--line);background:var(--surface);cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,.08);transition:box-shadow .2s,border-color .2s}
+.sgc .gi{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:var(--soft);color:var(--oro-t);margin-bottom:4px}
+.sgc .gi .sv{width:21px;height:21px}
+.sgc b{font-weight:700;font-size:.95rem}
+.sgc small{color:var(--muted);font-size:.78rem}
+.sgbar{display:block;width:100%;height:5px;border-radius:3px;background:var(--soft);overflow:hidden;margin-top:4px}
+.sgbar i{display:block;height:100%;border-radius:3px;background:linear-gradient(90deg,#CBB583,#B8A06A)}
+.sgc[aria-pressed="true"]{border-color:var(--oro);background:linear-gradient(180deg,rgba(184,160,106,.2),var(--surface));box-shadow:0 8px 20px rgba(0,0,0,.16)}
+.sgc[aria-pressed="true"] .gi{background:linear-gradient(180deg,#CBB583,#B8A06A 55%,#A58E5A);color:var(--pizarra);box-shadow:0 3px 8px rgba(0,0,0,.2)}
+.sgp h2{margin-bottom:12px}
+.sgt{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px}
+.st{display:flex;flex-direction:column;gap:6px;padding:10px;border-radius:14px;border:1px solid var(--line);background:var(--soft);box-shadow:0 3px 8px rgba(0,0,0,.08)}
+.st.on{border-color:rgba(184,160,106,.7)}
+.st b{font-weight:700;font-size:.88rem;line-height:1.25}
+.stp{height:110px;border-radius:10px;background:var(--surface);border:1px dashed var(--line);display:grid;place-items:center;overflow:hidden;color:var(--oro-t)}
+.stp img{width:100%;height:100%;object-fit:cover}
+.stp .sv{width:34px;height:34px;stroke-width:1.4}
+.stg{font-size:.76rem;color:var(--muted)}
+.st.on .stg{color:var(--oro-t);font-weight:700}
+.sgf{display:grid;gap:4px}
+.sf label{font-weight:700;font-size:.92rem}
 /* documentos propios (R2 privado) */
 .dc-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:16px;margin-top:6px}
 .dc{display:flex;flex-direction:column;gap:12px;box-shadow:0 10px 26px rgba(0,0,0,.12),0 1px 3px rgba(0,0,0,.12)}
@@ -437,7 +459,7 @@ button,.btn,.chip,.nav,.tab,.stab,.seg{-webkit-user-select:none;user-select:none
 
     <div id="t-sit" hidden>
       <div class="msg" id="sit-warn" hidden style="margin-bottom:14px">Faltan las tablas de configuración. En Supabase abre SQL Editor, New query, pega portal-faro.sql y dale Run.</div>
-      <div class="card" style="margin-bottom:18px;display:flex;gap:16px;align-items:center;justify-content:space-between;flex-wrap:wrap;position:sticky;top:8px;z-index:5"><div><h2>Configuración del sitio</h2><p class="muted">Cambia fotos, audios, PDFs y textos de farostudios.net sin tocar código. Lo que dejes vacío muestra el contenido de ejemplo. Los cambios se ven al recargar la página.</p></div><button class="btn btn-gold" id="sit-save" type="button">Guardar todos los textos</button></div>
+      <div class="card" style="margin-bottom:18px;display:flex;gap:16px;align-items:center;justify-content:space-between;flex-wrap:wrap"><div><h2>Configuración del sitio</h2><p class="muted">Cambia fotos, audios, PDFs y textos de farostudios.net sin tocar código. Lo que dejes vacío muestra el contenido de ejemplo. Los cambios se ven al recargar la página.</p></div><button class="btn btn-gold" id="sit-save" type="button">Guardar textos</button></div>
       <div id="sit-body"></div>
     </div>
 
@@ -1404,37 +1426,46 @@ const SITIO=[
  {g:'Academy · canciones de Spotify por instrumento',items:INST.map(i=>({k:'songs.'+i[0],l:i[1]+' · enlace insertar de Spotify',t:'text',ph:'https://open.spotify.com/embed/track/…'}))}
 ];
 function sitioVal(k){return AC.cfg[k]||''}
+let SIT_SEL=0;
+const SITIO_META={'Contacto y redes':['Contacto y redes','mail'],'Textos del sitio':['Textos','edit'],'Fotos de Studios':['Fotos Studios','camera'],'Portafolio · 14 tablones':['Portafolio','image'],'Producciones musicales · portadas y audios':['Producciones','music'],'Recursos gratis (PDF)':['Recursos gratis','pdf'],'Catálogo en libro':['Catálogo','book'],'Academy · fotos':['Fotos Academy','cap'],'Academy · canciones de Spotify por instrumento':['Spotify','link']};
+const sitCambios=()=>$$('.sit-txt').some(i=>i.value.trim()!==(i.dataset.orig||''));
 function renderSitio(){
-  const box=$('#sit-body');if(!box)return;const open=new Set($$('#sit-body details[open]').map(d=>d.dataset.g));box.textContent='';
+  const box=$('#sit-body');if(!box)return;box.textContent='';
   $('#sit-warn').hidden=AC.ok;
-  SITIO.forEach(sec=>{
-    const d=el('details',{class:'card','data-g':sec.g,style:'margin-bottom:14px;text-align:left'});if(open.has(sec.g))d.open=true;
-    const n=sec.items.filter(i=>sitioVal(i.k)).length;
-    d.append(el('summary',{style:'cursor:pointer;font:400 1.6rem/1.2 var(--display);letter-spacing:.06em'},sec.g+'  ',el('small',{class:'muted',style:'font:400 .95rem var(--body);letter-spacing:0'},n+' de '+sec.items.length+' llenos')));
-    sec.items.forEach(it=>d.append(sitioRow(it,sec.dest)));box.append(d)});
+  const sec0=SITIO[SIT_SEL]||SITIO[0];
+  const grid=el('div',{class:'sg'});
+  SITIO.forEach((sec,idx)=>{const [t,i]=SITIO_META[sec.g]||[sec.g,'file'],n=sec.items.filter(x=>sitioVal(x.k)).length,tot=sec.items.length;
+    grid.append(el('button',{type:'button',class:'sgc','aria-pressed':String(sec===sec0),onclick:()=>{if(sec===sec0)return;if(sitCambios()&&!confirm('Tienes textos sin guardar en esta sección. ¿Descartarlos?'))return;SIT_SEL=idx;renderSitio()}},
+      el('span',{class:'gi'},icoEl(i)),el('b',{},t),el('small',{},n+' de '+tot+' llenos'),el('span',{class:'sgbar'},el('i',{style:'width:'+Math.round(100*n/tot)+'%'})))) });
+  box.append(grid);
+  const card=el('div',{class:'card sgp'},el('h2',{},sec0.g));
+  const tiles=el('div',{class:'sgt'}),fields=el('div',{class:'sgf'});
+  sec0.items.forEach(it=>(['img','audio','pdf'].includes(it.t)?tiles:fields).append(sitioRow(it,sec0.dest)));
+  if(tiles.children.length)card.append(tiles);
+  if(fields.children.length)card.append(fields);
+  box.append(card);
 }
 function sitioRow(it,dest){
-  const v=sitioVal(it.k),row=el('div',{class:'item'},el('b',{},it.l),el('small',{},it.k));
+  const v=sitioVal(it.k);
   if(['img','audio','pdf'].includes(it.t)){
-    if(v){
-      if(it.t==='img')row.append(el('img',{src:v,alt:'',style:'height:84px;border-radius:6px;margin-top:8px;display:block'}));
-      else row.append(el('a',{href:v,target:'_blank',rel:'noopener',style:'display:block;margin-top:8px;word-break:break-all'},'Ver archivo actual'));
-    }
-    const fi=el('input',{type:'file',accept:it.t==='img'?'image/*':it.t==='audio'?'audio/*':'application/pdf',style:'margin-top:10px'});
+    const fi=el('input',{type:'file',accept:it.t==='img'?'image/*':it.t==='audio'?'audio/*':'application/pdf',style:'display:none'});
     fi.addEventListener('change',async()=>{const f=fi.files[0];if(!f)return;
       try{toast('Subiendo…');let u;
         if(FILES&&dest){u=await matSubirPublico(it,dest,f)}   /* R2: carpeta pública del landing */
         else{const p=await upTo('sitio',it.k.replace(/[^\w]+/g,'_')+'/'+Date.now()+'-'+safeName(f.name),f,25);u=SB.url+'/storage/v1/object/public/sitio/'+p}
         await sitioSet(it.k,u);toast('Guardado');await loadAc()}catch(e){toast(e.message||'No se pudo subir')}});
-    row.append(fi);
-    if(v)row.append(el('div',{class:'acts'},el('button',{class:'btn btn-red btn-sm',type:'button',onclick:()=>sitioDel(it.k)},'Quitar (vuelve al ejemplo)')));
-  }else{
-    const inp=it.t==='area'?el('textarea',{rows:'3',maxlength:'700'}):el('input',{type:'text',maxlength:'400',placeholder:it.ph||''});
-    inp.value=v;inp.dataset.k=it.k;inp.dataset.orig=v;inp.className='sit-txt';inp.style.marginTop='8px';row.append(inp);
-    row.append(el('div',{class:'acts'},el('button',{class:'btn btn-gold btn-sm',type:'button',onclick:async()=>{await sitioTxt([inp])}},'Guardar'),
-      v?el('button',{class:'btn btn-red btn-sm',type:'button',onclick:()=>sitioDel(it.k)},'Quitar'):null));
+    const prev=el('div',{class:'stp'},v&&it.t==='img'?el('img',{src:v,alt:''}):icoEl(it.t==='img'?'image':it.t==='audio'?'music':'pdf'));
+    if(v&&it.t!=='img'){prev.style.cursor='pointer';prev.addEventListener('click',()=>window.open(v,'_blank','noopener'))}
+    return el('div',{class:'st'+(v?' on':''),title:it.k},prev,el('b',{},it.l),
+      el('span',{class:'stg'},v?'✓ Cargado':'Vacío · muestra el ejemplo'),
+      el('div',{class:'acts'},el('button',{class:'btn btn-gold btn-sm',type:'button',onclick:()=>fi.click()},icoEl('upload'),v?' Cambiar':' Subir'),
+        v?el('button',{class:'btn btn-red btn-sm',type:'button','aria-label':'Quitar (vuelve al ejemplo)',title:'Quitar (vuelve al ejemplo)',onclick:()=>sitioDel(it.k)},icoEl('trash')):null),fi);
   }
-  return row;
+  const inp=it.t==='area'?el('textarea',{rows:'3',maxlength:'700'}):el('input',{type:'text',maxlength:'400',placeholder:it.ph||''});
+  inp.value=v;inp.dataset.k=it.k;inp.dataset.orig=v;inp.className='sit-txt';
+  return el('div',{class:'field sf',title:it.k},el('label',{},it.l),inp,
+    el('div',{class:'acts'},el('button',{class:'btn btn-gold btn-sm',type:'button',onclick:async()=>{await sitioTxt([inp])}},icoEl('check'),' Guardar'),
+      v?el('button',{class:'btn btn-red btn-sm',type:'button',onclick:()=>sitioDel(it.k)},icoEl('trash'),' Quitar'):null));
 }
 async function sitioSet(k,v){const r=await api('/rest/v1/sitio_config?on_conflict=clave',{method:'POST',body:{clave:k,valor:v,actualizado:new Date().toISOString()},headers:{Prefer:'resolution=merge-duplicates,return=minimal'}});if(!r.ok)throw new Error(await errText(r))}
 async function sitioDel(k){if(!confirm('¿Quitar este valor? La página vuelve a mostrar el contenido de ejemplo.'))return;const r=await api('/rest/v1/sitio_config?clave=eq.'+encodeURIComponent(k),{method:'DELETE',headers:{Prefer:'return=minimal'}});if(!r.ok){toast(await errText(r));return}toast('Quitado');await loadAc()}
