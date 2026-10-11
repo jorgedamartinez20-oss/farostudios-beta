@@ -823,7 +823,8 @@ $('#sit-save').addEventListener('click',()=>sitioTxt($$('.sit-txt')));
    Datos (quién es quién) = Supabase. Archivos = R2, a través del servicio "faro-archivos" (carpeta worker/).
    La estructura de carpetas se define una sola vez en ese servicio y se lee desde aquí. */
 const FILES_LS='faro_files_api';
-let FILES=(()=>{try{return(localStorage.getItem(FILES_LS)||'').replace(/\/+$/,'')}catch(e){return''}})();
+const FILES_DEFECTO='https://faro-archivos.jorgedamartinez20.workers.dev'; // dirección pública del servicio; lo privado exige sesión de administrador
+let FILES=(()=>{try{return(localStorage.getItem(FILES_LS)||FILES_DEFECTO).replace(/\/+$/,'')}catch(e){return FILES_DEFECTO}})();
 const MAT={destinos:[],umbral:40*1024*1024};
 const MAT_PARTE=20*1024*1024;
 const matSlug=t=>String(t||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,60);
