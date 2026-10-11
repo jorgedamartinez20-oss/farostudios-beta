@@ -430,6 +430,7 @@ button,.btn,.chip,.nav,.tab,.stab,.seg{-webkit-user-select:none;user-select:none
 /* app instalada: encabezado más alto, el logo y los botones quedan debajo de la franja que iOS difumina */
 html.is-app{--top-extra:30px}
 html.is-app .top{padding-top:calc(12px + var(--top-extra) + env(safe-area-inset-top))}
+html.hand #login{visibility:hidden}#hand{display:none;position:fixed;inset:0;z-index:999;place-items:center;background:var(--paper,#F6F2EA);background-color:#F6F2EA;text-align:center;font:900 1.1rem var(--body,Lato,sans-serif);color:#252528}html.hand #hand{display:grid}#hand div{display:grid;gap:14px;justify-items:center}#hand .iso{width:34px;height:66px;background:#252528;-webkit-mask:var(--iso) center/contain no-repeat;mask:var(--iso) center/contain no-repeat;animation:hpulse 1.2s ease-in-out infinite}@keyframes hpulse{50%{opacity:.35;transform:scale(.92)}}
 </style>
 <script>if(navigator.standalone||(window.matchMedia&&matchMedia("(display-mode:standalone)").matches))document.documentElement.classList.add("is-app")</script>
 </head>
@@ -1072,6 +1073,7 @@ document.addEventListener('click',async e=>{const kb=e.target.closest('[data-kid
 
 /* ---------- pintar ---------- */
 function render(){
+  if(S.rol)document.documentElement.classList.remove('hand');
   clearInterval(S.timer);window.FaroTools&&FaroTools.stop();pracStop();plStop();
   { const f=$('#wafab'); if(f&&S.rol)f.hidden=true }
   $('#login').hidden=!!S.rol;$('.app').style.display=S.rol?'':'none';$('#out').hidden=!S.rol;
@@ -1085,6 +1087,7 @@ function render(){
 /* ---------- ingreso ---------- */
 const TXT={do:['Ingreso de docentes','Escribe el usuario y la contraseña que te dio Faro Academy para subir material.'],al:['Ingreso estudiantes','Escribe el usuario y la contraseña que te dio Faro Academy.'],pa:['Ingreso de encargados','Escribe el usuario y la contraseña que te dio Faro Academy.'],cl:['Tu espacio de cliente','Escribe tu correo y el código que te dimos para ver tu galería, contrato y entregas.']};
 function loginUI(msg){
+  if(msg)document.documentElement.classList.remove('hand');
   const t=S.tab,cl=t==='cl';
   $('#login').innerHTML='<div class="lg-card"><div class="mascot"><span class="iso"></span></div>'
    +(cl||S.only==='do'?'':'<div class="chips" role="tablist" aria-label="Tipo de acceso" style="justify-content:center">'+[['al','Estudiante'],['pa','Encargado'],['do','Docente']].map(x=>'<button class="chip" type="button" role="tab" data-t="'+x[0]+'" aria-pressed="'+(t===x[0])+'">'+x[1]+'</button>').join('')+'</div>')
@@ -1141,6 +1144,7 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden)vigilaInac
 (function(){const q=new URLSearchParams(location.search).get('r');if(['al','pa','do','cl'].includes(q))S.tab=q;
   if(q==='do')S.only='do';
   let h=null;try{h=JSON.parse(sessionStorage.getItem('faro_handoff')||'null');sessionStorage.removeItem('faro_handoff')}catch(e){}
+  if(h&&h.u&&h.p){document.documentElement.classList.add('hand');var hd=document.createElement('div');hd.id='hand';hd.innerHTML='<div><span class="iso"></span><b>Entrando a tu portal…</b></div>';document.body.appendChild(hd);setTimeout(()=>document.documentElement.classList.remove('hand'),9000)}
   if(SES&&SES.access)iniciar();else{render();
     try{if(h&&h.t===S.tab&&h.u&&h.p&&$('#lu')&&$('#lp')){$('#lu').value=h.u;$('#lp').value=h.p;$('#lf').requestSubmit?$('#lf').requestSubmit():$('#lf').dispatchEvent(new Event('submit',{cancelable:true}))}}catch(e){}}})();
 

@@ -1184,15 +1184,11 @@ function acPedir(rol,nombre,usuarioSug,claveSug,fijo){
    docente  prof-nombre-apellido.faroacademy;  encargado  fam-nombre-alumno.faroacademy.  Si ya existe, agrega un número. */
 const INSTR_USR={acustica:'guitarra-acustica',clasica:'guitarra-clasica',electrica:'guitarra-electrica',canto:'canto',bajo:'bajo',bateria:'bateria',piano:'piano',ukelele:'ukelele',produccion:'produccion'};
 function acUserSug(rol,ent){
-  const pal=t=>String(t||'').trim().split(/\s+/).filter(Boolean),sl=t=>String(t||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'').slice(0,14);
-  let partes;
-  if(rol==='alumno'){
-    const nom=sl(pal(ent.nombre)[0]),ali=sl(ent.apodo),mat=ent.area==='ingles'?'ingles':(INSTR_USR[(ent.instrumentos||[])[0]]||'musica');
-    partes=[nom,ali&&ali!==nom?ali:'',mat];
-  }else if(rol==='docente'){const w=pal(ent.nombre);partes=['prof',sl(w[0]),sl(w[1]||'')]}
-  else{const v=(AC.list.vin||[]).find(x=>x.encargado_id===ent.id),a=v&&(AC.list.est||[]).find(x=>x.id===v.estudiante_id);partes=['fam',sl(pal(ent.nombre)[0]),a?sl(a.apodo||pal(a.nombre)[0]):'']}
-  const base=partes.filter(Boolean).join('-')+'.faroacademy',usados=new Set((AC.list.acc||[]).map(c=>String(c.usuario||'').toLowerCase()));
-  let u=base,n=2;while(usados.has(u)){u=base.replace(/\.faroacademy$/,'')+'-'+n+'.faroacademy';n++}
+  /* usuario corto y fácil de copiar: nombre + código de 3 caracteres (jose-h4s, doc-ana-k7m, enc-juan-x2p) */
+  const pal=t=>String(t||'').trim().split(/\s+/).filter(Boolean),sl=t=>String(t||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'').slice(0,10);
+  const nom=sl(pal(ent.nombre)[0])||'usuario',pre=rol==='docente'?'doc-':rol==='encargado'?'enc-':'';
+  const usados=new Set((AC.list.acc||[]).map(c=>String(c.usuario||'').toLowerCase()));
+  let u;do{u=pre+nom+'-'+rnd(3).toLowerCase()}while(usados.has(u));
   return u}
 async function acGenerar(rol,ent){
   const fk=rol==='alumno'?'estudiante_id':rol==='encargado'?'encargado_id':rol==='docente'?'docente_id':'cliente_id';
@@ -1235,12 +1231,13 @@ function acMostrar(rol,nombre,ent,usuario,clave,email,visto,copiado){
     el('div',{class:'acts',style:'margin-top:16px'},
       el('button',{class:'btn btn-gold',type:'button',onclick:()=>copyTxt(msg)},'Copiar mensaje para enviar'),
       tel?el('a',{class:'btn btn-ghost',target:'_blank',rel:'noopener',href:'https://wa.me/'+tel+'?text='+encodeURIComponent(msg)},'Abrir WhatsApp'):null,
-      el('button',{class:'btn btn-ghost',type:'button',onclick:async ev=>{const bt=ev.target;bt.textContent='Probando…';
+      el('button',{class:'btn btn-ghost',type:'button',id:'acc-probar',onclick:async ev=>{const bt=ev.currentTarget||ev.target;bt.textContent='Probando…';
         try{const r=await fetch(SB.url+'/auth/v1/token?grant_type=password',{method:'POST',headers:{apikey:SB.key,'Content-Type':'application/json'},body:JSON.stringify({email:email||usuario.toLowerCase()+'@acceso.farostudios.net',password:clave})});
           const j=await r.json().catch(()=>({}));
           bt.textContent=r.ok&&j.access_token?'✓ Entra bien':'✗ Falla: '+((j.error_code||j.msg||j.error_description||r.status)+'')}catch(e){bt.textContent='✗ Sin conexión'}}},'Probar entrada'),
       el('button',{class:'btn btn-ghost',type:'button',onclick:()=>{m.hidden=true;m.textContent=''}},'Cerrar')));
   m.append(box);m.hidden=false;
+  if(!visto&&clave){const pb=$('#acc-probar');if(pb)setTimeout(()=>pb.click(),400)}
 }
 
 /* ---------- pintar Academy y Clientes ---------- */
@@ -3336,7 +3333,7 @@ function usrMostrar(nombre,usuario,clave,permisos,copiado){
     el('div',{class:'field'},el('span',{class:'lab'},'Contraseña'),el('div',{class:'item',style:'font:700 1.4rem/1.2 monospace;letter-spacing:.06em'},clave)),
     el('div',{class:'acts',style:'margin-top:16px'},
       el('button',{class:'btn btn-gold',type:'button',onclick:()=>copyTxt(msg)},'Copiar mensaje para enviar'),
-      el('button',{class:'btn btn-ghost',type:'button',onclick:async ev=>{const bt=ev.target;bt.textContent='Probando…';
+      el('button',{class:'btn btn-ghost',type:'button',id:'acc-probar',onclick:async ev=>{const bt=ev.currentTarget||ev.target;bt.textContent='Probando…';
         try{const r=await fetch(SB.url+'/auth/v1/token?grant_type=password',{method:'POST',headers:{apikey:SB.key,'Content-Type':'application/json'},body:JSON.stringify({email:loginEmail(usuario),password:clave})});
           const j=await r.json().catch(()=>({}));bt.textContent=r.ok&&j.access_token?'✓ Entra bien':'✗ Falla: '+((j.error_code||j.msg||j.error_description||r.status)+'')}catch(e){bt.textContent='✗ Sin conexión'}}},'Probar entrada'),
       el('button',{class:'btn btn-ghost',type:'button',onclick:()=>{m.hidden=true;m.textContent=''}},'Cerrar'))));
