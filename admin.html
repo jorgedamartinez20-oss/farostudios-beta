@@ -360,6 +360,14 @@ button,.btn,.chip,.nav,.tab,.stab,.seg{-webkit-user-select:none;user-select:none
 @media (hover:none),(pointer:coarse){.btn:hover,.kpi:hover{transform:none}}
 
 @media (hover:none){*{-webkit-tap-highlight-color:transparent}}
+
+/* ---------- móvil: fondo liso, sin velo blanco bajo el encabezado ---------- */
+@media (max-width:900px){
+ body{background:var(--bg)!important}
+ .top{box-shadow:inset 0 -1px 0 rgba(184,160,106,.45),0 6px 14px -8px rgba(0,0,0,.35)}
+ .kpi{box-shadow:0 10px 18px -12px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.18)}
+ .kpi svg.sp{opacity:.22}
+}
 </style>
 </head>
 <body>
@@ -1726,7 +1734,7 @@ function cHB(items){
   return '<div class="hb">'+items.map(x=>'<div class="r"><span>'+esc(x.n)+'</span><div class="bar"><i style="width:'+Math.max(x.v?4:0,100*x.v/mx).toFixed(1)+'%;background:'+x.c+'"></i></div><b>'+x.v+'</b></div>').join('')+'</div>';
 }
 function spark(vals){
-  const n=vals.length,mx=Math.max(1,...vals);if(n<2)return '';
+  const n=vals.length,mx=Math.max(1,...vals);if(n<2||!vals.some(v=>v>0))return '';
   const pts=vals.map((v,i)=>[(100*i/(n-1)).toFixed(1),(36-30*v/mx).toFixed(1)]);
   return '<svg class="sp" viewBox="0 0 100 40" preserveAspectRatio="none" aria-hidden="true"><path d="M0,40 L'+pts.map(p=>p.join(',')).join(' L')+' L100,40 Z" fill="rgba(255,255,255,.22)"/><polyline points="'+pts.map(p=>p.join(',')).join(' ')+'" fill="none" stroke="rgba(255,255,255,.9)" stroke-width="1.6" vector-effect="non-scaling-stroke"/></svg>';
 }
