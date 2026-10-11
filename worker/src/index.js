@@ -114,6 +114,13 @@ function json(request, env, data, status = 200) {
 const err = (request, env, msg, status = 400) => json(request, env, { error: msg }, status);
 
 /* ---------- Autenticación de administrador (Supabase) ---------- */
+/* Nivel de autenticación que trae el token de Supabase: aal1 = solo contraseña, aal2 = contraseña + código. */
+function aalDelToken(tok) {
+  try {
+    const p = tok.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+    return JSON.parse(atob(p)).aal || 'aal1';
+  } catch (e) { return 'aal1'; }
+}
 const CACHE_ADMIN = new Map();
 async function esAdmin(request, env) {
   const m = /^Bearer\s+(.+)$/i.exec(request.headers.get('Authorization') || '');
@@ -127,7 +134,11 @@ async function esAdmin(request, env) {
   } catch (e) { return false; }
   if (!r.ok) return false;
   const u = await r.json().catch(() => ({}));
-  const ok = !!u.email && String(u.email).toLowerCase() === String(env.ADMIN_EMAIL || '').toLowerCase();
+  const correoOk = !!u.email && String(u.email).toLowerCase() === String(env.ADMIN_EMAIL || '').toLowerCase();
+  // Igual que la base de datos (mfa_ok): si la cuenta tiene el código de 2 pasos activado,
+  // la sesión debe haberlo pasado (aal2). Con solo la contraseña no se abren los archivos.
+  const tieneCodigo = Array.isArray(u.factors) && u.factors.some((f) => f.factor_type === 'totp' && f.status === 'verified');
+  const ok = correoOk && (!tieneCodigo || aalDelToken(tok) === 'aal2');
   if (ok) {
     if (CACHE_ADMIN.size > 50) CACHE_ADMIN.clear();
     CACHE_ADMIN.set(tok, Date.now() + 60000);

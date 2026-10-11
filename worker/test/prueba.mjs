@@ -39,12 +39,17 @@ class R2Falso {
   }
 }
 
+const jwtFalso = (aal) => 'x.' + btoa(JSON.stringify({ aal })).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '') + '.y';
+const TOKEN_AAL1 = jwtFalso('aal1'), TOKEN_AAL2 = jwtFalso('aal2');
+
 /* ---- Supabase simulado ---- */
 globalThis.fetch = async (u, init) => {
   assert.ok(String(u).endsWith('/auth/v1/user'));
   const t = (init.headers.Authorization || '').replace('Bearer ', '');
   if (t === 'admin-token') return new Response(JSON.stringify({ email: 'reservas@farostudios.net' }), { status: 200 });
   if (t === 'otro-token') return new Response(JSON.stringify({ email: 'alguien@correo.com' }), { status: 200 });
+  // cuenta del director con código de 2 pasos activado: el token trae aal1 (solo contraseña) o aal2 (con código)
+  if (t === TOKEN_AAL1 || t === TOKEN_AAL2) return new Response(JSON.stringify({ email: 'reservas@farostudios.net', factors: [{ factor_type: 'totp', status: 'verified' }] }), { status: 200 });
   return new Response('{}', { status: 401 });
 };
 
@@ -73,6 +78,9 @@ assert.equal(r.headers.get('Access-Control-Allow-Origin'), null); ok('CORS no pe
 r = await q('/api/init', { method: 'POST' }); assert.equal(r.status, 401); ok('sin sesión → 401');
 r = await q('/api/init', { method: 'POST', headers: { Authorization: 'Bearer otro-token' } }); assert.equal(r.status, 401); ok('otro usuario → 401');
 r = await q('/api/init', { method: 'POST', headers: A }); assert.equal((await r.json()).carpetas, DESTINOS.length); ok('admin crea carpetas base');
+r = await q('/api/init', { method: 'POST', headers: { Authorization: 'Bearer ' + TOKEN_AAL1 } }); assert.equal(r.status, 401); ok('con código activado y solo contraseña (aal1) → 401');
+r = await q('/api/stats', { headers: { Authorization: 'Bearer ' + TOKEN_AAL1 } }); assert.equal(r.status, 401); ok('con solo contraseña tampoco ve las estadísticas');
+r = await q('/api/init', { method: 'POST', headers: { Authorization: 'Bearer ' + TOKEN_AAL2 } }); assert.equal(r.status, 200); ok('con código activado y código pasado (aal2) → entra');
 assert.ok(env.PRIVADO.m.has('faro-academy/ingles/videos/.keep') && env.PUBLICO.m.has('landing/portafolio/.keep')); ok('quedaron en el bucket correcto');
 
 // carpeta por entidad
