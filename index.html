@@ -336,25 +336,25 @@ section[id]{scroll-margin-top:84px}
 .foot .ig:hover{background:rgba(245,242,238,.12);border-color:var(--oro);transform:translateY(-2px)}
 .foot .ig svg{width:22px;height:22px}
 /* WhatsApp verde */
-.btn:has(svg use[href="#i-wa"]),.wa{background:#25D366!important;color:#06321a!important;border-color:#25D366!important}
-.btn:has(svg use[href="#i-wa"]):hover{background:#2fe574!important}
+.btn:has(svg use[href="#i-wa"]),.wa{background:var(--oliva)!important;color:var(--marfil)!important;border-color:var(--oliva)!important}
+.btn:has(svg use[href="#i-wa"]):hover{background:var(--oliva-m)!important;border-color:var(--oliva-m)!important}
 .wa-wrap{position:fixed;z-index:60;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;align-items:flex-end;gap:12px}
 .wa-wrap .wa{position:relative;right:auto;bottom:auto;animation:waPulse 3.2s ease-out infinite}
-@keyframes waPulse{0%{box-shadow:0 8px 24px rgba(0,0,0,.3),0 0 0 0 rgba(37,211,102,.55)}70%,100%{box-shadow:0 8px 24px rgba(0,0,0,.3),0 0 0 18px rgba(37,211,102,0)}}
+@keyframes waPulse{0%{box-shadow:0 8px 24px rgba(0,0,0,.3),0 0 0 0 rgba(79,90,42,.55)}70%,100%{box-shadow:0 8px 24px rgba(0,0,0,.3),0 0 0 18px rgba(79,90,42,0)}}
 .wa-wrap .wa svg{animation:waWig 6s ease-in-out infinite;transform-origin:50% 60%}
 @keyframes waWig{0%,86%,100%{transform:rotate(0)}89%{transform:rotate(-14deg)}92%{transform:rotate(12deg)}95%{transform:rotate(-8deg)}}
 .wa-bub{position:relative;width:min(300px,calc(100vw - 40px));background:var(--marfil);color:var(--pizarra);border-radius:18px 18px 4px 18px;padding:14px 16px 16px;box-shadow:0 22px 40px -14px rgba(0,0,0,.6),0 4px 10px rgba(0,0,0,.25);transform-origin:100% 100%;animation:bubIn .6s cubic-bezier(.3,1.5,.5,1) both}
 @keyframes bubIn{from{opacity:0;transform:translateY(16px) scale(.6)}to{opacity:1;transform:none}}
 .wa-x{position:absolute;top:6px;right:8px;border:0;background:none;font-size:1.3rem;line-height:1;cursor:pointer;color:#6b6760;padding:4px}
 .wa-hd{display:flex;gap:10px;align-items:center;margin-bottom:10px}
-.wa-av{width:38px;height:38px;border-radius:50%;background:#25D366;display:grid;place-items:center;color:#06321a}.wa-av svg{width:22px;height:22px}
-.wa-hd b{display:block;line-height:1.1}.wa-hd small{color:#3f8f5b;font-weight:700}
-.wa-msg{background:#E8F7EE;border-radius:12px 12px 12px 2px;padding:10px 12px;min-height:46px;font-size:.95rem}
+.wa-av{width:38px;height:38px;border-radius:50%;background:var(--oliva);display:grid;place-items:center;color:var(--marfil)}.wa-av svg{width:22px;height:22px}
+.wa-hd b{display:block;line-height:1.1}.wa-hd small{color:var(--oliva-m);font-weight:700}
+.wa-msg{background:#ECEFDC;border-radius:12px 12px 12px 2px;padding:10px 12px;min-height:46px;font-size:.95rem}
 .wa-msg p{margin:0}.wa-msg .wa-typing{display:inline-flex;gap:4px;padding:6px 0}
-.wa-typing i{width:7px;height:7px;border-radius:50%;background:#7aa88a;animation:dots 1s infinite}
+.wa-typing i{width:7px;height:7px;border-radius:50%;background:#8A9654;animation:dots 1s infinite}
 .wa-typing i:nth-child(2){animation-delay:.15s}.wa-typing i:nth-child(3){animation-delay:.3s}
 @keyframes dots{0%,60%,100%{transform:translateY(0);opacity:.5}30%{transform:translateY(-5px);opacity:1}}
-.wa-go{display:block;text-align:center;margin-top:10px;padding:11px;border-radius:999px;background:#25D366;color:#06321a;font-weight:900;text-decoration:none;transition:transform .2s}
+.wa-go{display:block;text-align:center;margin-top:10px;padding:11px;border-radius:999px;background:var(--oliva);color:var(--marfil);font-weight:900;text-decoration:none;transition:transform .2s}
 .wa-go:hover{transform:translateY(-2px)}
 @media (max-width:640px){.wa-wrap .wa span{display:none}.wa-wrap .wa{padding:15px}}
 /* Transición: logo llenándose */
@@ -544,6 +544,21 @@ header.open .menu-btn i::after{transform:translateY(-6px) rotate(-45deg)}
 @keyframes bob{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-4px) rotate(-5deg)}}
 @keyframes ring{0%{transform:scale(.85);opacity:.9}70%,100%{transform:scale(1.5);opacity:0}}
 .hero p.sub{display:none}
+
+/* hero claro: fondo marfil, faro en pizarra y aro de luz */
+#inicio.hero-light::before{background:radial-gradient(46% 58% at 24% 52%,rgba(184,160,106,.22),transparent 72%)}
+#inicio.hero-light .lhw>img{filter:brightness(.152) drop-shadow(0 26px 22px rgba(37,37,40,.28))}
+#inicio.hero-light .floor{background:radial-gradient(closest-side,rgba(37,37,40,.32),transparent)}
+#inicio.hero-light .glow{mix-blend-mode:normal;width:calc(var(--H)*.62);height:calc(var(--H)*.62);background:radial-gradient(circle closest-side,transparent 0,transparent 37%,rgba(246,205,98,.9) 41%,rgba(232,186,80,.5) 52%,rgba(214,176,86,.18) 72%,transparent 100%)}
+#inicio.hero-light .sweep{filter:drop-shadow(0 0 6px rgba(214,176,86,.6)) drop-shadow(0 0 22px rgba(184,160,106,.4))}
+#inicio.hero-light .sweep-c{background:linear-gradient(100deg,transparent 42%,rgba(255,236,170,.98) 50%,transparent 58%) 0% 0%/300% 100% no-repeat,linear-gradient(90deg,#C99A3E 0%,#D4AE5C 26%,#C7A867 62%,rgba(184,160,106,.2) 100%)}
+#inicio.hero-light h1{color:var(--pizarra)}
+#inicio.hero-light p.kick{color:var(--bronce)}
+#inicio.hero-light p.kick .blink{color:var(--borgona)}
+#inicio.hero-light .svc{border-color:rgba(160,120,69,.5);background:rgba(37,37,40,.04);color:var(--pizarra)}
+#inicio.hero-light .svc:hover{background:rgba(184,160,106,.22);border-color:var(--bronce);box-shadow:0 16px 26px -14px rgba(37,37,40,.35)}
+#inicio.hero-light .btn-solid{background:var(--borgona);color:var(--marfil)}
+#inicio.hero-light .btn-ghost{color:var(--pizarra);border-color:rgba(37,37,40,.35)}
 
 /* sec-head: línea larga y viva */
 .sec-head .rule{width:min(100%,980px);height:3px;position:relative;overflow:hidden;background:linear-gradient(90deg,var(--hi),rgba(184,160,106,.2) 85%,transparent)}
@@ -1062,7 +1077,7 @@ dialog.portal .field input,dialog.portal .field select{background:#fff;color:#25
 <!-- ================= STUDIOS ================= -->
 <main id="p-studios">
 
-  <section class="hero sec pal-studios" id="inicio">
+  <section class="hero sec pal-studios-alt hero-light" id="inicio">
     <div class="hero-in">
       <div class="lockup">
         <div class="lhw" id="lhw" aria-hidden="true">
@@ -1072,9 +1087,9 @@ dialog.portal .field input,dialog.portal .field select{background:#fff;color:#25
           <div class="lamp"><div class="glow"></div></div>
         
         </div>
-        <h1 aria-label="Productora audiovisual en Guatemala de alta calidad"><span class="line"><span>Productora</span></span><span class="line"><span>audiovisual</span></span></h1>
+        <h1 aria-label="Creatividad con propósito"><span class="line"><span>Creatividad</span></span><span class="line"><span>con propósito</span></span></h1>
       </div>
-      <p class="kick indent"><span class="blink">en Guatemala</span> · de alta calidad</p>
+      <p class="kick indent">Productora audiovisual <span class="blink">en Guatemala</span> · de alta calidad</p>
       <div class="svc-row indent" aria-label="Lo que hacemos">
         <a class="svc" href="#servicios" style="--n:0"><i class="svc-i"><svg class="ico"><use href="#i-cam"/></svg></i>Fotografía</a>
         <a class="svc" href="#servicios" style="--n:1"><i class="svc-i"><svg class="ico"><use href="#i-vid"/></svg></i>Video</a>
