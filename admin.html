@@ -166,7 +166,11 @@ button,input,select,textarea{font:inherit;color:inherit}
       <div class="grid2">
         <div class="card"><h2>Código de acceso</h2><p class="muted">Es el código que piden los clientes para entrar a la agenda. Si lo cambias, el anterior deja de servir.</p>
           <div class="field"><label for="cod">Código</label><input id="cod" autocomplete="off" maxlength="40"></div>
-          <button class="btn btn-gold" id="cgo" type="button" style="margin-top:16px">Guardar código</button></div>
+          <p class="muted" style="margin-top:10px">Para que sea difícil de adivinar, toca “Generar código seguro” (12 caracteres al azar) y luego “Guardar código”. Mínimo 12 caracteres, solo letras y números.</p>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:16px">
+            <button class="btn btn-ghost" id="cgen" type="button">Generar código seguro</button>
+            <button class="btn btn-gold" id="cgo" type="button">Guardar código</button>
+          </div></div>
         <div class="card"><h2>Margen entre reservas</h2><p class="muted">Horas que se bloquean antes y después de cada reserva.</p>
           <div class="field"><label for="mar">Horas</label><input id="mar" type="number" min="0" max="12"></div>
           <button class="btn btn-gold" id="mgo" type="button" style="margin-top:16px">Guardar margen</button></div>
@@ -378,7 +382,15 @@ async function saveCfg(clave,valor,msg){
   try{const r=await api('/rest/v1/config?clave=eq.'+clave,{method:'PATCH',body:{valor:String(valor)},headers:{Prefer:'return=minimal'}});
     if(!r.ok){toast(await errText(r));return}toast(msg);await loadAll()}catch(e){}
 }
-$('#cgo').addEventListener('click',()=>{const v=$('#cod').value.trim();if(!/^[A-Za-z0-9]{3,40}$/.test(v)){toast('Usa solo letras y números (mínimo 3), sin espacios');return}saveCfg('codigo_agenda',v,'Código actualizado')});
+/* alfabeto de 31 símbolos (sin 0/O/1/I/L para evitar confusiones); muestreo por rechazo, sin sesgo; 12 símbolos ≈ 59 bits */
+const COD_ALFABETO='ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+function genCodigo(){
+  const A=COD_ALFABETO,n=12,lim=256-(256%A.length),out=[],buf=new Uint8Array(32);
+  while(out.length<n){crypto.getRandomValues(buf);for(const x of buf){if(x<lim&&out.length<n)out.push(A[x%A.length])}}
+  return out.join('');
+}
+$('#cgen').addEventListener('click',()=>{$('#cod').value=genCodigo();toast('Código generado. Toca “Guardar código” para activarlo')});
+$('#cgo').addEventListener('click',()=>{const v=$('#cod').value.trim();if(!/^[A-Za-z0-9]{12,40}$/.test(v)){toast('Mínimo 12 letras y números, sin espacios. Toca “Generar código seguro”');return}saveCfg('codigo_agenda',v,'Código actualizado')});
 $('#mgo').addEventListener('click',()=>{const v=parseInt($('#mar').value,10);if(!(v>=0&&v<=12)){toast('Escribe un número de 0 a 12');return}saveCfg('margen_horas',v,'Margen actualizado')});
 
 /* ---------- pestañas ---------- */

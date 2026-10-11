@@ -1742,14 +1742,30 @@ function rvShowErr(msg,el){
   el.scrollIntoView({block:'nearest',behavior:reduce?'auto':'smooth'});
 }
 /* --- acceso por código --- */
+/* Máximo 3 intentos fallidos y luego 5 min de pausa. Es un orden de interfaz (se guarda en este navegador);
+   la protección real es el código largo y aleatorio en la base de datos. */
+const RV_MAX_INT=3,RV_BLOQ_MIN=5;
+function rvBloqueoHasta(){try{const t=+localStorage.getItem('faro_cod_bloq')||0;return t>Date.now()?t:0}catch(x){return 0}}
+function rvFallos(){try{return +localStorage.getItem('faro_cod_fallos')||0}catch(x){return 0}}
+function rvResetFallos(){try{localStorage.removeItem('faro_cod_fallos');localStorage.removeItem('faro_cod_bloq')}catch(x){}}
+function rvRegistrarFallo(){
+  const n=rvFallos()+1;
+  try{
+    if(n>=RV_MAX_INT){localStorage.setItem('faro_cod_bloq',String(Date.now()+RV_BLOQ_MIN*60000));localStorage.removeItem('faro_cod_fallos')}
+    else localStorage.setItem('faro_cod_fallos',String(n));
+  }catch(x){}
+  return Math.max(0,RV_MAX_INT-n);
+}
 async function rvGate(e){
   if(e)e.preventDefault();const ge=$('#rv-gate-err'),c=$('#rv-cod').value.trim();ge.hidden=true;
+  const bl=rvBloqueoHasta();
+  if(bl){rvShowErr('Superaste los '+RV_MAX_INT+' intentos. Inténtalo de nuevo en '+Math.max(1,Math.ceil((bl-Date.now())/60000))+' min o pide el código por WhatsApp.',ge);return}
   if(!c){rvShowErr('Escribe tu código de acceso.',ge);return}
   const btn=$('#rv-gate-btn');if(btn.disabled)return;btn.disabled=true;btn.textContent='Revisando…';
   try{
     const r=await rvRpc('codigo_valido',{p_codigo:c});
-    if(r.ok&&(await r.json())===true){rvCode=c;try{sessionStorage.setItem('faro_cod',c)}catch(x){}$('#rv-cod').value='';rvView('form');rvCalGo(0);$('#rv-card').scrollIntoView({block:'start',behavior:reduce?'auto':'smooth'})}
-    else if(r.ok)rvShowErr('Ese código no es correcto. Pídelo por WhatsApp.',ge);
+    if(r.ok&&(await r.json())===true){rvResetFallos();rvCode=c;try{sessionStorage.setItem('faro_cod',c)}catch(x){}$('#rv-cod').value='';rvView('form');rvCalGo(0);$('#rv-card').scrollIntoView({block:'start',behavior:reduce?'auto':'smooth'})}
+    else if(r.ok){const q=rvRegistrarFallo();rvShowErr(q>0?'Ese código no es correcto. Te quedan '+q+(q===1?' intento.':' intentos.')+' Pídelo por WhatsApp si no lo tienes.':'Ese código no es correcto. Superaste los '+RV_MAX_INT+' intentos; inténtalo de nuevo en '+RV_BLOQ_MIN+' min o pide el código por WhatsApp.',ge)}
     else rvShowErr('No pudimos revisar el código (error '+r.status+'). Inténtalo de nuevo en un momento.',ge);
   }catch(err){rvShowErr('No hay conexión con el servidor ('+(err&&err.name||'error')+'). Abre el archivo index.html desde tu computadora, no desde la vista previa.',ge)}
   finally{btn.disabled=false;btn.textContent='Entrar'}
