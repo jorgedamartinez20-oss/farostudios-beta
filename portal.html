@@ -390,7 +390,11 @@ button,.btn,.chip,.nav,.tab,.stab,.seg{-webkit-user-select:none;user-select:none
 }
 
 @media (hover:none){*{-webkit-tap-highlight-color:transparent}}
+/* app instalada: encabezado más alto, el logo y los botones quedan debajo de la franja que iOS difumina */
+html.is-app{--top-extra:30px}
+html.is-app .top{padding-top:calc(12px + var(--top-extra) + env(safe-area-inset-top))}
 </style>
+<script>if(navigator.standalone||(window.matchMedia&&matchMedia("(display-mode:standalone)").matches))document.documentElement.classList.add("is-app")</script>
 </head>
 <body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
