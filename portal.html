@@ -268,6 +268,34 @@ main{min-width:0}
 @keyframes cf{to{transform:translate(var(--dx),var(--dy)) rotate(var(--r));opacity:0}}
 
 
+/* reproductor y lista de grabaciones (estilo lista de música) */
+.sp{background:#252528;color:#F5F2EE;border-radius:22px;padding:8px 6px;margin-top:14px}
+.sp-it{padding:10px 12px;border-bottom:1px solid rgba(245,242,238,.1);display:grid;gap:8px;text-align:left}
+.sp-it:last-child{border-bottom:0}
+.sp-row{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;border-radius:16px;padding:6px;transition:background .15s}
+.sp-row.act{background:rgba(224,182,62,.14)}
+.sp-play{width:48px;height:48px;border-radius:50%;border:0;background:var(--y);color:#252528;display:grid;place-items:center;cursor:pointer;box-shadow:0 4px 0 var(--yd);padding:0;flex:none}
+.sp-play:active{transform:translateY(3px);box-shadow:0 1px 0 var(--yd)}
+.sp-play.on{background:#fff;box-shadow:0 4px 0 #b9b6ae}
+.sp-play.r{background:var(--t);box-shadow:0 4px 0 var(--td);color:#fff}
+.sp-play .ico{width:22px;height:22px;fill:currentColor}
+.sp-meta{min-width:0}.sp-meta b{display:block;font-size:1.05rem;line-height:1.2}
+.sp-meta small{color:rgba(245,242,238,.62);font-size:.88rem}
+.sp-tag{border-radius:99px;padding:3px 11px;font-size:.82rem;background:rgba(245,242,238,.14);white-space:nowrap}
+.sp-tag.ok{background:var(--g);color:#fff}
+.sp-bar{display:none;grid-column:1/-1;align-items:center;gap:10px}
+.sp-row.act .sp-bar{display:flex}
+.sp-rng{flex:1;accent-color:var(--y);min-width:0}
+.sp-t{font-size:.8rem;color:rgba(245,242,238,.7);white-space:nowrap}
+.sp-spd{border:1px solid rgba(245,242,238,.35);background:none;color:#F5F2EE;border-radius:99px;padding:2px 10px;font:inherit;font-size:.8rem;cursor:pointer}
+.sp-quote{color:rgba(245,242,238,.72);font-size:.92rem;padding:0 6px}
+.sp-say{background:rgba(245,242,238,.08);border-left:4px solid var(--y);border-radius:12px;padding:8px 12px;font-size:.95rem}
+.sp-say b{color:var(--y)}
+.sp-reply{margin-left:22px;border-left:2px dashed rgba(63,167,163,.7);padding-left:8px}
+.sp-empty{color:rgba(245,242,238,.7);padding:18px 14px}
+.mr{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.mr-b{border:0;border-radius:99px;background:#C8312F;color:#fff;padding:10px 18px;font:inherit;font-weight:700;cursor:pointer;box-shadow:0 4px 0 #7C1B1A}
+.mr-b.on{animation:recp 1.4s ease-in-out infinite}
 /* grabadora de práctica */
 .rec-top{display:grid;grid-template-columns:auto 1fr;gap:18px;align-items:center;margin-top:14px}
 .rec-btn{width:92px;height:92px;border-radius:50%;border:6px solid var(--card);background:#C8312F;box-shadow:0 0 0 3px #C8312F,0 7px 0 #7C1B1A;cursor:pointer;display:grid;place-items:center;color:#fff;padding:0;transition:transform .12s}
@@ -420,6 +448,7 @@ html.is-app .top{padding-top:calc(12px + var(--top-extra) + env(safe-area-inset-
 <symbol id="i-up" viewBox="0 0 24 24"><path d="M12 20V8M7 13l5-5 5 5M5 4h14"/></symbol>
 <symbol id="i-more" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></symbol>
 <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4l13 8-13 8z"/></symbol>
+<symbol id="i-pause" viewBox="0 0 24 24"><path d="M6 4h4v16H6zM14 4h4v16h-4z"/></symbol>
 <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.5"/><path d="M3 20c0-4 3-6 6-6s6 2 6 6M15 14c3 0 6 1.5 6 5"/></symbol>
 <symbol id="i-gift" viewBox="0 0 24 24"><rect x="3" y="9" width="18" height="11" rx="1"/><path d="M12 9v11M3 13h18M12 9c-4 0-5-5-2-5s2 5 2 5zM12 9c4 0 5-5 2-5s-2 5-2 5z"/></symbol>
 <symbol id="i-send" viewBox="0 0 24 24"><path d="M3 11l18-8-8 18-2-8z"/></symbol>
@@ -478,16 +507,30 @@ async function api(path,o){
   let r=await go();if(r.status===401&&await refreshSes())r=await go();
   if(r.status===401){salir(true);throw new Error('sesion')}return r}
 const rows=async(t,qs)=>{try{const r=await api('/rest/v1/'+t+'?'+qs);return r.ok?await r.json():[]}catch(e){return[]}};
+/* Archivos en R2 (servicio faro-archivos). La base de datos decide quién puede ver, subir o borrar cada ruta. */
+const RW='https://faro-archivos.jorgedamartinez20.workers.dev';
+const esR2=r=>/^faro-(academy|studios)\//.test(r||'');
+async function rapi(path,o){
+  o=o||{};if(SES&&SES.exp-60000<Date.now())await refreshSes();
+  const go=()=>fetch(RW+path,{method:o.method||'POST',headers:Object.assign({Authorization:'Bearer '+(SES?SES.access:'')},o.headers||{}),body:o.body});
+  let r=await go();if(r.status===401&&await refreshSes())r=await go();return r}
+async function rEnlace(key){try{const r=await rapi('/p/enlace?key='+encodeURIComponent(key));const j=await r.json();return r.ok?j.urlVer:null}catch(e){return null}}
+async function rSubir(key,blob,tipo){
+  const r=await rapi('/p/subir?key='+encodeURIComponent(key),{method:'PUT',body:blob,headers:{'Content-Type':tipo||'application/octet-stream'}});
+  if(!r.ok){let m='';try{m=(await r.json()).error}catch(e){}throw new Error(m||'subida')}return true}
+async function rBorrar(key){try{const r=await rapi('/p/borrar?key='+encodeURIComponent(key));return r.ok}catch(e){return false}}
+/* nombre de archivo permitido en R2 (igual que el servicio) */
+function nomR2(n){let x=String(n||'archivo').normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/\s+/g,'-').replace(/[^A-Za-z0-9._()\-]+/g,'').replace(/-{2,}/g,'-').replace(/^[.\-]+/,'');
+  if(x.length>120){const i=x.lastIndexOf('.'),e=i>0&&x.length-i<=10?x.slice(i):'';x=x.slice(0,120-e.length)+e}return x||'archivo'}
 async function abrir(bucket,ruta){
   if(!ruta)return;
   if(/^https?:/i.test(ruta)){window.open(ruta,'_blank','noopener');return}
   const w=window.open('','_blank');
-  try{const r=await api('/storage/v1/object/sign/'+bucket+'/'+ruta,{method:'POST',body:{expiresIn:3600}});const j=await r.json();
-    if(!r.ok||!j.signedURL)throw 0;const u=SBU+'/storage/v1'+j.signedURL;if(w)w.location=u;else location.href=u}
-  catch(e){if(w)w.close();aviso('No se pudo abrir el archivo')}}
+  const u=esR2(ruta)?await rEnlace(ruta):null;
+  if(u){if(w)w.location=u;else location.href=u}else{if(w)w.close();aviso('No se pudo abrir el archivo')}}
 async function urlFirmada(bucket,ruta){
   if(/^https?:/i.test(ruta))return ruta;
-  try{const r=await api('/storage/v1/object/sign/'+bucket+'/'+ruta,{method:'POST',body:{expiresIn:3600}});const j=await r.json();return j.signedURL?SBU+'/storage/v1'+j.signedURL:null}catch(e){return null}}
+  return esR2(ruta)?await rEnlace(ruta):null}
 function aviso(t){const d=document.createElement('div');d.className='toast';d.textContent=t;document.body.append(d);setTimeout(()=>d.remove(),3200)}
 
 /* ---------- utilidades ---------- */
@@ -540,7 +583,7 @@ async function cargarAlumno(id){
   g._instr=instrDe(g);
   const pend=fa.filter(x=>x.estado==='pendiente');
   const prox=cl.find(c=>(c.estado==='programada'||c.estado==='reprogramada')&&c.fecha>=hoy);
-  return{id,nombre:g.nombre||'',corto:g.apodo||String(g.nombre||'').split(' ')[0],area:(g.area==='ingles'?'Inglés':'Música')+(g.detalle?' · '+g.detalle:''),areaId:g.area,instr:g._instr,
+  return{id,carpeta:g.carpeta||'',nombre:g.nombre||'',corto:g.apodo||String(g.nombre||'').split(' ')[0],area:(g.area==='ingles'?'Inglés':'Música')+(g.detalle?' · '+g.detalle:''),areaId:g.area,instr:g._instr,
     mod:g.modalidad==='online'?'En línea':'Presencial',xp:g.xp||0,racha:g.racha||0,pagaAlumno:!!g.paga_alumno,
     clases:cl,mats:ma.concat(general.filter(m=>!ma.some(x=>x.id===m.id))),tareas:ta,notas:ev,hab:ha,logros:lo,reco:re[0]?re[0].texto:'',diplomas:di,chat:ms,fac:fa,
     saldo:pend.reduce((a,x)=>a+Number(x.monto||0),0),prox,
@@ -631,6 +674,43 @@ function pracSemana(list){ // 7 días que terminan hoy
   const hoy=new Date(),dias=[],set=new Set(list.map(p=>diaGT(p.creado)));
   for(let i=6;i>=0;i--){const d=new Date(hoy.getTime()-i*864e5);dias.push({k:diaGT(d),l:'DLMMJVS'[new Date(new Date(d).toLocaleString('en-US',{timeZone:'America/Guatemala'})).getDay()],on:set.has(diaGT(d))})}return dias}
 const fmtDur=s=>Math.floor(s/60)+':'+String(s%60).padStart(2,'0');
+
+/* ---------- reproductor (uno solo para toda la página) ---------- */
+const PL=new Audio();PL.preload='none';let PLK=null,PLV=1;const PLU={};
+const fmtT=x=>isFinite(x)?Math.floor(x/60)+':'+String(Math.floor(x%60)).padStart(2,'0'):'0:00';
+function plRefresh(){
+  document.querySelectorAll('[data-plb]').forEach(b=>{const on=b.dataset.plb===PLK&&!PL.paused;b.classList.toggle('on',on);b.setAttribute('aria-label',on?'Pausar':'Escuchar');b.innerHTML=ic(on?'pause':'play')});
+  document.querySelectorAll('[data-plrow]').forEach(r=>r.classList.toggle('act',r.dataset.plrow===PLK))}
+PL.onplay=PL.onpause=PL.onended=plRefresh;
+PL.ontimeupdate=()=>{if(!PLK)return;const r=document.querySelector('[data-plrow="'+PLK+'"]'),rg=document.querySelector('[data-plp="'+PLK+'"]'),t=document.querySelector('[data-plt="'+PLK+'"]');
+  const tot=isFinite(PL.duration)&&PL.duration>0?PL.duration:(r&&+r.dataset.pld)||0;
+  if(rg&&tot)rg.value=Math.min(1000,PL.currentTime/tot*1000);if(t)t.textContent=fmtT(PL.currentTime)+' / '+fmtT(tot)};
+async function plToggle(k,ruta){
+  if(PLK===k){PL.paused?PL.play().catch(()=>{}):PL.pause();return}
+  const b=document.querySelector('[data-plb="'+k+'"]');if(b)b.disabled=true;
+  let u=PLU[k];if(!u||u.t<Date.now()){const x=await urlFirmada('academy',ruta);u=x?{u:x,t:Date.now()+50*60000}:null;if(u)PLU[k]=u}
+  if(b)b.disabled=false;
+  if(!u){aviso('No se pudo cargar el audio');return}
+  PL.pause();PLK=k;PL.src=u.u;PL.playbackRate=PLV;PL.play().catch(()=>aviso('No se pudo reproducir'));plRefresh()}
+function plBind(root,find){
+  root.querySelectorAll('[data-plb]').forEach(b=>b.onclick=()=>{const r=find(b.dataset.plb);if(r)plToggle(b.dataset.plb,r)});
+  root.querySelectorAll('[data-plp]').forEach(r=>r.oninput=()=>{if(PLK===r.dataset.plp&&isFinite(PL.duration)&&PL.duration>0)PL.currentTime=r.value/1000*PL.duration});
+  root.querySelectorAll('[data-pls]').forEach(b=>b.onclick=()=>{PLV=PLV===1?.75:PLV===.75?.5:PLV===.5?1.25:1;PL.playbackRate=PLV;document.querySelectorAll('[data-pls]').forEach(x=>x.textContent=PLV+'×')});
+  plRefresh()}
+function plStop(){try{PL.pause();PL.removeAttribute('src');PL.load()}catch(e){}PLK=null}
+/* una grabación (y la respuesta del profe) como fila de la lista */
+function spFila(k,tit,sub,dur,tag,cls){
+  return '<div class="sp-row" data-plrow="'+k+'" data-pld="'+(dur||0)+'"><button type="button" class="sp-play '+(cls||'')+'" data-plb="'+k+'" aria-label="Escuchar">'+ic('play')+'</button>'
+   +'<div class="sp-meta"><b>'+tit+'</b><small>'+sub+'</small></div>'+(tag||'<span></span>')
+   +'<div class="sp-bar"><input type="range" class="sp-rng" min="0" max="1000" value="0" data-plp="'+k+'" aria-label="Posición"><span class="sp-t" data-plt="'+k+'">0:00 / '+fmtDur(dur||0)+'</span><button type="button" class="sp-spd" data-pls aria-label="Velocidad">'+PLV+'×</button></div></div>'}
+function spItem(p,quien){
+  const ev=p.estado==='evaluada',f=new Date(p.creado).toLocaleDateString('es-GT',{weekday:'short',day:'numeric',month:'short'});
+  return '<div class="sp-it" data-id="'+p.id+'">'
+   +spFila('a:'+p.id,(quien?esc(quien)+' · ':'')+esc(p.instrumento||'Práctica'),esc(f)+' · '+fmtDur(p.duracion_seg)+(p.bpm?' · '+p.bpm+' BPM':''),p.duracion_seg,'<span class="sp-tag'+(ev?' ok':'')+'">'+(ev?'Nota '+p.puntaje+'/10 · +'+p.xp+' XP':'En revisión')+'</span>')
+   +(p.nota_alumno?'<div class="sp-quote">“'+esc(p.nota_alumno)+'”</div>':'')
+   +(p.comentario?'<div class="sp-say"><b>'+esc(p.evaluado_por||'Tu profe')+':</b> '+esc(p.comentario)+'</div>':'')
+   +(p.resp_ruta?'<div class="sp-reply">'+spFila('r:'+p.id,'Respuesta de '+esc(p.evaluado_por||'tu profe'),'Audio',p.resp_dur,'','r')+'</div>':'')
+   +'</div>'}
 async function pracCargar(id){
   try{const r=await api('/rest/v1/ac_practicas?estudiante_id=eq.'+id+'&order=creado.desc&limit=60');
     if(r.status===404||r.status===400)return null;if(!r.ok)return null;return await r.json()}catch(e){return null}}
@@ -644,11 +724,9 @@ function pracPintar(root){
    +'<div class="pr-week" aria-label="Días que practicaste esta semana">'+sem.map(d=>'<span class="'+(d.on?'on':'')+'">'+d.l+'</span>').join('')+'</div>'
    +'<div class="pr-trend"><div><b class="'+(t?t.k:'eq')+'">'+(t?(t.k==='up'?'▲ ':t.k==='dn'?'▼ ':'● '):'')+lb+'</b><div class="rec-sub">'+sub+'</div></div>'+sp+'</div>'
    +(pend?'<p class="rec-sub">'+pend+(pend===1?' práctica espera':' prácticas esperan')+' la revisión de tu profe.</p>':'')
-   +(L.length?L.slice(0,15).map(p=>'<div class="pr-it" data-id="'+p.id+'"><div><b>'+esc(new Date(p.creado).toLocaleDateString('es-GT',{weekday:'short',day:'numeric',month:'short'}))+'</b> · '+fmtDur(p.duracion_seg)+(p.instrumento?' · '+esc(p.instrumento):'')+(p.bpm?' · '+p.bpm+' BPM':'')+' <span class="tag'+(p.estado==='evaluada'?' ok':'')+'">'+(p.estado==='evaluada'?'Nota '+p.puntaje+'/10 · +'+p.xp+' XP':'En revisión')+'</span></div>'
-      +(p.nota_alumno?'<div class="rec-sub">“'+esc(p.nota_alumno)+'”</div>':'')+(p.comentario?'<div class="bubble-tip" style="margin:4px 0"><div class="say"><p><b style="color:var(--borgona)">'+esc(p.evaluado_por||'Tu profe')+':</b> '+esc(p.comentario)+'</p></div></div>':'')
-      +'<div><button class="btn ghost" type="button" data-play="'+p.id+'" style="padding:8px 16px">'+ic('play')+' Escuchar</button></div></div>').join(''):'<p class="rec-sub">Aún no has enviado ninguna práctica. ¡Graba la primera!</p>');
-  root.querySelectorAll('[data-play]').forEach(b=>b.onclick=async()=>{const p=L.find(x=>x.id===b.dataset.play);b.disabled=true;const u=p&&await urlFirmada('academy',p.ruta);if(!u){aviso('No se pudo cargar el audio');b.disabled=false;return}
-    const a=document.createElement('audio');a.controls=true;a.src=u;a.preload='auto';b.parentNode.replaceChildren(a);a.play().catch(()=>{})})
+   +'<h2 style="margin-top:18px">Mis grabaciones</h2>'
+   +'<div class="sp">'+(L.length?L.slice(0,40).map(p=>spItem(p)).join(''):'<p class="sp-empty">Aún no has enviado ninguna práctica. ¡Graba la primera!</p>')+'</div>';
+  plBind(root,k=>{const p=L.find(x=>x.id===k.slice(2));return p&&(k[0]==='a'?p.ruta:p.resp_ruta)})
 }
 async function pracMontar(root){
   const k=K(),L=await pracCargar(k.id);
@@ -686,10 +764,11 @@ async function pracMontar(root){
   $r('#rc-redo').onclick=()=>{blob=null;$r('#rc-prev').hidden=true;$r('#rc-t').textContent='0:00';st('Toca el círculo rojo para empezar.')};
   $r('#rc-send').onclick=async()=>{
     if(!blob)return;const b=$r('#rc-send');b.disabled=true;b.textContent='Enviando…';
-    const ext=/mp4|aac/.test(mime)?'m4a':/ogg/.test(mime)?'ogg':'webm',ruta=k.id+'/practica/'+Date.now()+'.'+ext,base=mime.split(';')[0];
+    const ext=/mp4|aac/.test(mime)?'m4a':/ogg/.test(mime)?'ogg':'webm',base=mime.split(';')[0];
+    if(!k.carpeta){st('Tu carpeta de archivos aún no está lista. Avísale a Faro.');b.disabled=false;b.textContent='Enviar a mi profe';return}
+    const ruta=k.carpeta+'practicas/'+Date.now()+'.'+ext;
     try{
-      const u=await api('/storage/v1/object/academy/'+ruta,{method:'POST',raw:true,body:blob,headers:{'Content-Type':base,'x-upsert':'false'}});
-      if(!u.ok)throw new Error('subida');
+      await rSubir(ruta,blob,base);
       const ins=$r('#rc-ins')?$r('#rc-ins').value:(k.instr[0]||null),herr=document.querySelector('#herr-root .ft-chips [aria-pressed="true"]');
       const r=await api('/rest/v1/rpc/ac_registrar_practica',{method:'POST',body:{p_est:k.id,p_ruta:ruta,p_dur:dur,p_instr:ins?(NOM[ins]||ins):null,p_herr:herr?herr.textContent:null,p_bpm:null,p_nota:$r('#rc-nota').value.trim()||null}});
       if(!r.ok)throw new Error('registro');const j=await r.json();
@@ -755,9 +834,9 @@ P.material.bind=()=>{
     const ext=(f.name.split('.').pop()||'').toLowerCase();
     const tipo=ext==='pdf'?'pdf':['mp3','m4a','wav'].includes(ext)?'audio':['mp4','mov'].includes(ext)?'video':['png','jpg','jpeg'].includes(ext)?'imagen':'otro';
     const limpio=f.name.normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^A-Za-z0-9._-]+/g,'_');
-    const ruta=k.id+'/alumno/'+Date.now()+'-'+limpio;$('#upmsg').textContent='Subiendo…';
-    try{const r=await api('/storage/v1/object/academy/'+ruta,{method:'POST',raw:true,body:f,headers:{'Content-Type':f.type||'application/octet-stream'}});
-      if(!r.ok)throw 0;
+    if(!k.carpeta){aviso('Tu carpeta de archivos aún no está lista. Avísale a Faro.');u.value='';return}
+    const ruta=k.carpeta+'mis-archivos/'+Date.now()+'-'+nomR2(f.name);$('#upmsg').textContent='Subiendo…';
+    try{await rSubir(ruta,f,f.type||'application/octet-stream');
       const x=await api('/rest/v1/ac_materiales',{method:'POST',body:{estudiante_id:k.id,categoria:'otro',titulo:f.name,tipo,ruta,subido_por:'alumno'},headers:{Prefer:'return=representation'}});
       if(!x.ok)throw 0;const j=await x.json();k.mats.unshift(j[0]||{titulo:f.name,tipo,ruta,subido_por:'alumno',creado:new Date().toISOString()});
       aviso('¡Listo! Tu profe ya puede verlo.');render()}
@@ -893,8 +972,10 @@ P['d-subir'].bind=()=>{const f=$('#d-file');
     try{let ruta,tipo;
       if(file){const ext=(file.name.split('.').pop()||'').toLowerCase();tipo=ext==='pdf'?'pdf':['mp3','m4a','wav'].includes(ext)?'audio':['mp4','mov'].includes(ext)?'video':['png','jpg','jpeg'].includes(ext)?'imagen':'otro';
         const limpio=file.name.normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^A-Za-z0-9._-]+/g,'_');
-        ruta=(para?para+'/material/':'general/')+Date.now()+'-'+limpio;
-        const r=await api('/storage/v1/object/academy/'+ruta,{method:'POST',raw:true,body:file,headers:{'Content-Type':file.type||'application/octet-stream'}});if(!r.ok)throw 0}
+        const al=para&&S.doc.alumnos.find(x=>x.id===para),base=para?(al&&al.carpeta?al.carpeta+'material/':''):(S.doc.perfil.carpeta||'');
+        if(!base)throw new Error('carpeta');
+        ruta=base+Date.now()+'-'+nomR2(file.name);
+        await rSubir(ruta,file,file.type||'application/octet-stream')}
       else{ruta=url;tipo='enlace'}
       const x=await api('/rest/v1/ac_materiales',{method:'POST',body:{estudiante_id:para||null,area:area||null,categoria:cat,titulo:tit,tipo,ruta,subido_por:'academy'},headers:{Prefer:'return=representation'}});
       if(!x.ok)throw 0;const j=await x.json();S.doc.mats.unshift(j[0]);S.doc.para=para;
@@ -905,8 +986,10 @@ P['d-archivos']=()=>{const d=S.doc,mias=d.mats.filter(m=>m.subido_uid===d.uid&&m
 P['d-archivos'].bind=()=>{
   $$('[data-open]').forEach(b=>b.onclick=()=>abrir('academy',b.dataset.open));
   $$('[data-del]').forEach(b=>b.onclick=async()=>{if(!confirm('¿Quitar este material? Tus alumnos ya no lo verán.'))return;
-    try{const r=await api('/rest/v1/ac_materiales?id=eq.'+b.dataset.del,{method:'DELETE',headers:{Prefer:'return=minimal'}});if(!r.ok)throw 0;
-      S.doc.mats=S.doc.mats.filter(m=>m.id!==b.dataset.del);aviso('Material quitado');render()}catch(e){aviso('No se pudo quitar')}})};
+    try{const m=S.doc.mats.find(x=>x.id===b.dataset.del);
+      const r=await api('/rest/v1/ac_materiales?id=eq.'+b.dataset.del,{method:'DELETE',headers:{Prefer:'return=minimal'}});if(!r.ok)throw 0;
+      if(m&&esR2(m.ruta))rBorrar(m.ruta);   // el archivo va a la papelera de Faro (se puede restaurar)
+      S.doc.mats=S.doc.mats.filter(x=>x.id!==b.dataset.del);aviso('Material quitado');render()}catch(e){aviso('No se pudo quitar')}})};
 function dProg(d,id){
   const e=(d.es||[]).find(x=>x.id===id)||{},t=(d.ta||[]).filter(x=>x.estudiante_id===id),v=(d.ev||[]).filter(x=>x.estudiante_id===id);
   const rev=t.filter(x=>x.estado==='hecha').length,hoy=hoyISO(),pr=(d.cl||[]).find(c=>c.estudiante_id===id&&(c.estado==='programada'||c.estado==='reprogramada')&&c.fecha>=hoy);
@@ -918,32 +1001,58 @@ P['d-alumnos'].bind=()=>$$('[data-para]').forEach(b=>b.onclick=()=>{S.doc.para=b
 
 
 /* ---------- docente: evalúa prácticas grabadas ---------- */
-P['d-practicas']=()=>'<section class="page"><div class="ph"><h1>Prácticas</h1><p>Escucha lo que graban tus alumnos, ponles nota de 1 a 10 y XP. La racha sube sola con su práctica diaria.</p></div><div class="card" id="dp-root"><p class="sub">Cargando…</p></div></section>';
+P['d-practicas']=()=>'<section class="page"><div class="ph"><h1>Prácticas</h1><p>Escucha lo que graban tus alumnos, ponles nota de 1 a 10 y XP, y respóndeles con tu propia grabación. La racha sube sola con su práctica diaria.</p></div><div class="card" id="dp-root"><p class="sub">Cargando…</p></div></section>';
+/* mini grabadora para la respuesta en audio del docente */
+function miniRec(host){
+  const s={blob:null,dur:0,mime:'',cancel(){try{mr&&mr.state!=='inactive'&&(cn=true,mr.stop())}catch(e){}try{stream&&stream.getTracks().forEach(t=>t.stop())}catch(e){}clearInterval(timer)}};let mr,stream,t0,timer,cn=false;
+  host.innerHTML='<div class="mr"><button type="button" class="mr-b" data-mr="go">● Grabar respuesta en audio</button><span class="rec-sub" data-mr="t"></span></div><div data-mr="prev" hidden style="margin-top:8px;display:grid;gap:6px"><audio controls style="width:100%"></audio><button type="button" class="btn ghost" data-mr="del" style="padding:6px 14px;justify-self:start">Quitar audio</button></div>';
+  const q=n=>host.querySelector('[data-mr="'+n+'"]');
+  const reset=()=>{s.blob=null;s.dur=0;q('prev').hidden=true;q('t').textContent='';q('go').textContent='● Grabar respuesta en audio';q('go').classList.remove('on')};
+  q('del').onclick=reset;
+  q('go').onclick=async()=>{
+    if(mr&&mr.state==='recording'){mr.stop();return}
+    if(!navigator.mediaDevices||!window.MediaRecorder){aviso('Este navegador no puede grabar');return}
+    try{stream=await navigator.mediaDevices.getUserMedia({audio:true});
+      const mt=['audio/webm;codecs=opus','audio/mp4','audio/webm'].find(m=>MediaRecorder.isTypeSupported(m))||'';
+      mr=new MediaRecorder(stream,mt?{mimeType:mt}:undefined);const ch=[];cn=false;s.mime=mr.mimeType||mt||'audio/webm';
+      mr.ondataavailable=e=>{if(e.data&&e.data.size)ch.push(e.data)};
+      mr.onstop=()=>{clearInterval(timer);stream.getTracks().forEach(t=>t.stop());if(cn)return;s.dur=Math.max(1,Math.round((Date.now()-t0)/1000));s.blob=new Blob(ch,{type:s.mime});
+        q('prev').hidden=false;q('prev').querySelector('audio').src=URL.createObjectURL(s.blob);q('go').classList.remove('on');q('go').textContent='● Grabar de nuevo';q('t').textContent=fmtDur(s.dur)};
+      mr.start(1000);t0=Date.now();q('go').classList.add('on');q('go').textContent='■ Detener';q('prev').hidden=true;
+      timer=setInterval(()=>{const x=Math.round((Date.now()-t0)/1000);q('t').textContent=fmtDur(x);if(x>=180)mr.stop()},300);
+    }catch(e){aviso(e&&e.name==='NotAllowedError'?'Activa el permiso del micrófono':'No se pudo abrir el micrófono')}};
+  return s}
 P['d-practicas'].bind=async()=>{
   const root=$('#dp-root'),d=S.doc;let L=null;
   try{const r=await api('/rest/v1/ac_practicas?order=creado.desc&limit=120');L=r.ok?await r.json():null}catch(e){}
   if(L===null){root.innerHTML='<p class="sub">Todavía no está activada la grabadora de práctica.</p>';return}
-  d.prac=L;let filtro='pendiente';
+  d.prac=L;let filtro='pendiente';const RECS={};
   const pintar=()=>{
+    Object.values(RECS).forEach(x=>x.cancel());Object.keys(RECS).forEach(k=>delete RECS[k]);plStop();
     const vis=L.filter(p=>filtro==='todas'||p.estado===filtro);
-    root.innerHTML='<div class="rec-row" style="margin-bottom:12px">'+[['pendiente','Por evaluar ('+L.filter(p=>p.estado==='pendiente').length+')'],['evaluada','Evaluadas'],['todas','Todas']].map(f=>'<button class="btn '+(filtro===f[0]?'y':'ghost')+'" type="button" data-f="'+f[0]+'" style="padding:8px 16px">'+f[1]+'</button>').join('')+'</div>'
-     +(vis.length?vis.slice(0,40).map(p=>{const hist=L.filter(x=>x.estudiante_id===p.estudiante_id).slice().reverse(),t=pracTend(hist);
-        return '<div class="pr-it" data-id="'+p.id+'"><div><b>'+esc(nombreAl(p.estudiante_id))+'</b> · '+esc(new Date(p.creado).toLocaleDateString('es-GT',{day:'numeric',month:'short'}))+' · '+fmtDur(p.duracion_seg)+(p.instrumento?' · '+esc(p.instrumento):'')+' <span class="tag'+(p.estado==='evaluada'?' ok':'')+'">'+(p.estado==='evaluada'?'Nota '+p.puntaje+'/10 · +'+p.xp+' XP':'Por evaluar')+'</span></div>'
-        +(t?'<div class="rec-sub">Tendencia del alumno: <b class="'+t.k+'">'+(t.k==='up'?'subiendo':t.k==='dn'?'bajando':'estable')+'</b> · promedio '+t.prom+'/10</div>':'')
-        +(p.nota_alumno?'<div class="rec-sub">“'+esc(p.nota_alumno)+'”</div>':'')
-        +'<div><button class="btn ghost" type="button" data-play="'+p.id+'" style="padding:8px 16px">'+ic('play')+' Escuchar</button> <button class="btn y" type="button" data-ev="'+p.id+'" style="padding:8px 16px">'+(p.estado==='evaluada'?'Editar evaluación':'Evaluar')+'</button></div><div data-form="'+p.id+'"></div></div>'}).join(''):'<p class="rec-sub">No hay prácticas aquí.</p>');
+    root.innerHTML='<div class="rec-row" style="margin-bottom:6px">'+[['pendiente','Por evaluar ('+L.filter(p=>p.estado==='pendiente').length+')'],['evaluada','Evaluadas'],['todas','Todas']].map(f=>'<button class="btn '+(filtro===f[0]?'y':'ghost')+'" type="button" data-f="'+f[0]+'" style="padding:8px 16px">'+f[1]+'</button>').join('')+'</div>'
+     +'<div class="sp">'+(vis.length?vis.slice(0,40).map(p=>{const hist=L.filter(x=>x.estudiante_id===p.estudiante_id).slice().reverse(),t=pracTend(hist);
+        return spItem(p,nombreAl(p.estudiante_id))
+         +'<div class="sp-it" style="padding-top:0">'+(t?'<div class="sp-quote">Tendencia del alumno: <b>'+(t.k==='up'?'subiendo':t.k==='dn'?'bajando':'estable')+'</b> · promedio '+t.prom+'/10</div>':'')
+         +'<div><button class="btn y" type="button" data-ev="'+p.id+'" style="padding:8px 16px">'+(p.estado==='evaluada'?'Editar evaluación / responder':'Evaluar y responder')+'</button></div><div data-form="'+p.id+'" style="background:#FBF9F4;color:#252528;border-radius:16px;padding:0"></div></div>'}).join(''):'<p class="sp-empty">No hay prácticas aquí.</p>')+'</div>';
     root.querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>{filtro=b.dataset.f;pintar()});
-    root.querySelectorAll('[data-play]').forEach(b=>b.onclick=async()=>{const p=L.find(x=>x.id===b.dataset.play);b.disabled=true;const u=p&&await urlFirmada('academy',p.ruta);if(!u){aviso('No se pudo cargar el audio');b.disabled=false;return}
-      const a=document.createElement('audio');a.controls=true;a.src=u;a.preload='auto';b.replaceWith(a);a.play().catch(()=>{})});
+    plBind(root,k=>{const p=L.find(x=>x.id===k.slice(2));return p&&(k[0]==='a'?p.ruta:p.resp_ruta)});
     root.querySelectorAll('[data-ev]').forEach(b=>b.onclick=()=>{const p=L.find(x=>x.id===b.dataset.ev),f=root.querySelector('[data-form="'+p.id+'"]');
-      if(f.innerHTML){f.innerHTML='';return}
-      let punt=p.puntaje||0;
-      f.innerHTML='<div class="pr-ev" role="group" aria-label="Nota de 1 a 10">'+[1,2,3,4,5,6,7,8,9,10].map(i=>'<button type="button" data-n="'+i+'" aria-pressed="'+(punt===i)+'">'+i+'</button>').join('')+'</div><div class="rec-row" style="align-items:center"><label class="rec-sub">XP <input type="number" min="0" max="50" id="xp-'+p.id+'" value="'+(p.xp||0)+'" style="width:84px;border:2px solid var(--line);border-radius:12px;padding:8px;font:inherit"></label><span class="rec-sub">sugerido: nota × 3</span></div><textarea class="rec-sel" rows="2" maxlength="500" id="cm-'+p.id+'" placeholder="Comentario para el alumno: qué hizo bien y qué mejorar" style="margin:8px 0">'+esc(p.comentario||'')+'</textarea><button class="btn y" type="button" id="gd-'+p.id+'">Guardar evaluación</button>';
+      if(f.innerHTML){f.innerHTML='';f.style.padding='0';if(RECS[p.id]){RECS[p.id].cancel();delete RECS[p.id]}return}
+      f.style.padding='14px';let punt=p.puntaje||0;
+      f.innerHTML='<div class="pr-ev" role="group" aria-label="Nota de 1 a 10">'+[1,2,3,4,5,6,7,8,9,10].map(i=>'<button type="button" data-n="'+i+'" aria-pressed="'+(punt===i)+'">'+i+'</button>').join('')+'</div><div class="rec-row" style="align-items:center"><label class="rec-sub">XP <input type="number" min="0" max="50" id="xp-'+p.id+'" value="'+(p.xp||0)+'" style="width:84px;border:2px solid var(--line);border-radius:12px;padding:8px;font:inherit"></label><span class="rec-sub">sugerido: nota × 3</span></div><textarea class="rec-sel" rows="2" maxlength="500" id="cm-'+p.id+'" placeholder="Comentario para el alumno: qué hizo bien y qué mejorar" style="margin:8px 0">'+esc(p.comentario||'')+'</textarea><div data-rec="'+p.id+'" style="margin-bottom:10px"></div><button class="btn y" type="button" id="gd-'+p.id+'">Guardar evaluación</button>';
+      const mr=RECS[p.id]=miniRec(f.querySelector('[data-rec="'+p.id+'"]'));
       f.querySelectorAll('[data-n]').forEach(n=>n.onclick=()=>{punt=+n.dataset.n;f.querySelectorAll('[data-n]').forEach(x=>x.setAttribute('aria-pressed',String(+x.dataset.n===punt)));if(p.estado!=='evaluada')f.querySelector('#xp-'+p.id).value=punt*3});
       f.querySelector('#gd-'+p.id).onclick=async e=>{if(!punt){aviso('Elige una nota de 1 a 10');return}e.target.disabled=true;
-        const xp=Math.max(0,Math.min(50,+f.querySelector('#xp-'+p.id).value||0)),com=f.querySelector('#cm-'+p.id).value.trim();
-        try{const r=await api('/rest/v1/rpc/ac_evaluar_practica',{method:'POST',body:{p_id:p.id,p_puntaje:punt,p_comentario:com||null,p_xp:xp}});if(!r.ok)throw 0;
-          Object.assign(p,{estado:'evaluada',puntaje:punt,comentario:com,xp:xp});aviso('Evaluación guardada · +'+xp+' XP');pintar()}catch(x){aviso('No se pudo guardar. Intenta de nuevo.');e.target.disabled=false}}})};
+        const xp=Math.max(0,Math.min(50,+f.querySelector('#xp-'+p.id).value||0)),com=f.querySelector('#cm-'+p.id).value.trim(),body={p_id:p.id,p_puntaje:punt,p_comentario:com||null,p_xp:xp};
+        try{
+          if(mr.blob){const al=d.alumnos.find(x=>x.id===p.estudiante_id);if(!al||!al.carpeta)throw new Error('carpeta');
+            const ext=/mp4|aac/.test(mr.mime)?'m4a':'webm',key=al.carpeta+'respuestas/'+Date.now()+'.'+ext;
+            await rSubir(key,mr.blob,mr.mime.split(';')[0]);body.p_resp_ruta=key;body.p_resp_dur=mr.dur}
+          const r=await api('/rest/v1/rpc/ac_evaluar_practica',{method:'POST',body});if(!r.ok)throw 0;
+          Object.assign(p,{estado:'evaluada',puntaje:punt,comentario:com,xp:xp,evaluado_por:(d.perfil&&d.perfil.nombre)||p.evaluado_por});
+          if(body.p_resp_ruta){p.resp_ruta=body.p_resp_ruta;p.resp_dur=body.p_resp_dur}
+          aviso('Evaluación guardada · +'+xp+' XP'+(body.p_resp_ruta?' · respuesta enviada':''));pintar()}catch(x){aviso('No se pudo guardar. Intenta de nuevo.');e.target.disabled=false}}})};
   pintar();
 };
 
@@ -953,7 +1062,7 @@ document.addEventListener('click',async e=>{const kb=e.target.closest('[data-kid
 
 /* ---------- pintar ---------- */
 function render(){
-  clearInterval(S.timer);window.FaroTools&&FaroTools.stop();pracStop();
+  clearInterval(S.timer);window.FaroTools&&FaroTools.stop();pracStop();plStop();
   $('#login').hidden=!!S.rol;$('.app').style.display=S.rol?'':'none';$('#out').hidden=!S.rol;
   if(!S.rol){loginUI();return}
   /* si la sección ya no está disponible (por ejemplo, le quitaron el instrumento), vuelve al inicio */
@@ -1001,7 +1110,7 @@ async function iniciar(){
     render()}
   catch(e){if(e.message!=='sesion'){salir(true);loginUI('No pudimos entrar ahora. Intenta de nuevo en un momento.')}}
 }
-function salir(silencio){window.FaroTools&&FaroTools.stop();pracStop();SES=null;try{sessionStorage.removeItem('faro_portal');localStorage.removeItem('faro_portal')}catch(e){}S.rol=null;S.D={};S.cli=null;S.doc=null;S.perfil=null;if(!silencio){render()}}
+function salir(silencio){window.FaroTools&&FaroTools.stop();pracStop();plStop();SES=null;try{sessionStorage.removeItem('faro_portal');localStorage.removeItem('faro_portal')}catch(e){}S.rol=null;S.D={};S.cli=null;S.doc=null;S.perfil=null;if(!silencio){render()}}
 $('#out').onclick=()=>salir();
 ['gesturestart','gesturechange','gestureend'].forEach(g=>document.addEventListener(g,e=>e.preventDefault()));
 ['pointerdown','keydown','touchstart','scroll'].forEach(ev=>addEventListener(ev,()=>{if(SES)actMarca()},{passive:true,capture:true}));
