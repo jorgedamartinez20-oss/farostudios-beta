@@ -361,11 +361,12 @@ button,.btn,.chip,.nav,.tab,.stab,.seg{-webkit-user-select:none;user-select:none
 
 @media (hover:none){*{-webkit-tap-highlight-color:transparent}}
 /* ---------- pantalla de acceso: sin campanita ni selector de tema, isotipo fantasma de textura ---------- */
-body:has(#v-login:not([hidden])) :is(#bell,#notif,#tema){display:none!important}
+body:has(#v-login:not([hidden]),#v-wait:not([hidden])) :is(#bell,#notif,#tema){display:none!important}
+.wait{max-width:420px;margin:30vh auto 0;text-align:center;color:var(--muted);font-weight:700;letter-spacing:.04em}.wait::before{content:"";display:block;width:34px;height:34px;margin:0 auto 14px;border-radius:50%;border:3px solid var(--line);border-top-color:var(--oro);animation:wspin .8s linear infinite}@keyframes wspin{to{transform:rotate(360deg)}}
 .login .welcome{margin:0 0 6px;font-weight:700;font-size:.95rem;letter-spacing:.16em;text-transform:uppercase;color:var(--oro-t)}.login h1{font-size:clamp(2.1rem,10vw,2.8rem)}
-body:has(#v-login:not([hidden]))::before{content:"";position:fixed;right:-9vw;bottom:-6vh;height:min(100vh,1200px);aspect-ratio:850/1595;z-index:0;pointer-events:none;
+body:has(#v-login:not([hidden]),#v-wait:not([hidden]))::before{content:"";position:fixed;right:-9vw;bottom:-6vh;height:min(100vh,1200px);aspect-ratio:850/1595;z-index:0;pointer-events:none;
  background:var(--text);opacity:.15;-webkit-mask:url(isotipo-fantasma.png) center/contain no-repeat;mask:url(isotipo-fantasma.png) center/contain no-repeat}
-body:has(#v-login:not([hidden])) .wrap{position:relative;z-index:1}
+body:has(#v-login:not([hidden]),#v-wait:not([hidden])) .wrap{position:relative;z-index:1}
 
 /* ---------- móvil: fondo liso, sin velo blanco bajo el encabezado ---------- */
 @media (max-width:900px){
@@ -406,6 +407,7 @@ html.is-app .top{padding-top:calc(10px + var(--top-extra) + env(safe-area-inset-
     </div>
   </section>
 
+  <section id="v-wait" class="wait" hidden role="status" aria-live="polite">Verificando acceso…</section>
   <section id="v-app" class="shell" hidden>
    <aside class="side"><div class="clock" id="clock" role="timer" aria-label="Fecha y hora"></div><button type="button" id="sidetog" class="sidetog" aria-expanded="true" title="Ocultar menú" aria-label="Mostrar u ocultar el menú"><span data-i="sliders"></span></button><nav class="nav" role="tablist" aria-label="Secciones">
       <button class="tab" role="tab" data-s="ini" aria-selected="false"><span class="ni" data-i="dashboard"></span><span class="nl">Inicio</span><span class="n sbadge" hidden>0</span></button>
@@ -738,10 +740,14 @@ async function mfaCard(card){
             el('button',{class:'btn btn-ghost btn-sm',type:'button',onclick:async()=>{await api('/auth/v1/factors/'+j.id,{method:'DELETE'}).catch(()=>{});pintar()}},'Cancelar')))}},'Activar'))};
   await pintar()}
 async function start(){
+  /* el panel no se muestra nada hasta pasar el código de 2 pasos y confirmar permisos */
+  $('#v-app').hidden=true;$('#out').hidden=true;$('#v-login').hidden=true;$('#v-wait').hidden=false;
+  try{
+    if(!(await mfaOk()))return;
+    await identificar();
+    if(!ME.ok){logout();const e=$('#lerr');e.hidden=false;e.textContent='Esta cuenta todavía no tiene permisos en el panel (o fue desactivada). Pídele al director que te los active.';return}
+  }finally{$('#v-wait').hidden=true}
   $('#v-login').hidden=true;$('#v-app').hidden=false;$('#out').hidden=false;
-  if(!(await mfaOk()))return;
-  await identificar();
-  if(!ME.ok){logout();const e=$('#lerr');e.hidden=false;e.textContent='Esta cuenta todavía no tiene permisos en el panel (o fue desactivada). Pídele al director que te los active.';return}
   aplicarPermisos();showTab(ME.owner?'ini':primeraPestana());
   if(!cy){const t=today();cy=+t.slice(0,4);cm=+t.slice(5,7)-1}
   await loadAll();if(puede('contenido'))ctCargar().catch(()=>{});
