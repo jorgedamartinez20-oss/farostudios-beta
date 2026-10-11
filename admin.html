@@ -250,10 +250,19 @@ h1,h2,h3{font-weight:300;letter-spacing:-.005em}
 <main class="wrap">
   <section id="v-login" class="card login">
     <h1>Entrar</h1><p class="muted">Espacio privado de administración de Faro.</p>
+    <div id="lstep1">
     <div class="field"><label for="em">Correo o usuario</label><input id="em" type="text" autocomplete="username" autocapitalize="none" spellcheck="false"></div>
     <div class="field"><label for="pw">Contraseña</label><input id="pw" type="password" autocomplete="current-password"><label style="font-weight:400;display:flex;gap:8px;align-items:center;margin-top:4px"><input type="checkbox" id="spw" style="width:auto"> Mostrar contraseña</label></div>
     <div class="msg" id="lerr" hidden></div>
     <button class="btn btn-gold" id="lgo" type="button" style="margin-top:18px;width:100%;justify-content:center">Entrar</button>
+    </div>
+    <div id="mfa-box" hidden>
+      <p class="muted" style="margin-top:6px">Abre la app de autenticación en tu teléfono (Google Authenticator, Microsoft Authenticator, Authy…) y escribe el código de 6 dígitos de “Faro Admin”.</p>
+      <div class="field"><label for="mfa">Código de 6 dígitos</label><input id="mfa" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]*" style="letter-spacing:.4em;font-size:1.4rem;text-align:center"></div>
+      <div class="msg" id="merr" hidden></div>
+      <button class="btn btn-gold" id="mgo" type="button" style="margin-top:18px;width:100%;justify-content:center">Verificar</button>
+      <button class="btn btn-ghost" id="mno" type="button" style="margin-top:10px;width:100%;justify-content:center">Cancelar</button>
+    </div>
   </section>
 
   <section id="v-app" class="shell" hidden>
@@ -498,8 +507,70 @@ async function loadAll(){
   if(ME.owner&&(!b.ok||!s.ok||!c.ok||!cj.length)){w.hidden=false;w.textContent='Faltan permisos o tablas. Corre agenda-bloqueos.sql en Supabase y confirma que entraste con el correo de administrador (reservas@farostudios.net).'}else w.hidden=true;
   render();loadAc();
 }
+
+/* ---------- seguridad en 2 pasos (TOTP de Supabase) ---------- */
+const MFA={factor:null};
+function jwtAal(){try{return JSON.parse(atob(S.access.split('.')[1].replace(/-/g,'+').replace(/_/g,'/'))).aal||'aal1'}catch(e){return 'aal1'}}
+async function mfaFactores(){
+  try{const r=await api('/auth/v1/user');if(!r.ok)return[];const u=await r.json();return (u.factors||[]).filter(f=>f.factor_type==='totp')}catch(e){return[]}}
+/* true = puede pasar; false = se pidió el código */
+async function mfaOk(){
+  const f=(await mfaFactores()).find(x=>x.status==='verified');
+  if(!f||jwtAal()==='aal2')return true;
+  MFA.factor=f.id;$('#v-app').hidden=true;$('#v-login').hidden=false;$('#out').hidden=true;
+  $('#lstep1').hidden=true;$('#mfa-box').hidden=false;$('#merr').hidden=true;$('#mfa').value='';setTimeout(()=>{try{$('#mfa').focus()}catch(e){}},50);
+  return false}
+async function mfaCodigo(factor,code){
+  const c=await api('/auth/v1/factors/'+factor+'/challenge',{method:'POST',body:{}});
+  if(!c.ok)throw new Error('No se pudo pedir el reto ('+c.status+')');
+  const cj=await c.json();
+  const v=await api('/auth/v1/factors/'+factor+'/verify',{method:'POST',body:{challenge_id:cj.id,code:String(code).replace(/\s/g,'')}});
+  if(!v.ok)throw new Error('Código incorrecto o vencido. Revisa la hora de tu teléfono e intenta con el siguiente código.');
+  saveS(await v.json())}
+async function mfaVerificar(){
+  const e=$('#merr'),b=$('#mgo');e.hidden=true;if(b.disabled)return;
+  const code=$('#mfa').value.replace(/\D/g,'');if(code.length!==6){e.hidden=false;e.textContent='Escribe los 6 dígitos.';return}
+  b.disabled=true;
+  try{await mfaCodigo(MFA.factor,code);$('#mfa-box').hidden=true;$('#lstep1').hidden=false;await start()}
+  catch(x){e.hidden=false;e.textContent=x.message||'No se pudo verificar';$('#mfa').value=''}
+  finally{b.disabled=false}}
+$('#mgo').addEventListener('click',mfaVerificar);
+$('#mno').addEventListener('click',()=>{$('#mfa-box').hidden=true;$('#lstep1').hidden=false;logout()});
+$('#mfa').addEventListener('keydown',e=>{if(e.key==='Enter')mfaVerificar()});
+$('#mfa').addEventListener('input',()=>{const v=$('#mfa').value.replace(/\D/g,'');if(v.length===6&&v!==$('#mfa').dataset.u){$('#mfa').dataset.u=v;mfaVerificar()}});
+async function mfaCard(card){
+  const body=el('div',{});card.append(body);
+  const pintar=async()=>{
+    body.textContent='';const fs=await mfaFactores(),ok=fs.find(f=>f.status==='verified');
+    if(ok){
+      body.append(setRow('Código en el teléfono: activado','Al entrar te pedimos el código de 6 dígitos de tu app de autenticación.',el('span',{class:'tag confirmada'},'Activo')),
+        el('button',{class:'btn btn-ghost btn-sm',type:'button',style:'margin-top:10px',onclick:async()=>{
+          if(jwtAal()!=='aal2'){toast('Vuelve a entrar con tu código para poder desactivarlo');return}
+          if(!confirm('¿Desactivar la verificación en 2 pasos? Tu cuenta quedará protegida solo por contraseña.'))return;
+          const r=await api('/auth/v1/factors/'+ok.id,{method:'DELETE'});
+          if(!r.ok){toast(await errText(r));return}toast('Verificación en 2 pasos desactivada');pintar()}},'Desactivar'));
+      return}
+    body.append(setRow('Código en el teléfono: apagado','Recomendado: aunque alguien sepa tu contraseña, no podrá entrar sin tu teléfono.',el('span',{class:'tag pendiente'},'Inactivo')),
+      el('button',{class:'btn btn-gold btn-sm',type:'button',style:'margin-top:10px',onclick:async()=>{
+        for(const f of fs.filter(x=>x.status!=='verified'))await api('/auth/v1/factors/'+f.id,{method:'DELETE'}).catch(()=>{});
+        const r=await api('/auth/v1/factors',{method:'POST',body:{factor_type:'totp',friendly_name:'Faro Admin '+Date.now().toString(36),issuer:'Faro Admin'}});
+        if(!r.ok){toast(r.status===422||r.status===400?'Supabase no tiene activada la verificación en 2 pasos (Authentication › Sign In / Providers › MFA).':await errText(r));return}
+        const j=await r.json(),t=j.totp||{};body.textContent='';
+        const inp=el('input',{type:'text',inputmode:'numeric',maxlength:'6',autocomplete:'one-time-code',placeholder:'000000',style:'letter-spacing:.3em;text-align:center;max-width:180px'});
+        const msg=el('div',{class:'msg',hidden:true});
+        body.append(el('ol',{class:'usteps'},el('li',{},'Instala una app de autenticación en tu teléfono (Google Authenticator, Microsoft Authenticator o Authy).'),
+            el('li',{},'Escanea este código QR, o escribe la clave a mano:')),
+          t.qr_code?el('img',{src:t.qr_code,alt:'Código QR para tu app de autenticación',style:'width:180px;height:180px;background:#fff;padding:8px;border-radius:8px;display:block;margin:8px 0'}):null,
+          t.secret?el('code',{style:'word-break:break-all;display:block;margin:6px 0 12px'},t.secret):null,
+          el('div',{class:'field'},el('label',{},'3. Escribe el código de 6 dígitos que muestra la app'),inp),msg,
+          el('div',{style:'display:flex;gap:8px;margin-top:10px;flex-wrap:wrap'},
+            el('button',{class:'btn btn-gold btn-sm',type:'button',onclick:async()=>{
+              msg.hidden=true;try{await mfaCodigo(j.id,inp.value);toast('Verificación en 2 pasos activada');pintar()}catch(x){msg.hidden=false;msg.textContent=x.message}}},'Activar'),
+            el('button',{class:'btn btn-ghost btn-sm',type:'button',onclick:async()=>{await api('/auth/v1/factors/'+j.id,{method:'DELETE'}).catch(()=>{});pintar()}},'Cancelar')))}},'Activar'))};
+  await pintar()}
 async function start(){
   $('#v-login').hidden=true;$('#v-app').hidden=false;$('#out').hidden=false;
+  if(!(await mfaOk()))return;
   await identificar();
   if(!ME.ok){logout();const e=$('#lerr');e.hidden=false;e.textContent='Esta cuenta todavía no tiene permisos en el panel (o fue desactivada). Pídele al director que te los active.';return}
   aplicarPermisos();showTab(ME.owner?'ini':primeraPestana());
@@ -1910,6 +1981,7 @@ async function renderPre(){
     setRow('Cada cuánto','',selEl([[1,'1 minuto'],[3,'3 minutos'],[5,'5 minutos'],[10,'10 minutos']],PREF.min,v=>cambia('min',+v))),
     el('div',{style:'margin-top:10px;display:flex;gap:8px;flex-wrap:wrap'},el('button',{class:'btn btn-ghost btn-sm',type:'button',onclick:()=>refrescar(true)},icoEl('refresh'),' Actualizar ahora'),
       el('button',{class:'btn btn-ghost btn-sm',type:'button',onclick:()=>{PREF=Object.assign({},PREF0);prefGuardar();DASH.meses=PREF.rd;AN.rango=PREF.ra;relojPintar();avisosPintar();renderPre();toast('Preferencias restablecidas')}},'Restablecer')));
+  const sg=card('w6','Seguridad en 2 pasos','Pide un código de tu teléfono además de la contraseña');mfaCard(sg);
   /* estado del sistema */
   const est=card('w6','Estado del sistema','Para saber si todo está conectado',el('p',{class:'muted'},'Revisando…'));
   const ex=card('w6','Exportar datos','Descarga una copia para abrir en Excel o Numbers',
