@@ -1,0 +1,22 @@
+name = "faro-archivos"
+main = "src/index.js"
+compatibility_date = "2025-09-01"
+
+[[r2_buckets]]
+binding = "PRIVADO"
+bucket_name = "faro-privado"
+
+[[r2_buckets]]
+binding = "PUBLICO"
+bucket_name = "faro-publico"
+
+[vars]
+# La llave "publishable" de Supabase es pública por diseño; no es un secreto.
+SUPABASE_URL = "https://keivqvsgdfhthouzlqxo.supabase.co"
+SUPABASE_KEY = "sb_publishable_5nj3M7rjQs3phGU6u2uNqw_3tjTL6PE"
+ADMIN_EMAIL = "reservas@farostudios.net"
+# Páginas que pueden hablar con este servicio (separadas por coma). Agrega aquí la dirección github.io del beta.
+ORIGENES = "https://jorgedamartinez20-oss.github.io,https://farostudios.net,https://www.farostudios.net"
+
+# Secreto (NO va aquí): FIRMA_SECRETO, para los enlaces temporales de descarga.
+#   npx wrangler secret put FIRMA_SECRETO

@@ -94,6 +94,7 @@ button,input,select,textarea{font:inherit;color:inherit}
       <button class="tab" role="tab" data-t="cot" aria-selected="false">Cotizaciones<span class="n" id="ncot" hidden>0</span></button>
       <button class="tab" role="tab" data-t="aca" aria-selected="false">Academy<span class="n" id="nac" hidden>0</span></button>
       <button class="tab" role="tab" data-t="cli" aria-selected="false">Clientes<span class="n" id="ncl" hidden>0</span></button>
+      <button class="tab" role="tab" data-t="mat" aria-selected="false">Materiales</button>
       <button class="tab" role="tab" data-t="sit" aria-selected="false">Sitio web</button>
       <button class="tab" role="tab" data-t="sem" aria-selected="false">Bloqueos semanales</button>
       <button class="tab" role="tab" data-t="acc" aria-selected="false">Acceso y reglas</button>
@@ -139,6 +140,10 @@ button,input,select,textarea{font:inherit;color:inherit}
       <div class="msg" id="cl-warn" hidden style="margin-bottom:14px">Faltan las tablas del portal. En Supabase abre SQL Editor, New query, pega portal-faro.sql y dale Run.</div>
       <div class="card" style="margin-bottom:18px"><h2>Faro Studios · clientes</h2><p class="muted">Cada cliente recibe un token para entrar a su espacio: enlace a su galería de Pixieset, contrato, entregas y un buzón para comentarios.</p><div class="chips" id="cl-chips" style="margin-top:12px"></div></div>
       <div id="cl-body"></div>
+    </div>
+
+    <div id="t-mat" hidden>
+      <div id="mat-body"></div>
     </div>
 
     <div id="t-sit" hidden>
@@ -394,7 +399,7 @@ $('#cgo').addEventListener('click',()=>{const v=$('#cod').value.trim();if(!/^[A-
 $('#mgo').addEventListener('click',()=>{const v=parseInt($('#mar').value,10);if(!(v>=0&&v<=12)){toast('Escribe un número de 0 a 12');return}saveCfg('margen_horas',v,'Margen actualizado')});
 
 /* ---------- pestañas ---------- */
-function showTab(t){$$('.tab').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.t===t)));['cal','res','cot','aca','cli','sit','sem','acc'].forEach(x=>$('#t-'+x).hidden=x!==t)}
+function showTab(t){$$('.tab').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.t===t)));['cal','res','cot','aca','cli','mat','sit','sem','acc'].forEach(x=>$('#t-'+x).hidden=x!==t);if(t==='mat')matInit()}
 $$('.tab').forEach(b=>b.addEventListener('click',()=>showTab(b.dataset.t)));
 const ESTC=['nueva','contactada','cotizada','ganada','perdida'];
 function renderCot(){
@@ -763,13 +768,13 @@ const SITIO=[
   {k:'txt.who1',l:'Quiénes somos · párrafo 1',t:'area'},{k:'txt.who2',l:'Quiénes somos · párrafo 2',t:'area'},
   {k:'txt.lead.portafolio',l:'Portafolio · frase debajo del título',t:'area'},{k:'txt.lead.catalogo',l:'Catálogo · frase debajo del título',t:'area'},
   {k:'txt.lead.recursos',l:'Recursos gratis · frase debajo del título',t:'area'},{k:'txt.lead.faq',l:'Preguntas frecuentes · frase debajo del título',t:'area'}]},
- {g:'Fotos de Studios',items:[{k:'img.david',l:'Foto de David (Quiénes somos)',t:'img'},{k:'img.equipo2',l:'Foto de la segunda persona del equipo',t:'img'},
+ {g:'Fotos de Studios',dest:'landing/fotos-studios',items:[{k:'img.david',l:'Foto de David (Quiénes somos)',t:'img'},{k:'img.equipo2',l:'Foto de la segunda persona del equipo',t:'img'},
   ...rng('t',3).map(x=>({k:'img.'+x,l:'Foto del testimonio '+x.slice(1),t:'img'}))]},
- {g:'Portafolio · 14 tablones',items:rng('w',14).map(x=>({k:'img.'+x,l:'Tablón '+x.slice(1),t:'img'}))},
- {g:'Producciones musicales · portadas y audios',items:rng('alb',8).flatMap(x=>[{k:'img.'+x,l:'Portada del disco '+x.slice(3),t:'img'},{k:'audio.'+x,l:'Audio del disco '+x.slice(3)+' (MP3)',t:'audio'}])},
- {g:'Recursos gratis (PDF)',items:rng('r',6).map(x=>({k:'pdf.'+x,l:'Recurso '+x.slice(1)+' (PDF)',t:'pdf'}))},
- {g:'Catálogo en libro',items:[{k:'catalogoPdf',l:'Catálogo completo (PDF). Se muestra como libro, sin descarga.',t:'pdf'}]},
- {g:'Academy · fotos',items:[{k:'img.music-t1',l:'Foto testimonio Música',t:'img'},{k:'img.english-t1',l:'Foto testimonio Inglés',t:'img'},
+ {g:'Portafolio · 14 tablones',dest:'landing/portafolio',items:rng('w',14).map(x=>({k:'img.'+x,l:'Tablón '+x.slice(1),t:'img'}))},
+ {g:'Producciones musicales · portadas y audios',dest:'landing/producciones-musicales',items:rng('alb',8).flatMap(x=>[{k:'img.'+x,l:'Portada del disco '+x.slice(3),t:'img'},{k:'audio.'+x,l:'Audio del disco '+x.slice(3)+' (MP3)',t:'audio'}])},
+ {g:'Recursos gratis (PDF)',dest:'landing/recursos-gratis',items:rng('r',6).map(x=>({k:'pdf.'+x,l:'Recurso '+x.slice(1)+' (PDF)',t:'pdf'}))},
+ {g:'Catálogo en libro',dest:'landing/catalogo',items:[{k:'catalogoPdf',l:'Catálogo completo (PDF). Se muestra como libro, sin descarga.',t:'pdf'}]},
+ {g:'Academy · fotos',dest:'landing/academy-fotos',items:[{k:'img.music-t1',l:'Foto testimonio Música',t:'img'},{k:'img.english-t1',l:'Foto testimonio Inglés',t:'img'},
   ...INST.map(i=>({k:'img.music-'+i[0],l:'Foto de '+i[1],t:'img'})),...NIV.map(i=>({k:'img.english-'+i[0],l:'Foto de Inglés · '+i[1],t:'img'}))]},
  {g:'Academy · canciones de Spotify por instrumento',items:INST.map(i=>({k:'songs.'+i[0],l:i[1]+' · enlace insertar de Spotify',t:'text',ph:'https://open.spotify.com/embed/track/…'}))}
 ];
@@ -781,9 +786,9 @@ function renderSitio(){
     const d=el('details',{class:'card','data-g':sec.g,style:'margin-bottom:14px;text-align:left'});if(open.has(sec.g))d.open=true;
     const n=sec.items.filter(i=>sitioVal(i.k)).length;
     d.append(el('summary',{style:'cursor:pointer;font:400 1.6rem/1.2 var(--display);letter-spacing:.06em'},sec.g+'  ',el('small',{class:'muted',style:'font:400 .95rem var(--body);letter-spacing:0'},n+' de '+sec.items.length+' llenos')));
-    sec.items.forEach(it=>d.append(sitioRow(it)));box.append(d)});
+    sec.items.forEach(it=>d.append(sitioRow(it,sec.dest)));box.append(d)});
 }
-function sitioRow(it){
+function sitioRow(it,dest){
   const v=sitioVal(it.k),row=el('div',{class:'item'},el('b',{},it.l),el('small',{},it.k));
   if(['img','audio','pdf'].includes(it.t)){
     if(v){
@@ -792,8 +797,10 @@ function sitioRow(it){
     }
     const fi=el('input',{type:'file',accept:it.t==='img'?'image/*':it.t==='audio'?'audio/*':'application/pdf',style:'margin-top:10px'});
     fi.addEventListener('change',async()=>{const f=fi.files[0];if(!f)return;
-      try{toast('Subiendo…');const p=await upTo('sitio',it.k.replace(/[^\w]+/g,'_')+'/'+Date.now()+'-'+safeName(f.name),f,25);
-        await sitioSet(it.k,SB.url+'/storage/v1/object/public/sitio/'+p);toast('Guardado');await loadAc()}catch(e){toast(e.message||'No se pudo subir')}});
+      try{toast('Subiendo…');let u;
+        if(FILES&&dest){u=await matSubirPublico(it,dest,f)}   /* R2: carpeta pública del landing */
+        else{const p=await upTo('sitio',it.k.replace(/[^\w]+/g,'_')+'/'+Date.now()+'-'+safeName(f.name),f,25);u=SB.url+'/storage/v1/object/public/sitio/'+p}
+        await sitioSet(it.k,u);toast('Guardado');await loadAc()}catch(e){toast(e.message||'No se pudo subir')}});
     row.append(fi);
     if(v)row.append(el('div',{class:'acts'},el('button',{class:'btn btn-red btn-sm',type:'button',onclick:()=>sitioDel(it.k)},'Quitar (vuelve al ejemplo)')));
   }else{
@@ -811,6 +818,154 @@ async function sitioTxt(inputs){
     toast(n?'Guardado ('+n+')':'No hay cambios');await loadAc()}catch(e){toast(e.message||'No se pudo guardar')}
 }
 $('#sit-save').addEventListener('click',()=>sitioTxt($$('.sit-txt')));
+
+/* ---------- MATERIALES · archivos en Cloudflare R2 ----------
+   Datos (quién es quién) = Supabase. Archivos = R2, a través del servicio "faro-archivos" (carpeta worker/).
+   La estructura de carpetas se define una sola vez en ese servicio y se lee desde aquí. */
+const FILES_LS='faro_files_api';
+let FILES=(()=>{try{return(localStorage.getItem(FILES_LS)||'').replace(/\/+$/,'')}catch(e){return''}})();
+const MAT={destinos:[],umbral:40*1024*1024};
+const MAT_PARTE=20*1024*1024;
+const matSlug=t=>String(t||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,60);
+function matNombre(n){let s=String(n||'').normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/\s+/g,'-').replace(/[^A-Za-z0-9._()\-]+/g,'').replace(/-{2,}/g,'-').replace(/^[.\-]+/,'');if(s.length>150){const i=s.lastIndexOf('.');const ex=i>0&&s.length-i<=10?s.slice(i):'';s=s.slice(0,150-ex.length)+ex}return s}
+const matKey=k=>k.split('/').map(encodeURIComponent).join('/');
+const matTam=b=>b>=1073741824?(b/1073741824).toFixed(2)+' GB':b>=1048576?(b/1048576).toFixed(1)+' MB':Math.max(1,Math.round(b/1024))+' KB';
+async function fapi(path,o={}){
+  if(S&&S.exp-60000<Date.now())await refresh();
+  return fetch(FILES+path,{method:o.method||'GET',headers:Object.assign({Authorization:'Bearer '+(S&&S.access)},o.headers||{}),body:o.body});
+}
+async function fjson(path,o){const r=await fapi(path,o);let j={};try{j=await r.json()}catch(e){}if(!r.ok)throw new Error(j.error||('Error '+r.status));return j}
+async function xhrPut(path,headers,body,onProg){
+  if(S&&S.exp-60000<Date.now())await refresh();
+  return new Promise((res,rej)=>{const x=new XMLHttpRequest();x.open('PUT',FILES+path);x.setRequestHeader('Authorization','Bearer '+(S&&S.access));
+    Object.keys(headers||{}).forEach(k=>x.setRequestHeader(k,headers[k]));
+    if(onProg)x.upload.onprogress=e=>{if(e.lengthComputable)onProg(e.loaded)};
+    x.onload=()=>{let j={};try{j=JSON.parse(x.responseText)}catch(e){}(x.status>=200&&x.status<300)?res(j):rej(new Error(j.error||('Error '+x.status)))};
+    x.onerror=()=>rej(new Error('No hay conexión con el servicio de archivos'));x.send(body)});
+}
+async function matArbol(){
+  if(MAT.destinos.length)return;
+  const r=await fetch(FILES+'/api/arbol');if(!r.ok)throw new Error('El servicio de archivos no responde');
+  const a=await r.json();MAT.destinos=a.destinos;MAT.umbral=a.umbralSimple||MAT.umbral;
+}
+const matDest=id=>MAT.destinos.find(d=>d.id===id);
+/* Sube un archivo a su carpeta. Hasta ~40 MB de una vez; más grande, por partes (videos y producciones). */
+async function matSubir(file,destId,ent,onProg,nombre){
+  await matArbol();const d=matDest(destId);if(!d)throw new Error('Destino no válido');
+  const nm=matNombre(nombre||file.name);if(!nm)throw new Error('Nombre de archivo no válido');
+  let carpeta=d.prefijo;
+  if(d.entidad){const s=matSlug(ent);if(!s)throw new Error('Escribe a qué persona o empresa pertenece');carpeta+=s+'/'}
+  const key=carpeta+nm,q='bucket='+d.bucket+'&key='+encodeURIComponent(key),tipo=file.type||'application/octet-stream';
+  if(file.size<=MAT.umbral){await xhrPut('/api/subir?'+q,{'Content-Type':tipo},file,onProg);return{key,bucket:d.bucket}}
+  const{uploadId}=await fjson('/api/multipart/inicio?'+q+'&tipo='+encodeURIComponent(tipo),{method:'POST'});
+  const partes=[];let hecho=0;
+  try{
+    for(let i=0,n=1;i<file.size;i+=MAT_PARTE,n++){
+      const trozo=file.slice(i,i+MAT_PARTE);let intento=0,p;
+      for(;;){
+        try{p=await xhrPut('/api/multipart/parte?'+q+'&uploadId='+encodeURIComponent(uploadId)+'&n='+n,{},trozo,l=>{if(onProg)onProg(hecho+l)});break}
+        catch(e){if(++intento>=3)throw e;await new Promise(r=>setTimeout(r,800*intento))}
+      }
+      partes.push(p);hecho+=trozo.size;if(onProg)onProg(hecho);
+    }
+    await fjson('/api/multipart/fin?'+q+'&uploadId='+encodeURIComponent(uploadId),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({partes})});
+  }catch(e){try{await fapi('/api/multipart/cancelar?'+q+'&uploadId='+encodeURIComponent(uploadId),{method:'POST'})}catch(x){}throw e}
+  return{key,bucket:d.bucket};
+}
+/* Archivos del landing: van a la carpeta pública y el enlace queda guardado en Sitio web */
+async function matSubirPublico(it,dest,f){
+  const r=await matSubir(f,dest,'',null,it.k.replace(/[^\w]+/g,'-')+'-'+Date.now()+'-'+f.name);
+  return FILES+'/pub/'+matKey(r.key);
+}
+async function matEnlace(bucket,key,ver){
+  if(bucket==='publico')return FILES+'/pub/'+matKey(key);
+  const j=await fjson('/api/enlace?bucket='+bucket+'&key='+encodeURIComponent(key)+'&seg=3600',{method:'POST'});
+  return ver?j.urlVer:j.url;
+}
+function matSugeridos(d){
+  let k=null;try{if(d.id.startsWith('studios/'))k='cli';else if(/\/alumnos$/.test(d.id))k='est';else if(/\/docentes$/.test(d.id))k='doc';
+    return k?(AC.list[k]||[]).map(x=>x.nombre).filter(Boolean):[]}catch(e){return[]}
+}
+async function matInit(){
+  const box=$('#mat-body');if(!box)return;box.textContent='';
+  const top=el('div',{class:'card',style:'margin-bottom:18px'},el('h2',{},'Materiales · archivos en Cloudflare R2'),
+    el('p',{class:'muted'},'Un solo lugar para los archivos de Faro Studios, Faro Academy y el landing. Quién es quién sigue en Supabase; aquí solo viven los archivos.'));
+  const inp=el('input',{type:'url',placeholder:'https://faro-archivos.TU-CUENTA.workers.dev',value:FILES,autocomplete:'off'});
+  top.append(el('div',{class:'field'},el('label',{},'Dirección del servicio de archivos'),inp),
+    el('div',{style:'display:flex;gap:10px;flex-wrap:wrap;margin-top:12px'},
+      el('button',{class:'btn btn-gold',type:'button',onclick:()=>{const v=inp.value.trim().replace(/\/+$/,'');
+        if(v&&!/^https:\/\//.test(v)){toast('La dirección debe empezar con https://');return}
+        try{localStorage.setItem(FILES_LS,v)}catch(e){}FILES=v;MAT.destinos=[];toast(v?'Conectado a esta dirección':'Desconectado');matInit()}},'Conectar'),
+      FILES?el('button',{class:'btn btn-ghost',type:'button',onclick:async()=>{try{const j=await fjson('/api/init',{method:'POST'});toast('Carpetas listas ('+j.carpetas+')')}catch(e){toast(e.message)}}},'Preparar carpetas'):null));
+  box.append(top);
+  if(!FILES){box.append(el('div',{class:'card'},el('p',{class:'muted'},'Todavía no está conectado. Publica el servicio con los pasos de worker/LEEME.md, pega aquí su dirección y toca “Conectar”. Mientras tanto, “Sitio web” sigue subiendo archivos como antes.')));return}
+  try{await matArbol()}catch(e){top.append(el('div',{class:'msg',style:'margin-top:12px'},e.message+'. Revisa la dirección y que el servicio esté publicado.'));return}
+
+  /* --- subir --- */
+  const sel=el('select',{id:'mat-dest'}),grupos={};
+  MAT.destinos.forEach(d=>{const g=d.id.startsWith('studios/')?'Privado · Faro Studios':d.id.startsWith('academy/ingles')?'Privado · Faro Academy · Inglés':d.id.startsWith('academy/musica')?'Privado · Faro Academy · Música':'Público · Landing (página web)';(grupos[g]=grupos[g]||[]).push(d)});
+  Object.keys(grupos).forEach(g=>{const og=el('optgroup',{label:g});grupos[g].forEach(d=>og.append(el('option',{value:d.id},d.etiqueta.split(' › ').slice(g.startsWith('Privado · Faro Academy')?2:1).join(' › '))));sel.append(og)});
+  const ent=el('input',{list:'mat-ents',placeholder:'Nombre (ej. Maxi Despensa)',autocomplete:'off',maxlength:'80'}),dl=el('datalist',{id:'mat-ents'});
+  const entF=el('div',{class:'field'},el('label',{},'¿De quién es?'),ent,dl);
+  const nota=el('p',{class:'muted',style:'margin-top:8px'});
+  const prog=el('div',{}),cont=el('div',{});
+  const crear=el('button',{class:'btn btn-ghost btn-sm',type:'button',style:'margin-top:10px',onclick:async()=>{const d=matDest(sel.value);
+    try{const j=await fjson('/api/carpeta',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({destino:d.id,nombre:ent.value})});toast('Carpeta lista: '+j.slug);await entradas();listar()}catch(e){toast(e.message)}}},'Crear carpeta');
+  async function entradas(){
+    const d=matDest(sel.value);dl.textContent='';if(!d.entidad)return;
+    const nombres=new Set(matSugeridos(d));
+    try{const j=await fjson('/api/lista?bucket='+d.bucket+'&prefix='+encodeURIComponent(d.prefijo));j.carpetas.forEach(c=>nombres.add(c.slice(d.prefijo.length).replace(/\/$/,'')))}catch(e){}
+    [...nombres].forEach(n=>dl.append(el('option',{value:n})));
+  }
+  function pinta(){const d=matDest(sel.value);entF.hidden=!d.entidad;crear.hidden=!d.entidad;
+    nota.textContent=d.bucket==='publico'?'Público: estos archivos tienen enlace permanente y se usan en la página. Para ponerlos en su lugar exacto del landing, súbelos desde la pestaña “Sitio web”.':'Privado: nadie puede abrirlos sin un enlace temporal que genera el administrador.'}
+  const drop=el('div',{class:'item',style:'text-align:center;border-style:dashed;cursor:pointer;padding:26px'},el('b',{},'Arrastra aquí los archivos o toca para elegirlos'),el('small',{style:'display:block;margin-top:6px'},'Los videos pesados se suben por partes automáticamente.'));
+  const fi=el('input',{type:'file',multiple:'multiple',style:'display:none'});
+  async function subir(files){
+    if(!files.length)return;const d=matDest(sel.value);
+    if(d.entidad&&!matSlug(ent.value)){toast('Escribe a quién pertenecen estos archivos');return}
+    for(const f of files){
+      const bar=el('progress',{max:String(Math.max(1,f.size)),value:'0',style:'width:100%;margin-top:8px'}),st=el('small',{},'Subiendo…');
+      const row=el('div',{class:'item'},el('b',{},f.name+' · '+matTam(f.size)),bar,st);prog.prepend(row);
+      try{await matSubir(f,d.id,ent.value,l=>{bar.value=l});bar.value=f.size;st.textContent='Listo ✓'}
+      catch(e){st.textContent='Error: '+(e.message||'no se pudo subir');row.style.borderColor='var(--rojo)'}
+    }
+    listar();
+  }
+  drop.addEventListener('click',()=>fi.click());
+  ['dragover','dragenter'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.style.borderColor='var(--oro)'}));
+  ['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.style.borderColor=''}));
+  drop.addEventListener('drop',e=>subir([...e.dataTransfer.files]));
+  fi.addEventListener('change',()=>{subir([...fi.files]);fi.value=''});
+
+  /* --- contenido --- */
+  async function listar(prefix){
+    const d=matDest(sel.value),s=d.entidad?matSlug(ent.value):'',pre=prefix||(d.prefijo+(s?s+'/':''));
+    cont.textContent='Cargando…';
+    try{
+      const j=await fjson('/api/lista?bucket='+d.bucket+'&prefix='+encodeURIComponent(pre));cont.textContent='';
+      cont.append(el('p',{class:'muted'},(d.bucket==='publico'?'Público':'Privado')+' › '+pre.replace(/\/$/,'').split('/').join(' › ')));
+      const arriba=pre.replace(/[^/]+\/$/,'');
+      if(arriba&&arriba!==pre&&pre!==d.prefijo)cont.append(el('button',{class:'btn btn-ghost btn-sm',type:'button',style:'margin:4px 8px 4px 0',onclick:()=>listar(arriba)},'↑ Subir un nivel'));
+      j.carpetas.forEach(c=>cont.append(el('button',{class:'btn btn-ghost btn-sm',type:'button',style:'margin:4px 8px 4px 0',onclick:()=>listar(c)},'📁 '+c.slice(pre.length).replace(/\/$/,''))));
+      if(!j.archivos.length&&!j.carpetas.length)cont.append(el('p',{class:'muted'},'Esta carpeta está vacía.'));
+      j.archivos.forEach(a=>{
+        const nombre=a.key.split('/').pop();
+        cont.append(el('div',{class:'item'},el('b',{},'📄 '+nombre),el('small',{style:'display:block'},matTam(a.size)+' · '+new Date(a.subido).toLocaleDateString('es-GT',{timeZone:'America/Guatemala'})),
+          el('div',{class:'acts'},
+            el('button',{class:'btn btn-ghost btn-sm',type:'button',onclick:async()=>{const w=window.open('','_blank');try{const u=await matEnlace(d.bucket,a.key,true);if(w)w.location=u;else location.href=u}catch(e){if(w)w.close();toast(e.message)}}},'Abrir'),
+            el('button',{class:'btn btn-ghost btn-sm',type:'button',onclick:async()=>{try{location.href=await matEnlace(d.bucket,a.key,false)}catch(e){toast(e.message)}}},'Descargar'),
+            el('button',{class:'btn btn-ghost btn-sm',type:'button',onclick:async()=>{try{await navigator.clipboard.writeText(await matEnlace(d.bucket,a.key,false));toast(d.bucket==='publico'?'Enlace permanente copiado':'Enlace copiado (válido por 1 hora)')}catch(e){toast('No se pudo copiar')}}},'Copiar enlace'),
+            el('button',{class:'btn btn-red btn-sm',type:'button',onclick:async()=>{if(!confirm('¿Eliminar '+nombre+'? No se puede deshacer.'))return;try{await fjson('/api/objeto?bucket='+d.bucket+'&key='+encodeURIComponent(a.key),{method:'DELETE'});toast('Eliminado');listar(pre)}catch(e){toast(e.message)}}},'Eliminar'))))});
+    }catch(e){cont.textContent=e.message||'No se pudo listar'}
+  }
+  let tm;ent.addEventListener('input',()=>{clearTimeout(tm);tm=setTimeout(()=>listar(),350)});
+  sel.addEventListener('change',async()=>{pinta();await entradas();listar()});
+  box.append(el('div',{class:'grid2'},
+    el('div',{class:'card'},el('h2',{},'Subir material'),el('div',{class:'field'},el('label',{},'¿Dónde va?'),sel),entF,crear,nota,el('div',{style:'margin-top:14px'},drop,fi),prog),
+    el('div',{class:'card'},el('h2',{},'Contenido de esta carpeta'),cont)));
+  pinta();await entradas();listar();
+}
 
 </script>
 </body>
