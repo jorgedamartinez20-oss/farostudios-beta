@@ -684,7 +684,7 @@ async function mfaFactores(){
 /* true = puede pasar; false = se pidió el código */
 async function mfaOk(){
   const f=(await mfaFactores()).find(x=>x.status==='verified');
-  if(!f||jwtAal()==='aal2'&&mfaFresco()||mfaFresco())return true;
+  if(!f||jwtAal()==='aal2'&&mfaFresco())return true;
   MFA.factor=f.id;$('#v-app').hidden=true;$('#v-login').hidden=false;$('#out').hidden=true;
   $('#lstep1').hidden=true;$('#mfa-box').hidden=false;$('#merr').hidden=true;$('#mfa').value='';setTimeout(()=>{try{$('#mfa').focus()}catch(e){}},50);
   return false}
