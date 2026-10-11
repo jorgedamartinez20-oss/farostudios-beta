@@ -555,6 +555,11 @@ $('#mgo').addEventListener('click',mfaVerificar);
 $('#mno').addEventListener('click',()=>{$('#mfa-box').hidden=true;$('#lstep1').hidden=false;logout()});
 $('#mfa').addEventListener('keydown',e=>{if(e.key==='Enter')mfaVerificar()});
 $('#mfa').addEventListener('input',()=>{const v=$('#mfa').value.replace(/\D/g,'');if(v.length===6&&v!==$('#mfa').dataset.u){$('#mfa').dataset.u=v;mfaVerificar()}});
+function qrImg(t){
+  let q=String((t&&t.qr_code)||'').trim();if(!q)return null;
+  if(/^data:image\/svg\+xml/i.test(q)){const i=q.indexOf(',');let d=q.slice(i+1);try{d=decodeURIComponent(d)}catch(e){}q='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(d)}
+  else if(/^<svg/i.test(q))q='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(q);
+  return el('img',{src:q,alt:'Código QR para tu app de autenticación',style:'width:200px;height:200px;background:#fff;padding:10px;border-radius:8px;display:block;margin:8px 0'})}
 async function mfaCard(card){
   const body=el('div',{});card.append(body);
   const pintar=async()=>{
@@ -577,7 +582,8 @@ async function mfaCard(card){
         const msg=el('div',{class:'msg',hidden:true});
         body.append(el('ol',{class:'usteps'},el('li',{},'Instala una app de autenticación en tu teléfono (Google Authenticator, Microsoft Authenticator o Authy).'),
             el('li',{},'Escanea este código QR, o escribe la clave a mano:')),
-          t.qr_code?el('img',{src:t.qr_code,alt:'Código QR para tu app de autenticación',style:'width:180px;height:180px;background:#fff;padding:8px;border-radius:8px;display:block;margin:8px 0'}):null,
+          qrImg(t),
+          t.uri?el('a',{class:'btn btn-ghost btn-sm',href:t.uri,style:'margin:4px 0 8px'},'Estoy en el teléfono: abrir en mi app de autenticación'):null,
           t.secret?el('code',{style:'word-break:break-all;display:block;margin:6px 0 12px'},t.secret):null,
           el('div',{class:'field'},el('label',{},'3. Escribe el código de 6 dígitos que muestra la app'),inp),msg,
           el('div',{style:'display:flex;gap:8px;margin-top:10px;flex-wrap:wrap'},
