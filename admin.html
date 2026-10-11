@@ -153,6 +153,10 @@ h1,h2,h3{font-weight:300;letter-spacing:-.005em}
 .seg{display:inline-flex;background:var(--soft);border-radius:11px;padding:3px;gap:2px}
 .seg button{border:0;background:none;border-radius:9px;padding:6px 13px;font-size:.85rem;cursor:pointer;color:var(--muted)}
 .seg button[aria-pressed="true"]{background:var(--surface);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.18)}
+.seg{max-width:100%;overflow-x:auto;scrollbar-width:none}.seg::-webkit-scrollbar{display:none}.seg button{white-space:nowrap;flex:none}
+.subnav{margin:0 0 14px}.subnav .seg{display:flex;width:max-content;max-width:100%}
+@media (max-width:600px){.side .sidetog{display:none}.side .nav{width:100%;gap:0;justify-content:space-between}.side .tab .nl{display:none}.side .tab{padding:10px 6px}.side .tab .ni{width:26px}.side{padding:6px 4px}}
+.stab .n{display:inline-block;margin-left:7px;min-width:20px;padding:0 6px;border-radius:999px;background:var(--borgona);color:#fff;font-size:.75rem;line-height:1.5;text-align:center}
 .sidetog{display:flex;align-items:center;justify-content:center;width:34px;height:30px;border:0;background:none;border-radius:9px;color:var(--muted);cursor:pointer;margin:0 0 4px auto}
 .sidetog:hover{background:var(--soft);color:var(--text)}.sidetog .sv{width:18px;height:18px}
 .shell{transition:grid-template-columns .22s ease}
@@ -254,35 +258,26 @@ h1,h2,h3{font-weight:300;letter-spacing:-.005em}
 
   <section id="v-app" class="shell" hidden>
    <aside class="side"><div class="clock" id="clock" role="timer" aria-label="Fecha y hora"></div><button type="button" id="sidetog" class="sidetog" aria-expanded="true" title="Ocultar menú" aria-label="Mostrar u ocultar el menú"><span data-i="sliders"></span></button><nav class="nav" role="tablist" aria-label="Secciones">
-      <h4>Resumen</h4>
-      <button class="tab" role="tab" data-t="ini" aria-selected="true"><span class="ni" data-i="dashboard"></span><span class="nl">Inicio</span></button>
-      <h4>Análisis</h4>
-      <button class="tab" role="tab" data-t="ast" aria-selected="false"><span class="ni" data-i="chart"></span><span class="nl">Faro Studios</span></button>
-      <button class="tab" role="tab" data-t="aac" aria-selected="false"><span class="ni" data-i="cap"></span><span class="nl">Faro Academy</span></button>
-      <button class="tab" role="tab" data-t="crm" aria-selected="false"><span class="ni" data-i="users"></span><span class="nl">CRM</span></button>
-      <button class="tab" role="tab" data-t="red" aria-selected="false"><span class="ni" data-i="trend"></span><span class="nl">Alcance</span></button>
-      <h4>Contenido</h4>
-      <button class="tab" role="tab" data-t="con" aria-selected="false"><span class="ni" data-i="clipboard"></span><span class="nl">Planificación</span><span class="n" id="ncon" hidden>0</span></button>
-      <h4>Agenda</h4>
-      <button class="tab" role="tab" data-t="cal" aria-selected="false"><span class="ni" data-i="calendar"></span><span class="nl">Calendario</span></button>
-      <button class="tab" role="tab" data-t="res" aria-selected="false"><span class="ni" data-i="film"></span><span class="nl">Reservas</span><span class="n" id="npend" hidden>0</span></button>
-      <button class="tab" role="tab" data-t="sem" aria-selected="false"><span class="ni" data-i="repeat"></span><span class="nl">Bloqueos semanales</span></button>
-      <h4>Negocio</h4>
-      <button class="tab" role="tab" data-t="cot" aria-selected="false"><span class="ni" data-i="message"></span><span class="nl">Cotizaciones</span><span class="n" id="ncot" hidden>0</span></button>
-      <button class="tab" role="tab" data-t="cli" aria-selected="false"><span class="ni" data-i="camera"></span><span class="nl">Clientes</span><span class="n" id="ncl" hidden>0</span></button>
-      <button class="tab" role="tab" data-t="aca" aria-selected="false"><span class="ni" data-i="cap"></span><span class="nl">Academy · gestión</span><span class="n" id="nac" hidden>0</span></button>
-      <button class="tab" role="tab" data-t="avs" aria-selected="false"><span class="ni" data-i="message"></span><span class="nl">Avisos a clientes</span></button>
-      <button class="tab" role="tab" data-t="rec" aria-selected="false"><span class="ni" data-i="bell"></span><span class="nl">Recordatorios</span><span class="n" id="nrec" hidden>0</span></button>
-      <h4>Archivos y web</h4>
-      <button class="tab" role="tab" data-t="mat" aria-selected="false"><span class="ni" data-i="folder"></span><span class="nl">Materiales</span></button>
-      <button class="tab" role="tab" data-t="sit" aria-selected="false"><span class="ni" data-i="globe"></span><span class="nl">Sitio web</span></button>
-      <button class="tab" role="tab" data-t="sub" aria-selected="false"><span class="ni" data-i="upload"></span><span class="nl">Subir material</span></button>
-      <h4>Ajustes</h4>
-      <button class="tab" role="tab" data-t="acc" aria-selected="false"><span class="ni" data-i="lock"></span><span class="nl">Acceso y reglas</span></button>
-      <button class="tab" role="tab" data-t="usr" aria-selected="false"><span class="ni" data-i="users"></span><span class="nl">Usuarios y permisos</span></button>
-      <button class="tab" role="tab" data-t="pre" aria-selected="false"><span class="ni" data-i="sliders"></span><span class="nl">Preferencias</span></button>
+      <button class="tab" role="tab" data-s="ini" aria-selected="false"><span class="ni" data-i="dashboard"></span><span class="nl">Inicio</span><span class="n sbadge" hidden>0</span></button>
+      <button class="tab" role="tab" data-s="alc" aria-selected="false"><span class="ni" data-i="trend"></span><span class="nl">Alcance y CRM</span><span class="n sbadge" hidden>0</span></button>
+      <button class="tab" role="tab" data-s="age" aria-selected="false"><span class="ni" data-i="calendar"></span><span class="nl">Agenda</span><span class="n sbadge" hidden>0</span></button>
+      <button class="tab" role="tab" data-s="cli" aria-selected="false"><span class="ni" data-i="camera"></span><span class="nl">Clientes</span><span class="n sbadge" hidden>0</span></button>
+      <button class="tab" role="tab" data-s="con" aria-selected="false"><span class="ni" data-i="clipboard"></span><span class="nl">Contenido</span><span class="n sbadge" hidden>0</span></button>
+      <button class="tab" role="tab" data-s="aca" aria-selected="false"><span class="ni" data-i="cap"></span><span class="nl">Academy</span><span class="n sbadge" hidden>0</span></button>
+      <button class="tab" role="tab" data-s="arc" aria-selected="false"><span class="ni" data-i="folder"></span><span class="nl">Archivos y web</span><span class="n sbadge" hidden>0</span></button>
+      <button class="tab" role="tab" data-s="aju" aria-selected="false"><span class="ni" data-i="sliders"></span><span class="nl">Ajustes</span><span class="n sbadge" hidden>0</span></button>
    </nav></aside>
    <div class="main">
+    <div class="subnav" id="subnav" role="group" aria-label="Subsecciones">
+      <div class="seg subgrp" data-s="ini" hidden><button type="button" class="stab" data-t="ini" aria-pressed="false">Resumen</button></div>
+      <div class="seg subgrp" data-s="alc" hidden><button type="button" class="stab" data-t="crm" aria-pressed="false">CRM</button><button type="button" class="stab" data-t="red" aria-pressed="false">Alcance</button><button type="button" class="stab" data-t="ast" aria-pressed="false">Faro Studios</button><button type="button" class="stab" data-t="aac" aria-pressed="false">Faro Academy</button></div>
+      <div class="seg subgrp" data-s="age" hidden><button type="button" class="stab" data-t="cal" aria-pressed="false">Calendario</button><button type="button" class="stab" data-t="res" aria-pressed="false">Reservas<span class="n" id="npend" hidden>0</span></button><button type="button" class="stab" data-t="sem" aria-pressed="false">Bloqueos semanales</button></div>
+      <div class="seg subgrp" data-s="cli" hidden><button type="button" class="stab" data-t="cli" aria-pressed="false">Clientes<span class="n" id="ncl" hidden>0</span></button><button type="button" class="stab" data-t="cot" aria-pressed="false">Cotizaciones<span class="n" id="ncot" hidden>0</span></button><button type="button" class="stab" data-t="avs" aria-pressed="false">Avisos</button><button type="button" class="stab" data-t="rec" aria-pressed="false">Recordatorios<span class="n" id="nrec" hidden>0</span></button></div>
+      <div class="seg subgrp" data-s="con" hidden><button type="button" class="stab" data-t="con" aria-pressed="false">Planificación<span class="n" id="ncon" hidden>0</span></button></div>
+      <div class="seg subgrp" data-s="aca" hidden><button type="button" class="stab" data-t="aca" aria-pressed="false">Gestión de estudiantes<span class="n" id="nac" hidden>0</span></button></div>
+      <div class="seg subgrp" data-s="arc" hidden><button type="button" class="stab" data-t="mat" aria-pressed="false">Materiales</button><button type="button" class="stab" data-t="sit" aria-pressed="false">Sitio web</button><button type="button" class="stab" data-t="sub" aria-pressed="false">Subir material</button></div>
+      <div class="seg subgrp" data-s="aju" hidden><button type="button" class="stab" data-t="usr" aria-pressed="false">Usuarios y permisos</button><button type="button" class="stab" data-t="acc" aria-pressed="false">Reglas de agenda</button><button type="button" class="stab" data-t="pre" aria-pressed="false">Preferencias</button></div>
+    </div>
     <div class="msg" id="warn" hidden></div>
     <div id="t-ini"><div id="dash-body"></div></div>
     <div id="t-ast" hidden><div id="an-ast"></div></div>
@@ -657,8 +652,8 @@ $('#cgo').addEventListener('click',()=>{const v=$('#cod').value.trim();if(!/^[A-
 $('#mgo').addEventListener('click',()=>{const v=parseInt($('#mar').value,10);if(!(v>=0&&v<=12)){toast('Escribe un número de 0 a 12');return}saveCfg('margen_horas',v,'Margen actualizado')});
 
 /* ---------- pestañas ---------- */
-function showTab(t){if(!permiteTab(t)){toast('No tienes permiso para esta sección');return}$$('.tab').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.t===t)));['ini','ast','aac','crm','red','cal','res','cot','aca','cli','mat','sit','sem','acc','pre','con','rec','avs','sub','usr'].forEach(x=>$('#t-'+x).hidden=x!==t);if(t==='mat')matInit();if(t==='ini')renderDash();if(['ast','aac','crm','red'].includes(t))anTab(t);if(t==='pre')renderPre();if(['con','rec','avs'].includes(t))ctTab(t);if(t==='usr')usrInit();if(t==='sub')renderSub();window.scrollTo({top:0})}
-$$('.tab').forEach(b=>b.addEventListener('click',()=>showTab(b.dataset.t)));
+function showTab(t){if(!permiteTab(t)){toast('No tienes permiso para esta sección');return}seccionActiva(t);['ini','ast','aac','crm','red','cal','res','cot','aca','cli','mat','sit','sem','acc','pre','con','rec','avs','sub','usr'].forEach(x=>$('#t-'+x).hidden=x!==t);if(t==='mat')matInit();if(t==='ini')renderDash();if(['ast','aac','crm','red'].includes(t))anTab(t);if(t==='pre')renderPre();if(['con','rec','avs'].includes(t))ctTab(t);if(t==='usr')usrInit();if(t==='sub')renderSub();window.scrollTo({top:0})}
+$$('.tab').forEach(b=>b.addEventListener('click',()=>{const x=SEC.find(y=>y.s===b.dataset.s),u=SUBULT[x.s];showTab(u&&permiteTab(u)?u:primerSub(x))}));$$('.stab').forEach(b=>b.addEventListener('click',()=>showTab(b.dataset.t)));
 const ESTC=['nueva','contactada','cotizada','ganada','perdida'];
 function renderCot(){
   const l=$('#cot-l');l.textContent='';const nn=D.cot.filter(c=>c.estado==='nueva').length;const b=$('#ncot');b.hidden=!nn;b.textContent=nn;
@@ -1712,7 +1707,7 @@ function formRedes(){
 (function(){const sh=$('#v-app');if(!sh)return;let m=false;try{m=localStorage.getItem('faro_side')==='1'}catch(e){}
   const ap=v=>{sh.classList.toggle('min',v);const b=$('#sidetog');if(b){b.setAttribute('aria-expanded',String(!v));b.title=v?'Mostrar menú':'Ocultar menú'}try{localStorage.setItem('faro_side',v?'1':'0')}catch(e){}};
   const b=$('#sidetog');if(b)b.addEventListener('click',()=>{m=!m;ap(m)});ap(m);
-  $$('.tab').forEach(t=>{const l=t.querySelector('.nl');if(l)t.title=l.textContent})})();
+  $$('.tab').forEach(t=>{const l=t.querySelector('.nl');if(l){t.title=l.textContent;t.setAttribute('aria-label',l.textContent)}})})();
 
 /* ---------- RELOJ · NOTIFICACIONES · PREFERENCIAS ---------- */
 const PREF0={h24:false,seg:true,nCot:true,nRes:true,nHoy:true,nMsg:true,nFac:true,nTar:true,nCon:true,nRec:true,dias:2,nav:false,auto:true,min:3,rd:6,ra:30};
@@ -2136,6 +2131,20 @@ function renderAvs(){
   side.append(el('h3',{style:'margin-top:14px'},'Últimos avisos'),CT.avs.length?hist:el('p',{class:'muted'},'Aún no has mandado ninguno desde aquí.'));g.append(side);
 }
 
+/* ---------- secciones del menú (8) y sus pestañas internas ---------- */
+const SEC=[{s:'ini',tabs:[['ini']]},{s:'alc',tabs:[['crm'],['red'],['ast'],['aac']]},{s:'age',tabs:[['cal'],['res'],['sem']]},{s:'cli',tabs:[['cli'],['cot'],['avs'],['rec']]},{s:'con',tabs:[['con']]},{s:'aca',tabs:[['aca']]},{s:'arc',tabs:[['mat'],['sit'],['sub']]},{s:'aju',tabs:[['usr'],['acc'],['pre']]}];
+const SEC_DE={};SEC.forEach(x=>x.tabs.forEach(([t])=>{SEC_DE[t]=x.s}));
+const SUBULT={};
+const primerSub=x=>(x.tabs.find(([t])=>permiteTab(t))||x.tabs[0])[0];
+function seccionActiva(t){
+  const sec=SEC_DE[t];SUBULT[sec]=t;
+  $$('.tab').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.s===sec)));
+  $$('.stab').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.t===t)));
+  $$('.subgrp').forEach(g=>{const n=$$('.stab',g).filter(b=>!b.hidden).length;g.hidden=g.dataset.s!==sec||n<2});
+}
+function secBadges(){SEC.forEach(x=>{const b=document.querySelector('.tab[data-s="'+x.s+'"] .sbadge');if(!b)return;let n=0;x.tabs.forEach(([t])=>{const e=document.querySelector('.stab[data-t="'+t+'"] .n');if(e&&!e.hidden)n+=parseInt(e.textContent,10)||0});b.hidden=!n;b.textContent=n})}
+try{new MutationObserver(secBadges).observe($('#subnav'),{subtree:true,childList:true,characterData:true,attributes:true,attributeFilter:['hidden']})}catch(e){}
+
 /* ========== EQUIPO · usuarios con permisos que elige el director ========== */
 const DIRECTOR='reservas@farostudios.net';
 const ADMIN_URL=location.href.split('#')[0].split('?')[0];
@@ -2173,8 +2182,9 @@ async function identificar(){
   }catch(e){}
 }
 function aplicarPermisos(){
-  $$('.tab').forEach(b=>{b.hidden=!permiteTab(b.dataset.t)});
-  $$('.nav h4').forEach(h=>{let n=h.nextElementSibling,alguno=false;while(n&&n.tagName==='BUTTON'){if(!n.hidden)alguno=true;n=n.nextElementSibling}h.hidden=!alguno});
+  $$('.stab').forEach(b=>{b.hidden=!permiteTab(b.dataset.t)});
+  $$('.tab').forEach(b=>{const x=SEC.find(y=>y.s===b.dataset.s);b.hidden=!x.tabs.some(([t])=>permiteTab(t))});
+  secBadges();
 }
 const primeraPestana=()=>PRIMERA.find(permiteTab)||'pre';
 function equipoLatido(){
