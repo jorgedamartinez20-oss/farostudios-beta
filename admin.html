@@ -1847,13 +1847,14 @@ const ctEstado=p=>p.c_publicado?'publicado':p.c_listo?'listo':(p.c_guion||p.c_gr
 async function ctCargar(){
   if(CT.cargando)return;CT.cargando=true;CT.err=null;
   const get=async(t,o)=>{try{const r=await api('/rest/v1/'+t+'?select=*&order='+o+'&limit=2000');if(!r.ok)throw 0;return await r.json()}catch(e){return null}};
-  const [c,s,m,r,a]=await Promise.all([get('contenido','fecha.asc'),get('contenido_sesiones','fecha_ini.asc'),get('contenido_material','fecha_limite.asc'),get('recordatorios','creado.asc'),get('avisos_clientes','creado.desc')]);
+  let c,s,m,r,a;
+  try{[c,s,m,r,a]=await Promise.all([get('contenido','fecha.asc'),get('contenido_sesiones','fecha_ini.asc'),get('contenido_material','fecha_limite.asc'),get('recordatorios','creado.asc'),get('avisos_clientes','creado.desc')])}catch(e){c=null;s=null}
   CT.err=(c===null||s===null)?'tablas':null;CT.cont=c||[];CT.ses=s||[];CT.mat=m||[];CT.rec=r||[];CT.avs=(a||[]).slice(0,40);
   if(r===null)CT.errRec=true;CT.cargando=false;CT.cargado=true;
   if(!CT.mes)CT.mes=today().slice(0,7);if(!CT.sem)CT.sem=wkStart(today());
   try{avisosPintar()}catch(e){}if(CT.tab)ctPintar();
 }
-function ctTab(t){CT.tab=t;ctPintar();if(!CT.cargado)ctCargar()}
+function ctTab(t){CT.tab=t;if(!CT.mes)CT.mes=today().slice(0,7);if(!CT.sem)CT.sem=wkStart(today());ctPintar();if(!CT.cargado)ctCargar()}
 function ctPintar(){try{({con:renderCon,rec:renderRec,avs:renderAvs})[CT.tab]()}catch(e){console.error(e)}}
 async function ctPatch(tabla,lista,id,body,col){
   col=col||'id';const r=await api('/rest/v1/'+tabla+'?'+col+'=eq.'+encodeURIComponent(id),{method:'PATCH',body,headers:{Prefer:'return=minimal'}});
@@ -1871,6 +1872,7 @@ function renderCon(){
     el('div',{style:'display:flex;gap:8px;flex-wrap:wrap;align-items:center'},
       el('button',{class:'btn btn-gold btn-sm',type:'button',onclick:()=>ctEditor(null)},icoEl('plus'),' Nueva publicación'),
       el('button',{class:'btn btn-ghost btn-sm',type:'button',onclick:()=>{CT.cargado=false;ctCargar();toast('Actualizando…')}},icoEl('refresh'),' Actualizar'))));
+  if(!CT.cargado&&!CT.err){root.append(el('div',{class:'msg',style:'margin:12px 0'},'Cargando…'));return}
   if(CT.err){root.append(el('div',{class:'msg',style:'margin:12px 0'},CT.cargando?'Cargando…':'Falta crear las tablas de contenido: corre sql/contenido.sql en Supabase (una sola vez) y recarga.'));return}
   const pub=C.filter(p=>p.c_publicado),vencidas=C.filter(p=>p.fecha<=t),alDia=vencidas.filter(p=>p.c_publicado).length;
   const porGrabar=C.filter(p=>necesitaGrabar(p.formato)&&!p.c_grabado),porDisenar=C.filter(p=>p.formato&&p.formato.startsWith('carrusel')&&!p.c_listo),sinStory=C.filter(p=>p.story&&!p.c_story);
