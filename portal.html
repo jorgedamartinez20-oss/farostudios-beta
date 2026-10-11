@@ -353,6 +353,7 @@ body.sv .tile.y,body.sv .btn.y,body.sv .seg button[aria-pressed="true"]{color:va
 </div>
 <div id="login"></div>
 <div class="sheet" id="sheet" role="dialog" aria-live="polite"></div>
+<script src="herramientas.js"></script>
 <script>
 /* ============ PORTAL FARO · conectado a Supabase ============ */
 const $=(s,r=document)=>r.querySelector(s),$$=(s,r=document)=>[...r.querySelectorAll(s)];
@@ -410,6 +411,20 @@ function normClave(s){const x=String(s||'').toUpperCase().replace(/[^A-Z0-9]/g,'
 const S={doc:null,rol:null,page:null,perfil:null,kid:null,kids:[],D:{},cli:null,tab:'al',timer:0};
 function K(){return S.D[S.kid]}
 
+/* ---------- herramientas según el instrumento del perfil ---------- */
+/* Instrumento → herramientas que se activan solas. Para sumar otra, basta una línea aquí y su montaje en herramientas.js. */
+const HERR={electrica:['afinador','metronomo'],piano:['piano']};
+/* Lista de instrumentos del alumno. Viene de la columna "instrumentos" (que el admin elige de una lista).
+   Solo si esa columna aún no existe en la base, se intenta leer del texto antiguo de "detalle". */
+function instrDe(g){
+  if(g.area&&g.area!=='musica')return[];
+  if('instrumentos' in g)return Array.isArray(g.instrumentos)?g.instrumentos:[];
+  const t=String(g.detalle||'').toLowerCase(),o=[];
+  if(/guitarra/.test(t)&&/el[eé]ctric/.test(t))o.push('electrica');
+  if(/piano/.test(t))o.push('piano');
+  return o}
+function herrDe(k){const o=[];((k&&k.instr)||[]).forEach(i=>(HERR[i]||[]).forEach(t=>{if(!o.includes(t))o.push(t)}));return o}
+
 /* ---------- carga de datos ---------- */
 async function cargarAlumno(id){
   const f='estudiante_id=eq.'+id;
@@ -420,9 +435,10 @@ async function cargarAlumno(id){
     rows('ac_mensajes',f+'&order=creado.asc&limit=200'),rows('ac_facturas',f+'&order=emision.desc')]);
   const g=(e&&e[0])||{};const hoy=hoyISO();
   const general=await rows('ac_materiales','estudiante_id=is.null&order=creado.desc');
+  g._instr=instrDe(g);
   const pend=fa.filter(x=>x.estado==='pendiente');
   const prox=cl.find(c=>(c.estado==='programada'||c.estado==='reprogramada')&&c.fecha>=hoy);
-  return{id,nombre:g.nombre||'',corto:g.apodo||String(g.nombre||'').split(' ')[0],area:(g.area==='ingles'?'Inglés':'Música')+(g.detalle?' · '+g.detalle:''),areaId:g.area,
+  return{id,nombre:g.nombre||'',corto:g.apodo||String(g.nombre||'').split(' ')[0],area:(g.area==='ingles'?'Inglés':'Música')+(g.detalle?' · '+g.detalle:''),areaId:g.area,instr:g._instr,
     mod:g.modalidad==='online'?'En línea':'Presencial',xp:g.xp||0,racha:g.racha||0,pagaAlumno:!!g.paga_alumno,
     clases:cl,mats:ma.concat(general.filter(m=>!ma.some(x=>x.id===m.id))),tareas:ta,notas:ev,hab:ha,logros:lo,reco:re[0]?re[0].texto:'',diplomas:di,chat:ms,fac:fa,
     saldo:pend.reduce((a,x)=>a+Number(x.monto||0),0),prox,
@@ -444,6 +460,10 @@ const NAV={
   encargado:[['resumen','home','Resumen'],['avance','chart','Avance'],['finanzas','card','Finanzas'],['material','folder','Material'],['clases','cal','Clases'],['chat','chat','Chat']],
   docente:[['d-inicio','home','Inicio'],['d-subir','up','Subir material'],['d-archivos','folder','Mis archivos'],['d-alumnos','users','Alumnos']],
   cliente:[['c-inicio','home','Inicio'],['c-galeria','image','Galería'],['c-docs','file','Documentos'],['c-buzon','chat','Buzón']]};
+/* El menú del alumno suma "Herramientas" solo si su perfil tiene un instrumento con herramientas. */
+function navDe(){
+  if(S.rol!=='alumno'||!herrDe(K()).length)return NAV[S.rol];
+  const n=NAV.alumno.slice(),i=n.findIndex(x=>x[0]==='chat');n.splice(i<0?n.length:i,0,['herramientas','note','Práctica']);return n}
 function go(p){S.page=p;render();window.scrollTo({top:0,behavior:'smooth'})}
 window.go=go;
 
@@ -459,7 +479,7 @@ function renderSide(){
   $('#me').innerHTML=me;
   $('#me .av .ico')&&($('#me .av .ico').style.cssText='width:44px;height:44px');$$('#me .iso').forEach(e=>e.style.height='50px');
   const pend=S.rol==='alumno'?K().tareas.filter(t=>t.estado==='pendiente').length:0;
-  $('#nav').innerHTML=NAV[S.rol].map(n=>'<button type="button" data-p="'+n[0]+'"'+(S.page===n[0]?' aria-current="page"':'')+'>'+ic(n[1])+'<span>'+n[2]+'</span>'+(n[0]==='tablero'&&pend?'<span class="dot">'+pend+'</span>':'')+'</button>').join('');
+  $('#nav').innerHTML=navDe().map(n=>'<button type="button" data-p="'+n[0]+'"'+(S.page===n[0]?' aria-current="page"':'')+'>'+ic(n[1])+'<span>'+n[2]+'</span>'+(n[0]==='tablero'&&pend?'<span class="dot">'+pend+'</span>':'')+'</button>').join('');
   $$('#nav button').forEach(b=>b.onclick=()=>go(b.dataset.p));
 }
 
@@ -469,12 +489,15 @@ const vacio=t=>'<p class="sub" style="margin:10px 0">'+t+'</p>';
 
 P.inicio=()=>{const k=K(),L=lvl(k.xp),len=2*Math.PI*84;
   const pend=k.tareas.filter(t=>t.estado==='pendiente'||t.estado==='en_curso');
-  return '<section class="page"><div class="hero"><div class="beam"></div><div style="position:relative"><h1>¡Hola, <em>'+esc(k.corto)+'</em>!</h1><p>'+(k.racha?'Llevas <b style="color:var(--y)">'+k.racha+' '+(k.racha===1?'día seguido':'días seguidos')+'</b>. ':'')+(pend.length?'Tienes '+pend.length+(pend.length===1?' tarea':' tareas')+' para avanzar.':'No tienes tareas pendientes por ahora.')+'</p><div class="row"><button class="btn y" type="button" onclick="go(\'camino\')">'+ic('play')+'Continuar mi camino</button><button class="btn ghost" type="button" onclick="go(\'tablero\')">Ver mis tareas</button><button class="btn ghost" type="button" onclick="go(\'material\')">Mi material</button></div></div>'
+  return '<section class="page"><div class="hero"><div class="beam"></div><div style="position:relative"><h1>¡Hola, <em>'+esc(k.corto)+'</em>!</h1><p>'+(k.racha?'Llevas <b style="color:var(--y)">'+k.racha+' '+(k.racha===1?'día seguido':'días seguidos')+'</b>. ':'')+(pend.length?'Tienes '+pend.length+(pend.length===1?' tarea':' tareas')+' para avanzar.':'No tienes tareas pendientes por ahora.')+'</p><div class="row"><button class="btn y" type="button" onclick="go(\'camino\')">'+ic('play')+'Continuar mi camino</button><button class="btn ghost" type="button" onclick="go(\'tablero\')">Ver mis tareas</button><button class="btn ghost" type="button" onclick="go(\'material\')">Mi material</button>'+(herrDe(k).length?'<button class="btn ghost" type="button" onclick="go(\'herramientas\')">Mis herramientas</button>':'')+'</div></div>'
   +'<div class="ring" style="--len:'+len+';--pct:'+L.p+'"><svg viewBox="0 0 200 200"><circle class="bg" cx="100" cy="100" r="84"/><circle class="fg" cx="100" cy="100" r="84"/></svg><div><b>'+L.n+'</b><span>NIVEL</span></div></div></div>'
   +'<div class="grid g4" style="margin-top:22px"><div class="tile y">'+ic('bolt')+'<b>'+k.xp+'</b><span>XP en total</span></div><div class="tile c">'+ic('flame')+'<b>'+k.racha+'</b><span>días de racha</span></div><div class="tile t">'+ic('star')+'<b>'+k.logros.length+'</b><span>insignias</span></div><div class="tile g">'+ic('check')+'<b>'+k.tareas.filter(t=>t.estado==='revisada').length+'</b><span>tareas revisadas</span></div></div>'
   +'<div class="grid g2" style="margin-top:22px"><div class="card next"><h2>Tu próxima clase</h2>'+(k.prox?'<div class="when">'+(hora(k.prox.hora)||'Por confirmar')+'</div><p>'+esc(fecha(k.prox.fecha))+'</p><span class="pill warn">'+esc(k.prox.titulo)+'</span><span class="sub">'+esc(k.prox.modalidad||k.mod)+'</span>':vacio('Todavía no hay una clase programada. Te avisamos por WhatsApp.'))+'</div>'
   +'<div class="card"><h2>Tareas por hacer</h2>'+(pend.length?pend.slice(0,4).map(t=>'<div class="task-mini">'+ic('board')+'<span>'+esc(t.titulo)+'</span></div>').join(''):vacio('Aquí aparecerán tus tareas.'))+'</div></div>'
   +(k.reco?'<div class="card" style="margin-top:22px"><div class="bubble-tip"><div class="mascot"><span class="iso"></span></div><div class="say"><p><b style="color:var(--borgona)">Tu guía Faro dice:</b> '+esc(k.reco)+'</p></div></div></div>':'')+'</section>'};
+
+P.herramientas=()=>'<section class="page" id="herr-root"></section>';
+P.herramientas.bind=()=>{const t=herrDe(K());if(window.FaroTools)FaroTools.mount($('#herr-root'),{tools:t});else $('#herr-root').innerHTML='<div class="card"><p class="sub">No se pudieron cargar las herramientas. Recarga la página.</p></div>'};
 
 const COLS=[['pendiente','Por hacer','c1'],['en_curso','En curso','c2'],['hecha','Entregadas','c3']];
 P.tablero=()=>{const k=K();return '<section class="page"><div class="ph"><h1>Mi tablero</h1><p>Mueve cada tarea hacia la derecha cuando avances. Tu profe la revisa y te da tus XP.</p></div><div class="kan">'
@@ -688,10 +711,13 @@ document.addEventListener('click',async e=>{const kb=e.target.closest('[data-kid
 
 /* ---------- pintar ---------- */
 function render(){
-  clearInterval(S.timer);
+  clearInterval(S.timer);window.FaroTools&&FaroTools.stop();
   $('#login').hidden=!!S.rol;$('.app').style.display=S.rol?'':'none';$('#out').hidden=!S.rol;
   if(!S.rol){loginUI();return}
-  renderSide();const f=P[S.page]||P[NAV[S.rol][0][0]];$('#main').innerHTML=f();f.bind&&f.bind();
+  /* si la sección ya no está disponible (por ejemplo, le quitaron el instrumento), vuelve al inicio */
+  if(!navDe().some(n=>n[0]===S.page))S.page=NAV[S.rol][0][0];
+  renderSide();
+  const f=P[S.page];$('#main').innerHTML=f();f.bind&&f.bind();
 }
 
 /* ---------- ingreso ---------- */
@@ -730,7 +756,7 @@ async function iniciar(){
     render()}
   catch(e){if(e.message!=='sesion'){salir(true);loginUI('No pudimos entrar ahora. Intenta de nuevo en un momento.')}}
 }
-function salir(silencio){SES=null;try{sessionStorage.removeItem('faro_portal')}catch(e){}S.rol=null;S.D={};S.cli=null;S.doc=null;S.perfil=null;if(!silencio){render()}}
+function salir(silencio){window.FaroTools&&FaroTools.stop();SES=null;try{sessionStorage.removeItem('faro_portal')}catch(e){}S.rol=null;S.D={};S.cli=null;S.doc=null;S.perfil=null;if(!silencio){render()}}
 $('#out').onclick=()=>salir();
 (function(){const q=new URLSearchParams(location.search).get('r');if(['al','pa','do','cl'].includes(q))S.tab=q;
   if(SES&&SES.access)iniciar();else render()})();

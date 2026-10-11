@@ -675,15 +675,26 @@ function render(){renderCal();renderDay();renderRes();renderSem();renderAcc();re
 /* ---------- ACADEMY · CLIENTES · SITIO (portales y configuración) ---------- */
 const AC={ok:true,list:{},sel:{ac:'est',cl:'cli'},edit:null,filtro:'',chat:{est:'',canal:'alumno',cli:''},cfg:{}};
 const AREAS=[['musica','Música'],['ingles','Inglés']];
+/* Instrumentos y niveles: siempre se eligen de la lista, nunca se escriben. El portal activa herramientas según estos valores. */
+const INSTR=[['canto','Canto'],['acustica','Guitarra acústica'],['clasica','Guitarra clásica'],['electrica','Guitarra eléctrica'],['bajo','Bajo'],['bateria','Batería'],['piano','Piano'],['ukelele','Ukelele'],['produccion','Producción musical']];
+const NIVELES=[['','Sin definir'],['principiante','Principiante'],['intermedio','Intermedio'],['avanzado','Avanzado']];
+const INSTR_TOOLS={electrica:'Afinador y metrónomo',piano:'Piano interactivo'};
 const PORTAL_URL='farostudios.net/portal.html';
 const ENT={
   est:{g:'ac',tabla:'ac_estudiantes',t:'Alumnos',ord:'nombre.asc',ico:'🎓',rol:'alumno',f:[
     {k:'nombre',l:'Nombre completo',req:1},{k:'apodo',l:'Cómo le decimos (apodo)'},{k:'contacto',l:'WhatsApp o correo (solo lo ves tú)'},
-    {k:'area',l:'Área',t:'sel',o:AREAS,def:'musica'},{k:'detalle',l:'Instrumento o nivel (Piano, A2…)'},
+    {k:'area',l:'Área',t:'sel',o:AREAS,def:'musica'},
+    {k:'instrumentos',l:'Instrumentos (marca todos los que cursa)',t:'multi',o:INSTR,def:[],showIf:{k:'area',v:'musica'},ayuda:'Al marcar Guitarra eléctrica se activa el afinador y el metrónomo en su portal; al marcar Piano, el piano interactivo.'},
+    {k:'nivel',l:'Nivel',t:'sel',o:NIVELES,def:''},
     {k:'modalidad',l:'Modalidad',t:'sel',o:[['presencial','Presencial'],['online','En línea']],def:'presencial'},
     {k:'xp',l:'Puntos de experiencia (XP)',t:'number',def:0},{k:'racha',l:'Racha (días seguidos)',t:'number',def:0},
     {k:'paga_alumno',l:'Es adulto y ve sus propias facturas',t:'check'},{k:'activo',l:'Activo',t:'check',def:true}],
-    row:r=>[(r.apodo||r.nombre)+(r.activo?'':' (inactivo)'),(r.area==='musica'?'Música':'Inglés')+' · '+(r.detalle||'sin detalle')+' · '+(r.modalidad==='online'?'en línea':'presencial')+' · '+r.xp+' XP · '+accTxt('alumno','estudiante_id',r.id)],
+    /* "detalle" se arma solo con lo elegido, para que las demás pantallas sigan mostrando un resumen legible */
+    prep:b=>{const nm=Object.fromEntries(INSTR),lv=Object.fromEntries(NIVELES);
+      if(b.area!=='musica')b.instrumentos=[];
+      b.instrumentos=b.instrumentos||[];b.nivel=b.nivel||null;
+      b.detalle=[b.instrumentos.map(i=>nm[i]).join(' + '),b.nivel?lv[b.nivel]:''].filter(Boolean).join(' · ')||null},
+    row:r=>[(r.apodo||r.nombre)+(r.activo?'':' (inactivo)'),(r.area==='musica'?'Música':'Inglés')+' · '+(r.detalle||'sin detalle')+' · '+(r.modalidad==='online'?'en línea':'presencial')+' · '+r.xp+' XP · '+accTxt('alumno','estudiante_id',r.id)+((r.instrumentos||[]).some(i=>INSTR_TOOLS[i])?' · herramientas: '+[...new Set((r.instrumentos||[]).map(i=>INSTR_TOOLS[i]).filter(Boolean))].join(', '):'')],
     acts:r=>[[accHas('estudiante_id',r.id)?'Regenerar acceso':'Crear acceso',()=>acGenerar('alumno',r)]].concat(accHas('estudiante_id',r.id)?[['Ver acceso',()=>acVer('alumno','estudiante_id',r)]]:[])},
   enc:{g:'ac',tabla:'ac_encargados',t:'Encargados',ord:'nombre.asc',ico:'👪',rol:'encargado',f:[
     {k:'nombre',l:'Nombre',req:1},{k:'whatsapp',l:'WhatsApp'},{k:'correo',l:'Correo (opcional)',t:'email'}],
@@ -802,6 +813,15 @@ async function acAbrir(ruta,bucket){
 function acField(f,val,g){
   const id='acf-'+g+'-'+f.k;let inp;const v=val==null?'':val;
   if(f.t==='check'){inp=el('input',{type:'checkbox',id,style:'width:auto;justify-self:start;transform:scale(1.4);margin:6px 4px'});inp.checked=!!v;return el('div',{class:'field'},el('label',{for:id},f.l),inp)}
+  if(f.t==='multi'){
+    const sel=Array.isArray(val)?val:[];
+    const box=el('div',{id,class:'multi',role:'group','aria-label':f.l,style:'display:flex;flex-wrap:wrap;gap:8px'});
+    (f.o||[]).forEach(o=>{const cb=el('input',{type:'checkbox',value:o[0],style:'position:absolute;opacity:0;pointer-events:none'});cb.checked=sel.includes(o[0]);
+      const lab=el('label',{class:'chip',style:'cursor:pointer;display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border:2px solid var(--line);border-radius:99px;user-select:none'},cb,o[1]);
+      const paint=()=>{lab.style.background=cb.checked?'var(--gold,#B8A06A)':'';lab.style.color=cb.checked?'#252528':'';lab.style.borderColor=cb.checked?'#252528':''};
+      cb.addEventListener('change',paint);paint();box.append(lab)});
+    const w=el('div',{class:'field','data-showif':f.showIf?f.showIf.k+'='+f.showIf.v:''},el('label',{},f.l),box,f.ayuda?el('small',{class:'muted'},f.ayuda):null);
+    return w}
   if(f.t==='area'){inp=el('textarea',{id,rows:'3',maxlength:'1500'});inp.value=v}
   else if(['sel','est','enc','cli'].includes(f.t)){
     inp=el('select',{id});let opts=f.o||[];
@@ -816,7 +836,7 @@ function acField(f,val,g){
   else{inp=el('input',{id,type:f.t||'text',maxlength:'400'});if(f.min!=null){inp.min=f.min;inp.max=f.max}if(f.step)inp.step=f.step;inp.value=v}
   return el('div',{class:'field'},el('label',{for:id},f.l+(f.req?' *':'')),inp);
 }
-function acVal(f,g){const i=$('#acf-'+g+'-'+f.k);if(f.t==='check')return i.checked;const v=i.value;if(f.t==='number')return v===''?null:Number(v);return v===''?null:v}
+function acVal(f,g){const i=$('#acf-'+g+'-'+f.k);if(f.t==='check')return i.checked;if(f.t==='multi')return [...i.querySelectorAll('input:checked')].map(x=>x.value);const v=i.value;if(f.t==='number')return v===''?null:Number(v);return v===''?null:v}
 async function acSave(g,k){
   const e=ENT[k],body={};let file=null;
   for(const f of e.f){
@@ -977,6 +997,8 @@ function renderGrp(g){
   if(k==='est')right.append(el('p',{class:'muted'},'Nivel del juego = XP ÷ 100 (cada 100 XP sube un nivel). Después de guardarlo, usa “Crear acceso” en su fila para darle usuario y contraseña.'));
   if(k==='cli')right.append(el('p',{class:'muted'},'Después de guardar al cliente, usa “Dar acceso” en su fila: su correo + el código que se genera le abren su espacio con la galería, el contrato y el buzón.'));
   e.f.forEach(f=>{const v=cur?cur[f.k]:(f.def==='hoy'?today():f.def);right.append(acField(f,v,g))});
+  right.querySelectorAll('[data-showif]').forEach(w=>{const c=w.dataset.showif;if(!c)return;const [fk,fv]=c.split('=');const dep=right.querySelector('#acf-'+g+'-'+fk);if(!dep)return;
+    const sync=()=>{w.hidden=dep.value!==fv};dep.addEventListener('change',sync);sync()});
   right.append(el('div',{style:'display:flex;gap:10px;margin-top:16px;flex-wrap:wrap'},
     el('button',{class:'btn btn-gold',id:'acgo-'+g,type:'button',onclick:()=>acSave(g,k)},cur?'Guardar cambios':'Guardar'),
     cur?el('button',{class:'btn btn-ghost',type:'button',onclick:()=>{AC.edit=null;renderGrp(g)}},'Cancelar'):null));
