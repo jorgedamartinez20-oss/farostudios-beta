@@ -1019,8 +1019,7 @@ const ENT={
     {k:'nombre',l:'Nombre del cliente',req:1},{k:'correo',l:'Correo (el que dio al reservar; con él entra)',t:'email'},{k:'whatsapp',l:'WhatsApp (para avisarle por mensaje)'},{k:'proyecto',l:'Proyecto (Boda Ana y Luis, Graduación…)'},{k:'tipo',l:'Tipo de servicio'},
     {k:'fecha',l:'Fecha del proyecto',t:'date'},{k:'galeria_url',l:'Enlace a su galería en Pixieset',t:'url'},
     {k:'nota',l:'Mensaje de bienvenida (lo ve el cliente)',t:'area'},{k:'activo',l:'Activo',t:'check',def:true}],
-    row:r=>[r.nombre+(r.proyecto?' · '+r.proyecto:'')+(r.activo?'':' (inactivo)'),(r.galeria_url?'Galería lista':'Sin galería')+' · '+accTxt('cliente','cliente_id',r.id,1)],
-    acts:r=>[[accHas('cliente_id',r.id)?'Nuevo código de acceso':'Dar acceso (correo + código)',()=>acGenerar('cliente',r)]].concat(accHas('cliente_id',r.id)?[['Ver acceso',()=>acVer('cliente','cliente_id',r)]]:[])},
+    row:r=>[r.nombre+(r.proyecto?' · '+r.proyecto:'')+(r.activo?'':' (inactivo)'),(r.galeria_url?'Galería lista':'Sin galería')]},   /* el portal es solo de Academy: los clientes ya no tienen acceso de portal */
   cldoc:{g:'cl',tabla:'cl_documentos',t:'Documentos y entregas',ord:'creado.desc',ico:'📄',byCli:1,bucket:'clientes',f:[
     {k:'cliente_id',l:'Cliente',t:'cli',req:1},{k:'tipo',l:'Qué es',t:'sel',o:[['contrato','Contrato'],['entrega','Entrega (fotos, video, audio)'],['factura','Factura'],['enlace','Enlace'],['otro','Otro']],def:'entrega'},
     {k:'titulo',l:'Título',req:1},{k:'ruta',l:'Archivo (máx. 50 MB)',t:'file',folder:''}],
