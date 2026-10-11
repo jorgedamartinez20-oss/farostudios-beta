@@ -406,7 +406,7 @@ if(S){start().catch(()=>logout())}
 /* ---------- ACADEMY · CLIENTES · SITIO (portales y configuración) ---------- */
 const AC={ok:true,list:{},sel:{ac:'est',cl:'cli'},edit:null,filtro:'',chat:{est:'',canal:'alumno',cli:''},cfg:{}};
 const AREAS=[['musica','Música'],['ingles','Inglés']];
-const PORTAL_URL='farostudios.net';
+const PORTAL_URL='farostudios.net/portal.html';
 const ENT={
   est:{g:'ac',tabla:'ac_estudiantes',t:'Alumnos',ord:'nombre.asc',ico:'🎓',rol:'alumno',f:[
     {k:'nombre',l:'Nombre completo',req:1},{k:'apodo',l:'Cómo le decimos (apodo)'},{k:'contacto',l:'WhatsApp o correo (solo lo ves tú)'},
@@ -415,16 +415,20 @@ const ENT={
     {k:'xp',l:'Puntos de experiencia (XP)',t:'number',def:0},{k:'racha',l:'Racha (días seguidos)',t:'number',def:0},
     {k:'paga_alumno',l:'Es adulto y ve sus propias facturas',t:'check'},{k:'activo',l:'Activo',t:'check',def:true}],
     row:r=>[(r.apodo||r.nombre)+(r.activo?'':' (inactivo)'),(r.area==='musica'?'Música':'Inglés')+' · '+(r.detalle||'sin detalle')+' · '+(r.modalidad==='online'?'en línea':'presencial')+' · '+r.xp+' XP · '+accTxt('alumno','estudiante_id',r.id)],
-    acts:r=>[[accHas('estudiante_id',r.id)?'Regenerar acceso':'Generar acceso',()=>acGenerar('alumno',r)]]},
+    acts:r=>[[accHas('estudiante_id',r.id)?'Regenerar acceso':'Crear acceso',()=>acGenerar('alumno',r)]]},
   enc:{g:'ac',tabla:'ac_encargados',t:'Encargados',ord:'nombre.asc',ico:'👪',rol:'encargado',f:[
     {k:'nombre',l:'Nombre',req:1},{k:'whatsapp',l:'WhatsApp'},{k:'correo',l:'Correo (opcional)',t:'email'}],
     row:r=>[r.nombre,(r.whatsapp||'sin WhatsApp')+' · '+accTxt('encargado','encargado_id',r.id)],
-    acts:r=>[[accHas('encargado_id',r.id)?'Regenerar acceso':'Generar acceso',()=>acGenerar('encargado',r)]]},
+    acts:r=>[[accHas('encargado_id',r.id)?'Regenerar acceso':'Crear acceso',()=>acGenerar('encargado',r)]]},
+  doc:{g:'ac',tabla:'ac_docentes',t:'Docentes',ord:'nombre.asc',ico:'🧑‍🏫',rol:'docente',f:[
+    {k:'nombre',l:'Nombre',req:1},{k:'whatsapp',l:'WhatsApp'},{k:'correo',l:'Correo (opcional)',t:'email'},{k:'activo',l:'Activo',t:'check',def:true}],
+    row:r=>[r.nombre+(r.activo?'':' (inactivo)'),(r.whatsapp||'sin WhatsApp')+' · '+accTxt('docente','docente_id',r.id)],
+    acts:r=>[[accHas('docente_id',r.id)?'Regenerar acceso':'Crear acceso',()=>acGenerar('docente',r)]]},
   vin:{g:'ac',tabla:'ac_vinculos',t:'Vínculos',ico:'🔗',pk:['encargado_id','estudiante_id'],noedit:1,f:[
     {k:'encargado_id',l:'Encargado',t:'enc',req:1},{k:'estudiante_id',l:'Alumno',t:'est',req:1},{k:'parentesco',l:'Parentesco (madre, padre, tutor…)'}],
     row:r=>[acN('enc',r.encargado_id)+'  →  '+acN('est',r.estudiante_id),r.parentesco||'']},
   acc:{g:'ac',tabla:'ac_cuentas',t:'Accesos',ord:'creado.desc',ico:'🔑',pk:['user_id'],noedit:1,nofrm:1,
-    row:r=>[(r.rol==='cliente'?'Correo ':'Usuario ')+r.usuario+(r.activo?'':' (desactivado)'),({alumno:'Alumno',encargado:'Encargado',cliente:'Cliente'})[r.rol]+': '+(r.rol==='alumno'?acN('est',r.estudiante_id):r.rol==='encargado'?acN('enc',r.encargado_id):acN('cli',r.cliente_id))],
+    row:r=>[(r.rol==='cliente'?'Correo ':'Usuario ')+r.usuario+(r.activo?'':' (desactivado)'),({alumno:'Alumno',encargado:'Encargado',docente:'Docente',cliente:'Cliente'})[r.rol]+': '+(r.rol==='alumno'?acN('est',r.estudiante_id):r.rol==='encargado'?acN('enc',r.encargado_id):r.rol==='docente'?acN('doc',r.docente_id):acN('cli',r.cliente_id))],
     acts:r=>[[r.activo?'Desactivar':'Activar',async()=>{const x=await api('/rest/v1/ac_cuentas?user_id=eq.'+r.user_id,{method:'PATCH',body:{activo:!r.activo},headers:{Prefer:'return=minimal'}});if(!x.ok){toast(await errText(x));return}toast(r.activo?'Acceso desactivado':'Acceso activado');await loadAc()}]]},
   tar:{g:'ac',tabla:'ac_tareas',t:'Tablero',ord:'creado.desc',ico:'📋',byEst:1,f:[
     {k:'estudiante_id',l:'Alumno',t:'est',req:1},{k:'titulo',l:'Tarea',req:1},{k:'descripcion',l:'Instrucciones',t:'area'},
@@ -484,7 +488,7 @@ const ENT={
     {k:'titulo',l:'Título',req:1},{k:'ruta',l:'Archivo (máx. 50 MB)',t:'file',folder:''}],
     row:r=>[r.titulo+' · '+r.tipo,acN('cli',r.cliente_id)]}
 };
-const GRP={ac:['est','enc','vin','acc','tar','eva','hab','logro','reco','clase','mat','dip','fac','chat'],cl:['cli','cldoc','clchat']};
+const GRP={ac:['est','enc','doc','vin','acc','tar','eva','hab','logro','reco','clase','mat','dip','fac','chat'],cl:['cli','cldoc','clchat']};
 function acN(k,id){const x=(AC.list[k]||[]).find(r=>r.id===id);return x?(x.apodo||x.nombre):'(borrado)'}
 function accHas(fk,id){return (AC.list.acc||[]).some(c=>c[fk]===id)}
 function accTxt(rol,fk,id,tok){const c=(AC.list.acc||[]).find(x=>x[fk]===id);return c?((tok?'acceso con ':'usuario ')+c.usuario+(c.activo?'':' (desactivado)')):'sin acceso todavía'}
@@ -578,38 +582,64 @@ function rnd(n){const a=new Uint32Array(n);crypto.getRandomValues(a);return [...
 const grp=n=>rnd(n*4).match(/.{4}/g).join('-');
 const slug=s=>(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,'').slice(0,10)||'user';
 async function copyTxt(t){try{await navigator.clipboard.writeText(t);toast('Copiado');return true}catch(e){const ta=el('textarea',{style:'position:fixed;opacity:0'});ta.value=t;document.body.append(ta);ta.select();try{document.execCommand('copy');toast('Copiado')}catch(x){toast('No se pudo copiar')}ta.remove()}}
+function acPedir(rol,nombre,usuarioSug,claveSug,fijo){
+  return new Promise(res=>{
+    const m=$('#acc-modal');m.textContent='';
+    const u=el('input',{type:'text',id:'acp-u',maxlength:'60',autocapitalize:'none',autocomplete:'off',spellcheck:'false'});u.value=usuarioSug;
+    if(fijo)u.readOnly=true;
+    const c=el('input',{type:'text',id:'acp-c',maxlength:'60',autocomplete:'off',spellcheck:'false'});c.value=claveSug;
+    const err=el('div',{class:'msg',style:'display:none;background:rgba(160,30,30,.12)'});
+    const cerrar=v=>{m.hidden=true;m.textContent='';res(v)};
+    const box=el('div',{class:'box',style:'max-width:520px'},
+      el('h2',{style:'font-size:2rem'},'Crear acceso · '+nombre),
+      el('div',{class:'msg'},fijo?'Entra con su correo y un código. Puedes dejar el que sugerimos o escribir el tuyo (mínimo 6 caracteres).':'Puedes dejar el usuario y la contraseña que sugerimos o escribir los tuyos. Usuario: letras minúsculas, números, punto, guion o guion bajo (mínimo 3). Contraseña: mínimo 6 caracteres.'),
+      el('div',{class:'field'},el('label',{for:'acp-u'},fijo?'Correo (es su usuario)':'Usuario'),u),
+      el('div',{class:'field'},el('label',{for:'acp-c'},fijo?'Código':'Contraseña'),c),
+      err,
+      el('div',{class:'acts',style:'margin-top:16px'},
+        el('button',{class:'btn btn-gold',type:'button',onclick:()=>{
+          const us=fijo?u.value:u.value.trim().toLowerCase(),cl=c.value;
+          if(!fijo&&!/^[a-z0-9][a-z0-9._-]{2,59}$/.test(us)){err.textContent='El usuario solo puede tener letras minúsculas sin acento, números, punto, guion o guion bajo (mínimo 3).';err.style.display='';return}
+          if(cl.length<6){err.textContent='La contraseña necesita al menos 6 caracteres.';err.style.display='';return}
+          cerrar({usuario:us,clave:cl})}},'Crear acceso'),
+        el('button',{class:'btn btn-ghost',type:'button',onclick:()=>{c.value=fijo?grp(2):grp(3)}},'Sugerir otra contraseña'),
+        el('button',{class:'btn btn-ghost',type:'button',onclick:()=>cerrar(null)},'Cancelar')));
+    m.append(box);m.hidden=false;setTimeout(()=>(fijo?c:u).focus(),50);
+  });
+}
 async function acGenerar(rol,ent){
-  const fk=rol==='alumno'?'estudiante_id':rol==='encargado'?'encargado_id':'cliente_id';
+  const fk=rol==='alumno'?'estudiante_id':rol==='encargado'?'encargado_id':rol==='docente'?'docente_id':'cliente_id';
   const prev=(AC.list.acc||[]).find(c=>c[fk]===ent.id);
   const nombre=ent.apodo||ent.nombre;
-  if(prev&&!confirm('Ya tiene acceso ('+prev.usuario+'). Si generas uno nuevo, el anterior deja de funcionar. ¿Continuar?'))return;
-  let usuario,clave;
-  let email;
+  if(prev&&!confirm('Ya tiene acceso ('+prev.usuario+'). Si creas uno nuevo, el anterior deja de funcionar. ¿Continuar?'))return;
+  let sug,clave0,fijo=false;
   if(rol==='cliente'){
-    usuario=String(ent.correo||'').trim().toLowerCase();
-    if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(usuario)){alert('Este cliente necesita un correo válido. Edita al cliente, escribe su correo y vuelve a intentar.');return}
-    clave=grp(2);
-    email=usuario.replace('@','_at_').replace(/[^a-z0-9._-]/g,'')+'.'+rnd(3).toLowerCase()+'@acceso.farostudios.net';
+    sug=String(ent.correo||'').trim().toLowerCase();fijo=true;
+    if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(sug)){alert('Este cliente necesita un correo válido. Edita al cliente, escribe su correo y vuelve a intentar.');return}
+    clave0=grp(2);
   }
-  else{usuario=(rol==='encargado'?'enc-':'')+slug((nombre||'').split(' ')[0])+'-'+rnd(3).toLowerCase();clave=grp(3);email=usuario.toLowerCase()+'@acceso.farostudios.net'}
-  toast('Generando acceso…');
+  else{sug=(rol==='encargado'?'enc-':rol==='docente'?'doc-':'')+slug((nombre||'').split(' ')[0])+'-'+rnd(3).toLowerCase();clave0=grp(3)}
+  const cred=await acPedir(rol,nombre,sug,clave0,fijo);if(!cred)return;
+  const usuario=cred.usuario,clave=cred.clave;
+  const email=fijo?usuario.replace('@','_at_').replace(/[^a-z0-9._-]/g,'')+'.'+rnd(3).toLowerCase()+'@acceso.farostudios.net':usuario.toLowerCase()+'@acceso.farostudios.net';
+  toast('Creando acceso…');
   try{
     const r=await fetch(SB.url+'/auth/v1/signup',{method:'POST',headers:{apikey:SB.key,'Content-Type':'application/json'},body:JSON.stringify({email,password:clave})});
     const j=await r.json().catch(()=>({}));
-    if(!r.ok)throw new Error(j.msg||j.error_description||j.message||'No se pudo crear el acceso ('+r.status+')');
+    if(!r.ok){const t=j.msg||j.error_description||j.message||'';throw new Error(/already|registered|exists/i.test(t)?'Ese usuario ya existe. Elige otro nombre de usuario.':(t||'No se pudo crear el acceso ('+r.status+')'))}
     const uid=(j.user&&j.user.id)||j.id;if(!uid)throw new Error('Supabase no devolvió el usuario. Revisa Authentication > Providers > Email.');
-    if(!j.access_token){alert('Se creó el usuario, pero Supabase pide confirmar el correo y esa persona NO podrá entrar.\n\nEn Supabase: Authentication > Sign In / Providers > Email > desactiva "Confirm email". Luego genera el acceso otra vez.');}
+    if(!j.access_token){alert('Se creó el usuario, pero Supabase pide confirmar el correo y esa persona NO podrá entrar.\n\nEn Supabase: Authentication > Sign In / Providers > Email > desactiva "Confirm email". Luego crea el acceso otra vez.');}
     if(prev){await api('/rest/v1/ac_cuentas?user_id=eq.'+prev.user_id,{method:'DELETE',headers:{Prefer:'return=minimal'}})}
     const body={user_id:uid,rol,usuario,email_auth:email};body[fk]=ent.id;
     const x=await api('/rest/v1/ac_cuentas',{method:'POST',body,headers:{Prefer:'return=minimal'}});
-    if(!x.ok)throw new Error(await errText(x)+' (¿corriste portal-faro.sql?)');
+    if(!x.ok){const t=await errText(x);throw new Error(/duplicate|unique/i.test(t)?'Ese usuario ya está en uso. Elige otro nombre de usuario.':t+' (¿corriste portal-faro.sql?)')}
     await loadAc();acMostrar(rol,nombre,ent,usuario,clave);
-  }catch(e){toast(e.message||'No se pudo generar')}
+  }catch(e){toast(e.message||'No se pudo crear')}
 }
 function acMostrar(rol,nombre,ent,usuario,clave){
   const msg=rol==='cliente'
-    ?'Hola '+nombre+', este es tu acceso para ver tu galería, tu contrato y tus entregas de Faro Studios:\n\nCorreo: '+usuario+'\nCódigo: '+clave+'\n\nEntra en '+PORTAL_URL+' y toca “Clientes”.'
-    :'Hola, este es el acceso '+(rol==='alumno'?'de '+nombre+' a Faro Academy':'para el seguimiento de '+nombre+' en Faro Academy')+':\n\nUsuario: '+usuario+'\nContraseña: '+clave+'\n\nEntra en '+PORTAL_URL+' y toca “'+(rol==='alumno'?'Ingreso estudiantes':'Encargados')+'”.';
+    ?'Hola '+nombre+', este es tu acceso para ver tu galería, tu contrato y tus entregas de Faro Studios:\n\nCorreo: '+usuario+'\nCódigo: '+clave+'\n\nEntra en '+PORTAL_URL+' y toca “Cliente Studios”.'
+    :'Hola, este es el acceso '+(rol==='alumno'?'de '+nombre+' a Faro Academy':rol==='docente'?'de docente de Faro Academy para '+nombre:'para el seguimiento de '+nombre+' en Faro Academy')+':\n\nUsuario: '+usuario+'\nContraseña: '+clave+'\n\nEntra en '+PORTAL_URL+' y toca “'+(rol==='alumno'?'Estudiante':rol==='docente'?'Docente':'Encargado')+'”.';
   const m=$('#acc-modal');m.textContent='';
   const tel=String(ent.whatsapp||ent.contacto||'').replace(/\D/g,'');
   const box=el('div',{class:'box',style:'max-width:520px'},
@@ -641,7 +671,7 @@ function renderGrp(g){
     const s=el('select',{onchange:ev=>{AC.filtro=ev.target.value;renderGrp(g)}},el('option',{value:''},e.byEst?'Todos los alumnos':'Todos los clientes'));
     (AC.list[key]||[]).forEach(a=>s.append(el('option',{value:a.id},a.nombre)));s.value=AC.filtro;
     left.append(el('div',{class:'field'},s));rows=AC.filtro?rows.filter(r=>r[fk]===AC.filtro):rows}
-  if(k==='acc')left.append(el('p',{class:'muted'},'Aquí ves quién tiene acceso. Para crear uno, usa “Generar acceso” en Alumnos, Encargados o Clientes.'));
+  if(k==='acc')left.append(el('p',{class:'muted'},'Aquí ves quién tiene acceso. Para crear uno, usa “Crear acceso” en Alumnos, Encargados, Docentes o Clientes: tú eliges el usuario y la contraseña (o dejas los que sugerimos).'));
   if(!rows.length)left.append(el('p',{class:'muted',style:'margin-top:14px'},'Todavía no hay nada aquí.'+(e.nofrm?'':' Agrega el primero con el formulario.')));
   rows.forEach(r=>{
     const [a,b]=e.row(r);const acts=el('div',{class:'acts'});
@@ -655,7 +685,7 @@ function renderGrp(g){
   const cur=AC.edit?(AC.list[k]||[]).find(r=>r.id===AC.edit):null;
   const right=el('div',{class:'card',id:g+'-form'},el('h3',{style:'font-size:1.6rem'},cur?'Editar':'Agregar'));
   if(k==='vin')right.append(el('p',{class:'muted'},'Primero crea al encargado y al alumno; aquí los unes. Un encargado puede tener varios hijos, y ve su tablero, material y facturas.'));
-  if(k==='est')right.append(el('p',{class:'muted'},'Nivel del juego = XP ÷ 100 (cada 100 XP sube un nivel). Después de guardarlo, usa “Generar acceso” en su fila para darle usuario y contraseña.'));
+  if(k==='est')right.append(el('p',{class:'muted'},'Nivel del juego = XP ÷ 100 (cada 100 XP sube un nivel). Después de guardarlo, usa “Crear acceso” en su fila para darle usuario y contraseña.'));
   if(k==='cli')right.append(el('p',{class:'muted'},'Después de guardar al cliente, usa “Dar acceso” en su fila: su correo + el código que se genera le abren su espacio con la galería, el contrato y el buzón.'));
   e.f.forEach(f=>{const v=cur?cur[f.k]:(f.def==='hoy'?today():f.def);right.append(acField(f,v,g))});
   right.append(el('div',{style:'display:flex;gap:10px;margin-top:16px;flex-wrap:wrap'},

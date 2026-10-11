@@ -827,6 +827,7 @@ dialog.portal .field input,dialog.portal .field select{background:#fff;color:#25
 .pt-prev div{padding:14px;border-radius:12px;color:#fff;font-weight:700;display:grid;gap:4px}
 .pt-prev div small{font-weight:400;opacity:.9}
 .pt-prev div:nth-child(1){background:#4F5A2A}.pt-prev div:nth-child(2){background:#E4664F}.pt-prev div:nth-child(3){background:#3FA7A3}.pt-prev div:nth-child(4){background:#B5822E}
+#dlg-cli .pt-prev div:nth-child(1){background:#8B1A2A}#dlg-cli .pt-prev div:nth-child(2){background:#B8A06A;color:#252528}#dlg-cli .pt-prev div:nth-child(3){background:#3A3A3A}#dlg-cli .pt-prev div:nth-child(4){background:#6B6256}
 
 /* piano: amo el piano */
 .amo{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:16px}
@@ -1043,7 +1044,7 @@ dialog.portal .field input,dialog.portal .field select{background:#fff;color:#25
     <span class="brand-tag" id="brand-tag" hidden>ACADEMY</span>
   </button>
   <nav class="nav-links" data-for="studios" aria-label="Secciones de Studios">
-    <a href="#quienes">Nosotros</a><a href="#servicios">Servicios</a><a href="#portafolio">Portafolio</a><a href="#audio">Música</a><a href="#catalogo">Catálogo</a><a href="#descargas-s">Recursos</a><button data-page-go="cotizar">Cotizar</button><button data-page-go="reservas">Agendar</button>
+    <a href="#quienes">Nosotros</a><a href="#servicios">Servicios</a><a href="#portafolio">Portafolio</a><a href="#audio">Música</a><a href="#catalogo">Catálogo</a><a href="#descargas-s">Recursos</a><button data-page-go="cotizar">Cotizar</button><button data-page-go="reservas">Agendar</button><button type="button" data-open="dlg-cli">Mi espacio</button>
   </nav>
   <nav class="nav-links" data-for="academy" aria-label="Páginas de Academy" hidden>
     <button data-page-go="academy" id="nl-academy">Academy</button>
@@ -1437,8 +1438,9 @@ dialog.portal .field input,dialog.portal .field select{background:#fff;color:#25
   <div class="pt-tabs" role="tablist"><button type="button" role="tab" aria-selected="true" data-t="in">Ingresar</button><button type="button" role="tab" aria-selected="false" data-t="reg">Registrarme</button></div>
   <div id="est-in">
     <div class="pt-prev"><div>Mis clases<small>Horario y enlaces</small></div><div>Materiales<small>Planes y PDFs</small></div><div>Mi avance<small>Etapas y metas</small></div><div>Mi diploma<small>Al completar el nivel</small></div></div>
-    <div class="pt-note">Estamos terminando tu portal. Muy pronto podrás ingresar aquí con tu cuenta. Mientras tanto, coordinamos tus clases y materiales por WhatsApp.</div>
-    <a class="btn btn-solid" data-wa="academy" target="_blank" rel="noopener" href="#" style="margin-top:16px"><svg class="ico"><use href="#i-wa"/></svg>Escribir por WhatsApp</a>
+    <a class="btn btn-solid" href="portal.html?r=al" style="margin-top:16px"><svg class="ico"><use href="#i-user"/></svg>Entrar a mi portal</a>
+    <div class="pt-note">Usa el usuario y la contraseña que te dio Faro Academy. ¿Todavía no los tienes? Escríbenos por <a data-wa="academy" target="_blank" rel="noopener" href="#" style="text-decoration:underline">WhatsApp</a>.</div>
+    <div class="pt-note" style="margin-top:6px">¿Eres docente de Faro Academy? <a href="portal.html?r=do" style="text-decoration:underline">Entra aquí</a>.</div>
   </div>
   <div id="est-reg" hidden>
     <div class="field"><label for="est-n">Nombre del estudiante</label><input id="est-n" maxlength="120" autocomplete="name"></div>
@@ -1453,8 +1455,16 @@ dialog.portal .field input,dialog.portal .field select{background:#fff;color:#25
   <h3>Padres de familia</h3>
   <p style="color:var(--muted)">Aquí verás todo lo de tus hijos en un solo lugar.</p>
   <div class="pt-prev"><div>Facturas<small>Descarga las de cada mes</small></div><div>Saldos<small>Lo pagado y lo pendiente</small></div><div>Próximas clases<small>Horarios y cambios</small></div><div>Avance<small>Metas de cada etapa</small></div></div>
-  <div class="pt-note">Estamos preparando este portal. Mientras tanto, pide tu factura o tu saldo por WhatsApp. Pagos con tarjeta de crédito y cuotas con VisaLink; consulta recargos y disponibilidad.</div>
-  <a class="btn btn-solid" data-wa="academy" target="_blank" rel="noopener" href="#" style="margin-top:16px"><svg class="ico"><use href="#i-wa"/></svg>Pedir por WhatsApp</a>
+  <a class="btn btn-solid" href="portal.html?r=pa" style="margin-top:6px"><svg class="ico"><use href="#i-family"/></svg>Entrar al seguimiento</a>
+  <div class="pt-note">Usa el usuario y la contraseña que te dio Faro Academy. Pagos con tarjeta de crédito y cuotas con VisaLink; consulta recargos y disponibilidad por <a data-wa="academy" target="_blank" rel="noopener" href="#" style="text-decoration:underline">WhatsApp</a>.</div>
+</div></dialog>
+<dialog id="dlg-cli" class="portal pal-studios"><div class="dlg">
+  <button class="x" data-close aria-label="Cerrar">×</button>
+  <h3>Mi espacio de cliente</h3>
+  <p style="color:var(--muted)">Tu galería, tu contrato y tus entregas en un solo lugar.</p>
+  <div class="pt-prev"><div>Mi galería<small>Elige y descarga tus fotos</small></div><div>Documentos<small>Contrato y facturas</small></div><div>Entregas<small>Videos y álbumes</small></div><div>Buzón<small>Comentarios y ajustes</small></div></div>
+  <a class="btn btn-solid" href="portal.html?r=cl" style="margin-top:6px"><svg class="ico"><use href="#i-user"/></svg>Entrar con mi correo y código</a>
+  <div class="pt-note">Entras con el correo que usaste al reservar y el código que te enviamos. ¿No lo tienes? Escríbenos por <a data-wa="studios" target="_blank" rel="noopener" href="#" style="text-decoration:underline">WhatsApp</a>.</div>
 </div></dialog>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <div id="loader" aria-hidden="true"><div class="ld-wrap"><div class="ld-mark"><div class="ld-base"></div><div class="ld-fill"></div></div><span class="ld-t">FARO</span></div></div>
