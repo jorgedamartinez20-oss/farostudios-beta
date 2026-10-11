@@ -146,23 +146,43 @@ const CSS=`
 .tu-ok .tu-msg{color:var(--grn)}
 .tu-tip{font-size:1rem;color:#B7B2A8;margin:14px auto 0;max-width:46ch;text-align:center}
 
-/* metrónomo */
-.mt-bpm{display:flex;align-items:center;justify-content:center;gap:clamp(8px,3vw,22px)}
-.mt-num{font:400 clamp(4.8rem,17vw,7.6rem)/1 var(--display);letter-spacing:.02em;min-width:2.3ch}
-.mt-step{width:64px;height:64px;border-radius:50%;border:2px solid var(--line);background:var(--card);box-shadow:0 5px 0 var(--line);font:400 2rem/1 var(--display);cursor:pointer;color:var(--ink)}
-.mt-step:active{transform:translateY(4px);box-shadow:0 1px 0 var(--line)}
-.mt-name{font:400 1.82rem/1 var(--display);letter-spacing:.06em;color:var(--borgona)}
-.mt-range{width:100%;accent-color:var(--borgona);height:36px}
-.mt-pads{display:flex;align-items:flex-end;justify-content:center;gap:clamp(6px,2vw,14px);min-height:116px}
-.mt-pad{flex:1 1 0;max-width:84px;border:3px solid var(--pizarra);border-radius:16px;background:var(--pizarra);color:var(--marfil);font:400 1.82rem/1 var(--display);cursor:pointer;display:grid;place-items:center;transition:background .08s,transform .08s,box-shadow .08s;box-shadow:0 5px 0 #000;padding:0}
-.mt-pad.f{height:112px;background:var(--borgona);border-color:var(--bd);box-shadow:0 5px 0 var(--bd)}
-.mt-pad.d{height:72px}
-.mt-pad.m{height:44px;background:transparent;color:var(--muted);border-style:dashed;border-color:var(--line);box-shadow:none}
-.mt-pad.hit{background:var(--oro);color:var(--pizarra);transform:translateY(-6px);border-color:var(--oro)}
-.mt-legend{display:flex;gap:18px;flex-wrap:wrap;justify-content:center;font-size:1rem;color:var(--muted)}
-.mt-legend i{display:inline-block;width:14px;height:14px;border-radius:5px;margin-right:6px;vertical-align:-2px}
-.mt-vol{display:flex;align-items:center;gap:14px}
-.mt-vol input{flex:1;accent-color:var(--borgona);height:36px}
+/* metrónomo (estilo Tempo) */
+.mt-card{--or:#F28A2B;--or2:#B85F12;background:linear-gradient(180deg,#2a2a2d,#1b1b1d);color:#F3EFE8;border:2px solid #000;border-radius:30px;padding:0;overflow:hidden;box-shadow:0 8px 0 #000,0 30px 40px -24px rgba(0,0,0,.7);text-align:center}
+.mt-card *{-webkit-tap-highlight-color:transparent}
+.mt-dots{display:flex;justify-content:center;align-items:center;gap:clamp(10px,3vw,20px);padding:clamp(26px,6vw,40px) 16px;border-bottom:3px solid var(--or);flex-wrap:wrap}
+.mt-dot{width:clamp(30px,calc((100vw - 96px)/var(--n,4) - 12px),64px);flex:none;aspect-ratio:1;border-radius:50%;border:2px solid var(--or);background:var(--or);color:#2a1a08;display:grid;place-items:center;padding:0;cursor:pointer;font:700 1.2rem/1 var(--body);transition:transform .07s,background .07s,box-shadow .07s;box-shadow:0 4px 0 var(--or2)}
+.mt-dot.d::after{content:""}
+.mt-dot.f::after{content:"Λ";font-size:1.5rem;font-weight:400}
+.mt-dot.m{background:#4a2c10;border-color:#7a4a1c;box-shadow:none;opacity:.8}
+.mt-dot.hit{transform:scale(1.14);background:#FFC27A;box-shadow:0 0 22px 4px rgba(242,138,43,.7)}
+.mt-panel{margin:14px;background:#2d2d30;border-radius:20px;padding:14px 12px 16px}
+.mt-cap{font:400 .9rem/1 var(--body);letter-spacing:.14em;text-transform:uppercase;color:#9a968e;margin:2px 0 12px}
+.mt-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px 4px}
+.mt-opt{border:0;background:none;color:#EDE9E1;font:400 1.25rem/1 var(--body);padding:12px 4px;border-radius:12px;cursor:pointer;min-height:48px}
+.mt-opt[aria-pressed="true"]{color:var(--or);background:rgba(242,138,43,.14)}
+.mt-opt small{display:block;font-size:.72rem;letter-spacing:.04em;margin-top:5px;color:#9a968e}
+.mt-opt[aria-pressed="true"] small{color:var(--or)}
+.mt-opt .gl{font-size:1.7rem;line-height:1}
+.mt-bpmrow{display:flex;align-items:center;justify-content:space-between;gap:6px}
+.mt-pm{width:56px;height:56px;border:0;background:none;color:#EDE9E1;font:300 2.6rem/1 var(--body);cursor:pointer;border-radius:50%;touch-action:manipulation;user-select:none;-webkit-user-select:none}
+.mt-pm:active{background:rgba(255,255,255,.1)}
+.mt-num{font:200 clamp(4.4rem,18vw,6.4rem)/1 var(--body);letter-spacing:-.02em;min-width:2.4ch;font-variant-numeric:tabular-nums}
+.mt-unit{font-size:.8rem;color:#9a968e;letter-spacing:.1em;margin-left:4px}
+.mt-range{width:100%;margin:10px 0 2px;height:36px;accent-color:var(--or);background:none}
+.mt-sub2{display:flex;justify-content:space-between;align-items:center;padding:0 6px;margin-top:2px}
+.mt-name{font:italic 400 1.35rem/1 var(--body);color:#EDE9E1}
+.mt-tap{border:2px solid #55555a;background:none;color:#EDE9E1;border-radius:14px;padding:12px 24px;font:400 1.05rem/1 var(--body);letter-spacing:.14em;cursor:pointer;touch-action:manipulation}
+.mt-tap:active{background:rgba(255,255,255,.12)}
+.mt-foot{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:6px 22px 16px;gap:10px}
+.mt-foot span{font:400 1.5rem/1 var(--body);color:#EDE9E1}
+.mt-foot span:last-child{text-align:right}
+.mt-play{width:92px;height:92px;border-radius:50%;border:0;background:#EDE9E1;color:#232326;display:grid;place-items:center;cursor:pointer;box-shadow:0 6px 0 #000;touch-action:manipulation}
+.mt-play:active{transform:translateY(4px);box-shadow:0 2px 0 #000}
+.mt-play svg{width:42px;height:42px;fill:currentColor}
+.mt-play[aria-pressed="true"]{background:var(--or);color:#2a1a08}
+.mt-vol{display:flex;align-items:center;gap:12px;padding:0 24px 20px;color:#9a968e;font-size:.95rem}
+.mt-vol input{flex:1;accent-color:var(--or);height:32px}
+.mt-hint{color:#8a867e;font-size:.92rem;margin:-4px 20px 14px}
 
 /* piano */
 .pk-bar{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;align-items:center;margin-bottom:16px}
@@ -303,36 +323,40 @@ const mountTunerBajo=box=>mountTuner(box,CFG_BAJO);
 
 /* ================= METRÓNOMO ================= */
 function mountMetro(box){
-  const KEY='faro_metro_v1',saved=store.get(KEY)||{};
-  const s={bpm:clamp(+saved.bpm||100,30,260),beats:clamp(+saved.beats||4,1,12),sub:[1,2,3,4].includes(saved.sub)?saved.sub:1,vol:saved.vol==null?.8:clamp(+saved.vol,0,1),pat:null};
+  const KEY='faro_metro_v2',saved=store.get(KEY)||store.get('faro_metro_v1')||{};
+  const METERS=[['2/4',2],['3/4',3],['4/4',4],['5/4',5],['3/8',3],['6/8',6],['7/8',7],['12/8',12]];
+  const SUBS=[[1,'♩','Negras'],[2,'♫','Corcheas'],[3,'♫³','Tresillos'],[4,'♬','Semicorcheas']];
+  const m0=METERS.find(m=>m[0]===saved.meter)||METERS.find(m=>m[1]===+saved.beats&&m[0].endsWith('/4'))||METERS[2];
+  const s={meter:m0[0],beats:m0[1],bpm:clamp(+saved.bpm||100,30,260),sub:[1,2,3,4].includes(saved.sub)?saved.sub:1,vol:saved.vol==null?.8:clamp(+saved.vol,0,1),pat:null};
   s.pat=fixPat(saved.pat,s.beats);
-  const save=()=>store.set(KEY,{bpm:s.bpm,beats:s.beats,sub:s.sub,vol:s.vol,pat:s.pat});
-  const SUBS=[[1,'Negras','1 por pulso'],[2,'Corcheas','2 por pulso'],[3,'Tresillos','3 por pulso'],[4,'Semicorcheas','4 por pulso']];
-  const BEATS=[2,3,4,5,6,7,8,9,12];
-  box.classList.add('ft-card','ft-light');
-  box.innerHTML='<div class="mt-bpm"><button class="mt-step" type="button" id="mt-m" aria-label="Bajar un tiempo por minuto">−</button><div><div class="mt-num" id="mt-n" aria-live="off"></div><div class="ft-sub">pulsos por minuto</div></div><button class="mt-step" type="button" id="mt-p" aria-label="Subir un tiempo por minuto">+</button></div>'
-    +'<div class="mt-name" id="mt-name" style="margin:8px 0 4px"></div>'
+  const save=()=>store.set(KEY,{meter:s.meter,beats:s.beats,bpm:s.bpm,sub:s.sub,vol:s.vol,pat:s.pat});
+  box.classList.add('mt-card');
+  box.innerHTML='<div class="mt-dots" id="mt-pads" role="group" aria-label="Pulsos del compás"></div>'
+    +'<p class="mt-hint" style="margin-top:12px">Toca un punto: <b>Λ</b> fuerte · lleno suave · apagado en silencio</p>'
+    +'<div class="mt-panel"><div class="mt-bpmrow"><button class="mt-pm" type="button" id="mt-m" aria-label="Bajar un tiempo por minuto">−</button>'
+    +'<div><span class="mt-num" id="mt-n" aria-live="off"></span><span class="mt-unit">BPM</span></div>'
+    +'<button class="mt-pm" type="button" id="mt-p" aria-label="Subir un tiempo por minuto">+</button></div>'
     +'<input class="mt-range" id="mt-r" type="range" min="30" max="260" step="1" aria-label="Velocidad en pulsos por minuto">'
-    +'<div class="ft-chips" style="margin:6px 0 20px"><button class="ft-chip" type="button" id="mt-m5">−5</button><button class="ft-chip" type="button" id="mt-p5">+5</button><button class="ft-chip" type="button" id="mt-tap">Toca el tempo</button></div>'
-    +'<p class="ft-sub" style="margin-bottom:8px"><b>Tiempos por compás</b></p><div class="ft-chips" id="mt-b" role="group" aria-label="Tiempos por compás"></div>'
-    +'<p class="ft-sub" style="margin:18px 0 8px"><b>Subdivisión</b></p><div class="ft-chips" id="mt-s" role="group" aria-label="Subdivisión"></div>'
-    +'<p class="ft-sub" style="margin:22px 0 10px"><b>Toca cada pulso para elegir cuál suena fuerte, suave o en silencio</b></p>'
-    +'<div class="mt-pads" id="mt-pads"></div>'
-    +'<div class="mt-legend" style="margin:12px 0 4px"><span><i style="background:var(--borgona)"></i>Fuerte</span><span><i style="background:var(--pizarra)"></i>Suave</span><span><i style="border:2px dashed var(--line)"></i>Silencio</span></div>'
-    +'<div class="ft-chips" style="margin:10px 0 20px"><button class="ft-chip" type="button" data-pre="1">Fuerte solo el 1</button><button class="ft-chip" type="button" data-pre="24">Fuertes el 2 y el 4</button><button class="ft-chip" type="button" data-pre="all">Todos fuertes</button></div>'
-    +'<label class="mt-vol"><span class="ft-sub"><b>Volumen</b></span><input id="mt-v" type="range" min="0" max="100" step="1" aria-label="Volumen del metrónomo"><span class="ft-sub" id="mt-vn" style="min-width:3.5ch"></span></label>'
-    +'<div class="ft-row" style="margin-top:22px"><button class="ft-btn go" type="button" id="mt-go" style="min-width:min(100%,280px);font-size:1.4rem;padding:20px 30px">Empezar</button></div><p class="ft-err" id="mt-err" role="alert"></p>';
+    +'<div class="mt-sub2"><span class="mt-name" id="mt-name"></span><button class="mt-tap" type="button" id="mt-tap">TAP</button></div></div>'
+    +'<div class="mt-foot"><span id="mt-ml"></span><button class="mt-play" type="button" id="mt-go" aria-pressed="false" aria-label="Empezar"></button><span id="mt-sl"></span></div>'
+    +'<label class="mt-vol"><span>Volumen</span><input id="mt-v" type="range" min="0" max="100" step="1" aria-label="Volumen del metrónomo"><span id="mt-vn" style="min-width:3.5ch;text-align:right"></span></label>'
+    +'<div class="mt-panel"><div class="mt-cap">Compás</div><div class="mt-grid" id="mt-b" role="group" aria-label="Compás"></div>'
+    +'<div class="mt-cap" style="margin-top:14px">Subdivisión</div><div class="mt-grid" id="mt-s" role="group" aria-label="Subdivisión"></div></div>'
+    +'<p class="ft-err" id="mt-err" role="alert" style="text-align:center"></p>';
   const $=q=>box.querySelector(q);
+  const PLAY='<svg viewBox="0 0 24 24"><path d="M7 4.5v15l13-7.5z"/></svg>',PAUSE='<svg viewBox="0 0 24 24"><path d="M6 4h4.2v16H6zM13.8 4H18v16h-4.2z"/></svg>';
   let running=false,timer=0,raf=0,nextT=0,k=0,q=[];
   function drawBpm(){$('#mt-n').textContent=s.bpm;$('#mt-name').textContent=tempoName(s.bpm);$('#mt-r').value=s.bpm}
+  function drawFoot(){$('#mt-ml').textContent=s.meter;$('#mt-sl').textContent=SUBS.find(x=>x[0]===s.sub)[1]}
   function drawChips(){
-    const bb=$('#mt-b');bb.textContent='';BEATS.forEach(n=>bb.append(h('button',{class:'ft-chip',type:'button','aria-pressed':String(n===s.beats),onclick:()=>{s.beats=n;s.pat=fixPat(s.pat,n);restartBar();save();drawChips();drawPads()}},String(n))));
-    const ss=$('#mt-s');ss.textContent='';SUBS.forEach(x=>ss.append(h('button',{class:'ft-chip',type:'button','aria-pressed':String(x[0]===s.sub),title:x[2],onclick:()=>{s.sub=x[0];restartBar();save();drawChips()}},x[1])));
+    const bb=$('#mt-b');bb.textContent='';METERS.forEach(m=>bb.append(h('button',{class:'mt-opt',type:'button','aria-pressed':String(m[0]===s.meter),onclick:()=>{s.meter=m[0];s.beats=m[1];s.pat=fixPat(s.pat,m[1]);restartBar();save();drawChips();drawPads()}},m[0])));
+    const ss=$('#mt-s');ss.textContent='';SUBS.forEach(x=>ss.append(h('button',{class:'mt-opt','aria-label':x[2],type:'button','aria-pressed':String(x[0]===s.sub),onclick:()=>{s.sub=x[0];restartBar();save();drawChips()}},h('span',{class:'gl'},x[1]),h('small',{},x[2]))));
+    drawFoot();
   }
   const LAB={f:'fuerte',d:'suave',m:'en silencio'};
   function drawPads(){
-    const p=$('#mt-pads');p.textContent='';
-    s.pat.forEach((st,i)=>p.append(h('button',{class:'mt-pad '+st,type:'button','aria-label':'Pulso '+(i+1)+': '+LAB[st]+'. Toca para cambiar',onclick:()=>{s.pat[i]=nextState(s.pat[i]);save();drawPads()}},String(i+1))));
+    const p=$('#mt-pads');p.textContent='';p.style.setProperty('--n',s.pat.length);
+    s.pat.forEach((st,i)=>p.append(h('button',{class:'mt-dot '+st,type:'button','aria-label':'Pulso '+(i+1)+': '+LAB[st]+'. Toca para cambiar',onclick:()=>{s.pat[i]=nextState(s.pat[i]);save();drawPads()}})));
   }
   function setBpm(v){s.bpm=clamp(Math.round(v),30,260);save();drawBpm()}
   function restartBar(){if(running){k=0;q.length=0}}
@@ -356,27 +380,28 @@ function mountMetro(box){
     const ac=getAC();
     while(q.length&&q[0].t<=ac.currentTime){const e=q.shift();if(e.part===0&&ac.currentTime-e.t<.2){const pad=$('#mt-pads').children[e.beat];if(pad){pad.classList.add('hit');setTimeout(()=>pad.classList.remove('hit'),110)}}}
   }
+  function setPlay(on){const g=$('#mt-go');if(!g)return;g.innerHTML=on?PAUSE:PLAY;g.setAttribute('aria-pressed',String(on));g.setAttribute('aria-label',on?'Detener':'Empezar')}
   function start(){
-    try{const ac=getAC();running=true;k=0;q=[];nextT=ac.currentTime+.08;sched();timer=setInterval(sched,25);cancelAnimationFrame(raf);raf=requestAnimationFrame(flash);
-      $('#mt-go').textContent='Detener';$('#mt-go').classList.remove('go');$('#mt-go').classList.add('gh');$('#mt-err').textContent=''}
+    try{const ac=getAC();running=true;k=0;q=[];nextT=ac.currentTime+.08;sched();timer=setInterval(sched,25);cancelAnimationFrame(raf);raf=requestAnimationFrame(flash);setPlay(true);$('#mt-err').textContent=''}
     catch(e){running=false;$('#mt-err').textContent='Este navegador no permite reproducir sonido aquí.'}
   }
-  function stop(){
-    running=false;clearInterval(timer);cancelAnimationFrame(raf);q=[];
-    const g=$('#mt-go');if(g){g.textContent='Empezar';g.classList.add('go');g.classList.remove('gh')}
-  }
+  function stop(){running=false;clearInterval(timer);cancelAnimationFrame(raf);q=[];setPlay(false)}
   $('#mt-go').addEventListener('click',()=>running?stop():start());
-  $('#mt-m').addEventListener('click',()=>setBpm(s.bpm-1));$('#mt-p').addEventListener('click',()=>setBpm(s.bpm+1));
-  $('#mt-m5').addEventListener('click',()=>setBpm(s.bpm-5));$('#mt-p5').addEventListener('click',()=>setBpm(s.bpm+5));
+  // − y + : un toque cambia 1; mantener presionado repite
+  function hold(btn,d){
+    let t1=0,t2=0;const end=()=>{clearTimeout(t1);clearInterval(t2)};
+    btn.addEventListener('pointerdown',e=>{e.preventDefault();setBpm(s.bpm+d);end();t1=setTimeout(()=>{t2=setInterval(()=>setBpm(s.bpm+d*2),90)},420)});
+    ['pointerup','pointerleave','pointercancel'].forEach(ev=>btn.addEventListener(ev,end));
+    btn.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();setBpm(s.bpm+d)}});
+  }
+  hold($('#mt-m'),-1);hold($('#mt-p'),1);
   $('#mt-r').addEventListener('input',e=>setBpm(+e.target.value));
   let taps=[];
   $('#mt-tap').addEventListener('click',()=>{const n=performance.now();if(taps.length&&n-taps[taps.length-1]>2000)taps=[];taps.push(n);if(taps.length>6)taps.shift();const b=tapBpm(taps);if(b)setBpm(b)});
-  box.querySelectorAll('[data-pre]').forEach(b=>b.addEventListener('click',()=>{
-    const v=b.dataset.pre;s.pat=s.pat.map((_,i)=>v==='all'?'f':v==='24'?(i===1||i===3?'f':'d'):(i===0?'f':'d'));save();drawPads()}));
   $('#mt-v').value=Math.round(s.vol*100);$('#mt-vn').textContent=Math.round(s.vol*100)+'%';
   $('#mt-v').addEventListener('input',e=>{s.vol=clamp(+e.target.value/100,0,1);$('#mt-vn').textContent=Math.round(s.vol*100)+'%';save()});
   box.addEventListener('keydown',e=>{if(e.code==='Space'&&!/INPUT|SELECT|BUTTON/.test(e.target.tagName)){e.preventDefault();running?stop():start()}});
-  drawBpm();drawChips();drawPads();
+  setPlay(false);drawBpm();drawChips();drawPads();
   return{stop};
 }
 

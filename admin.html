@@ -452,7 +452,7 @@ const IC={
 };
 const ico=(n,cls)=>'<svg class="sv'+(cls?' '+cls:'')+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+(IC[n]||IC.file)+'</svg>';
 function icoEl(n,cls){const s=document.createElement('span');s.className='ico';s.innerHTML=ico(n,cls);return s}
-const ENT_IC={tabl:'chart',asg:'link',est:'cap',enc:'users',doc:'user',vin:'link',acc:'key',tar:'clipboard',eva:'edit',hab:'star',logro:'award',reco:'bulb',clase:'calendar',mat:'book',dip:'award',fac:'card',cli:'camera',cldoc:'file',chat:'message',clchat:'message'};
+const ENT_IC={tabl:'chart',asg:'link',est:'cap',enc:'users',doc:'user',vin:'link',acc:'key',tar:'clipboard',eva:'edit',prac:'mic',hab:'star',logro:'award',reco:'bulb',clase:'calendar',mat:'book',dip:'award',fac:'card',cli:'camera',cldoc:'file',chat:'message',clchat:'message'};
 $$('[data-i]').forEach(e=>{e.innerHTML=ico(e.dataset.i)});
 const isoD=(y,m,d)=>new Date(Date.UTC(y,m,d)).toISOString().slice(0,10);
 const today=()=>new Date().toLocaleDateString('en-CA',{timeZone:'America/Guatemala'});
@@ -825,6 +825,7 @@ const ENT={
     {k:'estudiante_id',l:'Alumno',t:'est',req:1},{k:'titulo',l:'Evaluación',req:1},{k:'fecha',l:'Fecha',t:'date',def:'hoy'},
     {k:'puntos',l:'Punteo obtenido',t:'number',req:1},{k:'maximo',l:'Punteo máximo',t:'number',def:100},{k:'comentario',l:'Comentario',t:'area'}],
     row:r=>[r.titulo+' · '+r.puntos+'/'+r.maximo,acN('est',r.estudiante_id)+' · '+r.fecha]},
+  prac:{g:'ac',tabla:'ac_practicas',t:'Prácticas grabadas',ord:'creado.desc',ico:'🎙️',byEst:1,opt:1,nofrm:1,noedit:1,f:[],row:r=>[r.estado,'']},
   hab:{g:'ac',tabla:'ac_habilidades',t:'Habilidades',ord:'habilidad.asc',ico:'⭐',byEst:1,conflict:'estudiante_id,habilidad',f:[
     {k:'estudiante_id',l:'Alumno',t:'est',req:1},{k:'habilidad',l:'Habilidad (Lectura, Ritmo, Pronunciación…)',req:1},
     {k:'nivel',l:'Nivel de 0 a 5',t:'number',req:1,min:0,max:5}],
@@ -873,7 +874,7 @@ const ENT={
     {k:'titulo',l:'Título',req:1},{k:'ruta',l:'Archivo (máx. 50 MB)',t:'file',folder:''}],
     row:r=>[r.titulo+' · '+r.tipo,acN('cli',r.cliente_id)]}
 };
-const GRP={ac:['tabl','est','enc','doc','asg','vin','acc','tar','eva','hab','logro','reco','clase','mat','dip','fac','chat'],cl:['cli','cldoc','clchat']};
+const GRP={ac:['tabl','est','enc','doc','asg','vin','acc','tar','eva','prac','hab','logro','reco','clase','mat','dip','fac','chat'],cl:['cli','cldoc','clchat']};
 function acN(k,id){const x=(AC.list[k]||[]).find(r=>r.id===id);return x?(x.apodo||x.nombre):'(borrado)'}
 function accHas(fk,id){return (AC.list.acc||[]).some(c=>c[fk]===id)}
 function accTxt(rol,fk,id,tok){const c=(AC.list.acc||[]).find(x=>x[fk]===id);return c?((tok?'acceso con ':'usuario ')+c.usuario+(c.activo?'':' (desactivado)')):'sin acceso todavía'}
@@ -1079,6 +1080,7 @@ function renderGrp(g){
     chips.append(el('button',{type:'button',class:'chip','aria-pressed':String(AC.sel[g]===k),onclick:()=>{AC.sel[g]=k;AC.edit=null;AC.filtro='';renderGrp(g)}},lab))});
   const k=AC.sel[g];
   if(k==='tabl')return renderTablero(box);
+  if(k==='prac')return renderPracticas(box);
   if(k==='chat'||k==='clchat')return renderChat(box,k);
   const e=ENT[k];let rows=AC.list[k]||[];
   const left=el('div',{class:'card'},el('h2',{},e.t));
@@ -1110,6 +1112,57 @@ function renderGrp(g){
     el('button',{class:'btn btn-gold',id:'acgo-'+g,type:'button',onclick:()=>acSave(g,k)},cur?'Guardar cambios':'Guardar'),
     cur?el('button',{class:'btn btn-ghost',type:'button',onclick:()=>{AC.edit=null;renderGrp(g)}},'Cancelar'):null));
   box.append(el('div',{class:'grid2'},left,right));
+}
+
+
+/* ---------- PRÁCTICAS GRABADAS (el alumno graba, aquí se evalúa) ---------- */
+AC.pracFiltro='pendiente';
+function pracTendencia(list){ // list: prácticas con nota, de la más vieja a la más nueva
+  const n=list.filter(x=>x.puntaje!=null).map(x=>x.puntaje);if(n.length<2)return null;
+  const av=a=>a.reduce((s,x)=>s+x,0)/a.length,ult=n.slice(-3),ant=n.slice(-6,-3);
+  const base=ant.length?av(ant):n[0],d=av(ult)-base;
+  return{d:Math.round(d*10)/10,k:d>=.5?'sube':d<=-.5?'baja':'estable',prom:Math.round(av(n)*10)/10,n:n.length}}
+function pracSpark(list){
+  const n=list.filter(x=>x.puntaje!=null).slice(-12).map(x=>x.puntaje);if(n.length<2)return null;
+  const W=220,H=54,pts=n.map((v,i)=>[6+i*(W-12)/(n.length-1),H-6-(v-1)*(H-12)/9]);
+  const s=document.createElementNS('http://www.w3.org/2000/svg','svg');s.setAttribute('viewBox','0 0 '+W+' '+H);s.setAttribute('width',W);s.setAttribute('height',H);s.setAttribute('role','img');s.setAttribute('aria-label','Notas de las últimas prácticas');
+  s.innerHTML='<polyline fill="none" stroke="#B8A06A" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" points="'+pts.map(p=>p.join(',')).join(' ')+'"/>'+pts.map(p=>'<circle cx="'+p[0]+'" cy="'+p[1]+'" r="3.5" fill="#252528"/>').join('');return s}
+async function acUrl(ruta,bucket){
+  try{const r=await api('/storage/v1/object/sign/'+bucket+'/'+ruta,{method:'POST',body:{expiresIn:3600}});const j=await r.json();return j.signedURL?SB.url+'/storage/v1'+j.signedURL:null}catch(e){return null}}
+async function pracEvaluar(id,punt,com,xp){
+  const r=await api('/rest/v1/rpc/ac_evaluar_practica',{method:'POST',body:{p_id:id,p_puntaje:punt,p_comentario:com||null,p_xp:xp}});
+  if(!r.ok){toast(await errText(r));return false}toast('Evaluación guardada · +'+xp+' XP');await loadAc();return true}
+function renderPracticas(box){
+  const all=AC.list.prac||[],alus=AC.list.est||[];
+  const left=el('div',{class:'card',style:'grid-column:1/-1'},el('h2',{},'Prácticas grabadas'));
+  left.append(el('p',{class:'muted'},'Tus alumnos graban su ejercicio desde “Práctica”. Escúchalo, ponle nota de 1 a 10 y dale XP. La racha sube sola con la práctica diaria; la nota alimenta el indicador de progreso.'));
+  const s=el('select',{onchange:ev=>{AC.filtro=ev.target.value;renderGrp('ac')}},el('option',{value:''},'Todos los alumnos'));alus.forEach(a=>s.append(el('option',{value:a.id},a.nombre)));s.value=AC.filtro;
+  const seg=el('div',{style:'display:flex;gap:8px;flex-wrap:wrap;margin:10px 0'});
+  [['pendiente','Por evaluar'],['evaluada','Evaluadas'],['todas','Todas']].forEach(([k,t])=>seg.append(el('button',{type:'button',class:'chip','aria-pressed':String(AC.pracFiltro===k),onclick:()=>{AC.pracFiltro=k;renderGrp('ac')}},t+(k==='pendiente'?' ('+all.filter(x=>x.estado==='pendiente').length+')':''))));
+  left.append(el('div',{class:'field'},s),seg);
+  if(AC.filtro){
+    const mine=all.filter(x=>x.estudiante_id===AC.filtro).slice().reverse(),t=pracTendencia(mine),sp=pracSpark(mine);
+    left.append(el('div',{class:'item'},el('b',{},'Progreso de '+acN('est',AC.filtro)),
+      el('small',{},t?('Promedio '+t.prom+'/10 en '+t.n+' prácticas evaluadas · '+(t.k==='sube'?'subiendo ('+(t.d>0?'+':'')+t.d+')':t.k==='baja'?'bajando ('+t.d+')':'estable')):'Se necesitan al menos 2 prácticas evaluadas para ver la tendencia.'),sp||''))}
+  let rows=all.filter(x=>(!AC.filtro||x.estudiante_id===AC.filtro)&&(AC.pracFiltro==='todas'||x.estado===AC.pracFiltro));
+  if(!AC.ok&&!all.length)left.append(el('p',{class:'muted'},'Aún no hay prácticas (o falta correr sql/practicas.sql en Supabase).'));
+  else if(!rows.length)left.append(el('p',{class:'muted',style:'margin-top:14px'},AC.pracFiltro==='pendiente'?'No hay prácticas por evaluar. 🎉':'Todavía no hay nada aquí.'));
+  rows.slice(0,60).forEach(r=>{
+    const m=Math.floor(r.duracion_seg/60),sg=String(r.duracion_seg%60).padStart(2,'0');
+    const it=el('div',{class:'item'},el('b',{},acN('est',r.estudiante_id)+' · '+new Date(r.creado).toLocaleString('es-GT',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})),
+      el('small',{},[r.instrumento,r.bpm?r.bpm+' BPM':'',m+':'+sg+' min',r.nota_alumno?'“'+r.nota_alumno+'”':''].filter(Boolean).join(' · ')+(r.estado==='evaluada'?' · nota '+r.puntaje+'/10 · +'+r.xp+' XP'+(r.comentario?' · '+r.comentario:''):' · por evaluar')));
+    const au=el('div',{style:'margin:8px 0'});
+    au.append(el('button',{class:'btn btn-ghost btn-sm',type:'button',onclick:async ev=>{const b=ev.target;b.disabled=true;const u=await acUrl(r.ruta,'academy');if(!u){toast('No se pudo cargar el audio');b.disabled=false;return}
+      const a=el('audio',{controls:'',preload:'auto',src:u,style:'width:100%'});au.textContent='';au.append(a);a.play().catch(()=>{})}},'Escuchar'));
+    it.append(au);
+    let punt=r.puntaje||0;
+    const fm=el('div',{style:'display:none;margin-top:8px'}),nums=el('div',{style:'display:flex;gap:6px;flex-wrap:wrap'}),xpIn=el('input',{type:'number',min:'0',max:'50',value:String(r.xp||0),style:'width:90px'}),com=el('textarea',{rows:'2',placeholder:'Comentario para el alumno (qué hizo bien, qué mejorar)'});com.value=r.comentario||'';
+    const pintar=()=>{nums.textContent='';for(let i=1;i<=10;i++)nums.append(el('button',{type:'button',class:'chip','aria-pressed':String(punt===i),onclick:()=>{punt=i;if(r.estado!=='evaluada'||+xpIn.value===(r.xp||0))xpIn.value=String(i*3);pintar()}},String(i)))};pintar();
+    const go=el('button',{class:'btn btn-gold btn-sm',type:'button',onclick:async ev=>{if(!punt){toast('Elige una nota de 1 a 10');return}ev.target.disabled=true;if(!await pracEvaluar(r.id,punt,com.value.trim(),+xpIn.value||0))ev.target.disabled=false}},'Guardar evaluación');
+    fm.append(el('small',{},'Nota (1 a 10)'),nums,el('div',{style:'display:flex;gap:10px;align-items:center;margin:8px 0'},el('small',{},'XP'),xpIn,el('small',{class:'muted'},'sugerido: nota × 3')),com,el('div',{style:'margin-top:8px'},go));
+    it.append(el('div',{class:'acts'},el('button',{class:'btn btn-gold btn-sm',type:'button',onclick:()=>{fm.style.display=fm.style.display==='none'?'block':'none'}},r.estado==='evaluada'?'Editar evaluación':'Evaluar')),fm);
+    left.append(it)});
+  box.append(left);
 }
 
 /* ---------- TABLERO DEL ALUMNO (resumen + cambios del director) ---------- */
