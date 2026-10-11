@@ -1064,8 +1064,7 @@ async function upTo(bucket,path,file,maxMB){
 async function acAbrir(ruta,bucket){
   if(/^https?:/i.test(ruta)){window.open(ruta,'_blank','noopener');return}
   const w=window.open('','_blank');
-  try{const r=await api('/storage/v1/object/sign/'+bucket+'/'+ruta,{method:'POST',body:{expiresIn:3600}});const j=await r.json();
-    if(!r.ok||!j.signedURL)throw 0;const u=SB.url+'/storage/v1'+j.signedURL;if(w)w.location=u;else location.href=u}
+  try{const u=await acUrl(ruta,bucket);if(!u)throw 0;if(w)w.location=u;else location.href=u}
   catch(e){if(w)w.close();toast('No se pudo abrir el archivo')}
 }
 function acField(f,val,g){
@@ -1096,6 +1095,11 @@ function acField(f,val,g){
   return el('div',{class:'field'},el('label',{for:id},f.l+(f.req?' *':'')),inp);
 }
 function acVal(f,g){const i=$('#acf-'+g+'-'+f.k);if(f.t==='check')return i.checked;if(f.t==='multi')return [...i.querySelectorAll('input:checked')].map(x=>x.value);const v=i.value;if(f.t==='number')return v===''?null:Number(v);return v===''?null:v}
+/* Carpeta de R2 donde cae el archivo de cada formulario (la carpeta de cada persona la genera la base de datos) */
+function r2Prefijo(e,ff,body){
+  if(e.bucket==='clientes'){const c=(AC.list.cli||[]).find(x=>x.id===body.cliente_id);return c&&c.carpeta||''}
+  if(body.estudiante_id){const a=(AC.list.est||[]).find(x=>x.id===body.estudiante_id);return a&&a.carpeta?a.carpeta+(ff.folder||'mis-archivos')+'/':''}
+  return body.area==='musica'||body.area==='ingles'?'faro-academy/'+body.area+'/material-didactico/':''}
 async function acSave(g,k){
   const e=ENT[k],body={};let file=null;
   for(const f of e.f){
@@ -1107,15 +1111,18 @@ async function acSave(g,k){
   try{
     const ff=e.f.find(f=>f.t==='file');
     if(file&&ff){
-      const nm=Date.now()+'-'+safeName(file.name);
-      if(e.bucket==='clientes')body[ff.k]=await upTo('clientes',body.cliente_id+'/'+nm,file,50);
-      else body[ff.k]=await upTo('academy',(body.estudiante_id?body.estudiante_id+'/'+ff.folder:'general')+'/'+nm,file,25)}
-    if(k==='mat'){body.subido_por='academy';if(!body.estudiante_id&&!body.area){toast('Si es para todos, elige el área');return}}
+      if(k==='mat'&&!body.estudiante_id&&!body.area){toast('Si es para todos, elige el área');return}
+      const base=r2Prefijo(e,ff,body);if(!base){toast('Esa persona aún no tiene carpeta en R2. Corre el SQL de carpetas y toca "Sincronizar carpetas" en Archivos.');return}
+      const nm=matNombre(Date.now()+'-'+file.name);
+      if(file.size>(e.bucket==='clientes'?50:25)*1024*1024)throw new Error('El archivo pasa de '+(e.bucket==='clientes'?50:25)+' MB');
+      await matArbol();toast('Subiendo a R2…');body[ff.k]=(await matSubirKey(file,'privado',base+nm)).key}
+    if(k==='mat')body.subido_por='academy';
     let r;
     if(AC.edit)r=await api('/rest/v1/'+e.tabla+'?id=eq.'+AC.edit,{method:'PATCH',body,headers:{Prefer:'return=minimal'}});
     else r=await api('/rest/v1/'+e.tabla+(e.conflict?'?on_conflict='+e.conflict:''),{method:'POST',body,headers:{Prefer:'return=minimal'+(e.conflict?',resolution=merge-duplicates':'')}});
     if(!r.ok){toast(await errText(r));return}
-    toast(AC.edit?'Cambios guardados':'Guardado');AC.edit=null;await loadAc();
+    const nuevo=!AC.edit;toast(AC.edit?'Cambios guardados':'Guardado');AC.edit=null;await loadAc();
+    if(nuevo&&(k==='est'||k==='doc'||k==='cli')&&FILES){const fresh=(AC.list[k]||[]).map(x=>x.carpeta).filter(Boolean);r2Sync(fresh).catch(()=>{})}
   }catch(x){toast(x.message||'No se pudo guardar')}finally{b.disabled=false}
 }
 async function acDel(k,r){
@@ -1173,6 +1180,20 @@ function acPedir(rol,nombre,usuarioSug,claveSug,fijo){
     m.append(box);m.hidden=false;setTimeout(()=>(fijo?c:u).focus(),50);
   });
 }
+/* Nombre de usuario con identidad: alumno  nombre-alias-materia.faroacademy  (en música, el instrumento);
+   docente  prof-nombre-apellido.faroacademy;  encargado  fam-nombre-alumno.faroacademy.  Si ya existe, agrega un número. */
+const INSTR_USR={acustica:'guitarra-acustica',clasica:'guitarra-clasica',electrica:'guitarra-electrica',canto:'canto',bajo:'bajo',bateria:'bateria',piano:'piano',ukelele:'ukelele',produccion:'produccion'};
+function acUserSug(rol,ent){
+  const pal=t=>String(t||'').trim().split(/\s+/).filter(Boolean),sl=t=>String(t||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'').slice(0,14);
+  let partes;
+  if(rol==='alumno'){
+    const nom=sl(pal(ent.nombre)[0]),ali=sl(ent.apodo),mat=ent.area==='ingles'?'ingles':(INSTR_USR[(ent.instrumentos||[])[0]]||'musica');
+    partes=[nom,ali&&ali!==nom?ali:'',mat];
+  }else if(rol==='docente'){const w=pal(ent.nombre);partes=['prof',sl(w[0]),sl(w[1]||'')]}
+  else{const v=(AC.list.vin||[]).find(x=>x.encargado_id===ent.id),a=v&&(AC.list.est||[]).find(x=>x.id===v.estudiante_id);partes=['fam',sl(pal(ent.nombre)[0]),a?sl(a.apodo||pal(a.nombre)[0]):'']}
+  const base=partes.filter(Boolean).join('-')+'.faroacademy',usados=new Set((AC.list.acc||[]).map(c=>String(c.usuario||'').toLowerCase()));
+  let u=base,n=2;while(usados.has(u)){u=base.replace(/\.faroacademy$/,'')+'-'+n+'.faroacademy';n++}
+  return u}
 async function acGenerar(rol,ent){
   const fk=rol==='alumno'?'estudiante_id':rol==='encargado'?'encargado_id':rol==='docente'?'docente_id':'cliente_id';
   const prev=(AC.list.acc||[]).find(c=>c[fk]===ent.id);
@@ -1184,7 +1205,7 @@ async function acGenerar(rol,ent){
     if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(sug)){alert('Este cliente necesita un correo válido. Edita al cliente, escribe su correo y vuelve a intentar.');return}
     clave0=grp(2);
   }
-  else{sug=(rol==='encargado'?'enc-':rol==='docente'?'doc-':'')+slug((nombre||'').split(' ')[0])+'-'+rnd(3).toLowerCase();clave0=grp(3)}
+  else{sug=acUserSug(rol,ent);clave0=grp(3)}
   const cred=await acPedir(rol,nombre,sug,clave0,fijo);if(!cred)return;
   const usuario=cred.usuario,clave=cred.clave,copiado=cred.copiado;
   const email=fijo?usuario.replace('@','_at_').replace(/[^a-z0-9._-]/g,'')+'.'+rnd(3).toLowerCase()+'@acceso.farostudios.net':usuario.toLowerCase()+'@acceso.farostudios.net';
@@ -1298,7 +1319,8 @@ function pracSpark(list){
   const s=document.createElementNS('http://www.w3.org/2000/svg','svg');s.setAttribute('viewBox','0 0 '+W+' '+H);s.setAttribute('width',W);s.setAttribute('height',H);s.setAttribute('role','img');s.setAttribute('aria-label','Notas de las últimas prácticas');
   s.innerHTML='<polyline fill="none" stroke="#B8A06A" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" points="'+pts.map(p=>p.join(',')).join(' ')+'"/>'+pts.map(p=>'<circle cx="'+p[0]+'" cy="'+p[1]+'" r="3.5" fill="#252528"/>').join('');return s}
 async function acUrl(ruta,bucket){
-  try{const r=await api('/storage/v1/object/sign/'+bucket+'/'+ruta,{method:'POST',body:{expiresIn:3600}});const j=await r.json();return j.signedURL?SB.url+'/storage/v1'+j.signedURL:null}catch(e){return null}}
+  if(/^https?:/i.test(ruta))return ruta;
+  try{return await matEnlace('privado',ruta,true,1)}catch(e){return null}}
 async function pracEvaluar(id,punt,com,xp){
   const r=await api('/rest/v1/rpc/ac_evaluar_practica',{method:'POST',body:{p_id:id,p_puntaje:punt,p_comentario:com||null,p_xp:xp}});
   if(!r.ok){toast(await errText(r));return false}toast('Evaluación guardada · +'+xp+' XP');await loadAc();return true}
@@ -1350,6 +1372,30 @@ async function tabVincular(est,enc,par){
 async function tabDesvincular(est,enc){
   const r=await api('/rest/v1/ac_vinculos?encargado_id=eq.'+enc+'&estudiante_id=eq.'+est,{method:'DELETE',headers:{Prefer:'return=minimal'}});
   if(!r.ok){toast(await errText(r));return}toast('Encargado desvinculado');await loadAc()}
+function accFila(rol,fk,ent,etq,par){
+  const c=(AC.list.acc||[]).find(x=>x[fk]===ent.id),v=c&&vaultGet()[c.user_id];
+  const nom=ent.apodo||ent.nombre,fila=el('div',{class:'item',style:'flex-wrap:wrap;gap:8px'});
+  fila.append(el('div',{style:'min-width:150px'},el('small',{},etq+(par?' · '+par:'')),el('br'),el('b',{},ent.nombre)));
+  if(!c){fila.append(el('span',{class:'muted'},'Sin acceso todavía'),el('div',{class:'acts'},el('button',{class:'btn btn-gold btn-sm',type:'button',onclick:()=>acGenerar(rol,ent)},'Crear acceso')));return fila}
+  let ver=false;const clv=el('code',{style:'font:700 1rem monospace;letter-spacing:.06em'},v?'••••••••':'(no guardada en este equipo)');
+  fila.append(el('div',{style:'flex:1;min-width:170px'},el('small',{},'Usuario'),el('br'),el('code',{style:'font:700 1rem monospace;word-break:break-all'},c.usuario+(c.activo?'':' (desactivado)'))),
+    el('div',{style:'flex:1;min-width:150px'},el('small',{},'Contraseña'),el('br'),clv));
+  const acts=el('div',{class:'acts'});
+  if(v){acts.append(el('button',{class:'btn btn-ghost btn-sm',type:'button',onclick:ev=>{ver=!ver;clv.textContent=ver?v.clave:'••••••••';ev.target.textContent=ver?'Ocultar':'Ver'}},'Ver'),
+    el('button',{class:'btn btn-ghost btn-sm',type:'button',onclick:()=>copyTxt(acMsg(rol,nom,v.usuario,v.clave))},'Copiar mensaje'))}
+  acts.append(el('button',{class:'btn btn-ghost btn-sm',type:'button',onclick:()=>acGenerar(rol,ent)},v?'Regenerar':'Nueva contraseña'));
+  fila.append(acts);return fila;
+}
+async function tabNuevoEnc(est,nombre,wa,par){
+  if(!nombre){toast('Escribe el nombre del encargado');return}
+  const r=await api('/rest/v1/ac_encargados',{method:'POST',body:{nombre,whatsapp:wa||null},headers:{Prefer:'return=representation'}});
+  if(!r.ok){toast(await errText(r));return}
+  const j=await r.json().catch(()=>null),e=Array.isArray(j)?j[0]:j;if(!e||!e.id){toast('No se pudo crear al encargado');return}
+  const v=await api('/rest/v1/ac_vinculos?on_conflict=encargado_id,estudiante_id',{method:'POST',body:{encargado_id:e.id,estudiante_id:est,parentesco:par||null},headers:{Prefer:'return=minimal,resolution=merge-duplicates'}});
+  if(!v.ok){toast(await errText(v));return}
+  toast('Encargado creado y vinculado');await loadAc();
+  const ent=(AC.list.enc||[]).find(x=>x.id===e.id);if(ent)acGenerar('encargado',ent);
+}
 function renderTablero(box){
   const L=AC.list,alus=L.est||[];
   const sel=el('select',{onchange:ev=>{AC.tabAlu=ev.target.value;renderGrp('ac')}},el('option',{value:''},'Elige un alumno'));
@@ -1380,6 +1426,21 @@ function renderTablero(box){
   box.append(el('div',{class:'card',style:'margin-top:18px'},el('h2',{},a.nombre+(a.apodo?' · '+a.apodo:'')),
     el('p',{class:'muted'},(a.area==='musica'?'Música':'Inglés')+' · '+(a.detalle||'sin detalle')+' · '+(a.modalidad==='online'?'en línea':'presencial')+' · '+accTxt('alumno','estudiante_id',a.id)),stats,
     hab.length?el('div',{class:'uchips',style:'margin-top:12px'},...hab.map(h=>el('span',{class:'chip'},h.habilidad+' '+'★'.repeat(h.nivel)))):null));
+
+  /* accesos de la familia: alumno + encargados con sus credenciales */
+  {const vin0=(L.vin||[]).filter(r=>r.estudiante_id===a.id);
+   const ca=el('div',{class:'card',style:'margin-top:18px'},el('h3',{style:'font-size:1.6rem'},'Accesos y familia'),
+     el('p',{class:'muted'},'Aquí ves el usuario y la contraseña del alumno y de cada encargado vinculado a su tablero. Las contraseñas solo se pueden mostrar en el equipo donde las creaste; si no aparece, toca "Nueva contraseña".'));
+   ca.append(accFila('alumno','estudiante_id',a,'Alumno'));
+   vin0.forEach(r=>{const e=(L.enc||[]).find(x=>x.id===r.encargado_id);if(e)ca.append(accFila('encargado','encargado_id',e,'Encargado',r.parentesco))});
+   if(!vin0.length){
+     const n=el('input',{type:'text',placeholder:'Nombre del encargado',maxlength:'80'}),w=el('input',{type:'text',placeholder:'WhatsApp',maxlength:'30'}),pa=el('input',{type:'text',placeholder:'Parentesco (madre, padre…)',maxlength:'40'});
+     ca.append(el('div',{class:'msg',style:'background:rgba(226,190,70,.18);border-color:var(--amar);margin-top:12px'},'⚠ Este alumno no tiene encargado vinculado. Créalo aquí y queda ligado a su tablero (ve su avance, material y facturas).'),
+       el('div',{class:'row',style:'margin-top:10px'},el('div',{class:'field'},n),el('div',{class:'field'},w),el('div',{class:'field'},pa),
+       el('button',{class:'btn btn-gold',type:'button',onclick:()=>tabNuevoEnc(a.id,n.value.trim(),w.value.trim(),pa.value.trim())},'Crear y vincular')),
+       el('p',{class:'muted'},'¿Ya existe el encargado? Vincúlalo abajo en "Encargados".'));
+   }
+   box.append(ca)}
 
   /* docentes asignados */
   const asg=(L.asg||[]).filter(r=>r.estudiante_id===a.id),libres=(L.doc||[]).filter(d=>d.activo&&!asg.some(r=>r.docente_id===d.id));
@@ -1548,9 +1609,13 @@ async function matSubir(file,destId,ent,onProg,nombre){
   await matArbol();const d=matDest(destId);if(!d)throw new Error('Destino no válido');
   const nm=matNombre(nombre||file.name);if(!nm)throw new Error('Nombre de archivo no válido');
   let carpeta=d.prefijo;
-  if(d.entidad){const s=matSlug(ent);if(!s)throw new Error('Escribe a qué persona o empresa pertenece');carpeta+=s+'/'}
-  const key=carpeta+nm,q='bucket='+d.bucket+'&key='+encodeURIComponent(key),tipo=file.type||'application/octet-stream';
-  if(file.size<=MAT.umbral){await xhrPut('/api/subir?'+q,{'Content-Type':tipo},file,onProg);return{key,bucket:d.bucket}}
+  if(d.persona==='estudiante'){const pt=String(ent||'').split('/');if(pt.length!==2||!pt.every(x=>/^[a-z0-9]+(-[a-z0-9]+)*$/.test(x)))throw new Error('Entra a una subcarpeta del alumno');carpeta+=pt.join('/')+'/'}
+  else if(d.entidad){const s=d.persona?String(ent||''):matSlug(ent);if(!s)throw new Error('Escribe a qué persona o empresa pertenece');carpeta+=s+'/'}
+  return matSubirKey(file,d.bucket,carpeta+nm,onProg);
+}
+async function matSubirKey(file,bucket,key,onProg){
+  const q='bucket='+bucket+'&key='+encodeURIComponent(key),tipo=file.type||'application/octet-stream';
+  if(file.size<=MAT.umbral){await xhrPut('/api/subir?'+q,{'Content-Type':tipo},file,onProg);return{key,bucket}}
   const{uploadId}=await fjson('/api/multipart/inicio?'+q+'&tipo='+encodeURIComponent(tipo),{method:'POST'});
   const partes=[];let hecho=0;
   try{
@@ -1564,7 +1629,7 @@ async function matSubir(file,destId,ent,onProg,nombre){
     }
     await fjson('/api/multipart/fin?'+q+'&uploadId='+encodeURIComponent(uploadId),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({partes})});
   }catch(e){try{await fapi('/api/multipart/cancelar?'+q+'&uploadId='+encodeURIComponent(uploadId),{method:'POST'})}catch(x){}throw e}
-  return{key,bucket:d.bucket};
+  return{key,bucket};
 }
 /* Archivos del landing: van a la carpeta pública y el enlace queda guardado en Sitio web */
 async function matSubirPublico(it,dest,f){
@@ -1589,9 +1654,12 @@ async function matEnlace(bucket,key,ver,adm){
   const j=await fjson('/api/enlace?bucket='+bucket+'&key='+encodeURIComponent(key)+'&seg=3600'+(adm?'&adm=1':''),{method:'POST'});
   return ver?j.urlVer:j.url;
 }
+const MAT_TIPOS=['material','respuestas','practicas','mis-archivos','diplomas','facturas'];
+const MAT_TIPO_ET={material:'Material',respuestas:'Respuestas del profe','practicas':'Prácticas (audios)','mis-archivos':'Archivos del alumno',diplomas:'Diplomas',facturas:'Facturas'};
 function matDestinoSubida(p){
   const d=MAT.destinos.find(x=>p.startsWith(x.prefijo));if(!d)return null;
   const r=p.slice(d.prefijo.length).replace(/\/$/,'');
+  if(d.persona==='estudiante'){const pt=r.split('/');return pt.length===2&&MAT_TIPOS.includes(pt[1])?{d,ent:r}:null}
   if(d.entidad)return r&&!r.includes('/')?{d,ent:r}:null;
   return r?null:{d,ent:''};
 }
@@ -1599,6 +1667,25 @@ function matSugeridos(d){
   let k=null;try{if(d.id.startsWith('studios/'))k='cli';else if(/\/alumnos$/.test(d.id))k='est';else if(/\/docentes$/.test(d.id))k='doc';
     return k?(AC.list[k]||[]).map(x=>x.nombre).filter(Boolean):[]}catch(e){return[]}
 }
+/* Crea en R2 la carpeta de cada alumno, docente y cliente (el nombre lo genera la base de datos). Se puede repetir. */
+async function r2Sync(carpetas){
+  const lista=carpetas||['est','doc','cli'].flatMap(k=>(AC.list[k]||[]).map(x=>x.carpeta).filter(Boolean));
+  if(!lista.length)throw new Error('Todavía no hay carpetas: corre el SQL del paquete R2');
+  let n=0;for(let i=0;i<lista.length;i+=200){const j=await fjson('/api/carpeta-persona',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({carpetas:lista.slice(i,i+200)})});n+=j.creadas||0}
+  return n}
+async function matPapelera(box){
+  box.textContent='';box.append(el('p',{class:'muted'},'Cargando…'));
+  let j;try{j=await fjson('/api/papelera')}catch(e){box.textContent=e.message;return}
+  box.textContent='';
+  box.append(el('p',{class:'muted'},'Todo lo que se borra (tuyo, de docentes o del equipo) llega aquí y se puede restaurar. Alumnos, familias y clientes no pueden borrar. Lo que lleva más de '+j.dias+' días se puede eliminar de forma definitiva.'));
+  if(!j.items.length){box.append(el('p',{},'La papelera está vacía.'));return}
+  const viejo=j.items.filter(x=>Date.now()-Date.parse(x.cuando)>j.dias*864e5).length;
+  if(viejo)box.append(el('button',{class:'btn btn-ghost btn-sm',type:'button',onclick:async()=>{if(!confirm('¿Eliminar definitivamente '+viejo+' archivo(s) de más de '+j.dias+' días?'))return;try{const r=await fjson('/api/purgar?viejos=1',{method:'POST'});toast(r.borrados+' eliminados');matPapelera(box)}catch(e){toast(e.message)}}},'Vaciar lo de más de '+j.dias+' días ('+viejo+')'));
+  j.items.forEach(x=>{const nom=x.key.split('/').pop();
+    box.append(el('div',{class:'item'},el('b',{},nom),el('small',{},x.key.replace(/\/[^/]*$/,'/')+' · '+matTam(x.size)+' · borrado '+new Date(x.cuando).toLocaleString('es-GT',{timeZone:'America/Guatemala'})+(x.por?' por '+x.por:'')),
+      el('div',{class:'acts'},
+        el('button',{class:'btn btn-gold btn-sm',type:'button',onclick:async()=>{try{await fjson('/api/restaurar?bucket='+x.bucket+'&key='+encodeURIComponent(x.key),{method:'POST'});toast('Restaurado');matPapelera(box)}catch(e){toast(e.message)}}},'Restaurar'),
+        el('button',{class:'btn btn-red btn-sm',type:'button',onclick:async()=>{if(!confirm('¿Eliminar "'+nom+'" para siempre? No se puede deshacer.'))return;try{await fjson('/api/purgar?bucket='+x.bucket+'&key='+encodeURIComponent(x.key),{method:'POST'});toast('Eliminado');matPapelera(box)}catch(e){toast(e.message)}}},'Eliminar definitivo'))))})}
 async function matInit(){
   const box=$('#mat-body');if(!box)return;box.textContent='';
   const top=el('div',{class:'card',style:'margin-bottom:18px'},el('h2',{},'Materiales · archivos en Cloudflare R2'),
@@ -1610,7 +1697,8 @@ async function matInit(){
       el('button',{class:'btn btn-gold',type:'button',onclick:()=>{const v=inp.value.trim().replace(/\/+$/,'');
         if(v&&!/^https:\/\//.test(v)){toast('La dirección debe empezar con https://');return}
         try{localStorage.setItem(FILES_LS,v)}catch(e){}FILES=v;MAT.destinos=[];toast(v?'Conectado a esta dirección':'Desconectado');matInit()}},'Conectar'),
-      FILES?el('button',{class:'btn btn-ghost',type:'button',onclick:async()=>{try{const j=await fjson('/api/init',{method:'POST'});toast('Carpetas listas ('+j.carpetas+')')}catch(e){toast(e.message)}}},'Preparar carpetas'):null));
+      FILES?el('button',{class:'btn btn-ghost',type:'button',onclick:async()=>{try{const j=await fjson('/api/init',{method:'POST'});toast('Carpetas listas ('+j.carpetas+')')}catch(e){toast(e.message)}}},'Preparar carpetas'):null,
+      FILES?el('button',{class:'btn btn-ghost',type:'button',onclick:async()=>{try{toast('Sincronizando…');const n=await r2Sync();toast('Carpetas de personas listas ('+n+')')}catch(e){toast(e.message)}}},'Sincronizar carpetas de alumnos, docentes y clientes'):null));
   if(FILES){cfg.hidden=true;cfg.style.cssText='margin-top:12px;padding-top:12px;border-top:1px solid var(--line)';cfg.prepend(el('p',{class:'muted'},'Solo cambia esto si moviste el servicio de archivos a otra dirección.'));
     top.append(el('div',{style:'display:flex;align-items:center;gap:10px;margin-top:10px'},el('span',{},icoEl('check'),' Conectado'),el('button',{class:'btn btn-ghost btn-sm',type:'button',title:'Configuración de la conexión','aria-label':'Configuración de la conexión',onclick:()=>{cfg.hidden=!cfg.hidden}},icoEl('sliders'))),cfg)}else top.append(cfg);
   box.append(top);
@@ -1624,7 +1712,7 @@ async function matInit(){
   const ICONO={'faro-studios/':'film','faro-academy/':'cap','landing/':'globe','faro-academy/ingles/':'book','faro-academy/musica/':'music'};
   const REAL={};
   const bonito=s=>s.replace(/-/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
-  const nomCarpeta=p=>{const s=p.replace(/\/$/,'').split('/').pop();return LBL[p]||REAL[s]||bonito(s)};
+  const nomCarpeta=p=>{const s=p.replace(/\/$/,'').split('/').pop();return LBL[p]||REAL[s]||(MAT_TIPO_ET[s]&&/^faro-academy\/estudiantes\/[^/]+\/[^/]+\/$/.test(p)?MAT_TIPO_ET[s]:null)||bonito(s)};
   const hijosVirtuales=p=>{const r=[];MAT.destinos.forEach(d=>{if(d.prefijo.startsWith(p)&&d.prefijo!==p){const q=p+d.prefijo.slice(p.length).split('/')[0]+'/';if(!r.includes(q))r.push(q)}});return r};
   const ib=(txt,tit,fn,cls)=>el('button',{class:cls||'btn btn-ghost btn-sm',type:'button',title:tit,'aria-label':tit,onclick:e=>{e.stopPropagation();fn()}},txt);
   let ruta='';
@@ -1668,7 +1756,7 @@ async function matInit(){
       el('div',{class:'mact'},
         ib(icoEl('download'),'Descargar',async()=>{try{location.href=await matEnlace(d.bucket,a.key,false,1)}catch(e){toast(e.message)}}),
         ib(icoEl('link'),'Copiar enlace',async()=>{try{await navigator.clipboard.writeText(await matEnlace(d.bucket,a.key,false));toast(d.bucket==='publico'?'Enlace permanente copiado':'Enlace copiado (válido por 1 hora)')}catch(e){toast('No se pudo copiar')}}),
-        ib(icoEl('trash'),'Eliminar',async()=>{if(!confirm('¿Eliminar '+nombre+'? No se puede deshacer.'))return;try{await fjson('/api/objeto?bucket='+d.bucket+'&key='+encodeURIComponent(a.key),{method:'DELETE'});toast('Eliminado');render()}catch(e){toast(e.message)}},'btn btn-red btn-sm')));
+        ib(icoEl('trash'),'Eliminar',async()=>{if(!confirm('¿Mover '+nombre+' a la papelera? Podrás restaurarlo.'))return;try{await fjson('/api/objeto?bucket='+d.bucket+'&key='+encodeURIComponent(a.key),{method:'DELETE'});toast('Enviado a la papelera');render()}catch(e){toast(e.message)}},'btn btn-red btn-sm')));
     t.addEventListener('click',()=>{matVer(d.bucket,a.key).catch(e=>toast(e.message))});
     if(esImg&&mini){
       t.__mini=async()=>{try{const im=new Image();im.className='th';im.alt=nombre;im.onload=()=>ic.replaceWith(im);im.src=await matEnlace(d.bucket,a.key,true,1)}catch(e){}};
@@ -1680,13 +1768,14 @@ async function matInit(){
     if(p!==undefined)ruta=p;
     const mi=ruta;
     MAT.destinos.filter(x=>x.entidad).forEach(x=>matSugeridos(x).forEach(n=>{REAL[matSlug(n)]=n}));
+    ['est','doc','cli'].forEach(k=>(AC.list[k]||[]).forEach(x=>{if(x.carpeta)REAL[x.carpeta.replace(/\/$/,'').split('/').pop()]=x.nombre}));
     bar.textContent='';
     const partes=[''];ruta.replace(/\/$/,'').split('/').filter(Boolean).forEach((s,i,a)=>partes.push(a.slice(0,i+1).join('/')+'/'));
     partes.forEach((q,i)=>{if(i)bar.append(el('span',{class:'muted'},'›'));bar.append(i===partes.length-1?el('b',{},q===''?[icoEl('home'),' Inicio']:nomCarpeta(q)):el('button',{class:'btn btn-ghost btn-sm',type:'button',onclick:()=>render(q)},q===''?[icoEl('home'),' Inicio']:nomCarpeta(q)))});
     const up=matDestinoSubida(ruta),d=MAT.destinos.find(x=>ruta.startsWith(x.prefijo)),nivelEnt=!!(d&&d.entidad&&ruta===d.prefijo);
     tools.textContent='';
     if(up)tools.append(el('button',{class:'btn btn-gold btn-sm',type:'button',onclick:()=>fi.click()},icoEl('upload'),' Subir archivos'));
-    if(nivelEnt)tools.append(el('button',{class:'btn btn-gold btn-sm',type:'button',onclick:async()=>{const n=prompt('Nombre de la carpeta (persona o empresa)');if(!n||!n.trim())return;try{await crearCarpeta(d,n.trim())}catch(e){toast(e.message)}}},icoEl('plus'),' Nueva carpeta'));
+    if(nivelEnt&&!d.persona)tools.append(el('button',{class:'btn btn-gold btn-sm',type:'button',onclick:async()=>{const n=prompt('Nombre de la carpeta (persona o empresa)');if(!n||!n.trim())return;try{await crearCarpeta(d,n.trim())}catch(e){toast(e.message)}}},icoEl('plus'),' Nueva carpeta'));
     tools.append(el('button',{class:'btn btn-ghost btn-sm',type:'button',onclick:()=>render()},icoEl('refresh'),' Actualizar'));
     nota.textContent=up?(d.bucket==='publico'?'Público: estos archivos tienen enlace permanente y se usan en la página. Arrastra archivos aquí para subirlos.':'Privado: nadie los abre sin un enlace temporal que genera el administrador. Arrastra archivos aquí para subirlos.'):nivelEnt?'Elige a la persona o empresa (o crea su carpeta). También puedes arrastrar archivos sobre su carpeta.':'Elige una carpeta. También puedes arrastrar archivos sobre una carpeta para subirlos directo.';
     grid.textContent='';
@@ -1695,7 +1784,8 @@ async function matInit(){
     let j;try{j=await fjson('/api/lista?bucket='+d.bucket+'&prefix='+encodeURIComponent(ruta))}catch(e){if(mi===ruta)grid.textContent=e.message||'No se pudo listar';return}
     if(mi!==ruta)return;grid.textContent='';
     j.carpetas.forEach(c=>grid.append(tileCarpeta(c)));
-    if(nivelEnt){const ya=new Set(j.carpetas.map(c=>c.slice(ruta.length).replace(/\/$/,'')));matSugeridos(d).forEach(n=>{const s=matSlug(n);if(s&&!ya.has(s)){ya.add(s);grid.append(tileFantasma(d,n))}})}
+    if(nivelEnt&&d.persona){const k={estudiante:'est',docente:'doc',cliente:'cli'}[d.persona],ya=new Set(j.carpetas);(AC.list[k]||[]).forEach(x=>{if(x.carpeta&&x.carpeta.startsWith(d.prefijo)&&!ya.has(x.carpeta)){ya.add(x.carpeta);const t=el('div',{class:'mt ghost',title:'Crear su carpeta'},el('div',{class:'ic'},icoEl('plus')),el('b',{},x.nombre),el('small',{},'Crear carpeta'));t.addEventListener('click',async()=>{try{await r2Sync([x.carpeta]);render()}catch(e){toast(e.message)}});grid.append(t)}})}
+    else if(nivelEnt){const ya=new Set(j.carpetas.map(c=>c.slice(ruta.length).replace(/\/$/,'')));matSugeridos(d).forEach(n=>{const s=matSlug(n);if(s&&!ya.has(s)){ya.add(s);grid.append(tileFantasma(d,n))}})}
     j.archivos.forEach((a,i)=>grid.append(tileArchivo(d,a,i<40)));
     if(!grid.children.length)grid.append(el('p',{class:'muted',style:'grid-column:1/-1'},'Esta carpeta está vacía. Arrastra archivos aquí.'));
   }
@@ -1704,6 +1794,8 @@ async function matInit(){
   area.addEventListener('drop',e=>{e.preventDefault();area.classList.remove('mdrop');subirA(ruta,[...e.dataTransfer.files])});
   fi.addEventListener('change',()=>{subirA(ruta,[...fi.files]);fi.value=''});
   box.append(el('div',{class:'card'},el('h2',{},'Archivos'),bar,tools,nota,area,fi,prog));
+  const pbox=el('div',{});const pdet=el('details',{class:'card',style:'margin-top:18px'},el('summary',{style:'cursor:pointer;font-weight:700'},icoEl('trash'),' Papelera general'),pbox);
+  pdet.addEventListener('toggle',()=>{if(pdet.open)matPapelera(pbox)});box.append(pdet);
   window.__matNav=render;
   await render('');
 }
