@@ -176,9 +176,49 @@ async function entregar(request, env, bucket, key, { descargar = false, nombre =
   return new Response(request.method === 'HEAD' ? null : obj.body, { status, headers: h });
 }
 
+/* ---------- Contador de descargas y vistas (un archivo pequeño en el bucket privado) ---------- */
+const STATS_KEY = '_stats/descargas.json';
+const DIAS_GUARDADOS = 400;
+function areaDe(key) { return key.startsWith('faro-studios/') ? 's' : key.startsWith('faro-academy/') ? 'a' : 'o'; }
+async function leerStats(env) {
+  const o = await env.PRIVADO.get(STATS_KEY);
+  if (!o) return { archivos: {}, dias: {} };
+  try { const j = JSON.parse(await new Response(o.body).text()); return { archivos: j.archivos || {}, dias: j.dias || {} }; } catch (e) { return { archivos: {}, dias: {} }; }
+}
+async function contar(env, key, tipo) { // tipo: 'd' descarga, 'v' reproducción/vista
+  try {
+    const st = await leerStats(env);
+    const hoy = new Date().toISOString().slice(0, 10);
+    const f = st.archivos[key] || (st.archivos[key] = { d: 0, v: 0 });
+    f[tipo]++; f.u = hoy;
+    const dia = st.dias[hoy] || (st.dias[hoy] = {});
+    const a = dia[areaDe(key)] || (dia[areaDe(key)] = { d: 0, v: 0 });
+    a[tipo]++;
+    const limite = new Date(Date.now() - DIAS_GUARDADOS * 864e5).toISOString().slice(0, 10);
+    for (const k of Object.keys(st.dias)) if (k < limite) delete st.dias[k];
+    await env.PRIVADO.put(STATS_KEY, new TextEncoder().encode(JSON.stringify(st)), { httpMetadata: { contentType: 'application/json' } });
+  } catch (e) { /* contar nunca debe romper una descarga */ }
+}
+// Recorre todo el bucket (por páginas) y resume cuántos archivos, peso y subidas por mes hay en cada área.
+async function resumenBucket(bucket, areaDeKey) {
+  const areas = {}; let cursor, paginas = 0;
+  do {
+    const r = await bucket.list({ cursor, limit: 1000 });
+    for (const o of r.objects) {
+      if (o.key.endsWith('/.keep') || o.key.startsWith('_stats/')) continue;
+      const a = areas[areaDeKey(o.key)] || (areas[areaDeKey(o.key)] = { n: 0, b: 0, meses: {} });
+      a.n++; a.b += o.size;
+      const m = new Date(o.uploaded).toISOString().slice(0, 7);
+      a.meses[m] = (a.meses[m] || 0) + 1;
+    }
+    cursor = r.truncated ? r.cursor : undefined;
+  } while (cursor && ++paginas < 30);
+  return { areas, completo: !cursor };
+}
+
 /* ---------- Servicio ---------- */
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     const url = new URL(request.url);
     const ruta = url.pathname.replace(/\/+$/, '') || '/';
     const B = { privado: env.PRIVADO, publico: env.PUBLICO };
@@ -198,7 +238,13 @@ export default {
     if (ruta === '/api/bajar') {
       const p = await verificar(env, url.searchParams.get('t'));
       if (!p || !B[p.b]) return err(request, env, 'El enlace no es válido o ya venció', 403);
-      return entregar(request, env, B[p.b], p.k, { descargar: url.searchParams.get('inline') !== '1' });
+      const descargar = url.searchParams.get('inline') !== '1';
+      if (!p.a && request.method === 'GET') { // el administrador viendo una vista previa no cuenta
+        const rango = request.headers.get('Range');
+        const primera = !rango || /^bytes=0-/.test(rango); // el video pide muchos trozos: cuenta solo el primero
+        if (primera && p.b === 'privado') { const t = contar(env, p.k, descargar ? 'd' : 'v'); if (ctx && ctx.waitUntil) ctx.waitUntil(t); else await t; }
+      }
+      return entregar(request, env, B[p.b], p.k, { descargar });
     }
 
     // Todo lo demás es solo para el administrador
@@ -234,10 +280,18 @@ export default {
         if (prefix.includes('..') || prefix.startsWith('/')) return err(request, env, 'Ruta inválida');
         const r = await bucket.list({ prefix, delimiter: '/', limit: 1000, include: ['customMetadata'] });
         return json(request, env, {
-          carpetas: r.delimitedPrefixes,
+          carpetas: r.delimitedPrefixes.filter((c) => c !== '_stats/'),
           archivos: r.objects.filter((o) => !o.key.endsWith('/.keep')).map((o) => ({ key: o.key, size: o.size, subido: o.uploaded })),
           nombres: Object.fromEntries(r.objects.filter((o) => o.customMetadata && o.customMetadata.nombre).map((o) => [o.key, o.customMetadata.nombre])),
         });
+      }
+
+      // Descargas, vistas y resumen de archivos por área (para las gráficas del admin)
+      if (ruta === '/api/stats' && request.method === 'GET') {
+        const st = await leerStats(env);
+        const rp = await resumenBucket(env.PRIVADO, areaDe);
+        const rl = await resumenBucket(env.PUBLICO, () => 'l');
+        return json(request, env, { ...st, areas: { ...rp.areas, ...rl.areas }, completo: rp.completo && rl.completo });
       }
 
       // Subida simple (hasta el umbral)
@@ -283,7 +337,7 @@ export default {
         if (!env.FIRMA_SECRETO) return err(request, env, 'Falta configurar FIRMA_SECRETO en el servicio (ver LEEME)', 500);
         if (!bucket || !key || key.includes('..') || key.endsWith('/.keep')) return err(request, env, 'Archivo inválido');
         const seg = Math.min(Math.max(Number(url.searchParams.get('seg')) || 3600, 60), TTL_ENLACE_MAX);
-        const t = await firmar(env, { b: bucketNombre, k: key, e: Math.floor(Date.now() / 1000) + seg });
+        const t = await firmar(env, { b: bucketNombre, k: key, e: Math.floor(Date.now() / 1000) + seg, ...(url.searchParams.get('adm') === '1' ? { a: 1 } : {}) });
         return json(request, env, { url: `${url.origin}/api/bajar?t=${t}`, urlVer: `${url.origin}/api/bajar?inline=1&t=${t}`, vence_en: seg });
       }
 

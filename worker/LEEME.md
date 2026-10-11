@@ -46,6 +46,9 @@ Si cambia la dirección desde donde abres el admin, agrégala a `ORIGENES` en `w
 ## Pruebas
 `node test/prueba.mjs` (no necesita Cloudflare; simula R2 y Supabase).
 
+## Descargas y estadísticas
+Cada vez que alguien abre un enlace temporal se suma una descarga (o una reproducción si es vista en línea) en `_stats/descargas.json` dentro de `faro-privado`. El admin lo lee con `/api/stats` (solo administrador). Las vistas previas del propio admin no cuentan.
+
 ## Pendiente (siguiente etapa)
 - Portales de alumnos, docentes y clientes: descargar desde R2 con enlaces temporales según lo que Supabase les permita ver.
 - Dominio propio (por ejemplo `archivos.farostudios.net`) cuando el DNS del dominio pase a Cloudflare.

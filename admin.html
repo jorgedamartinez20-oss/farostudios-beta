@@ -10,7 +10,7 @@
 <title>Faro — Administración</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Lato:wght@400;700;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
 <style>
 :root{--pizarra:#252528;--borgona:#8B1A2A;--gris:#3A3A3A;--oro:#B8A06A;--marfil:#F5F2EE;--verde:#5E9E6B;--amar:#E2BE46;--rojo:#D95A6A;
 --bg:#252528;--bg2:rgba(58,58,58,.8);--surface:#3A3A3A;--soft:rgba(0,0,0,.18);--input:rgba(0,0,0,.26);--text:#F5F2EE;--muted:#B9B4AA;--line:rgba(245,242,238,.18);--oro-t:#B8A06A;--red-t:#F0A0AA;--msg-bg:rgba(139,26,42,.4);--nav:#2F2F32;
@@ -129,6 +129,45 @@ button,input,select,textarea{font:inherit;color:inherit}
 @media (max-width:900px){.shell{grid-template-columns:1fr;gap:14px}.side{position:sticky;top:60px;z-index:15;max-height:none;overflow-x:auto;overflow-y:hidden;padding:6px;border-radius:14px}
  .nav{display:flex;gap:4px;width:max-content}.nav h4{display:none}.tab{width:auto;white-space:nowrap;padding:9px 12px}.tab .n{margin-left:4px}}
 @media (max-width:760px){.dp,.dp.w4,.dp.w8,.dp.w12{grid-column:span 12}}
+
+/* ---------- Lato fino, estilo iOS, menú plegable, nuevas pestañas ---------- */
+:root{--display:'Lato',system-ui,-apple-system,'Segoe UI',sans-serif}
+body{font-size:14.5px;font-weight:400;line-height:1.5}
+h1,h2,h3{font-weight:300;letter-spacing:-.005em}
+.dh h1{font-size:clamp(1.55rem,3vw,2rem)}h2{font-size:1.25rem}
+.top .t b{font:300 1.05rem/1 var(--display);letter-spacing:.2em}
+.btn{font-weight:400;padding:9px 18px;font-size:.92rem}.btn-sm{padding:7px 14px;font-size:.85rem}
+.chip{font-weight:400;padding:7px 14px;font-size:.88rem}
+.tab{font-weight:400;font-size:.95rem;padding:9px 12px;border-radius:12px}.tab[aria-selected="true"]{font-weight:700}
+.nav h4{font-weight:400;font-size:.68rem;letter-spacing:.14em}
+.kpi{border-radius:20px;padding:16px 18px;min-height:122px}.kpi .kl{font-weight:400;font-size:.85rem}
+.kpi .kv{font:300 2.3rem/1.05 var(--display);letter-spacing:-.01em}.kpi .kd{font-size:.78rem}
+.dp{border-radius:20px}.dp h3{font:400 1.05rem/1.2 var(--display);letter-spacing:0}.dp .sub{font-size:.78rem}
+.lr .dt{font:300 1.1rem/1 var(--display);letter-spacing:0}.bigv{font:300 2.2rem/1 var(--display);letter-spacing:-.01em}
+.hb .r{font-size:.82rem}.hb .r span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.hb .r b{font-weight:400;white-space:nowrap}
+.hb .r{grid-template-columns:minmax(80px,130px) 1fr minmax(34px,auto)}
+.card{border-radius:20px}
+.dp.w6{grid-column:span 6}
+@media (max-width:1200px){.dp.w6{grid-column:span 6}}
+@media (max-width:760px){.dp.w6{grid-column:span 12}}
+.seg{display:inline-flex;background:var(--soft);border-radius:11px;padding:3px;gap:2px}
+.seg button{border:0;background:none;border-radius:9px;padding:6px 13px;font-size:.85rem;cursor:pointer;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.18)}
+.sidetog{display:flex;align-items:center;justify-content:center;width:34px;height:30px;border:0;background:none;border-radius:9px;color:var(--muted);cursor:pointer;margin:0 0 4px auto}
+.sidetog:hover{background:var(--soft);color:var(--text)}.sidetog .sv{width:18px;height:18px}
+.shell{transition:grid-template-columns .22s ease}
+.shell.min{grid-template-columns:64px minmax(0,1fr)}
+.shell.min .nl,.shell.min .nav h4{display:none}.shell.min .tab{justify-content:center;padding:10px 0;position:relative}
+.shell.min .tab .n{position:absolute;top:5px;right:9px;min-width:0;width:9px;height:9px;padding:0;font-size:0}
+.shell.min .sidetog{margin:0 auto 4px}.shell.min .side{padding:8px 6px}
+.pg{display:grid;gap:4px}.pr{display:grid;grid-template-columns:minmax(120px,1.3fr) 1.2fr 1fr 1fr 46px;gap:14px;align-items:center;padding:8px 4px;border-top:1px solid var(--line)}.pr:first-child{border-top:0}
+.pn{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.pn small{display:block;color:var(--muted);font-size:.74rem}
+.pb{position:relative;height:18px;border-radius:99px;background:var(--soft);overflow:hidden;display:block}.pb i{position:absolute;left:0;top:0;bottom:0;border-radius:99px;opacity:.85}
+.pb em{position:relative;font-style:normal;font-size:.72rem;padding:0 9px;line-height:18px;white-space:nowrap}.pc{text-align:right;color:var(--muted);font-size:.8rem}
+@media (max-width:760px){.pr{grid-template-columns:1fr 1fr;gap:6px}.pc{text-align:left}}
+.rform{margin-top:16px}.rform h3{font:400 1.05rem/1.2 var(--display);margin-bottom:12px}
+.rgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:12px}
+.rgrid input,.rgrid select{width:100%;min-width:0}.rgrid label{display:grid;min-width:0;gap:4px;font-size:.78rem;color:var(--muted)}.rgrid input,.rgrid select{padding:8px 10px;border-radius:10px;border:1px solid var(--line);background:var(--input)}
 </style>
 </head>
 <body>
@@ -144,9 +183,14 @@ button,input,select,textarea{font:inherit;color:inherit}
   </section>
 
   <section id="v-app" class="shell" hidden>
-   <aside class="side"><nav class="nav" role="tablist" aria-label="Secciones">
+   <aside class="side"><button type="button" id="sidetog" class="sidetog" aria-expanded="true" title="Ocultar menú" aria-label="Mostrar u ocultar el menú"><span data-i="sliders"></span></button><nav class="nav" role="tablist" aria-label="Secciones">
       <h4>Resumen</h4>
       <button class="tab" role="tab" data-t="ini" aria-selected="true"><span class="ni" data-i="dashboard"></span><span class="nl">Inicio</span></button>
+      <h4>Análisis</h4>
+      <button class="tab" role="tab" data-t="ast" aria-selected="false"><span class="ni" data-i="chart"></span><span class="nl">Studios</span></button>
+      <button class="tab" role="tab" data-t="aac" aria-selected="false"><span class="ni" data-i="cap"></span><span class="nl">Academy</span></button>
+      <button class="tab" role="tab" data-t="crm" aria-selected="false"><span class="ni" data-i="users"></span><span class="nl">CRM</span></button>
+      <button class="tab" role="tab" data-t="red" aria-selected="false"><span class="ni" data-i="trend"></span><span class="nl">Alcance</span></button>
       <h4>Agenda</h4>
       <button class="tab" role="tab" data-t="cal" aria-selected="false"><span class="ni" data-i="calendar"></span><span class="nl">Calendario</span></button>
       <button class="tab" role="tab" data-t="res" aria-selected="false"><span class="ni" data-i="film"></span><span class="nl">Reservas</span><span class="n" id="npend" hidden>0</span></button>
@@ -154,7 +198,7 @@ button,input,select,textarea{font:inherit;color:inherit}
       <h4>Negocio</h4>
       <button class="tab" role="tab" data-t="cot" aria-selected="false"><span class="ni" data-i="message"></span><span class="nl">Cotizaciones</span><span class="n" id="ncot" hidden>0</span></button>
       <button class="tab" role="tab" data-t="cli" aria-selected="false"><span class="ni" data-i="camera"></span><span class="nl">Clientes</span><span class="n" id="ncl" hidden>0</span></button>
-      <button class="tab" role="tab" data-t="aca" aria-selected="false"><span class="ni" data-i="cap"></span><span class="nl">Academy</span><span class="n" id="nac" hidden>0</span></button>
+      <button class="tab" role="tab" data-t="aca" aria-selected="false"><span class="ni" data-i="cap"></span><span class="nl">Gestión Academy</span><span class="n" id="nac" hidden>0</span></button>
       <h4>Archivos y web</h4>
       <button class="tab" role="tab" data-t="mat" aria-selected="false"><span class="ni" data-i="folder"></span><span class="nl">Materiales</span></button>
       <button class="tab" role="tab" data-t="sit" aria-selected="false"><span class="ni" data-i="globe"></span><span class="nl">Sitio web</span></button>
@@ -164,6 +208,10 @@ button,input,select,textarea{font:inherit;color:inherit}
    <div class="main">
     <div class="msg" id="warn" hidden></div>
     <div id="t-ini"><div id="dash-body"></div></div>
+    <div id="t-ast" hidden><div id="an-ast"></div></div>
+    <div id="t-aac" hidden><div id="an-aac"></div></div>
+    <div id="t-crm" hidden><div id="an-crm"></div></div>
+    <div id="t-red" hidden><div id="an-red"></div></div>
 
     <div id="t-cal" hidden>
       <div class="grid2">
@@ -304,6 +352,8 @@ const IC={
  bulb:'<path d="M9 18h6M10 22h4"/><path d="M15.1 14c.2-1 .7-1.7 1.4-2.5A4.7 4.7 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5A4.6 4.6 0 0 1 8.9 14"/>',
  book:'<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20V2H6.5A2.5 2.5 0 0 0 4 4.5z"/>',
  up:'<path d="M12 19V5M5 12l7-7 7 7"/>',
+ trend:'<path d="M22 7 13.5 15.5 8.5 10.5 2 17"/><path d="M16 7h6v6"/>',
+ chart:'<path d="M3 3v18h18"/><path d="M7 15v3M12 9v9M17 5v13"/>',
 };
 const ico=(n,cls)=>'<svg class="sv'+(cls?' '+cls:'')+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+(IC[n]||IC.file)+'</svg>';
 function icoEl(n,cls){const s=document.createElement('span');s.className='ico';s.innerHTML=ico(n,cls);return s}
@@ -512,7 +562,7 @@ $('#cgo').addEventListener('click',()=>{const v=$('#cod').value.trim();if(!/^[A-
 $('#mgo').addEventListener('click',()=>{const v=parseInt($('#mar').value,10);if(!(v>=0&&v<=12)){toast('Escribe un número de 0 a 12');return}saveCfg('margen_horas',v,'Margen actualizado')});
 
 /* ---------- pestañas ---------- */
-function showTab(t){$$('.tab').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.t===t)));['ini','cal','res','cot','aca','cli','mat','sit','sem','acc'].forEach(x=>$('#t-'+x).hidden=x!==t);if(t==='mat')matInit();if(t==='ini')renderDash();window.scrollTo({top:0})}
+function showTab(t){$$('.tab').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.t===t)));['ini','ast','aac','crm','red','cal','res','cot','aca','cli','mat','sit','sem','acc'].forEach(x=>$('#t-'+x).hidden=x!==t);if(t==='mat')matInit();if(t==='ini')renderDash();if(['ast','aac','crm','red'].includes(t))anTab(t);window.scrollTo({top:0})}
 $$('.tab').forEach(b=>b.addEventListener('click',()=>showTab(b.dataset.t)));
 const ESTC=['nueva','contactada','cotizada','ganada','perdida'];
 function renderCot(){
@@ -994,18 +1044,18 @@ const MAT_VER={img:/\.(jpe?g|png|gif|webp|avif|svg)$/i,vid:/\.(mp4|m4v|mov|webm)
 async function matVer(bucket,key){
   const nombre=key.split('/').pop();
   const tipo=MAT_VER.img.test(nombre)?'img':MAT_VER.vid.test(nombre)?'vid':MAT_VER.aud.test(nombre)?'aud':MAT_VER.pdf.test(nombre)?'pdf':'';
-  if(!tipo){const w=window.open('','_blank');try{const u=await matEnlace(bucket,key,true);if(w)w.location=u;else location.href=u}catch(e){if(w)w.close();throw e}return}
+  if(!tipo){const w=window.open('','_blank');try{const u=await matEnlace(bucket,key,true,1);if(w)w.location=u;else location.href=u}catch(e){if(w)w.close();throw e}return}
   const m=$('#modal'),b=$('#mbody');b.textContent='Cargando…';m.hidden=false;$('#mtl').textContent=nombre;
   try{
-    const ver=await matEnlace(bucket,key,true),bajar=await matEnlace(bucket,key,false);
+    const ver=await matEnlace(bucket,key,true,1),bajar=await matEnlace(bucket,key,false,1);
     $('#mdl').href=bajar;$('#mdl').setAttribute('download',nombre);b.textContent='';
     const nodo=tipo==='img'?el('img',{src:ver,alt:nombre}):tipo==='vid'?el('video',{src:ver,controls:'',preload:'metadata',playsinline:''}):tipo==='aud'?el('audio',{src:ver,controls:'',preload:'metadata'}):el('iframe',{src:ver,title:nombre});
     b.append(nodo);
   }catch(e){m.hidden=true;b.textContent='';throw e}
 }
-async function matEnlace(bucket,key,ver){
+async function matEnlace(bucket,key,ver,adm){
   if(bucket==='publico')return FILES+'/pub/'+matKey(key);
-  const j=await fjson('/api/enlace?bucket='+bucket+'&key='+encodeURIComponent(key)+'&seg=3600',{method:'POST'});
+  const j=await fjson('/api/enlace?bucket='+bucket+'&key='+encodeURIComponent(key)+'&seg=3600'+(adm?'&adm=1':''),{method:'POST'});
   return ver?j.urlVer:j.url;
 }
 function matDestinoSubida(p){
@@ -1085,12 +1135,12 @@ async function matInit(){
     const ic=el('div',{class:'ic'},icoEl(esImg?'image':MAT_VER.vid.test(nombre)?'film':MAT_VER.aud.test(nombre)?'music':MAT_VER.pdf.test(nombre)?'pdf':'file'));
     const t=el('div',{class:'mt',title:nombre},ic,el('b',{style:'font-size:12px'},nombre),el('small',{},matTam(a.size)+' · '+new Date(a.subido).toLocaleDateString('es-GT',{timeZone:'America/Guatemala'})),
       el('div',{class:'mact'},
-        ib(icoEl('download'),'Descargar',async()=>{try{location.href=await matEnlace(d.bucket,a.key,false)}catch(e){toast(e.message)}}),
+        ib(icoEl('download'),'Descargar',async()=>{try{location.href=await matEnlace(d.bucket,a.key,false,1)}catch(e){toast(e.message)}}),
         ib(icoEl('link'),'Copiar enlace',async()=>{try{await navigator.clipboard.writeText(await matEnlace(d.bucket,a.key,false));toast(d.bucket==='publico'?'Enlace permanente copiado':'Enlace copiado (válido por 1 hora)')}catch(e){toast('No se pudo copiar')}}),
         ib(icoEl('trash'),'Eliminar',async()=>{if(!confirm('¿Eliminar '+nombre+'? No se puede deshacer.'))return;try{await fjson('/api/objeto?bucket='+d.bucket+'&key='+encodeURIComponent(a.key),{method:'DELETE'});toast('Eliminado');render()}catch(e){toast(e.message)}},'btn btn-red btn-sm')));
     t.addEventListener('click',()=>{matVer(d.bucket,a.key).catch(e=>toast(e.message))});
     if(esImg&&mini){
-      t.__mini=async()=>{try{const im=new Image();im.className='th';im.alt=nombre;im.onload=()=>ic.replaceWith(im);im.src=await matEnlace(d.bucket,a.key,true)}catch(e){}};
+      t.__mini=async()=>{try{const im=new Image();im.className='th';im.alt=nombre;im.onload=()=>ic.replaceWith(im);im.src=await matEnlace(d.bucket,a.key,true,1)}catch(e){}};
       if(io)io.observe(t);else t.__mini();
     }
     return t;
@@ -1145,13 +1195,13 @@ const fmtY=(v,money)=>money&&v>=1000?(v/1000)+'k':fmtN(Math.round(v*10)/10);
 
 /* gráfica de barras (apiladas o agrupadas) en SVG; usa los colores del tema */
 function cBarras(labels,series,o){
-  o=o||{};const stack=o.stack!==false,money=!!o.money,h=o.h||200,flag=o.flag==null?-1:o.flag;
-  const W=o.w||560,pl=money?44:30,pr=8,pt=16,pb=26,iw=W-pl-pr,ih=h-pt-pb,n=labels.length;
+  o=o||{};const stack=o.stack!==false,money=!!o.money,big=money||!!o.big,h=o.h||200,flag=o.flag==null?-1:o.flag;
+  const W=o.w||560,pl=big?44:30,pr=8,pt=16,pb=26,iw=W-pl-pr,ih=h-pt-pb,n=labels.length;
   const tot=labels.map((_,i)=>stack?series.reduce((s,x)=>s+(x.v[i]||0),0):Math.max(0,...series.map(x=>x.v[i]||0)));
   const mx=Math.max(0,...tot);
   const top=mx<=0?4:(!money&&mx<=5?Math.ceil(mx):nice(mx)),nt=(!money&&top<=5)?top:(top%4===0?4:(top%5===0?5:4)),step=top/nt;
   let g='';
-  for(let i=0;i<=nt;i++){const y=pt+ih-ih*i/nt;g+='<line class="grid" x1="'+pl+'" x2="'+(W-pr)+'" y1="'+y+'" y2="'+y+'"/><text x="'+(pl-6)+'" y="'+(y+4)+'" text-anchor="end">'+esc(fmtY(step*i,money))+'</text>'}
+  for(let i=0;i<=nt;i++){const y=pt+ih-ih*i/nt;g+='<line class="grid" x1="'+pl+'" x2="'+(W-pr)+'" y1="'+y+'" y2="'+y+'"/><text x="'+(pl-6)+'" y="'+(y+4)+'" text-anchor="end">'+esc(fmtY(step*i,big))+'</text>'}
   const bw=iw/n,gw=Math.min(bw*.64,54);let b='';
   labels.forEach((lb,i)=>{
     const x0=pl+bw*i+(bw-gw)/2,op=i===flag?' opacity=".6"':'';let acc=0;
@@ -1160,7 +1210,7 @@ function cBarras(labels,series,o){
     else{const sw=gw/series.length;series.forEach((s,k)=>{const v=s.v[i]||0;if(!v)return;const hh=Math.max(2,ih*v/top),y=pt+ih-hh;
       b+='<rect x="'+(x0+sw*k).toFixed(1)+'" y="'+y.toFixed(1)+'" width="'+(sw-2).toFixed(1)+'" height="'+hh.toFixed(1)+'" rx="3" style="fill:'+s.c+'"'+op+'><title>'+esc(lb+' · '+s.n+': '+(money?Qf(v):v))+'</title></rect>'})}
     b+='<text x="'+(x0+gw/2).toFixed(1)+'" y="'+(h-8)+'" text-anchor="middle">'+esc(lb)+'</text>';
-    if(n<=8&&tot[i])b+='<text class="bv" x="'+(x0+gw/2).toFixed(1)+'" y="'+(pt+ih-ih*tot[i]/top-5).toFixed(1)+'" text-anchor="middle">'+esc(money?fmtY(tot[i],true):fmtN(tot[i]))+'</text>';
+    if(n<=8&&tot[i])b+='<text class="bv" x="'+(x0+gw/2).toFixed(1)+'" y="'+(pt+ih-ih*tot[i]/top-5).toFixed(1)+'" text-anchor="middle">'+esc(big?fmtY(tot[i],true):fmtN(tot[i]))+'</text>';
   });
   return '<svg viewBox="0 0 '+W+' '+h+'" role="img" aria-label="'+esc(o.aria||'Gráfica de barras')+'">'+g+b+'</svg>';
 }
@@ -1307,6 +1357,268 @@ $('#tema').addEventListener('click',()=>{TEMA=TEMA==='auto'?'light':TEMA==='ligh
 
 
 /* arranque: al final, cuando todo el código ya está definido */
+/* ---------- ANÁLISIS · Studios, Academy, CRM y Alcance ---------- */
+const AN={cargado:false,cargando:false,stats:null,vis:[],redes:[],err:{},rango:30,cuenta:'todas',tab:null};
+const PORTAL_NOMBRE={studios:'Studios',academy:'Academy',portal:'Portal'};
+const addD=(iso,k)=>new Date(+new Date(iso+'T00:00:00Z')+k*864e5).toISOString().slice(0,10);
+const diasV=n=>{const t=today(),o=[];for(let i=n-1;i>=0;i--)o.push(addD(t,-i));return o};
+const lbDia=iso=>+iso.slice(8,10)+' '+MES_C[+iso.slice(5,7)-1];
+const bytesTxt=b=>b>=1073741824?(b/1073741824).toFixed(2)+' GB':b>=1048576?(b/1048576).toFixed(1)+' MB':Math.round(b/1024)+' KB';
+const sumA=a=>a.reduce((s,x)=>s+(x||0),0);
+const avgA=a=>a.length?sumA(a)/a.length:0;
+
+async function anCargar(){
+  if(AN.cargando)return;AN.cargando=true;AN.err={};
+  const desde=addD(today(),-180);
+  await Promise.all([
+    (async()=>{try{AN.stats=await fjson('/api/stats')}catch(e){AN.stats=null;AN.err.stats=e.message||'sin conexión'}})(),
+    (async()=>{try{const r=await api('/rest/v1/visitas?select=creado,pagina,ref,dispositivo,sid&creado=gte.'+desde+'&order=creado.desc&limit=20000');if(r.ok)AN.vis=await r.json();else{AN.vis=[];AN.err.vis=1}}catch(e){AN.vis=[];AN.err.vis=1}})(),
+    (async()=>{try{const r=await api('/rest/v1/redes_stats?select=*&order=fecha.asc&limit=3000');if(r.ok)AN.redes=await r.json();else{AN.redes=[];AN.err.redes=1}}catch(e){AN.redes=[];AN.err.redes=1}})()]);
+  AN.cargando=false;AN.cargado=true;if(AN.tab)anPintar();
+}
+function anTab(t){AN.tab=t;anPintar();if(!AN.cargado)anCargar()}
+function anPintar(){try{({ast:renderAst,aac:renderAac,crm:renderCrm,red:renderRed})[AN.tab]()}catch(e){console.error(e)}}
+const segEl=(opts,val,fn)=>el('div',{class:'seg',role:'group'},...opts.map(([v,l])=>el('button',{type:'button','aria-pressed':String(val===v),onclick:()=>fn(v)},l)));
+const kp=(ico,lb,val,sub,go,cls)=>el('button',{type:'button',class:'kpi '+(cls||'k1'),onclick:()=>go&&showTab(go)},el('span',{class:'kl'},icoEl(ico),lb),el('div',{class:'kv'},val),el('div',{class:'kd'},sub||''));
+function anHead(titulo,sub,extra){return el('div',{class:'dh'},el('div',{},el('h1',{},titulo),el('p',{class:'muted'},sub)),el('div',{style:'display:flex;gap:8px;flex-wrap:wrap;align-items:center'},extra||[],
+  el('button',{class:'btn btn-ghost btn-sm',type:'button',onclick:()=>{AN.cargado=false;anCargar();toast('Actualizando…')}},icoEl('refresh'),' Actualizar')))}
+const rangoSeg=()=>segEl([[7,'7 días'],[30,'30 días'],[90,'90 días']],AN.rango,v=>{AN.rango=v;anPintar()});
+const aviso=(t)=>el('div',{class:'msg',style:'margin:12px 0'},t);
+const vacio=t=>'<p class="muted">'+esc(t||'Todavía no hay datos.')+'</p>';
+
+/* línea con área suave; series:[{n,c,v}] */
+function cLinea(labels,series,o){
+  o=o||{};const W=o.w||560,h=o.h||200,pl=o.pl||34,pr=10,pt=14,pb=24,iw=W-pl-pr,ih=h-pt-pb,n=labels.length,pct=!!o.pct;
+  const mx=Math.max(0,...series.flatMap(s=>s.v.map(x=>x||0)));const top=pct?100:(mx<=0?4:(mx<=4?Math.ceil(mx):nice(mx))),nt=4,step=top/nt;
+  let g='';for(let i=0;i<=nt;i++){const y=pt+ih-ih*i/nt;g+='<line class="grid" x1="'+pl+'" x2="'+(W-pr)+'" y1="'+y+'" y2="'+y+'"/><text x="'+(pl-6)+'" y="'+(y+4)+'" text-anchor="end">'+esc(fmtY(step*i,top>=2000)+(pct?'%':''))+'</text>'}
+  const X=i=>pl+(n<2?iw/2:iw*i/(n-1)),Y=v=>pt+ih-ih*(v||0)/top;let b='';
+  const k=Math.max(1,Math.ceil(n/(o.ticks||7)));labels.forEach((lb,i)=>{if(i%k===0||i===n-1)b+='<text x="'+X(i).toFixed(1)+'" y="'+(h-6)+'" text-anchor="'+(i===0?'start':i===n-1?'end':'middle')+'">'+esc(lb)+'</text>'});
+  series.forEach((s,si)=>{const pts=s.v.map((v,i)=>v==null?null:[X(i),Y(v)]);const vp=pts.filter(Boolean);if(!vp.length)return;
+    const path=vp.map((p,i)=>(i?'L':'M')+p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ');
+    if(series.length===1)b+='<path d="'+path+' L'+vp[vp.length-1][0].toFixed(1)+','+(pt+ih)+' L'+vp[0][0].toFixed(1)+','+(pt+ih)+' Z" style="fill:'+s.c+';opacity:.13"/>';
+    b+='<path d="'+path+'" fill="none" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" style="stroke:'+s.c+'"/>';
+    if(n<=40)pts.forEach((p,i)=>{if(p)b+='<circle cx="'+p[0].toFixed(1)+'" cy="'+p[1].toFixed(1)+'" r="2.6" style="fill:'+s.c+'"><title>'+esc(labels[i]+' · '+s.n+': '+fmtN(s.v[i]||0)+(pct?'%':''))+'</title></circle>'})});
+  return '<svg viewBox="0 0 '+W+' '+h+'" role="img" aria-label="'+esc(o.aria||'Gráfica de líneas')+'">'+g+b+'</svg>';
+}
+const leyenda=s=>'<div class="leg3">'+s.map(x=>'<span><i style="background:'+x.c+'"></i>'+esc(x.n)+'</span>').join('')+'</div>';
+/* barras horizontales con valor ya formateado */
+function cHBn(items,max){const mx=max||Math.max(1e-9,...items.map(x=>x.v));
+  return '<div class="hb">'+items.map(x=>'<div class="r"><span title="'+esc(x.n)+'">'+esc(x.n)+'</span><div class="bar"><i style="width:'+Math.max(x.v?4:0,100*x.v/mx).toFixed(1)+'%;background:'+x.c+'"></i></div><b>'+esc(x.t==null?fmtN(x.v):x.t)+'</b></div>').join('')+'</div>'}
+
+/* ---- piezas compartidas: descargas y archivos de un área ('s' Studios, 'a' Academy) ---- */
+function panelesArchivos(g,a,etq){
+  const st=AN.stats;
+  if(!st){g.append(el('div',{class:'card dp w12'},el('h3',{},'Descargas y archivos'),el('p',{class:'muted'},AN.err.stats?'No se pudo leer el servicio de archivos ('+AN.err.stats+'). Revisa la conexión en Materiales y que el servicio esté actualizado.':'Cargando…')));return}
+  const ds=diasV(AN.rango),dd=ds.map(d=>((st.dias[d]||{})[a]||{d:0,v:0}));
+  const tD=sumA(dd.map(x=>x.d)),tV=sumA(dd.map(x=>x.v));
+  g.append(panel('w8','Descargas de '+etq,'Cada barra es un día · '+tD+' descargas y '+tV+' reproducciones en '+AN.rango+' días',
+    cBarras(ds.map(lbDia).map((l,i,arr)=>AN.rango>30?(i%7===0?l:''):(AN.rango>7?(i%3===0?l:''):l)),[{n:'Descargas',c:'var(--c1)',v:dd.map(x=>x.d)},{n:'Reproducciones',c:'var(--c4)',v:dd.map(x=>x.v)}],{stack:false,h:230,w:520,aria:'Descargas por día'})+leyenda([{n:'Descargas',c:'var(--c1)'},{n:'Reproducciones',c:'var(--c4)'}])));
+  const pre=a==='s'?'faro-studios/':'faro-academy/';
+  const top=Object.entries(st.archivos).filter(([k])=>k.startsWith(pre)).map(([k,v])=>({k,d:v.d||0,v:v.v||0})).sort((x,y)=>(y.d+y.v)-(x.d+x.v)).slice(0,8);
+  g.append(panel('w4','Archivos más pedidos','Descargas (todo el tiempo)',top.length?cHBn(top.map((x,i)=>({n:x.k.split('/').pop(),v:x.d+x.v,t:x.d+'↓ '+x.v+'▶',c:cvar(i)}))):vacio('Aún nadie descarga archivos.')));
+  const ar=(st.areas||{})[a]||{n:0,b:0,meses:{}},vm=ventana(6,0);
+  g.append(panel('w6','Archivos subidos por mes',ar.n+' archivos guardados · '+bytesTxt(ar.b),cBarras(vm.map(v=>v.lb),[{n:'Subidos',c:'var(--c3)',v:vm.map(v=>ar.meses[v.key]||0)}],{stack:false,h:200,w:440,aria:'Archivos subidos por mes'})));
+  const totD=sumA(Object.entries(st.archivos).filter(([k])=>k.startsWith(pre)).map(([,v])=>v.d||0));
+  const sin=Object.keys(st.archivos).filter(k=>k.startsWith(pre)).length;
+  g.append(panel('w6','Resumen de archivos','Lo que hay guardado y cuánto se usa',
+    '<div class="hb">'+[['Archivos guardados',ar.n,'var(--c1)'],['Con al menos 1 descarga',sin,'var(--c3)'],['Descargas totales',totD,'var(--c4)']].map(([n,v,c])=>'<div class="r"><span>'+esc(n)+'</span><div class="bar"><i style="width:'+Math.max(v?4:0,100*v/Math.max(1,ar.n,totD)).toFixed(1)+'%;background:'+c+'"></i></div><b>'+v+'</b></div>').join('')+'</div>'+
+    '<p class="sub" style="margin-top:12px">Peso total: <b>'+bytesTxt(ar.b)+'</b>'+(st.completo?'':' (parcial)')+'. Las descargas se cuentan cuando alguien abre un enlace temporal que tú generaste.</p>'));
+}
+const tarj=(g,html)=>{g.append(html)};
+function visRango(pag,n){const d0=addD(today(),-(n-1));return AN.vis.filter(v=>(!pag||v.pagina===pag)&&gtDate(v.creado)>=d0)}
+
+/* ===================== STUDIOS ===================== */
+function renderAst(){
+  const root=$('#an-ast');if(!root)return;root.textContent='';
+  const t=today(),ym=t.slice(0,7),ag=D.agenda||[],act=ag.filter(r=>r.estado!=='cancelada'),cot=D.cot||[],vR=ventana(6,1);
+  root.append(anHead('Faro Studios','Reservas, clientes, archivos y visitas de tu negocio de producción',rangoSeg()));
+  const vs=visRango('studios',AN.rango),gan=cot.filter(c=>c.estado==='ganada').length,per=cot.filter(c=>c.estado==='perdida').length;
+  const horas=act.filter(r=>keyMes(r.fecha)===ym).reduce((s,r)=>s+(+r.duracion_h||0),0),dd=AN.stats?sumA(diasV(AN.rango).map(d=>(((AN.stats.dias[d]||{}).s)||{}).d||0)):'–';
+  root.append(el('div',{class:'dkpis'},
+    kp('calendar','Reservas este mes',String(act.filter(r=>keyMes(r.fecha)===ym).length),horas+' horas agendadas','cal','k1'),
+    kp('users','Visitantes ('+AN.rango+' d)',String(new Set(vs.map(v=>v.sid)).size),vs.length+' visitas a Studios','red','k2'),
+    kp('message','Cierre de cotizaciones',gan+per?Math.round(100*gan/(gan+per))+'%':'–',gan+' ganadas · '+per+' perdidas','crm','k3'),
+    kp('download','Descargas ('+AN.rango+' d)',String(dd),'Archivos de Studios','mat','k4'),
+    kp('folder','Archivos guardados',AN.stats&&AN.stats.areas.s?String(AN.stats.areas.s.n):'–',AN.stats&&AN.stats.areas.s?bytesTxt(AN.stats.areas.s.b):'Conecta Materiales','mat','k5'),
+    kp('camera','Clientes',String((AC.list.cli||[]).filter(c=>c.activo!==false).length),'Con acceso al portal','cli','k6')));
+  if(AN.err.vis)root.append(aviso('Para ver visitas corre sql/analitica.sql en Supabase (una sola vez).'));
+  const g=el('div',{class:'dgrid'});root.append(g);
+  const est1=['completada','confirmada','pendiente','cancelada'],c1=['var(--c1)','var(--c3)','var(--c5)','var(--c2)'];
+  g.append(panel('w8','Reservas por mes','El último mes es el próximo',cBarras(vR.map(v=>v.lb),est1.map((e,i)=>({n:e,c:c1[i],v:vR.map(v=>ag.filter(r=>r.estado===e&&keyMes(r.fecha)===v.key).length)})),{flag:vR.length-1,h:230,w:520,aria:'Reservas por mes'})+leyenda(est1.map((e,i)=>({n:e,c:c1[i]})))));
+  const cats={};act.forEach(r=>{const k=r.categoria||'Sin categoría';cats[k]=(cats[k]||0)+1});
+  g.append(panel('w4','Servicios reservados','Por tipo',cDona(Object.entries(cats).sort((a,b)=>b[1]-a[1]).slice(0,6).map(([n,v],i)=>({n,v,c:cvar(i)})),String(act.length),'reservas')));
+  const ds=diasV(Math.max(AN.rango,14));
+  g.append(panel('w8','Visitas a la página de Studios','Por día · '+vs.length+' visitas',AN.err.vis?vacio('Falta analitica.sql'):cLinea(ds.map(lbDia),[{n:'Visitas',c:'var(--c1)',v:ds.map(d=>AN.vis.filter(v=>v.pagina==='studios'&&gtDate(v.creado)===d).length)}],{h:220,aria:'Visitas por día'})));
+  const refs={};vs.forEach(v=>{const k=v.ref||'directo';refs[k]=(refs[k]||0)+1});
+  g.append(panel('w4','De dónde llegan','Origen de las visitas',Object.keys(refs).length?cHBn(Object.entries(refs).sort((a,b)=>b[1]-a[1]).slice(0,6).map(([n,v],i)=>({n,v,c:cvar(i)}))):vacio('Aún sin visitas.')));
+  panelesArchivos(g,'s','Studios');
+  const cl={};act.forEach(r=>{cl[r.nombre]=(cl[r.nombre]||0)+1});
+  g.append(panel('w6','Clientes con más reservas','Quiénes vuelven',Object.keys(cl).length?cHBn(Object.entries(cl).sort((a,b)=>b[1]-a[1]).slice(0,7).map(([n,v],i)=>({n,v,c:cvar(i)}))):vacio()));
+  const dow=[0,0,0,0,0,0,0];act.forEach(r=>{dow[((new Date(r.fecha+'T00:00:00Z').getUTCDay())+6)%7]++});
+  g.append(panel('w6','Días con más demanda','Reservas por día de la semana',cBarras(DIA_C,[{n:'Reservas',c:'var(--c1)',v:dow}],{stack:false,h:200,w:440,aria:'Demanda por día'})));
+}
+
+/* ===================== ACADEMY ===================== */
+function renderAac(){
+  const root=$('#an-aac');if(!root)return;root.textContent='';
+  const L=k=>(AC.list&&AC.list[k])||[],t=today(),ym=t.slice(0,7),est=L('est').filter(e=>e.activo!==false),tar=L('tar'),eva=L('eva'),hab=L('hab'),cla=L('clase'),fac=L('fac');
+  root.append(anHead('Faro Academy','Progreso de alumnos, clases, material y cobros',rangoSeg()));
+  const pctE=e=>e.maximo?100*e.puntos/e.maximo:0,prom=avgA(eva.map(pctE));
+  const dd=AN.stats?sumA(diasV(AN.rango).map(d=>(((AN.stats.dias[d]||{}).a)||{}).d||0)):'–';
+  root.append(el('div',{class:'dkpis'},
+    kp('cap','Alumnos activos',String(est.length),est.filter(e=>e.area==='musica').length+' música · '+est.filter(e=>e.area!=='musica').length+' inglés','aca','k1'),
+    kp('edit','Promedio evaluaciones',eva.length?Math.round(prom)+'%':'–',eva.length+' evaluaciones','aca','k2'),
+    kp('clipboard','Tareas por revisar',String(tar.filter(x=>x.estado==='hecha').length),tar.filter(x=>x.estado==='pendiente'||x.estado==='en_curso').length+' en curso o pendientes','aca','k3'),
+    kp('award','XP del grupo',nf(sumA(est.map(e=>e.xp))),'Racha media '+Math.round(avgA(est.map(e=>e.racha||0)))+' días','aca','k4'),
+    kp('calendar','Clases dadas este mes',String(cla.filter(c=>c.estado==='dada'&&keyMes(c.fecha)===ym).length),cla.filter(c=>c.estado==='cancelada'&&keyMes(c.fecha)===ym).length+' canceladas','aca','k5'),
+    kp('download','Descargas ('+AN.rango+' d)',String(dd),'Material de Academy','mat','k6')));
+  const g=el('div',{class:'dgrid'});root.append(g);
+  const area={};est.forEach(e=>{const a=e.area==='ingles'?'Inglés':'Música';area[a]=(area[a]||0)+1});
+  g.append(panel('w4','Alumnos por área','Activos',cDona(Object.entries(area).map(([n,v],i)=>({n,v,c:i?'var(--c4)':'var(--c1)'})),String(est.length),'alumnos')));
+  const TE=[['pendiente','Por hacer','var(--c5)'],['en_curso','En curso','var(--c4)'],['hecha','Entregadas','var(--c1)'],['revisada','Revisadas','var(--c3)']];
+  g.append(panel('w4','Tareas por estado','Tablero de Academy',cDona(TE.map(([k,n,c])=>({n,v:tar.filter(x=>x.estado===k).length,c})),String(tar.length),'tareas')));
+  const hs={};hab.forEach(h=>{(hs[h.habilidad]=hs[h.habilidad]||[]).push(h.nivel||0)});
+  g.append(panel('w4','Habilidades (promedio)','De 0 a 5 estrellas',Object.keys(hs).length?cHBn(Object.entries(hs).map(([n,a],i)=>({n,v:avgA(a),t:avgA(a).toFixed(1)+' ★',c:cvar(i)})).sort((a,b)=>b.v-a.v).slice(0,7),5):vacio('Aún no hay habilidades registradas.')));
+  const vm=ventana(6,0);
+  g.append(panel('w8','Promedio de evaluaciones','Por mes, en porcentaje',eva.length?cLinea(vm.map(v=>v.lb),[{n:'Promedio',c:'var(--c3)',v:vm.map(v=>{const a=eva.filter(e=>keyMes(e.fecha)===v.key).map(pctE);return a.length?Math.round(avgA(a)):null})}],{h:220,pct:true,aria:'Promedio de evaluaciones por mes'}):vacio('Registra evaluaciones para ver la curva de progreso.')));
+  g.append(panel('w4','Clases por mes','Dadas vs canceladas',cBarras(vm.map(v=>v.lb),[{n:'Dadas',c:'var(--c3)',v:vm.map(v=>cla.filter(c=>c.estado==='dada'&&keyMes(c.fecha)===v.key).length)},{n:'Canceladas',c:'var(--c2)',v:vm.map(v=>cla.filter(c=>c.estado==='cancelada'&&keyMes(c.fecha)===v.key).length)}],{stack:false,h:210,w:340,aria:'Clases por mes'})+leyenda([{n:'Dadas',c:'var(--c3)'},{n:'Canceladas',c:'var(--c2)'}])));
+  /* progreso por alumno */
+  const filas=est.map(e=>{const mis=tar.filter(x=>x.estudiante_id===e.id),ev=eva.filter(x=>x.estudiante_id===e.id),ok=mis.filter(x=>x.estado==='revisada'||x.estado==='hecha').length;
+    return {e,xp:e.xp||0,rach:e.racha||0,tp:mis.length?Math.round(100*ok/mis.length):null,ev:ev.length?Math.round(avgA(ev.map(pctE))):null}}).sort((a,b)=>b.xp-a.xp);
+  const mxXp=Math.max(1,...filas.map(f=>f.xp)),pg=el('div',{class:'card dp w12'},el('h3',{},'Progreso por alumno'),el('p',{class:'sub'},'XP, tareas hechas, promedio de evaluaciones y racha'));
+  const tb=el('div',{class:'pg'});
+  if(!filas.length)tb.append(el('p',{class:'muted'},'Aún no hay alumnos.'));
+  filas.slice(0,14).forEach((f,i)=>tb.append(el('div',{class:'pr'},el('span',{class:'pn'},f.e.apodo||f.e.nombre,el('small',{},(f.e.area==='musica'?'Música':'Inglés')+(f.e.detalle?' · '+f.e.detalle:''))),
+    el('span',{class:'pb',title:f.xp+' XP'},el('i',{style:'width:'+Math.max(3,100*f.xp/mxXp)+'%;background:'+cvar(i)}),el('em',{},f.xp+' XP')),
+    el('span',{class:'pb',title:'Tareas hechas'},el('i',{style:'width:'+(f.tp||0)+'%;background:var(--c3)'}),el('em',{},f.tp==null?'sin tareas':f.tp+'% tareas')),
+    el('span',{class:'pb',title:'Promedio de evaluaciones'},el('i',{style:'width:'+(f.ev||0)+'%;background:var(--c4)'}),el('em',{},f.ev==null?'sin notas':f.ev+'% notas')),
+    el('span',{class:'pc'},f.rach+' d'))));
+  pg.append(tb);g.append(pg);
+  /* atención */
+  const d30=addD(t,-30),aten=est.map(e=>{const dadas=cla.filter(c=>c.estudiante_id===e.id&&c.estado==='dada').map(c=>c.fecha).sort().pop(),venc=tar.filter(x=>x.estudiante_id===e.id&&(x.estado==='pendiente'||x.estado==='en_curso')&&x.vence&&x.vence<t).length;
+    const m=[];if(!dadas||dadas<d30)m.push(dadas?'sin clase desde '+dadas:'sin clases registradas');if(venc)m.push(venc+' tarea(s) vencida(s)');return {e,m}}).filter(x=>x.m.length);
+  const al=el('div',{class:'card dp w6'},el('h3',{},'Alumnos que necesitan atención'),el('p',{class:'sub'},'Sin clase en 30 días o con tareas vencidas'));
+  const ll=el('div',{class:'lst'});aten.slice(0,6).forEach(x=>ll.append(fila('!',x.e.apodo||x.e.nombre,x.m.join(' · '),null,()=>showTab('aca'))));
+  if(!aten.length)ll.append(el('p',{class:'muted'},'Todo en orden.'));al.append(ll);g.append(al);
+  const fm=vm.map(v=>({fac:fac.filter(f=>f.estado!=='anulada'&&keyMes(f.emision)===v.key).reduce((s,f)=>s+Number(f.monto||0),0),cob:fac.filter(f=>f.estado==='pagada'&&keyMes(f.pagado_en||f.emision)===v.key).reduce((s,f)=>s+Number(f.monto||0),0)}));
+  g.append(panel('w6','Facturado y cobrado','En quetzales',cBarras(vm.map(v=>v.lb),[{n:'Facturado',c:'var(--c4)',v:fm.map(x=>x.fac)},{n:'Cobrado',c:'var(--c3)',v:fm.map(x=>x.cob)}],{stack:false,money:true,h:210,w:440,aria:'Facturado y cobrado'})+leyenda([{n:'Facturado',c:'var(--c4)'},{n:'Cobrado',c:'var(--c3)'}])));
+  panelesArchivos(g,'a','Academy');
+}
+
+/* ===================== CRM ===================== */
+function renderCrm(){
+  const root=$('#an-crm');if(!root)return;root.textContent='';
+  const t=today(),cot=D.cot||[],cli=(AC.list.cli||[]),ag=D.agenda||[];
+  root.append(anHead('CRM','Seguimiento de prospectos y clientes, de la cotización al cierre'));
+  const ab=cot.filter(c=>['nueva','contactada','cotizada'].includes(c.estado)),edad=c=>Math.floor((+new Date(t+'T00:00:00Z')-+new Date(gtDate(c.creado)+'T00:00:00Z'))/864e5);
+  const gan=cot.filter(c=>c.estado==='ganada').length,per=cot.filter(c=>c.estado==='perdida').length,viejas=cot.filter(c=>c.estado==='nueva'&&edad(c)>=2);
+  const rep=Object.values(ag.filter(r=>r.estado!=='cancelada').reduce((m,r)=>{m[r.nombre]=(m[r.nombre]||0)+1;return m},{})).filter(n=>n>1).length;
+  root.append(el('div',{class:'dkpis'},
+    kp('message','Cotizaciones',String(cot.length),ab.length+' abiertas','cot','k1'),
+    kp('check','Tasa de cierre',gan+per?Math.round(100*gan/(gan+per))+'%':'–',gan+' ganadas · '+per+' perdidas','cot','k3'),
+    kp('hourglass','Sin responder',String(viejas.length),'Nuevas con 2 o más días','cot','k2'),
+    kp('repeat','Clientes que repiten',String(rep),'Con 2 o más reservas','cal','k4'),
+    kp('camera','Clientes con portal',String(cli.filter(c=>c.activo!==false).length),cli.length+' en total','cli','k5'),
+    kp('users','Visitantes (30 d)',String(new Set(visRango('',30).map(v=>v.sid)).size),'Todas las páginas','red','k6')));
+  const g=el('div',{class:'dgrid'});root.append(g);
+  const ESTQ=[['nueva','Nuevas','var(--c4)'],['contactada','Contactadas','var(--c5)'],['cotizada','Cotizadas','var(--c1)'],['ganada','Ganadas','var(--c3)'],['perdida','Perdidas','var(--c2)']];
+  g.append(panel('w4','Embudo','De la solicitud al cierre',cot.length?cHBn(ESTQ.map(([k,n,c])=>({n,v:cot.filter(x=>x.estado===k).length,c}))):vacio('Aún no hay cotizaciones.')));
+  const fu={};cot.forEach(c=>{const k=c.fuente||'directo';fu[k]=(fu[k]||0)+1});
+  g.append(panel('w4','¿Por dónde llegan?','Origen de las cotizaciones',Object.keys(fu).length?cDona(Object.entries(fu).sort((a,b)=>b[1]-a[1]).slice(0,6).map(([n,v],i)=>({n,v,c:cvar(i)})),String(cot.length),'cotizaciones'):vacio()));
+  const B=[['0–2 días',0,2],['3–7 días',3,7],['8–14 días',8,14],['15+ días',15,9999]];
+  g.append(panel('w4','Cuánto llevan abiertas','Cotizaciones sin cerrar',cBarras(B.map(b=>b[0]),[{n:'Abiertas',c:'var(--c5)',v:B.map(([,a,b])=>ab.filter(c=>edad(c)>=a&&edad(c)<=b).length)}],{stack:false,h:200,w:340,aria:'Antigüedad'})));
+  const vC=ventana(6,0);
+  g.append(panel('w8','Cotizaciones por mes','Ganadas, en proceso y perdidas',cBarras(vC.map(v=>v.lb),[
+    {n:'Ganadas',c:'var(--c3)',v:vC.map(v=>cot.filter(c=>c.estado==='ganada'&&keyMes(gtDate(c.creado))===v.key).length)},
+    {n:'En proceso',c:'var(--c1)',v:vC.map(v=>cot.filter(c=>['nueva','contactada','cotizada'].includes(c.estado)&&keyMes(gtDate(c.creado))===v.key).length)},
+    {n:'Perdidas',c:'var(--c2)',v:vC.map(v=>cot.filter(c=>c.estado==='perdida'&&keyMes(gtDate(c.creado))===v.key).length)}],{h:230,w:520,aria:'Cotizaciones por mes'})+leyenda([{n:'Ganadas',c:'var(--c3)'},{n:'En proceso',c:'var(--c1)'},{n:'Perdidas',c:'var(--c2)'}])));
+  const cs=[...new Set(cot.map(c=>c.categoria||'Sin categoría'))].map(n=>({n,g:cot.filter(c=>(c.categoria||'Sin categoría')===n&&c.estado==='ganada').length,p:cot.filter(c=>(c.categoria||'Sin categoría')===n&&c.estado==='perdida').length,a:cot.filter(c=>(c.categoria||'Sin categoría')===n).length})).sort((x,y)=>y.a-x.a).slice(0,5);
+  g.append(panel('w4','Qué servicio cierra más','Ganadas vs perdidas',cs.length?cBarras(cs.map(x=>x.n.split(' ')[0].slice(0,9)),[{n:'Ganadas',c:'var(--c3)',v:cs.map(x=>x.g)},{n:'Perdidas',c:'var(--c2)',v:cs.map(x=>x.p)}],{stack:false,h:210,w:340,aria:'Cierre por servicio'})+leyenda([{n:'Ganadas',c:'var(--c3)'},{n:'Perdidas',c:'var(--c2)'}]):vacio()));
+  const seg=ab.sort((a,b)=>edad(b)-edad(a)).slice(0,6),sl=el('div',{class:'card dp w6'},el('h3',{},'Por dar seguimiento'),el('p',{class:'sub'},'Las abiertas más antiguas primero'));
+  const l1=el('div',{class:'lst'});seg.forEach(c=>l1.append(fila(edad(c)+'d',c.nombre,(c.categoria||'')+' · '+c.estado,{t:c.estado,c:c.estado},()=>showTab('cot'))));
+  if(!seg.length)l1.append(el('p',{class:'muted'},'No hay cotizaciones abiertas.'));sl.append(l1);g.append(sl);
+  const ci={};cot.forEach(c=>{const k=(c.ciudad||'').trim();if(k)ci[k]=(ci[k]||0)+1});
+  g.append(panel('w6','Ciudades','Desde dónde cotizan',Object.keys(ci).length?cHBn(Object.entries(ci).sort((a,b)=>b[1]-a[1]).slice(0,6).map(([n,v],i)=>({n,v,c:cvar(i)}))):vacio()));
+  const cl={};ag.filter(r=>r.estado!=='cancelada').forEach(r=>{cl[r.nombre]=(cl[r.nombre]||0)+1});
+  g.append(panel('w6','Clientes más frecuentes','Por número de reservas',Object.keys(cl).length?cHBn(Object.entries(cl).sort((a,b)=>b[1]-a[1]).slice(0,7).map(([n,v],i)=>({n,v,c:cvar(i)}))):vacio()));
+}
+
+/* ===================== ALCANCE: redes + web ===================== */
+const REDES=[['instagram','Instagram'],['tiktok','TikTok'],['facebook','Facebook'],['youtube','YouTube'],['whatsapp','WhatsApp'],['otra','Otra']];
+const CUENTAS=[['studios','Faro Studios'],['academy','Faro Academy'],['davissimo','@_davissimo']];
+const nomRed=r=>(REDES.find(x=>x[0]===r)||[0,r])[1],nomCta=c=>(CUENTAS.find(x=>x[0]===c)||[0,c])[1];
+function renderRed(){
+  const root=$('#an-red');if(!root)return;root.textContent='';
+  root.append(anHead('Alcance','Redes sociales y visitas a tu página web',rangoSeg()));
+  /* ---- web ---- */
+  const vs=visRango('',AN.rango),ds=diasV(Math.max(AN.rango,14)),movil=vs.filter(v=>v.dispositivo==='movil').length;
+  root.append(el('div',{class:'dkpis'},
+    kp('users','Visitantes únicos',String(new Set(vs.map(v=>v.sid)).size),'Últimos '+AN.rango+' días','','k1'),
+    kp('globe','Visitas',String(vs.length),'En todas las páginas','','k2'),
+    kp('camera','A Studios',String(vs.filter(v=>v.pagina==='studios').length),'Visitas','','k3'),
+    kp('cap','A Academy',String(vs.filter(v=>v.pagina==='academy').length),'Visitas','','k4'),
+    kp('key','Al portal',String(vs.filter(v=>v.pagina==='portal').length),'Alumnos y clientes','','k5'),
+    kp('trend','Desde el celular',vs.length?Math.round(100*movil/vs.length)+'%':'–',movil+' visitas','','k6')));
+  if(AN.err.vis)root.append(aviso('Para ver visitas corre sql/analitica.sql en Supabase (una sola vez) y recarga.'));
+  const g=el('div',{class:'dgrid'});root.append(g);
+  const PG=[['studios','Studios','var(--c1)'],['academy','Academy','var(--c4)'],['portal','Portal','var(--c3)']];
+  g.append(panel('w8','Visitas por día','Por página',AN.err.vis?vacio('Falta analitica.sql'):cLinea(ds.map(lbDia),PG.map(([k,n,c])=>({n,c,v:ds.map(d=>AN.vis.filter(v=>v.pagina===k&&gtDate(v.creado)===d).length)})),{h:230,aria:'Visitas por día'})+leyenda(PG.map(([,n,c])=>({n,c})))));
+  g.append(panel('w4','Páginas más vistas','Reparto de visitas',cDona(PG.map(([k,n,c])=>({n,c,v:vs.filter(v=>v.pagina===k).length})),String(vs.length),'visitas')));
+  const refs={};vs.forEach(v=>{const k=v.ref||'directo';refs[k]=(refs[k]||0)+1});
+  g.append(panel('w4','De dónde llegan','Origen',Object.keys(refs).length?cHBn(Object.entries(refs).sort((a,b)=>b[1]-a[1]).slice(0,7).map(([n,v],i)=>({n,v,c:cvar(i)}))):vacio('Aún sin visitas.')));
+  const hr=Array(24).fill(0);vs.forEach(v=>{hr[+new Date(v.creado).toLocaleString('en-GB',{timeZone:'America/Guatemala',hour:'numeric',hour12:false})%24]++});
+  g.append(panel('w8','A qué hora entran','Hora de Guatemala',cBarras(hr.map((_,i)=>i%3===0?String(i):''),[{n:'Visitas',c:'var(--c4)',v:hr}],{stack:false,h:200,w:520,aria:'Visitas por hora'})));
+  /* ---- redes ---- */
+  const cuentaSeg=segEl([['todas','Todas'],...CUENTAS],AN.cuenta,v=>{AN.cuenta=v;anPintar()});
+  const R=AN.redes.filter(r=>AN.cuenta==='todas'||r.cuenta===AN.cuenta);
+  root.append(el('div',{class:'dh',style:'margin-top:26px'},el('div',{},el('h2',{},'Redes sociales'),el('p',{class:'muted'},'Anota los números una vez por semana o mes; aquí se vuelven gráficas')),cuentaSeg));
+  const claves=[...new Set(R.map(r=>r.cuenta+'|'+r.red))],ult=k=>R.filter(r=>r.cuenta+'|'+r.red===k).sort((a,b)=>a.fecha.localeCompare(b.fecha));
+  const seguiTot=sumA(claves.map(k=>{const u=ult(k).filter(r=>r.seguidores!=null).pop();return u?u.seguidores:0}));
+  const hace=addD(today(),-30),crec=sumA(claves.map(k=>{const a=ult(k).filter(r=>r.seguidores!=null);if(a.length<2)return 0;const fin=a[a.length-1],ini=a.filter(r=>r.fecha<=hace).pop()||a[0];return fin.seguidores-ini.seguidores}));
+  const m30=R.filter(r=>r.fecha>=hace),vis30=sumA(m30.map(r=>r.visualizaciones)),int30=sumA(m30.map(r=>r.interacciones)),alc30=sumA(m30.map(r=>r.alcance||r.visualizaciones));
+  root.append(el('div',{class:'dkpis'},
+    kp('users','Seguidores',nf(seguiTot),claves.length+' cuenta(s) en seguimiento','','k1'),
+    kp('trend','Crecimiento (30 d)',(crec>=0?'+':'')+nf(crec),'Seguidores nuevos','','k3'),
+    kp('film','Visualizaciones (30 d)',nf(vis30),'Suma de registros','','k2'),
+    kp('message','Interacciones (30 d)',nf(int30),alc30?(100*int30/alc30).toFixed(1)+'% del alcance':'','','k4'),
+    kp('image','Publicaciones (30 d)',nf(sumA(m30.map(r=>r.publicaciones))),'Anotadas','','k5'),
+    kp('star','Registros',String(R.length),'Total guardados','','k6')));
+  if(AN.err.redes)root.append(aviso('Para guardar redes corre sql/analitica.sql en Supabase (una sola vez) y recarga.'));
+  root.append(formRedes());
+  const g2=el('div',{class:'dgrid'});root.append(g2);
+  const fechas=[...new Set(R.map(r=>r.fecha))].sort().slice(-24);
+  g2.append(panel('w8','Seguidores en el tiempo','Una línea por cuenta y red',R.length?cLinea(fechas.map(lbDia),claves.map((k,i)=>({n:nomCta(k.split('|')[0])+' · '+nomRed(k.split('|')[1]),c:cvar(i),v:fechas.map(f=>{const r=ult(k).filter(x=>x.fecha<=f&&x.seguidores!=null).pop();return r&&ult(k)[0].fecha<=f?r.seguidores:null})})),{h:230,pl:44,aria:'Seguidores en el tiempo'})+leyenda(claves.map((k,i)=>({n:nomCta(k.split('|')[0])+' · '+nomRed(k.split('|')[1]),c:cvar(i)}))):vacio('Anota tu primer registro abajo.')));
+  const vm=ventana(6,0),redes=[...new Set(R.map(r=>r.red))];
+  g2.append(panel('w4','Interacción por red','Interacciones ÷ alcance',redes.length?cHBn(redes.map((rd,i)=>{const a=R.filter(r=>r.red===rd&&r.fecha>=addD(today(),-90));const al=sumA(a.map(r=>r.alcance||r.visualizaciones)),it=sumA(a.map(r=>r.interacciones));return {n:nomRed(rd),v:al?100*it/al:0,t:(al?(100*it/al).toFixed(1):'0')+'%',c:cvar(i)}})):vacio()));
+  g2.append(panel('w8','Visualizaciones por mes','Agrupadas por red',redes.length?cBarras(vm.map(v=>v.lb),redes.map((rd,i)=>({n:nomRed(rd),c:cvar(i),v:vm.map(v=>sumA(R.filter(r=>r.red===rd&&keyMes(r.fecha)===v.key).map(r=>r.visualizaciones)))})),{stack:false,big:true,h:230,w:520,aria:'Visualizaciones por mes'})+leyenda(redes.map((rd,i)=>({n:nomRed(rd),c:cvar(i)}))):vacio()));
+  const pc={};R.forEach(r=>{pc[r.cuenta]=(pc[r.cuenta]||0)+(r.visualizaciones||0)});
+  g2.append(panel('w4','Visualizaciones por cuenta','Todo el tiempo',cDona(Object.entries(pc).map(([c,v],i)=>({n:nomCta(c),v,c:cvar(i)})),(t=>t>=10000?(t/1000).toFixed(1)+'k':String(t))(sumA(Object.values(pc))),'visualizaciones')));
+  const hl=el('div',{class:'card dp w12'},el('h3',{},'Últimos registros'),el('p',{class:'sub'},'Toca la papelera para quitar uno'));
+  const lst=el('div',{class:'lst'});R.slice().sort((a,b)=>b.fecha.localeCompare(a.fecha)).slice(0,8).forEach(r=>lst.append(el('div',{class:'lr',style:'cursor:default'},el('span',{class:'dt',style:'font-size:.9rem'},lbDia(r.fecha)),
+    el('span',{style:'flex:1;min-width:0'},el('b',{style:'display:block;font-weight:400'},nomCta(r.cuenta)+' · '+nomRed(r.red)),el('small',{},[r.seguidores!=null?nf(r.seguidores)+' seguidores':'',r.visualizaciones!=null?nf(r.visualizaciones)+' vistas':'',r.interacciones!=null?nf(r.interacciones)+' interacciones':''].filter(Boolean).join(' · '))),
+    el('button',{class:'btn btn-ghost btn-sm',type:'button','aria-label':'Quitar registro',onclick:async()=>{if(!confirm('¿Quitar este registro?'))return;const x=await api('/rest/v1/redes_stats?id=eq.'+r.id,{method:'DELETE',headers:{Prefer:'return=minimal'}});if(!x.ok){toast(await errText(x));return}AN.redes=AN.redes.filter(z=>z.id!==r.id);anPintar()}},icoEl('trash')))));
+  if(!R.length)lst.append(el('p',{class:'muted'},'Todavía no hay registros.'));hl.append(lst);g2.append(hl);
+}
+function formRedes(){
+  const f=el('form',{class:'card rform'}),num=(id,l)=>el('label',{},l,el('input',{id,type:'number',min:'0',inputmode:'numeric'}));
+  const sel=(id,l,o)=>el('label',{},l,el('select',{id},...o.map(([v,t])=>el('option',{value:v},t))));
+  f.append(el('h3',{},'Anotar números de hoy'),el('div',{class:'rgrid'},sel('rf-cta','Cuenta',CUENTAS),sel('rf-red','Red',REDES),el('label',{},'Fecha',el('input',{id:'rf-fecha',type:'date',value:today()})),
+    num('rf-seg','Seguidores'),num('rf-vis','Visualizaciones'),num('rf-alc','Alcance'),num('rf-int','Interacciones'),num('rf-pub','Publicaciones')),
+    el('button',{class:'btn btn-gold btn-sm',type:'submit'},icoEl('plus'),' Guardar registro'),el('span',{class:'muted',style:'margin-left:10px;font-size:.85rem'},'Si ya anotaste esa red ese día, se actualiza.'));
+  f.addEventListener('submit',async e=>{e.preventDefault();const v=id=>{const x=f.querySelector('#'+id).value;return x===''?null:Math.max(0,Math.round(+x))};
+    const body={cuenta:f.querySelector('#rf-cta').value,red:f.querySelector('#rf-red').value,fecha:f.querySelector('#rf-fecha').value||today(),seguidores:v('rf-seg'),visualizaciones:v('rf-vis'),alcance:v('rf-alc'),interacciones:v('rf-int'),publicaciones:v('rf-pub')};
+    if(['seguidores','visualizaciones','alcance','interacciones','publicaciones'].every(k=>body[k]==null)){toast('Escribe al menos un número');return}
+    try{const r=await api('/rest/v1/redes_stats?on_conflict=fecha,red,cuenta',{method:'POST',body,headers:{Prefer:'resolution=merge-duplicates,return=representation'}});if(!r.ok){toast(await errText(r));return}
+      const row=(await r.json())[0];AN.redes=AN.redes.filter(z=>!(z.fecha===body.fecha&&z.red===body.red&&z.cuenta===body.cuenta)).concat(row?[row]:[]);toast('Guardado');anPintar()}catch(x){toast('No se pudo guardar')}});
+  return f;
+}
+
+/* menú lateral plegable */
+(function(){const sh=$('#v-app');if(!sh)return;let m=false;try{m=localStorage.getItem('faro_side')==='1'}catch(e){}
+  const ap=v=>{sh.classList.toggle('min',v);const b=$('#sidetog');if(b){b.setAttribute('aria-expanded',String(!v));b.title=v?'Mostrar menú':'Ocultar menú'}try{localStorage.setItem('faro_side',v?'1':'0')}catch(e){}};
+  const b=$('#sidetog');if(b)b.addEventListener('click',()=>{m=!m;ap(m)});ap(m);
+  $$('.tab').forEach(t=>{const l=t.querySelector('.nl');if(l)t.title=l.textContent})})();
+
 if(S){start().catch(()=>logout())}
 </script>
 </body>

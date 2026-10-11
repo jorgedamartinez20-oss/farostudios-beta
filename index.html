@@ -1607,7 +1607,7 @@ let tt;function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on
 
 /* ---------- Páginas ---------- */
 function applyPage(p){
-  current=p;root.dataset.page=p;if(PAGES[p].side)lastSide=PAGES[p].side;const side=PAGES[p].side||lastSide;
+  current=p;root.dataset.page=p;if(PAGES[p].side){if(PAGES[p].side!==lastSide&&window.faroVisita)window.faroVisita(PAGES[p].side);lastSide=PAGES[p].side;}const side=PAGES[p].side||lastSide;
   Object.keys(PAGES).forEach(k=>$('#'+PAGES[k].el).hidden=k!==p);
   $$('.nav-links').forEach(n=>n.hidden=n.dataset.for!==side);
   $$('.sw button').forEach(b=>b.setAttribute('aria-selected',b.dataset.side===side));
@@ -2692,6 +2692,18 @@ if(!reduce&&matchMedia('(hover:hover)').matches){
     fillSlots();window.refreshCovers&&window.refreshCovers();window.loadCatalog&&window.loadCatalog();
   }).catch(()=>{});
 })();
+</script>
+<script>
+/* Visitas (anónimas): una por navegador cada 30 min. No guarda datos personales. */
+(function(){try{
+  var sid=localStorage.getItem('faro_sid');if(!sid){sid=Math.random().toString(36).slice(2,12)+Date.now().toString(36);localStorage.setItem('faro_sid',sid)}
+  var r='directo';try{var h=document.referrer?new URL(document.referrer).hostname.replace(/^www\./,''):'';
+    if(/instagram|l\.instagram/.test(h))r='instagram';else if(/facebook|fb\./.test(h))r='facebook';else if(/tiktok/.test(h))r='tiktok';else if(/google/.test(h))r='google';else if(/wa\.me|whatsapp/.test(h))r='whatsapp';else if(h&&h!==location.hostname)r=h.slice(0,30)}catch(e){}
+  var q=location.search.match(/[?&](?:utm_source|src)=([^&]+)/);if(q)r=decodeURIComponent(q[1]).slice(0,30);
+  window.faroVisita=function(pag){  fetch('https://keivqvsgdfhthouzlqxo.supabase.co/rest/v1/rpc/registrar_visita',{method:'POST',keepalive:true,headers:{'Content-Type':'application/json',apikey:'sb_publishable_5nj3M7rjQs3phGU6u2uNqw_3tjTL6PE'},
+    body:JSON.stringify({p_pagina:pag,p_ref:r,p_disp:/Mobi|Android|iPhone/i.test(navigator.userAgent)?'movil':'escritorio',p_sid:sid})}).catch(function(){});};
+  window.faroVisita('studios');
+}catch(e){}})();
 </script>
 </body>
 </html>

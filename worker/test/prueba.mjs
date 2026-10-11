@@ -127,6 +127,20 @@ r = await q('/pub/landing/portafolio/foto-1.jpg', { headers: { Range: 'bytes=1-2
 r = await q('/pub/faro-studios/agencias/maxi-despensa/Aftermovie_v1.mp4'); assert.equal(r.status, 404); ok('lo privado nunca sale por /pub');
 r = await q('/pub/landing/portafolio/.keep'); assert.equal(r.status, 404); ok('marcadores ocultos');
 
+// descargas contadas
+r = await q(`/api/enlace?bucket=privado&key=${encodeURIComponent(K)}&seg=600`, { method: 'POST', headers: A });
+const u1 = new URL((await r.json()).url);
+await q(u1.pathname + u1.search); await q(u1.pathname + u1.search);
+r = await q(`/api/enlace?bucket=privado&key=${encodeURIComponent(K)}&seg=600&adm=1`, { method: 'POST', headers: A });
+const uAdm = new URL((await r.json()).url); await q(uAdm.pathname + uAdm.search);
+const uVer = new URL(u1.href.replace('/api/bajar?', '/api/bajar?inline=1&')); await q(uVer.pathname + uVer.search);
+await q(uVer.pathname + uVer.search, { headers: { Range: 'bytes=4-6' } });
+r = await q('/api/stats', { headers: A }); const st = await r.json();
+assert.equal(st.archivos[K].d, 3); assert.equal(st.archivos[K].v, 1); ok('cuenta descargas (las del admin no) y la primera vista');
+assert.equal(st.areas.s.n, 1); assert.ok(st.areas.s.meses[new Date().toISOString().slice(0, 7)]); ok('resumen por área y por mes');
+r = await q('/api/stats'); assert.equal(r.status, 401); ok('stats solo para admin');
+r = await q('/api/lista?bucket=privado&prefix=', { headers: A }); assert.ok(!(await r.json()).carpetas.includes('_stats/')); ok('_stats oculto en la lista');
+
 // borrar
 r = await q(`/api/objeto?bucket=privado&key=${encodeURIComponent(K)}`, { method: 'DELETE', headers: A }); assert.equal(r.status, 200); assert.ok(!env.PRIVADO.m.has(K)); ok('borrado');
 
