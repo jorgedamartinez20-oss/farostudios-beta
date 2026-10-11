@@ -1094,7 +1094,9 @@ function loginUI(msg){
       if(cl){const r=await fetch(SBU+'/rest/v1/rpc/cl_email_acceso',{method:'POST',headers:{apikey:SBK,Authorization:'Bearer '+SBK,'Content-Type':'application/json'},body:JSON.stringify({p_correo:u})});
         email=r.ok?await r.json():null}
       else email=u.toLowerCase().replace(/\s+/g,'')+'@acceso.farostudios.net';
-      if(email){let s=await signIn(email,p);if(!s&&normClave(p)!==p)s=await signIn(email,normClave(p));ok=!!s}}catch(e){}
+      if(email){let s=await signIn(email,p);if(!s&&normClave(p)!==p)s=await signIn(email,normClave(p));ok=!!s}
+      /* usuarios con formato nombre-alias-materia.faroacademy: si escribieron solo "nombre-alias-materia", completa el final */
+      if(!ok&&!cl&&u&&!/\.faroacademy$/i.test(u)){const e2=u.toLowerCase().replace(/\s+/g,'')+'.faroacademy@acceso.farostudios.net';let s2=await signIn(e2,p);if(!s2&&normClave(p)!==p)s2=await signIn(e2,normClave(p));ok=!!s2}}catch(e){}
     if(!ok){loginUI(/confirm/i.test(LASTERR)?'Tu acceso aún no está activado (falta una configuración nuestra). Escríbenos por WhatsApp.':'Usuario o contraseña incorrectos. Revisa los datos que te enviamos.');return}
     await iniciar()};
 }

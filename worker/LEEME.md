@@ -52,7 +52,14 @@ Si cambia la dirección desde donde abres el admin, agrégala a `ORIGENES` en `w
 ## Descargas y estadísticas
 Cada vez que alguien abre un enlace temporal se suma una descarga (o una reproducción si es vista en línea) en `_stats/descargas.json` dentro de `faro-privado`. El admin lo lee con `/api/stats` (solo administrador). Las vistas previas del propio admin no cuentan.
 
+## Portal (alumnos, familias, docentes, equipo)
+Rutas `/p/enlace`, `/p/subir` y `/p/borrar`. El servicio no decide quién puede qué: llama a la función `archivo_permiso(ruta, accion)` de Supabase con la sesión de la persona y la base responde sí o no. La carpeta de cada persona (`faro-academy/estudiantes/<nombre>-<id>/`, `faro-academy/docentes/…`, `faro-studios/clientes/…`) la genera la base de datos (columna `carpeta`).
+Dentro de cada alumno: `material`, `respuestas`, `practicas`, `mis-archivos`, `diplomas`, `facturas`. Alumnos, familias y clientes nunca borran.
+
+## Papelera general
+Borrar no quita el archivo de R2: deja una marca en `_papelera/` y el archivo desaparece de listas y enlaces. En el admin (Archivos → Papelera general) se puede restaurar o eliminar de forma definitiva; lo que lleva más de 30 días se vacía con un botón.
+Rutas del administrador: `/api/papelera`, `/api/restaurar`, `/api/purgar`, `/api/carpeta-persona`.
+
 ## Pendiente (siguiente etapa)
-- Portales de alumnos, docentes y clientes: descargar desde R2 con enlaces temporales según lo que Supabase les permita ver.
 - Dominio propio (por ejemplo `archivos.farostudios.net`) cuando el DNS del dominio pase a Cloudflare.
 - Vencimiento automático de entregas (la fecha vive en Supabase; un proceso diario borra lo vencido).
