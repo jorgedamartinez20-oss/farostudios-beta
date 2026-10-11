@@ -415,15 +415,15 @@ const ENT={
     {k:'xp',l:'Puntos de experiencia (XP)',t:'number',def:0},{k:'racha',l:'Racha (días seguidos)',t:'number',def:0},
     {k:'paga_alumno',l:'Es adulto y ve sus propias facturas',t:'check'},{k:'activo',l:'Activo',t:'check',def:true}],
     row:r=>[(r.apodo||r.nombre)+(r.activo?'':' (inactivo)'),(r.area==='musica'?'Música':'Inglés')+' · '+(r.detalle||'sin detalle')+' · '+(r.modalidad==='online'?'en línea':'presencial')+' · '+r.xp+' XP · '+accTxt('alumno','estudiante_id',r.id)],
-    acts:r=>[[accHas('estudiante_id',r.id)?'Regenerar acceso':'Crear acceso',()=>acGenerar('alumno',r)]]},
+    acts:r=>[[accHas('estudiante_id',r.id)?'Regenerar acceso':'Crear acceso',()=>acGenerar('alumno',r)]].concat(accHas('estudiante_id',r.id)?[['Ver acceso',()=>acVer('alumno','estudiante_id',r)]]:[])},
   enc:{g:'ac',tabla:'ac_encargados',t:'Encargados',ord:'nombre.asc',ico:'👪',rol:'encargado',f:[
     {k:'nombre',l:'Nombre',req:1},{k:'whatsapp',l:'WhatsApp'},{k:'correo',l:'Correo (opcional)',t:'email'}],
     row:r=>[r.nombre,(r.whatsapp||'sin WhatsApp')+' · '+accTxt('encargado','encargado_id',r.id)],
-    acts:r=>[[accHas('encargado_id',r.id)?'Regenerar acceso':'Crear acceso',()=>acGenerar('encargado',r)]]},
+    acts:r=>[[accHas('encargado_id',r.id)?'Regenerar acceso':'Crear acceso',()=>acGenerar('encargado',r)]].concat(accHas('encargado_id',r.id)?[['Ver acceso',()=>acVer('encargado','encargado_id',r)]]:[])},
   doc:{g:'ac',tabla:'ac_docentes',t:'Docentes',ord:'nombre.asc',ico:'🧑‍🏫',rol:'docente',f:[
     {k:'nombre',l:'Nombre',req:1},{k:'whatsapp',l:'WhatsApp'},{k:'correo',l:'Correo (opcional)',t:'email'},{k:'activo',l:'Activo',t:'check',def:true}],
     row:r=>[r.nombre+(r.activo?'':' (inactivo)'),(r.whatsapp||'sin WhatsApp')+' · '+accTxt('docente','docente_id',r.id)],
-    acts:r=>[[accHas('docente_id',r.id)?'Regenerar acceso':'Crear acceso',()=>acGenerar('docente',r)]]},
+    acts:r=>[[accHas('docente_id',r.id)?'Regenerar acceso':'Crear acceso',()=>acGenerar('docente',r)]].concat(accHas('docente_id',r.id)?[['Ver acceso',()=>acVer('docente','docente_id',r)]]:[])},
   vin:{g:'ac',tabla:'ac_vinculos',t:'Vínculos',ico:'🔗',pk:['encargado_id','estudiante_id'],noedit:1,f:[
     {k:'encargado_id',l:'Encargado',t:'enc',req:1},{k:'estudiante_id',l:'Alumno',t:'est',req:1},{k:'parentesco',l:'Parentesco (madre, padre, tutor…)'}],
     row:r=>[acN('enc',r.encargado_id)+'  →  '+acN('est',r.estudiante_id),r.parentesco||'']},
@@ -482,7 +482,7 @@ const ENT={
     {k:'fecha',l:'Fecha del proyecto',t:'date'},{k:'galeria_url',l:'Enlace a su galería en Pixieset',t:'url'},
     {k:'nota',l:'Mensaje de bienvenida (lo ve el cliente)',t:'area'},{k:'activo',l:'Activo',t:'check',def:true}],
     row:r=>[r.nombre+(r.proyecto?' · '+r.proyecto:'')+(r.activo?'':' (inactivo)'),(r.galeria_url?'Galería lista':'Sin galería')+' · '+accTxt('cliente','cliente_id',r.id,1)],
-    acts:r=>[[accHas('cliente_id',r.id)?'Nuevo código de acceso':'Dar acceso (correo + código)',()=>acGenerar('cliente',r)]]},
+    acts:r=>[[accHas('cliente_id',r.id)?'Nuevo código de acceso':'Dar acceso (correo + código)',()=>acGenerar('cliente',r)]].concat(accHas('cliente_id',r.id)?[['Ver acceso',()=>acVer('cliente','cliente_id',r)]]:[])},
   cldoc:{g:'cl',tabla:'cl_documentos',t:'Documentos y entregas',ord:'creado.desc',ico:'📄',byCli:1,bucket:'clientes',f:[
     {k:'cliente_id',l:'Cliente',t:'cli',req:1},{k:'tipo',l:'Qué es',t:'sel',o:[['contrato','Contrato'],['entrega','Entrega (fotos, video, audio)'],['factura','Factura'],['enlace','Enlace'],['otro','Otro']],def:'entrega'},
     {k:'titulo',l:'Título',req:1},{k:'ruta',l:'Archivo (máx. 50 MB)',t:'file',folder:''}],
@@ -582,12 +582,28 @@ function rnd(n){const a=new Uint32Array(n);crypto.getRandomValues(a);return [...
 const grp=n=>rnd(n*4).match(/.{4}/g).join('-');
 const slug=s=>(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,'').slice(0,10)||'user';
 async function copyTxt(t){try{await navigator.clipboard.writeText(t);toast('Copiado');return true}catch(e){const ta=el('textarea',{style:'position:fixed;opacity:0'});ta.value=t;document.body.append(ta);ta.select();try{document.execCommand('copy');toast('Copiado')}catch(x){toast('No se pudo copiar')}ta.remove()}}
+function vaultGet(){try{return JSON.parse(localStorage.getItem('faro_accesos')||'{}')}catch(e){return {}}}
+function vaultSet(k,v){try{const o=vaultGet();o[k]=v;localStorage.setItem('faro_accesos',JSON.stringify(o))}catch(e){}}
+function autoGet(){try{return localStorage.getItem('faro_autocopy')!=='0'}catch(e){return true}}
+function autoSet(v){try{localStorage.setItem('faro_autocopy',v?'1':'0')}catch(e){}}
+function acMsg(rol,nombre,usuario,clave){
+  return rol==='cliente'
+    ?'Hola '+nombre+', este es tu acceso para ver tu galería, tu contrato y tus entregas de Faro Studios:\n\nCorreo: '+usuario+'\nCódigo: '+clave+'\n\nEntra en '+PORTAL_URL+' y toca “Cliente Studios”.'
+    :'Hola, este es el acceso '+(rol==='alumno'?'de '+nombre+' a Faro Academy':rol==='docente'?'de docente de Faro Academy para '+nombre:'para el seguimiento de '+nombre+' en Faro Academy')+':\n\nUsuario: '+usuario+'\nContraseña: '+clave+'\n\nEntra en '+PORTAL_URL+' y toca “'+(rol==='alumno'?'Estudiante':rol==='docente'?'Docente':'Encargado')+'”.';
+}
+function acVer(rol,fk,ent){
+  const prev=(AC.list.acc||[]).find(c=>c[fk]===ent.id);if(!prev){toast('Todavía no tiene acceso');return}
+  const v=vaultGet()[prev.user_id];
+  if(!v){alert('La contraseña de "'+prev.usuario+'" no está guardada en este navegador (se creó antes de esta mejora o en otro dispositivo). Toca "Regenerar acceso" para crear una nueva y quedará guardada aquí.');return}
+  acMostrar(rol,ent.apodo||ent.nombre,ent,v.usuario,v.clave,v.email,true);
+}
 function acPedir(rol,nombre,usuarioSug,claveSug,fijo){
   return new Promise(res=>{
     const m=$('#acc-modal');m.textContent='';
     const u=el('input',{type:'text',id:'acp-u',maxlength:'60',autocapitalize:'none',autocomplete:'off',spellcheck:'false'});u.value=usuarioSug;
     if(fijo)u.readOnly=true;
     const c=el('input',{type:'text',id:'acp-c',maxlength:'60',autocomplete:'off',spellcheck:'false'});c.value=claveSug;
+    const auto=el('input',{type:'checkbox'});auto.checked=autoGet();
     const err=el('div',{class:'msg',style:'display:none;background:rgba(160,30,30,.12)'});
     const cerrar=v=>{m.hidden=true;m.textContent='';res(v)};
     const box=el('div',{class:'box',style:'max-width:520px'},
@@ -595,13 +611,15 @@ function acPedir(rol,nombre,usuarioSug,claveSug,fijo){
       el('div',{class:'msg'},fijo?'Entra con su correo y un código. Puedes dejar el que sugerimos o escribir el tuyo (mínimo 6 caracteres).':'Puedes dejar el usuario y la contraseña que sugerimos o escribir los tuyos. Usuario: letras minúsculas, números, punto, guion o guion bajo (mínimo 3). Contraseña: mínimo 6 caracteres.'),
       el('div',{class:'field'},el('label',{for:'acp-u'},fijo?'Correo (es su usuario)':'Usuario'),u),
       el('div',{class:'field'},el('label',{for:'acp-c'},fijo?'Código':'Contraseña'),c),
+      el('label',{style:'display:flex;gap:8px;align-items:center;margin:10px 0;cursor:pointer'},auto,el('span',{},'Copiar el mensaje automáticamente al crear')),
       err,
       el('div',{class:'acts',style:'margin-top:16px'},
         el('button',{class:'btn btn-gold',type:'button',onclick:()=>{
           const us=fijo?u.value:u.value.trim().toLowerCase(),cl=c.value;
           if(!fijo&&!/^[a-z0-9][a-z0-9._-]{2,59}$/.test(us)){err.textContent='El usuario solo puede tener letras minúsculas sin acento, números, punto, guion o guion bajo (mínimo 3).';err.style.display='';return}
           if(cl.length<6){err.textContent='La contraseña necesita al menos 6 caracteres.';err.style.display='';return}
-          cerrar({usuario:us,clave:cl})}},'Crear acceso'),
+          autoSet(auto.checked);let copiado=false;if(auto.checked){copyTxt(acMsg(rol,nombre,us,cl));copiado=true}
+          cerrar({usuario:us,clave:cl,copiado})}},'Crear acceso'),
         el('button',{class:'btn btn-ghost',type:'button',onclick:()=>{c.value=fijo?grp(2):grp(3)}},'Sugerir otra contraseña'),
         el('button',{class:'btn btn-ghost',type:'button',onclick:()=>cerrar(null)},'Cancelar')));
     m.append(box);m.hidden=false;setTimeout(()=>(fijo?c:u).focus(),50);
@@ -620,7 +638,7 @@ async function acGenerar(rol,ent){
   }
   else{sug=(rol==='encargado'?'enc-':rol==='docente'?'doc-':'')+slug((nombre||'').split(' ')[0])+'-'+rnd(3).toLowerCase();clave0=grp(3)}
   const cred=await acPedir(rol,nombre,sug,clave0,fijo);if(!cred)return;
-  const usuario=cred.usuario,clave=cred.clave;
+  const usuario=cred.usuario,clave=cred.clave,copiado=cred.copiado;
   const email=fijo?usuario.replace('@','_at_').replace(/[^a-z0-9._-]/g,'')+'.'+rnd(3).toLowerCase()+'@acceso.farostudios.net':usuario.toLowerCase()+'@acceso.farostudios.net';
   toast('Creando acceso…');
   try{
@@ -633,23 +651,25 @@ async function acGenerar(rol,ent){
     const body={user_id:uid,rol,usuario,email_auth:email};body[fk]=ent.id;
     const x=await api('/rest/v1/ac_cuentas',{method:'POST',body,headers:{Prefer:'return=minimal'}});
     if(!x.ok){const t=await errText(x);throw new Error(/duplicate|unique/i.test(t)?'Ese usuario ya está en uso. Elige otro nombre de usuario.':t+' (¿corriste portal-faro.sql?)')}
-    await loadAc();acMostrar(rol,nombre,ent,usuario,clave);
+    vaultSet(uid,{usuario,clave,email,rol,nombre,fecha:new Date().toISOString()});await loadAc();acMostrar(rol,nombre,ent,usuario,clave,email,false,copiado);
   }catch(e){toast(e.message||'No se pudo crear')}
 }
-function acMostrar(rol,nombre,ent,usuario,clave){
-  const msg=rol==='cliente'
-    ?'Hola '+nombre+', este es tu acceso para ver tu galería, tu contrato y tus entregas de Faro Studios:\n\nCorreo: '+usuario+'\nCódigo: '+clave+'\n\nEntra en '+PORTAL_URL+' y toca “Cliente Studios”.'
-    :'Hola, este es el acceso '+(rol==='alumno'?'de '+nombre+' a Faro Academy':rol==='docente'?'de docente de Faro Academy para '+nombre:'para el seguimiento de '+nombre+' en Faro Academy')+':\n\nUsuario: '+usuario+'\nContraseña: '+clave+'\n\nEntra en '+PORTAL_URL+' y toca “'+(rol==='alumno'?'Estudiante':rol==='docente'?'Docente':'Encargado')+'”.';
+function acMostrar(rol,nombre,ent,usuario,clave,email,visto,copiado){
+  const msg=acMsg(rol,nombre,usuario,clave);
   const m=$('#acc-modal');m.textContent='';
   const tel=String(ent.whatsapp||ent.contacto||'').replace(/\D/g,'');
   const box=el('div',{class:'box',style:'max-width:520px'},
     el('h2',{style:'font-size:2rem'},'Acceso de '+nombre),
-    el('div',{class:'msg',style:'background:rgba(226,190,70,.18);border-color:var(--amar)'},'Cópialo ahora y compártelo. Por seguridad la contraseña no se puede volver a ver; si se pierde, generas una nueva.'),
+    el('div',{class:'msg',style:'background:rgba(226,190,70,.18);border-color:var(--amar)'},(copiado?'Ya quedó copiado el mensaje. ':'')+'Esta contraseña queda guardada solo en este navegador para que puedas volver a verla con "Ver acceso". Si borras los datos del navegador o entras desde otro equipo, tendrás que regenerarla.'),
     el('div',{class:'field'},el('span',{class:'lab'},rol==='cliente'?'Correo':'Usuario'),el('div',{class:'item',style:'font:700 1.4rem/1.2 monospace;letter-spacing:.06em;word-break:break-all'},usuario)),
     el('div',{class:'field'},el('span',{class:'lab'},rol==='cliente'?'Código':'Contraseña'),el('div',{class:'item',style:'font:700 1.4rem/1.2 monospace;letter-spacing:.06em'},clave)),
     el('div',{class:'acts',style:'margin-top:16px'},
       el('button',{class:'btn btn-gold',type:'button',onclick:()=>copyTxt(msg)},'Copiar mensaje para enviar'),
       tel?el('a',{class:'btn btn-ghost',target:'_blank',rel:'noopener',href:'https://wa.me/'+tel+'?text='+encodeURIComponent(msg)},'Abrir WhatsApp'):null,
+      el('button',{class:'btn btn-ghost',type:'button',onclick:async ev=>{const bt=ev.target;bt.textContent='Probando…';
+        try{const r=await fetch(SB.url+'/auth/v1/token?grant_type=password',{method:'POST',headers:{apikey:SB.key,'Content-Type':'application/json'},body:JSON.stringify({email:email||usuario.toLowerCase()+'@acceso.farostudios.net',password:clave})});
+          const j=await r.json().catch(()=>({}));
+          bt.textContent=r.ok&&j.access_token?'✓ Entra bien':'✗ Falla: '+((j.error_code||j.msg||j.error_description||r.status)+'')}catch(e){bt.textContent='✗ Sin conexión'}}},'Probar entrada'),
       el('button',{class:'btn btn-ghost',type:'button',onclick:()=>{m.hidden=true;m.textContent=''}},'Cerrar')));
   m.append(box);m.hidden=false;
 }

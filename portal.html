@@ -364,9 +364,10 @@ const MESES=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','
 let SES=null;try{SES=JSON.parse(sessionStorage.getItem('faro_portal')||'null')}catch(e){}
 function jwtSub(){try{return JSON.parse(atob(SES.access.split('.')[1].replace(/-/g,'+').replace(/_/g,'/'))).sub}catch(e){return null}}
 function saveSes(){try{sessionStorage.setItem('faro_portal',JSON.stringify(SES))}catch(e){}}
+var LASTERR='';
 async function signIn(email,pass){
   try{const r=await fetch(SBU+'/auth/v1/token?grant_type=password',{method:'POST',headers:{apikey:SBK,'Content-Type':'application/json'},body:JSON.stringify({email,password:pass})});
-    const j=await r.json().catch(()=>({}));if(!r.ok||!j.access_token)return null;
+    const j=await r.json().catch(()=>({}));if(!r.ok||!j.access_token){LASTERR=(j.error_code||j.msg||j.error_description||'')+'';return null}
     SES={access:j.access_token,refresh:j.refresh_token,exp:Date.now()+(j.expires_in||3600)*1000};saveSes();return SES}catch(e){return null}}
 async function refreshSes(){
   if(!SES||!SES.refresh)return false;
@@ -714,7 +715,7 @@ function loginUI(msg){
         email=r.ok?await r.json():null}
       else email=u.toLowerCase().replace(/\s+/g,'')+'@acceso.farostudios.net';
       if(email){let s=await signIn(email,p);if(!s&&normClave(p)!==p)s=await signIn(email,normClave(p));ok=!!s}}catch(e){}
-    if(!ok){loginUI('Usuario o contraseña incorrectos. Revisa los datos que te enviamos.');return}
+    if(!ok){loginUI(/confirm/i.test(LASTERR)?'Tu acceso aún no está activado (falta una configuración nuestra). Escríbenos por WhatsApp.':'Usuario o contraseña incorrectos. Revisa los datos que te enviamos.');return}
     await iniciar()};
 }
 async function iniciar(){
