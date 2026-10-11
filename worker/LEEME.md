@@ -19,6 +19,9 @@ faro-privado/
     │            alumnos/<alumno>/…  (lo que sube el alumno)
     │            docentes/<docente>/… (lo que sube el docente)
     └─ musica/   (igual que inglés)
+└─ documentos/   (solo el director · pestaña Documentos del admin)
+    ├─ catalogos · afiches · datos-de-cuenta · otros     (archivos sueltos)
+    └─ sat/<año>/archivo                                 (por año)
 
 faro-publico/
 └─ landing/  fotos-studios · portafolio · producciones-musicales · recursos-gratis · catalogo · academy-fotos

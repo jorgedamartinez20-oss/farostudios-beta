@@ -61,7 +61,7 @@ let n = 0; const ok = (m) => console.log('  ✓ ' + m, ++n && '');
 // utilidades
 assert.equal(slug('Maxi Despensa — Mamá Lucha'), 'maxi-despensa-mama-lucha'); ok('slug quita tildes y símbolos');
 assert.equal(nombreArchivo('Aftermovie Final (v2).mp4'), 'Aftermovie-Final-(v2).mp4'); ok('nombreArchivo limpia espacios');
-assert.equal(DESTINOS.length, 3 + 2 * 7 + 6); ok('árbol: ' + DESTINOS.length + ' carpetas base');
+assert.equal(DESTINOS.length, 3 + 2 * 7 + 5 + 6); ok('árbol: ' + DESTINOS.length + ' carpetas base');
 
 // CORS
 let r = await q('/api/arbol', { method: 'OPTIONS', headers: { Origin: ORI } });
@@ -91,6 +91,17 @@ for (const mala of ['otra-carpeta/x.mp4', 'faro-studios/agencias/maxi-despensa/s
   assert.equal(r.status, 400, mala);
 }
 ok('rechaza rutas fuera del árbol (y subcarpetas bajo cada agencia)');
+// documentos del director: catálogos planos; SAT por año
+for (const buena of ['documentos/catalogos/Catalogo-2026.pdf', 'documentos/sat/2026/2026-10-IVA.pdf']) {
+  r = await q(`/api/subir?bucket=privado&key=${encodeURIComponent(buena)}`, { method: 'PUT', headers: { ...A, 'Content-Length': '8' }, body: cuerpo });
+  assert.equal(r.status, 200, buena);
+}
+for (const mala of ['documentos/sat/IVA.pdf', 'documentos/catalogos/sub/x.pdf', 'documentos/otra/x.pdf']) {
+  r = await q(`/api/subir?bucket=privado&key=${encodeURIComponent(mala)}`, { method: 'PUT', headers: { ...A, 'Content-Length': '8' }, body: cuerpo });
+  assert.equal(r.status, 400, mala);
+}
+r = await q(`/api/subir?bucket=privado&key=${encodeURIComponent('documentos/catalogos/x.pdf')}`, { method: 'PUT', headers: { Origin: ORI, 'Content-Length': '8' }, body: cuerpo });
+assert.equal(r.status, 401); ok('documentos: rutas válidas, SAT por año y solo administrador');
 r = await q(`/api/subir?bucket=privado&key=${encodeURIComponent(K)}`, { method: 'PUT', headers: { ...A, 'Content-Length': String(41 * 1024 * 1024) }, body: cuerpo });
 assert.equal(r.status, 413); ok('archivo grande exige subida por partes');
 

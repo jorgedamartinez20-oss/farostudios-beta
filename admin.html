@@ -260,6 +260,27 @@ button,.btn,.chip,.nav,.tab,.stab,.seg{-webkit-user-select:none;user-select:none
 @media (pointer:coarse){input,select,textarea{font-size:max(16px,1em)!important;touch-action:manipulation}}
 .top{padding-top:calc(10px + env(safe-area-inset-top));padding-left:max(clamp(14px,3vw,36px),env(safe-area-inset-left));padding-right:max(clamp(14px,3vw,36px),env(safe-area-inset-right))}
 .toast{bottom:calc(22px + env(safe-area-inset-bottom))}
+/* documentos propios (R2 privado) */
+.dc-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:16px;margin-top:6px}
+.dc{display:flex;flex-direction:column;gap:12px;box-shadow:0 10px 26px rgba(0,0,0,.12),0 1px 3px rgba(0,0,0,.12)}
+.dc.over{outline:2px dashed var(--oro);outline-offset:3px}
+.dc-h{display:flex;align-items:center;gap:12px}
+.dc-h h3{margin:0}
+.dc-ic{width:46px;height:46px;border-radius:50%;display:grid;place-items:center;flex:none;background:linear-gradient(180deg,#CBB583,#B8A06A 55%,#A58E5A);color:var(--pizarra);box-shadow:0 4px 10px rgba(0,0,0,.2)}
+.dc-ic .sv{width:22px;height:22px}
+.dc-tools{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.dc-tools select{padding:8px 10px;border-radius:10px;border:1px solid var(--line);background:var(--input);color:var(--text)}
+.dc-chips{display:flex;gap:6px;flex-wrap:wrap}
+.dc-chip{padding:6px 12px;border-radius:999px;border:1px solid var(--line);background:var(--soft);cursor:pointer;font-size:.88rem}
+.dc-chip[aria-pressed="true"]{border-color:var(--oro);background:var(--surface);font-weight:700;box-shadow:0 2px 6px rgba(0,0,0,.12)}
+.dc-list{display:grid;gap:8px}
+.dc-row{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:var(--soft);box-shadow:0 2px 6px rgba(0,0,0,.07)}
+.dc-row .dc-n{flex:1;min-width:0;cursor:pointer}
+.dc-row .dc-n b{display:block;font-weight:700;font-size:.92rem;overflow-wrap:anywhere}
+.dc-row .dc-n small{color:var(--muted)}
+.dc-row .dc-ico .sv{width:24px;height:24px;color:var(--oro-t)}
+.dc-act{display:flex;gap:4px;flex:none}
+.dc-act .btn{padding:6px 8px}
 /* burbuja flotante: chat + recordatorios rápidos */
 .stab[data-t="cha"]{display:none!important}
 #fl{position:fixed;right:max(14px,env(safe-area-inset-right));bottom:calc(16px + env(safe-area-inset-bottom));z-index:80;display:flex;flex-direction:column;align-items:flex-end;gap:10px}
@@ -338,7 +359,7 @@ button,.btn,.chip,.nav,.tab,.stab,.seg{-webkit-user-select:none;user-select:none
       <div class="seg subgrp" data-s="cli" hidden><button type="button" class="stab" data-t="cli" aria-pressed="false">Clientes<span class="n" id="ncl" hidden>0</span></button><button type="button" class="stab" data-t="cot" aria-pressed="false">Cotizaciones<span class="n" id="ncot" hidden>0</span></button><button type="button" class="stab" data-t="avs" aria-pressed="false">Avisos</button><button type="button" class="stab" data-t="rec" aria-pressed="false">Recordatorios<span class="n" id="nrec" hidden>0</span></button></div>
       <div class="seg subgrp" data-s="con" hidden><button type="button" class="stab" data-t="con" aria-pressed="false">Planificación<span class="n" id="ncon" hidden>0</span></button></div>
       <div class="seg subgrp" data-s="aca" hidden><button type="button" class="stab" data-t="aca" aria-pressed="false">Gestión de estudiantes<span class="n" id="nac" hidden>0</span></button></div>
-      <div class="seg subgrp" data-s="arc" hidden><button type="button" class="stab" data-t="mat" aria-pressed="false">Materiales</button><button type="button" class="stab" data-t="sit" aria-pressed="false">Sitio web</button><button type="button" class="stab" data-t="sub" aria-pressed="false">Subir material</button></div>
+      <div class="seg subgrp" data-s="arc" hidden><button type="button" class="stab" data-t="mat" aria-pressed="false">Materiales</button><button type="button" class="stab" data-t="doc" aria-pressed="false">Documentos</button><button type="button" class="stab" data-t="sit" aria-pressed="false">Sitio web</button><button type="button" class="stab" data-t="sub" aria-pressed="false">Subir material</button></div>
       <div class="seg subgrp" data-s="aju" hidden><button type="button" class="stab" data-t="usr" aria-pressed="false">Usuarios y permisos</button><button type="button" class="stab" data-t="cha" aria-pressed="false">Chat del equipo<span class="n" id="ncha" hidden>0</span></button><button type="button" class="stab" data-t="acc" aria-pressed="false">Reglas de agenda</button><button type="button" class="stab" data-t="pre" aria-pressed="false">Preferencias</button></div>
     </div>
     <div class="msg" id="warn" hidden></div>
@@ -393,6 +414,7 @@ button,.btn,.chip,.nav,.tab,.stab,.seg{-webkit-user-select:none;user-select:none
     <div id="t-mat" hidden>
       <div id="mat-body"></div>
     </div>
+    <div id="t-doc" hidden><div id="doc-body"></div></div>
 
     <div id="t-sit" hidden>
       <div class="msg" id="sit-warn" hidden style="margin-bottom:14px">Faltan las tablas de configuración. En Supabase abre SQL Editor, New query, pega portal-faro.sql y dale Run.</div>
@@ -805,7 +827,7 @@ $('#cgo').addEventListener('click',()=>{const v=$('#cod').value.trim();if(!/^[A-
 $('#mgo').addEventListener('click',()=>{const v=parseInt($('#mar').value,10);if(!(v>=0&&v<=12)){toast('Escribe un número de 0 a 12');return}saveCfg('margen_horas',v,'Margen actualizado')});
 
 /* ---------- pestañas ---------- */
-function showTab(t){if(!permiteTab(t)){toast('No tienes permiso para esta sección');return}seccionActiva(t);['ini','ast','aac','crm','red','cal','res','cot','aca','cli','mat','sit','sem','acc','pre','con','rec','avs','sub','usr','cha'].forEach(x=>$('#t-'+x).hidden=x!==t);if(t==='mat')matInit();if(t==='ini')renderDash();if(['ast','aac','crm','red'].includes(t))anTab(t);if(t==='pre')renderPre();if(['con','rec','avs'].includes(t))ctTab(t);if(t==='usr')usrInit();if(t==='cha')chaInit();if(t==='sub')renderSub();window.scrollTo({top:0})}
+function showTab(t){if(!permiteTab(t)){toast('No tienes permiso para esta sección');return}seccionActiva(t);['ini','ast','aac','crm','red','cal','res','cot','aca','cli','mat','doc','sit','sem','acc','pre','con','rec','avs','sub','usr','cha'].forEach(x=>$('#t-'+x).hidden=x!==t);if(t==='mat')matInit();if(t==='doc')docInit();if(t==='ini')renderDash();if(['ast','aac','crm','red'].includes(t))anTab(t);if(t==='pre')renderPre();if(['con','rec','avs'].includes(t))ctTab(t);if(t==='usr')usrInit();if(t==='cha')chaInit();if(t==='sub')renderSub();window.scrollTo({top:0})}
 $$('.tab').forEach(b=>b.addEventListener('click',()=>{const x=SEC.find(y=>y.s===b.dataset.s),u=SUBULT[x.s];showTab(u&&permiteTab(u)?u:primerSub(x))}));$$('.stab').forEach(b=>b.addEventListener('click',()=>showTab(b.dataset.t)));
 const ESTC=['nueva','contactada','cotizada','ganada','perdida'];
 function renderCot(){
@@ -2445,7 +2467,7 @@ function renderAvs(){
 }
 
 /* ---------- secciones del menú (8) y sus pestañas internas ---------- */
-const SEC=[{s:'ini',tabs:[['ini']]},{s:'alc',tabs:[['crm'],['red'],['ast'],['aac']]},{s:'age',tabs:[['cal'],['res'],['sem']]},{s:'cli',tabs:[['cli'],['cot'],['avs'],['rec']]},{s:'con',tabs:[['con']]},{s:'aca',tabs:[['aca']]},{s:'arc',tabs:[['mat'],['sit'],['sub']]},{s:'aju',tabs:[['usr'],['cha'],['acc'],['pre']]}];
+const SEC=[{s:'ini',tabs:[['ini']]},{s:'alc',tabs:[['crm'],['red'],['ast'],['aac']]},{s:'age',tabs:[['cal'],['res'],['sem']]},{s:'cli',tabs:[['cli'],['cot'],['avs'],['rec']]},{s:'con',tabs:[['con']]},{s:'aca',tabs:[['aca']]},{s:'arc',tabs:[['mat'],['doc'],['sit'],['sub']]},{s:'aju',tabs:[['usr'],['cha'],['acc'],['pre']]}];
 const SEC_DE={};SEC.forEach(x=>x.tabs.forEach(([t])=>{SEC_DE[t]=x.s}));
 const SUBULT={};
 const primerSub=x=>(x.tabs.find(([t])=>permiteTab(t))||x.tabs[0])[0];
@@ -2529,6 +2551,90 @@ function renderSub(){
   root.append(c);
 }
 
+
+/* ---------- DOCUMENTOS · espacio privado del director en R2 ---------- */
+const DOC={cats:[
+  ['catalogos','Catálogos','book','Tus catálogos de servicios y precios.'],
+  ['afiches','Afiches y diseños','image','Afiches, flyers y piezas listas para usar.'],
+  ['datos-de-cuenta','Datos de cuenta','card','Cuentas bancarias, NIT y datos para cobrar.'],
+  ['sat','SAT','clipboard','Declaraciones, facturas y constancias, ordenadas por año y mes.'],
+  ['otros','Otros documentos','folder','Contratos y todo lo demás.']]};
+async function docInit(){
+  const box=$('#doc-body');if(!box)return;box.textContent='';
+  box.append(el('div',{class:'dh'},el('div',{},el('h1',{},'Mis documentos'),el('p',{class:'muted'},'Tu espacio privado, aparte de Materiales. Solo lo ves tú; los archivos viven en tu R2 privado y solo se abren con un enlace temporal.'))));
+  const aviso=t=>box.append(el('div',{class:'msg',style:'margin:12px 0'},t));
+  if(!FILES){aviso('Primero conecta el servicio de archivos en la pestaña Materiales.');return}
+  MAT.destinos=[];
+  try{await matArbol()}catch(e){aviso(e.message+'. Revisa la conexión en Materiales.');return}
+  if(!matDest('documentos/catalogos')){aviso('Falta actualizar el servicio de archivos (una sola vez): en tu computadora, dentro de la carpeta worker, ejecuta npx wrangler deploy y vuelve a abrir esta pestaña.');return}
+  const g=el('div',{class:'dc-grid'});box.append(g);
+  DOC.cats.forEach(c=>g.append(docCard(c)));
+}
+function docCard(c){
+  const [id,tit,ic,sub]=c,esSat=id==='sat',dest='documentos/'+id,base='documentos/'+id+'/';
+  let anio=today().slice(0,4),anios=[anio],archivos=[],mes=esSat?today().slice(5,7):'';
+  const info=el('small',{class:'muted'}),lst=el('div',{class:'dc-list'}),prog=el('div',{class:'dc-list'}),chips=el('div',{class:'dc-chips'});
+  const fi=el('input',{type:'file',multiple:'multiple',style:'display:none'});
+  const tools=el('div',{class:'dc-tools'},el('button',{class:'btn btn-gold btn-sm',type:'button',onclick:()=>fi.click()},icoEl('upload'),' Subir archivos'));
+  if(esSat){
+    const ms=el('select',{'aria-label':'Mes del documento',onchange:e=>{mes=e.target.value}},el('option',{value:''},'Sin mes'),...MESES.map((m,i)=>{const v=String(i+1).padStart(2,'0'),o=el('option',{value:v},m.charAt(0).toUpperCase()+m.slice(1));if(v===mes)o.selected=true;return o}));
+    tools.append(ms);
+  }
+  const card=el('div',{class:'card dc'},el('div',{class:'dc-h'},el('span',{class:'dc-ic'},icoEl(ic)),el('div',{style:'min-width:0;flex:1'},el('h3',{},tit),el('small',{class:'muted'},sub))),esSat?chips:null,tools,prog,info,lst,fi);
+  const pintaChips=()=>{chips.textContent='';
+    anios.forEach(y=>chips.append(el('button',{type:'button',class:'dc-chip','aria-pressed':String(y===anio),onclick:()=>{anio=y;carga()}},y)));
+    chips.append(el('button',{type:'button',class:'dc-chip','aria-label':'Agregar otro año',onclick:()=>{const y=(prompt('Año (cuatro dígitos)')||'').trim();if(!/^\d{4}$/.test(y))return;if(!anios.includes(y))anios=[...anios,y].sort().reverse();anio=y;carga()}},'+ año'))};
+  const icoArch=n=>MAT_VER.img.test(n)?'image':MAT_VER.pdf.test(n)?'pdf':MAT_VER.vid.test(n)?'film':MAT_VER.aud.test(n)?'music':'file';
+  const btn=(i,t,fn,cls)=>el('button',{class:cls||'btn btn-ghost btn-sm',type:'button',title:t,'aria-label':t,onclick:e=>{e.stopPropagation();fn()}},icoEl(i));
+  function pinta(){
+    lst.textContent='';
+    const tot=archivos.reduce((s,a)=>s+a.size,0);
+    info.textContent=archivos.length?archivos.length+' archivo'+(archivos.length>1?'s':'')+' · '+matTam(tot)+(esSat?' · '+anio:''):'';
+    if(!archivos.length){lst.append(el('p',{class:'muted',style:'font-size:.88rem'},'Aún no hay nada aquí'+(esSat?' para '+anio:'')+'. Toca "Subir archivos" o arrástralos sobre esta tarjeta.'));return}
+    archivos.forEach(a=>{const nom=a.key.split('/').pop();
+      lst.append(el('div',{class:'dc-row'},el('span',{class:'dc-ico'},icoEl(icoArch(nom))),
+        el('div',{class:'dc-n',onclick:()=>matVer('privado',a.key).catch(e=>toast(e.message))},el('b',{},nom),el('small',{},matTam(a.size)+' · '+new Date(a.subido).toLocaleDateString('es-GT',{timeZone:'America/Guatemala',day:'numeric',month:'short',year:'numeric'}))),
+        el('div',{class:'dc-act'},
+          btn('download','Descargar',async()=>{try{location.href=await matEnlace('privado',a.key,false,1)}catch(e){toast(e.message)}}),
+          btn('link','Copiar enlace (1 hora)',async()=>{try{await navigator.clipboard.writeText(await matEnlace('privado',a.key,false));toast('Enlace copiado (válido por 1 hora)')}catch(e){toast('No se pudo copiar')}}),
+          btn('trash','Eliminar',async()=>{if(!confirm('¿Eliminar '+nom+'? No se puede deshacer.'))return;try{await fjson('/api/objeto?bucket=privado&key='+encodeURIComponent(a.key),{method:'DELETE'});toast('Eliminado');carga()}catch(e){toast(e.message)}},'btn btn-red btn-sm'))))});
+  }
+  async function carga(){
+    lst.textContent='';lst.append(el('p',{class:'muted'},'Cargando…'));
+    try{
+      let pref=base;
+      if(esSat){
+        const j0=await fjson('/api/lista?bucket=privado&prefix='+encodeURIComponent(base));
+        const ys=j0.carpetas.map(x=>x.slice(base.length).replace(/\/$/,'')).filter(y=>/^\d{4}$/.test(y));
+        anios=[...new Set([today().slice(0,4),...ys,...anios,anio])].sort().reverse();pintaChips();pref=base+anio+'/';
+      }
+      const j=await fjson('/api/lista?bucket=privado&prefix='+encodeURIComponent(pref));
+      archivos=j.archivos.sort((a,b)=>new Date(b.subido)-new Date(a.subido));
+    }catch(e){lst.textContent='';lst.append(el('p',{class:'muted'},e.message||'No se pudo cargar'));return}
+    pinta();
+  }
+  async function subir(files){
+    files=files.filter(f=>f.size>0);if(!files.length)return;
+    const ya=new Set(archivos.map(a=>a.key.split('/').pop()));
+    for(const f of files){
+      const nombre=(esSat&&mes?anio+'-'+mes+'-':'')+f.name,nm=matNombre(nombre);
+      if(!nm){toast('Ese nombre de archivo no es válido');continue}
+      if(ya.has(nm)&&!confirm('Ya existe '+nm+'. ¿Reemplazarlo?'))continue;
+      const b=el('progress',{max:String(Math.max(1,f.size)),value:'0',style:'width:100%;margin-top:6px'}),s=el('small',{},'Subiendo…');
+      const row=el('div',{class:'dc-row'},el('div',{style:'flex:1;min-width:0'},el('b',{style:'font-size:.88rem;overflow-wrap:anywhere'},f.name+' · '+matTam(f.size)),b,s));prog.prepend(row);
+      try{await matSubir(f,dest,esSat?anio:'',l=>{b.value=l},nombre);b.value=f.size;s.textContent='Listo ✓';ya.add(nm);setTimeout(()=>row.remove(),5000)}
+      catch(e){s.textContent='Error: '+(e.message||'no se pudo subir');row.style.borderColor='var(--rojo)'}
+    }
+    await carga();
+  }
+  fi.addEventListener('change',()=>{const fs=[...fi.files];fi.value='';subir(fs)});
+  card.addEventListener('dragover',e=>{e.preventDefault();card.classList.add('over')});
+  card.addEventListener('dragleave',e=>{if(e.target===card)card.classList.remove('over')});
+  card.addEventListener('drop',e=>{e.preventDefault();card.classList.remove('over');subir([...e.dataTransfer.files])});
+  if(esSat)pintaChips();
+  carga();
+  return card;
+}
 
 /* ---------- Chat del equipo + aviso de quién entra ---------- */
 const CHA={msgs:[],err:null,t:null,vis:0,ini:false};

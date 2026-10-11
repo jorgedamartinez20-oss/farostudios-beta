@@ -30,6 +30,16 @@ const LANDING = [
   ['academy-fotos', 'Fotos de Academy'],
 ];
 
+// Documentos propios del director (catálogos, afiches, datos de cuenta, SAT…). Siempre privados.
+// Tercer valor: true = lleva una carpeta debajo (el SAT va por año).
+const DOCUMENTOS = [
+  ['catalogos', 'Catálogos', false],
+  ['afiches', 'Afiches y diseños', false],
+  ['datos-de-cuenta', 'Datos de cuenta', false],
+  ['sat', 'SAT', true],
+  ['otros', 'Otros documentos', false],
+];
+
 // "entidad": la carpeta lleva debajo una carpeta por persona/empresa (se crea al darla de alta).
 export const DESTINOS = [
   ...STUDIOS.map(([id, et]) => ({ id: 'studios/' + id, bucket: 'privado', prefijo: `faro-studios/${id}/`, etiqueta: `Faro Studios › ${et}`, entidad: true })),
@@ -37,6 +47,7 @@ export const DESTINOS = [
     ...CATS_ACADEMY.map(([id, et]) => ({ id: `academy/${a}/${id}`, bucket: 'privado', prefijo: `faro-academy/${a}/${id}/`, etiqueta: `Faro Academy › ${aet} › ${et}`, entidad: false })),
     ...PERSONAS.map(([id, et]) => ({ id: `academy/${a}/${id}`, bucket: 'privado', prefijo: `faro-academy/${a}/${id}/`, etiqueta: `Faro Academy › ${aet} › ${et}`, entidad: true })),
   ]),
+  ...DOCUMENTOS.map(([id, et, ent]) => ({ id: 'documentos/' + id, bucket: 'privado', prefijo: `documentos/${id}/`, etiqueta: `Documentos › ${et}`, entidad: ent })),
   ...LANDING.map(([id, et]) => ({ id: 'landing/' + id, bucket: 'publico', prefijo: `landing/${id}/`, etiqueta: `Landing › ${et}`, entidad: false })),
 ];
 
