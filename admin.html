@@ -2378,6 +2378,48 @@ const csvDescarga=(nombre,filas)=>{const q=v=>{v=v==null?'':String(v);return /["
 function swEl(val,fn){const i=el('input',{type:'checkbox',role:'switch'});i.checked=!!val;i.addEventListener('change',()=>fn(i.checked));return el('label',{class:'sw'},i,el('span',{}))}
 function setRow(t,d,ctl){return el('div',{class:'srow'},el('div',{style:'min-width:0'},el('b',{style:'display:block;font-weight:400'},t),d?el('small',{class:'muted'},d):null),ctl)}
 function selEl(opts,val,fn){const s=el('select',{class:'ssel'},...opts.map(([v,t])=>el('option',{value:v},t)));s.value=String(val);s.addEventListener('change',()=>fn(s.value));return s}
+/* ===================== NOTIFICACIONES PUSH ===================== */
+const VAPID_PUB='BK3dzX4_8LkO5-FV4xSmmgcY_iuyOWwkPFXMpYG8xbk0M4wTI7pZNgoIHU-Kphc27vos8j9P8eQvfQY19A2Qxgs';
+const pushB64=t=>{const p='='.repeat((4-t.length%4)%4),r=atob((t+p).replace(/-/g,'+').replace(/_/g,'/'));return Uint8Array.from(r,c=>c.charCodeAt(0))};
+const pushSoportado=()=>'serviceWorker' in navigator&&'PushManager' in window&&'Notification' in window;
+const pushEsApp=()=>!!(navigator.standalone||(window.matchMedia&&matchMedia('(display-mode:standalone)').matches));
+async function pushSub(){try{const reg=await navigator.serviceWorker.getRegistration();return reg?await reg.pushManager.getSubscription():null}catch(e){return null}}
+async function pushActivar(){
+  if(!pushSoportado()){toast(/iPhone|iPad/.test(navigator.userAgent)&&!pushEsApp()?'En iPhone primero instala la app en la pantalla de inicio':'Este navegador no permite notificaciones');return false}
+  const p=await Notification.requestPermission();if(p!=='granted'){toast('No diste permiso para las notificaciones');return false}
+  try{
+    const reg=await navigator.serviceWorker.register('./sw-admin.js');await navigator.serviceWorker.ready;
+    const sub=(await reg.pushManager.getSubscription())||await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:pushB64(VAPID_PUB)});
+    const j=sub.toJSON(),r=await api('/rest/v1/push_subs?on_conflict=endpoint',{method:'POST',body:{endpoint:j.endpoint,p256dh:j.keys.p256dh,auth:j.keys.auth,agente:navigator.userAgent.slice(0,200)},headers:{Prefer:'resolution=merge-duplicates,return=minimal'}});
+    if(!r.ok){toast(await errText(r));return false}
+    return true;
+  }catch(e){toast('No se pudo activar: '+(e&&e.message||e));return false}
+}
+async function pushDesactivar(){
+  const sub=await pushSub();if(!sub)return;const ep=sub.endpoint;
+  try{await sub.unsubscribe()}catch(e){}
+  try{await api('/rest/v1/push_subs?endpoint=eq.'+encodeURIComponent(ep),{method:'DELETE',headers:{Prefer:'return=minimal'}})}catch(e){}
+}
+async function pushPrueba(){
+  const r=await api('/functions/v1/notificar',{method:'POST',body:{tipo:'prueba'}});
+  if(!r.ok){toast(await errText(r));return}
+  const j=await r.json().catch(()=>({}));
+  toast(j.enviados?'Prueba enviada: debe llegarte en segundos':(j.aparatos?'No se pudo entregar: vuelve a activar':'Aún no hay aparatos activados'));
+}
+async function pushCard(c){
+  const est=el('p',{class:'muted',style:'margin:0 0 10px'},'Revisando…'),fila=el('div',{style:'display:flex;gap:8px;flex-wrap:wrap'});c.append(est,fila);
+  const pinta=async()=>{
+    fila.textContent='';
+    if(!pushSoportado()){est.textContent=/iPhone|iPad/.test(navigator.userAgent)&&!pushEsApp()?'En iPhone funciona desde la app instalada: ábrela desde el icono de tu pantalla de inicio.':'Este navegador no permite notificaciones.';return}
+    const sub=await pushSub(),on=!!sub&&Notification.permission==='granted';
+    if(Notification.permission==='denied'){est.textContent='Bloqueadas en este aparato. Actívalas en los ajustes del navegador o de iOS para esta app.';return}
+    est.textContent=on?'Activadas en este aparato: reservas, cotizaciones y resumen de las 8:00.':'Desactivadas en este aparato.';
+    if(on){fila.append(el('button',{class:'btn btn-gold btn-sm',type:'button',onclick:pushPrueba},icoEl('bell'),' Enviar prueba'),el('button',{class:'btn btn-ghost btn-sm',type:'button',onclick:async()=>{await pushDesactivar();pinta()}},'Desactivar'))}
+    else fila.append(el('button',{class:'btn btn-gold btn-sm',type:'button',onclick:async()=>{if(await pushActivar()){toast('Notificaciones activadas');pinta()}}},icoEl('bell'),' Activar en este aparato'));
+  };
+  pinta();
+}
+
 async function renderPre(){
   const root=$('#pre-body');if(!root)return;root.textContent='';
   const cambia=(k,v,r)=>{PREF[k]=v;prefGuardar();relojPintar();avisosPintar();if(r)renderPre()};
@@ -2411,6 +2453,7 @@ async function renderPre(){
     setRow('Cada cuánto','',selEl([[1,'1 minuto'],[3,'3 minutos'],[5,'5 minutos'],[10,'10 minutos']],PREF.min,v=>cambia('min',+v))),
     el('div',{style:'margin-top:10px;display:flex;gap:8px;flex-wrap:wrap'},el('button',{class:'btn btn-ghost btn-sm',type:'button',onclick:()=>refrescar(true)},icoEl('refresh'),' Actualizar ahora'),
       el('button',{class:'btn btn-ghost btn-sm',type:'button',onclick:()=>{PREF=Object.assign({},PREF0);prefGuardar();DASH.meses=PREF.rd;AN.rango=PREF.ra;relojPintar();avisosPintar();renderPre();toast('Preferencias restablecidas')}},'Restablecer')));
+  if(ME.owner){const np=card('w6','Notificaciones en este aparato','Aviso con sonido, como una app: reservas, cotizaciones y qué publicar hoy');pushCard(np)}
   const sg=card('w6','Seguridad en 2 pasos','Pide un código de tu teléfono además de la contraseña');mfaCard(sg);
   /* estado del sistema */
   const est=card('w6','Estado del sistema','Para saber si todo está conectado',el('p',{class:'muted'},'Revisando…'));
