@@ -429,7 +429,7 @@ html.is-app .top{padding-top:calc(10px + var(--top-extra) + env(safe-area-inset-
       <div class="seg subgrp" data-s="ini" hidden><button type="button" class="stab" data-t="ini" aria-pressed="false">Resumen</button></div>
       <div class="seg subgrp" data-s="alc" hidden><button type="button" class="stab" data-t="pro" aria-pressed="false">Prospectos</button><button type="button" class="stab" data-t="crm" aria-pressed="false">CRM</button><button type="button" class="stab" data-t="red" aria-pressed="false">Alcance</button><button type="button" class="stab" data-t="ast" aria-pressed="false">Faro Studios</button><button type="button" class="stab" data-t="aac" aria-pressed="false">Faro Academy</button></div>
       <div class="seg subgrp" data-s="age" hidden><button type="button" class="stab" data-t="cal" aria-pressed="false">Calendario</button><button type="button" class="stab" data-t="res" aria-pressed="false">Reservas<span class="n" id="npend" hidden>0</span></button><button type="button" class="stab" data-t="sem" aria-pressed="false">Bloqueos semanales</button></div>
-      <div class="seg subgrp" data-s="cli" hidden><button type="button" class="stab" data-t="cli" aria-pressed="false">Clientes<span class="n" id="ncl" hidden>0</span></button><button type="button" class="stab" data-t="cot" aria-pressed="false">Cotizaciones<span class="n" id="ncot" hidden>0</span></button><button type="button" class="stab" data-t="avs" aria-pressed="false">Avisos</button><button type="button" class="stab" data-t="rec" aria-pressed="false">Recordatorios<span class="n" id="nrec" hidden>0</span></button></div>
+      <div class="seg subgrp" data-s="cli" hidden><button type="button" class="stab" data-t="cli" aria-pressed="false">Clientes<span class="n" id="ncl" hidden>0</span></button><button type="button" class="stab" data-t="cot" aria-pressed="false">Cotizaciones<span class="n" id="ncot" hidden>0</span></button><button type="button" class="stab" data-t="web" aria-pressed="false">Sugerencias web<span class="n" id="nweb" hidden>0</span></button><button type="button" class="stab" data-t="avs" aria-pressed="false">Avisos</button><button type="button" class="stab" data-t="rec" aria-pressed="false">Recordatorios<span class="n" id="nrec" hidden>0</span></button></div>
       <div class="seg subgrp" data-s="con" hidden><button type="button" class="stab" data-t="con" aria-pressed="false">Planificación<span class="n" id="ncon" hidden>0</span></button></div>
       <div class="seg subgrp" data-s="aca" hidden><button type="button" class="stab" data-t="aca" aria-pressed="false">Gestión de estudiantes<span class="n" id="nac" hidden>0</span></button></div>
       <div class="seg subgrp" data-s="arc" hidden><button type="button" class="stab" data-t="mat" aria-pressed="false">Materiales</button><button type="button" class="stab" data-t="doc" aria-pressed="false">Documentos</button><button type="button" class="stab" data-t="sit" aria-pressed="false">Sitio web</button><button type="button" class="stab" data-t="sub" aria-pressed="false">Subir material</button></div>
@@ -511,6 +511,7 @@ html.is-app .top{padding-top:calc(10px + var(--top-extra) + env(safe-area-inset-
       <div class="card"><h2>Cotizaciones recibidas</h2><p class="muted">Llegan desde el botón "Cotizar" de la página. Cambia el estado para llevar tu seguimiento.</p><div id="cot-l"></div></div>
     </div>
 
+    <div id="t-web" hidden><div id="web-body"></div></div>
     <div id="t-con" hidden><div id="con-body"></div></div>
     <div id="t-rec" hidden><div id="rec-body"></div></div>
     <div id="t-avs" hidden><div id="avs-body"></div></div>
@@ -905,7 +906,7 @@ $('#cgo').addEventListener('click',()=>{const v=$('#cod').value.trim();if(!/^[A-
 $('#mgo').addEventListener('click',()=>{const v=parseInt($('#mar').value,10);if(!(v>=0&&v<=12)){toast('Escribe un número de 0 a 12');return}saveCfg('margen_horas',v,'Margen actualizado')});
 
 /* ---------- pestañas ---------- */
-function showTab(t){if(!permiteTab(t)){toast('No tienes permiso para esta sección');return}try{localStorage.setItem('faro_tab',t)}catch(e){}seccionActiva(t);['ini','ast','aac','pro','crm','red','cal','res','cot','aca','cli','mat','doc','sit','sem','acc','pre','con','rec','avs','sub','usr','cha'].forEach(x=>$('#t-'+x).hidden=x!==t);if(t==='mat')matInit();if(t==='doc')docInit();if(t==='ini')renderDash();if(['ast','aac','crm','red'].includes(t))anTab(t);if(t==='pro')proTab();if(t==='pre')renderPre();if(['con','rec','avs'].includes(t))ctTab(t);if(t==='usr')usrInit();if(t==='cha')chaInit();if(t==='sub')renderSub();window.scrollTo({top:0})}
+function showTab(t){if(!permiteTab(t)){toast('No tienes permiso para esta sección');return}try{localStorage.setItem('faro_tab',t)}catch(e){}seccionActiva(t);['ini','ast','aac','pro','crm','red','cal','res','cot','aca','cli','mat','doc','sit','sem','acc','pre','con','rec','avs','web','sub','usr','cha'].forEach(x=>$('#t-'+x).hidden=x!==t);if(t==='web')webCarga();if(t==='mat')matInit();if(t==='doc')docInit();if(t==='ini')renderDash();if(['ast','aac','crm','red'].includes(t))anTab(t);if(t==='pro')proTab();if(t==='pre')renderPre();if(['con','rec','avs'].includes(t))ctTab(t);if(t==='usr')usrInit();if(t==='cha')chaInit();if(t==='sub')renderSub();window.scrollTo({top:0})}
 $$('.tab').forEach(b=>b.addEventListener('click',()=>{const x=SEC.find(y=>y.s===b.dataset.s),u=SUBULT[x.s];showTab(u&&permiteTab(u)?u:primerSub(x))}));$$('.stab').forEach(b=>b.addEventListener('click',()=>showTab(b.dataset.t)));
 const ESTC=['nueva','contactada','cotizada','ganada','perdida'];
 function renderCot(){
@@ -1040,7 +1041,7 @@ async function loadAc(){
     try{const r=await api('/rest/v1/'+t+'?select=*&order=creado.asc&limit=1000');AC.list[k]=r.ok?await r.json():[];if(!r.ok)falta=true}catch(x){AC.list[k]=[];falta=true}}
   try{const r=await api('/rest/v1/sitio_config?select=*');AC.cfg={};if(r.ok)(await r.json()).forEach(x=>AC.cfg[x.clave]=x.valor);else falta=true}catch(x){falta=true}
   AC.ok=!falta;
-  badges();renderAc();renderSitio();try{renderDash()}catch(e){console.error(e)}try{avisosPintar()}catch(e){}
+  badges();renderAc();renderSitio();webCarga();try{renderDash()}catch(e){console.error(e)}try{avisosPintar()}catch(e){}
 }
 function badges(){
   [['chat','#nac'],['clchat','#ncl']].forEach(([k,s])=>{const n=(AC.list[k]||[]).filter(m=>m.de!=='academy'&&m.de!=='faro'&&!m.leido_admin).length;const b=$(s);b.hidden=!n;b.textContent=n})
@@ -1528,16 +1529,115 @@ const SITIO=[
   {k:'txt.who1',l:'Quiénes somos · párrafo 1',t:'area'},{k:'txt.who2',l:'Quiénes somos · párrafo 2',t:'area'},
   {k:'txt.lead.portafolio',l:'Portafolio · frase debajo del título',t:'area'},{k:'txt.lead.catalogo',l:'Catálogo · frase debajo del título',t:'area'},
   {k:'txt.lead.recursos',l:'Recursos gratis · frase debajo del título',t:'area'},{k:'txt.lead.faq',l:'Preguntas frecuentes · frase debajo del título',t:'area'}]},
- {g:'Fotos de Studios',dest:'landing/fotos-studios',items:[{k:'img.david',l:'Foto de David (Quiénes somos)',t:'img'},{k:'img.equipo2',l:'Foto de la segunda persona del equipo',t:'img'},
+ {g:'Fotos de Studios',dest:'landing/fotos-studios',items:[{k:'img.david',l:'Foto de David (Quiénes somos)',t:'img'},{k:'img.equipo2',l:'Foto de la segunda persona del equipo',t:'img'},{k:'vid.david',l:'Video de saludo de David (se reproduce al pasar el cursor)',t:'vid'},{k:'vid.equipo2',l:'Video de saludo de la segunda persona',t:'vid'},
   ...rng('t',3).map(x=>({k:'img.'+x,l:'Foto del testimonio '+x.slice(1),t:'img'}))]},
  {g:'Portafolio · 14 tablones',dest:'landing/portafolio',items:rng('w',14).map(x=>({k:'img.'+x,l:'Tablón '+x.slice(1),t:'img'}))},
  {g:'Producciones musicales · portadas y audios',dest:'landing/producciones-musicales',items:rng('alb',8).flatMap(x=>[{k:'img.'+x,l:'Portada del disco '+x.slice(3),t:'img'},{k:'audio.'+x,l:'Audio del disco '+x.slice(3)+' (MP3)',t:'audio'}])},
- {g:'Recursos gratis (PDF)',dest:'landing/recursos-gratis',items:rng('r',6).map(x=>({k:'pdf.'+x,l:'Recurso '+x.slice(1)+' (PDF)',t:'pdf'}))},
+ {g:'Recursos gratis (PDF)',dest:'landing/recursos-gratis',items:[...rng('r',6).map(x=>({k:'pdf.'+x,l:'Recurso '+x.slice(1)+' (PDF)',t:'pdf'})),...rng('s',4).map(x=>({k:'pdf.'+x,l:'Guía rápida '+x.slice(1)+' (PDF)',t:'pdf'}))]},
  {g:'Catálogo en libro',dest:'landing/catalogo',items:[{k:'catalogoPdf',l:'Catálogo completo (PDF). Se muestra como libro, sin descarga.',t:'pdf'}]},
  {g:'Academy · fotos',dest:'landing/academy-fotos',items:[{k:'img.music-t1',l:'Foto testimonio Música',t:'img'},{k:'img.english-t1',l:'Foto testimonio Inglés',t:'img'},
   ...INST.map(i=>({k:'img.music-'+i[0],l:'Foto de '+i[1],t:'img'})),...NIV.map(i=>({k:'img.english-'+i[0],l:'Foto de Inglés · '+i[1],t:'img'}))]},
  {g:'Academy · canciones de Spotify por instrumento',items:INST.map(i=>({k:'songs.'+i[0],l:i[1]+' · enlace insertar de Spotify',t:'text',ph:'https://open.spotify.com/embed/track/…'}))}
 ];
+/* ---------- PORTAFOLIO: elegir qué se muestra, categorías y fotos/videos extra ---------- */
+const PF_BASE=[['Boda','eventos'],['Marca','corporativo'],['XV años','eventos'],['Auditorio','audio'],['Álbum','audio'],['Restaurante','corporativo'],['Podcast','audio'],['Bautizo','eventos'],['Graduación','eventos'],['Coro','audio'],['Redes','corporativo'],['Retratos','eventos'],['Conferencia','corporativo'],['Spot','corporativo']];
+const PF_CATS0=[{id:'eventos',n:'Eventos',s:''},{id:'corporativo',n:'Corporativo',s:''},{id:'audio',n:'Audio',s:''}];
+let PFM=null;
+function pfLeer(){let p={};try{p=JSON.parse(sitioVal('portafolio')||'{}')||{}}catch(e){}
+  return{cats:(p.cats&&p.cats.length?p.cats:PF_CATS0).map(c=>({...c})),off:[...(p.off||[])],over:JSON.parse(JSON.stringify(p.over||{})),extra:(p.extra||[]).map(x=>({...x}))}}
+const pfSlug=t=>String(t||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,30)||'cat';
+async function pfSubir(key,f){
+  if(FILES)return await matSubirPublico({k:key},'landing/portafolio',f);
+  const p=await upTo('sitio',key.replace(/[^\w]+/g,'_')+'/'+Date.now()+'-'+safeName(f.name),f,25);return SB.url+'/storage/v1/object/public/sitio/'+p;
+}
+function pfSelCat(cur,onch){const s=el('select',{onchange:e=>onch(e.target.value)},PFM.cats.map(c=>el('option',{value:c.id},c.n||c.id)));s.value=PFM.cats.some(c=>c.id===cur)?cur:(PFM.cats[0]||{}).id;return s}
+function renderPortafolioMgr(box){
+  if(!PFM)PFM=pfLeer();
+  const P=PFM;
+  /* categorías */
+  const cc=el('div',{class:'card sgp'},el('h2',{},'Categorías del portafolio'),el('p',{class:'muted'},'Cada categoría tiene un nombre (el botón de filtro) y un subtítulo corto que aparece debajo al elegirla.'));
+  P.cats.forEach((c,i)=>{
+    const n=el('input',{type:'text',maxlength:'30',placeholder:'Nombre (ej. Bodas)'});n.value=c.n||'';n.addEventListener('input',()=>{c.n=n.value});
+    const s=el('input',{type:'text',maxlength:'90',placeholder:'Subtítulo (ej. Tu historia, contada con cariño)'});s.value=c.s||'';s.addEventListener('input',()=>{c.s=s.value});
+    cc.append(el('div',{class:'field sf',style:'display:grid;grid-template-columns:1fr 2fr auto;gap:8px;align-items:end'},el('div',{},n),el('div',{},s),
+      el('button',{class:'btn btn-red btn-sm',type:'button','aria-label':'Quitar categoría',onclick:()=>{if(P.cats.length<2){toast('Debe quedar al menos una categoría');return}if(!confirm('¿Quitar la categoría «'+(c.n||c.id)+'»? Sus trabajos seguirán visibles en «Todo».'))return;P.cats.splice(i,1);renderSitio()}},icoEl('trash'))));
+  });
+  cc.append(el('div',{class:'acts'},el('button',{class:'btn btn-gold btn-sm',type:'button',onclick:()=>{P.cats.push({id:'cat-'+Date.now().toString(36),n:'',s:''});renderSitio()}},icoEl('plus'),' Agregar categoría')));
+  /* tablones de ejemplo */
+  const bc=el('div',{class:'card sgp'},el('h2',{},'Tablones: mostrar u ocultar'),el('p',{class:'muted'},'Quita la marca para ocultar un tablón en la página. La foto de cada uno se sube arriba, en «Portafolio · 14 tablones». Aquí también puedes ponerle nombre, categoría y un video que se reproduce al pasar el cursor.'));
+  PF_BASE.forEach((b,i)=>{
+    const id='w'+(i+1),o=P.over[id]=P.over[id]||{};
+    const ck=el('input',{type:'checkbox'});ck.checked=!P.off.includes(id);ck.addEventListener('change',()=>{P.off=P.off.filter(x=>x!==id);if(!ck.checked)P.off.push(id)});
+    const nm=el('input',{type:'text',maxlength:'30',placeholder:b[0]});nm.value=o.n||'';nm.addEventListener('input',()=>{o.n=nm.value});
+    const vk='vid.'+id,vv=sitioVal(vk),fi=el('input',{type:'file',accept:'video/*',style:'display:none'});
+    fi.addEventListener('change',async()=>{const f=fi.files[0];if(!f)return;try{toast('Subiendo video…');const u=await pfSubir(vk,f);await sitioSet(vk,u);toast('Video guardado');await loadAc()}catch(e){toast(e.message||'No se pudo subir')}});
+    bc.append(el('div',{class:'field sf',style:'display:grid;grid-template-columns:auto 1fr 1fr 1fr auto;gap:8px;align-items:center'},
+      el('label',{style:'display:flex;gap:6px;align-items:center'},ck,'Tablón '+(i+1)),nm,pfSelCat(o.c||b[1],v=>{o.c=v}),
+      el('span',{class:'muted'},vv?'✓ Video cargado':'Sin video'),
+      el('div',{class:'acts'},el('button',{class:'btn btn-gold btn-sm',type:'button',onclick:()=>fi.click()},icoEl('upload'),vv?' Cambiar video':' Video'),vv?el('button',{class:'btn btn-red btn-sm',type:'button','aria-label':'Quitar video',onclick:()=>sitioDel(vk)},icoEl('trash')):null),fi));
+  });
+  /* extras */
+  const xc=el('div',{class:'card sgp'},el('h2',{},'Fotos y videos nuevos'),el('p',{class:'muted'},'Agrega más trabajos sin pedir código: sube una foto o un video, ponle nombre y categoría.'));
+  P.extra.forEach((x,i)=>{
+    const nm=el('input',{type:'text',maxlength:'30',placeholder:'Nombre'});nm.value=x.n||'';nm.addEventListener('input',()=>{x.n=nm.value});
+    const ck=el('input',{type:'checkbox'});ck.checked=x.on!==false;ck.addEventListener('change',()=>{x.on=ck.checked});
+    const fi=el('input',{type:'file',accept:'image/*,video/*',style:'display:none'});
+    fi.addEventListener('change',async()=>{const f=fi.files[0];if(!f)return;try{toast('Subiendo…');x.src=await pfSubir('pf-'+x.id,f);x.type=/^video\//.test(f.type)?'vid':'img';toast('Archivo listo. Pulsa «Guardar portafolio»');renderSitio()}catch(e){toast(e.message||'No se pudo subir')}});
+    const pv=el('div',{class:'stp',style:'width:64px;height:48px'},x.src&&x.type==='img'?el('img',{src:x.src,alt:''}):icoEl(x.src?'camera':'image'));
+    xc.append(el('div',{class:'field sf',style:'display:grid;grid-template-columns:auto auto 1fr 1fr auto;gap:8px;align-items:center'},el('label',{style:'display:flex;gap:6px;align-items:center'},ck,'Mostrar'),pv,nm,pfSelCat(x.c,v=>{x.c=v}),
+      el('div',{class:'acts'},el('button',{class:'btn btn-gold btn-sm',type:'button',onclick:()=>fi.click()},icoEl('upload'),x.src?' Cambiar':' Subir'),el('button',{class:'btn btn-red btn-sm',type:'button','aria-label':'Quitar',onclick:()=>{if(!confirm('¿Quitar este trabajo?'))return;P.extra.splice(i,1);renderSitio()}},icoEl('trash'))),fi));
+  });
+  xc.append(el('div',{class:'acts'},el('button',{class:'btn btn-gold btn-sm',type:'button',onclick:()=>{P.extra.push({id:'x'+Date.now().toString(36),n:'',c:(P.cats[0]||{}).id,type:'img',src:'',on:true});renderSitio()}},icoEl('plus'),' Agregar foto o video')));
+  const sv=el('div',{class:'card sgp',style:'display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap'},el('p',{class:'muted'},'Los cambios de esta sección se publican al guardar.'),
+    el('button',{class:'btn btn-gold',type:'button',onclick:async()=>{
+      try{
+        P.cats.forEach(c=>{if(!c.n||!c.n.trim())return;if(!c.id||/^cat-/.test(c.id))c.id=pfSlug(c.n)});
+        const used=new Set();P.cats=P.cats.filter(c=>c.n&&c.n.trim()).map(c=>{let id=c.id,k=2;while(used.has(id))id=c.id+'-'+k++;used.add(id);return{id,n:c.n.trim(),s:(c.s||'').trim()}});
+        if(!P.cats.length)P.cats=PF_CATS0.map(c=>({...c}));
+        const over={};Object.keys(P.over).forEach(k=>{const o=P.over[k],r={};if(o.n&&o.n.trim())r.n=o.n.trim();if(o.c)r.c=o.c;if(Object.keys(r).length)over[k]=r});
+        const out={cats:P.cats,off:P.off,over,extra:P.extra.filter(x=>x.src).map(x=>({id:x.id,n:(x.n||'').trim()||'Trabajo',c:x.c,type:x.type,src:x.src,on:x.on!==false}))};
+        await sitioSet('portafolio',JSON.stringify(out));PFM=null;toast('Portafolio guardado');await loadAc();
+      }catch(e){toast(e.message||'No se pudo guardar')}}},icoEl('check'),' Guardar portafolio'));
+  box.append(cc,bc,xc,sv);
+}
+
+/* ---------- SUGERENCIAS Y COMENTARIOS DE LA WEB ---------- */
+const WEB={sug:[],com:[],ok:true,nuevas:0};
+async function webCarga(){
+  try{
+    const r=await api('/rest/v1/sugerencias_web?select=*&order=creado.desc&limit=200');WEB.ok=r.ok;WEB.sug=r.ok?await r.json():[];
+    const c=await api('/rest/v1/recurso_comentarios?select=*&order=creado.desc&limit=200');WEB.com=c.ok?await c.json():[];
+  }catch(e){WEB.ok=false}
+  WEB.nuevas=WEB.sug.filter(s=>!s.leida).length;
+  const b=$('#nweb');if(b){b.hidden=!WEB.nuevas;b.textContent=WEB.nuevas}
+  try{avisosPintar()}catch(e){}
+  const t=$('#t-web');if(t&&!t.hidden)webPintar();
+}
+const WEB_TIPO={error:'🐞 Error',sugerencia:'💡 Idea',comentario:'💬 Comentario'};
+function webPintar(){
+  const box=$('#web-body');if(!box)return;box.textContent='';
+  if(!WEB.ok){box.append(el('div',{class:'msg'},'Faltan las tablas de la comunidad web. En Supabase abre SQL Editor, New query, pega sql/comunidad-web.sql y dale Run.'));return}
+  const c1=el('div',{class:'card'},el('h2',{},'Errores y sugerencias de la web'),el('p',{class:'muted'},'Llegan del buzón de farostudios.net. Sin registro: algunos dejan nombre o contacto.'));
+  if(!WEB.sug.length)c1.append(el('p',{class:'muted'},'Todavía no hay mensajes.'));
+  WEB.sug.forEach(s=>{
+    const dg=String(s.contacto||'').replace(/\D/g,'');
+    c1.append(el('div',{class:'item'},el('b',{},(WEB_TIPO[s.tipo]||s.tipo)+(s.leida?'':' · nuevo')),
+      el('small',{},new Date(s.creado).toLocaleString('es-GT',{timeZone:'America/Guatemala'})+(s.pagina?' · página: '+s.pagina:'')+(s.nombre?' · '+s.nombre:'')),
+      el('p',{},s.mensaje),
+      s.contacto?el('p',{},'Contacto: ',dg.length>=8?el('a',{href:'https://wa.me/'+dg,target:'_blank',rel:'noopener'},s.contacto):/@/.test(s.contacto)?el('a',{href:'mailto:'+s.contacto},s.contacto):s.contacto):'',
+      el('div',{class:'acts'},
+        el('button',{class:'btn btn-gold btn-sm',type:'button',onclick:async()=>{const r=await api('/rest/v1/sugerencias_web?id=eq.'+s.id,{method:'PATCH',headers:{Prefer:'return=minimal'},body:{leida:!s.leida}});if(!r.ok){toast(await errText(r));return}await webCarga()}},icoEl('check'),s.leida?' Marcar como nueva':' Marcar como leída'),
+        el('button',{class:'btn btn-red btn-sm',type:'button','aria-label':'Eliminar',onclick:async()=>{if(!confirm('¿Eliminar este mensaje?'))return;const r=await api('/rest/v1/sugerencias_web?id=eq.'+s.id,{method:'DELETE',headers:{Prefer:'return=minimal'}});if(!r.ok){toast(await errText(r));return}await webCarga()}},icoEl('trash')))));
+  });
+  const nombres={};((typeof SITIO!=='undefined'&&SITIO.find(g=>g.g.startsWith('Recursos'))||{items:[]}).items.forEach(i=>{nombres[i.k.replace('pdf.','')]=i.l.replace(' (PDF)','')}));
+  const c2=el('div',{class:'card',style:'margin-top:14px'},el('h2',{},'Comentarios en los recursos'),el('p',{class:'muted'},'Lo que la comunidad escribe en cada guía. Oculta lo que no deba verse.'));
+  if(!WEB.com.length)c2.append(el('p',{class:'muted'},'Todavía no hay comentarios.'));
+  WEB.com.forEach(m=>c2.append(el('div',{class:'item'},el('b',{},m.nombre+' · '+(nombres[m.recurso]||m.recurso)+(m.visible?'':' · oculto')),el('small',{},new Date(m.creado).toLocaleString('es-GT',{timeZone:'America/Guatemala'})),el('p',{},m.texto),
+    el('div',{class:'acts'},el('button',{class:'btn btn-gold btn-sm',type:'button',onclick:async()=>{const r=await api('/rest/v1/recurso_comentarios?id=eq.'+m.id,{method:'PATCH',headers:{Prefer:'return=minimal'},body:{visible:!m.visible}});if(!r.ok){toast(await errText(r));return}await webCarga()}},m.visible?' Ocultar':' Mostrar'),
+      el('button',{class:'btn btn-red btn-sm',type:'button','aria-label':'Eliminar',onclick:async()=>{if(!confirm('¿Eliminar este comentario?'))return;const r=await api('/rest/v1/recurso_comentarios?id=eq.'+m.id,{method:'DELETE',headers:{Prefer:'return=minimal'}});if(!r.ok){toast(await errText(r));return}await webCarga()}},icoEl('trash'))))));
+  box.append(c1,c2);
+}
+
 function sitioVal(k){return AC.cfg[k]||''}
 let SIT_SEL=0;
 const SITIO_META={'Contacto y redes':['Contacto y redes','mail'],'Textos del sitio':['Textos','edit'],'Fotos de Studios':['Fotos Studios','camera'],'Portafolio · 14 tablones':['Portafolio','image'],'Producciones musicales · portadas y audios':['Producciones','music'],'Recursos gratis (PDF)':['Recursos gratis','pdf'],'Catálogo en libro':['Catálogo','book'],'Academy · fotos':['Fotos Academy','cap'],'Academy · canciones de Spotify por instrumento':['Spotify','link']};
@@ -1553,21 +1653,22 @@ function renderSitio(){
   box.append(grid);
   const card=el('div',{class:'card sgp'},el('h2',{},sec0.g));
   const tiles=el('div',{class:'sgt'}),fields=el('div',{class:'sgf'});
-  sec0.items.forEach(it=>(['img','audio','pdf'].includes(it.t)?tiles:fields).append(sitioRow(it,sec0.dest)));
+  sec0.items.forEach(it=>(['img','audio','pdf','vid'].includes(it.t)?tiles:fields).append(sitioRow(it,sec0.dest)));
   if(tiles.children.length)card.append(tiles);
   if(fields.children.length)card.append(fields);
   box.append(card);
+  if(sec0.g.startsWith('Portafolio'))renderPortafolioMgr(box);
 }
 function sitioRow(it,dest){
   const v=sitioVal(it.k);
-  if(['img','audio','pdf'].includes(it.t)){
-    const fi=el('input',{type:'file',accept:it.t==='img'?'image/*':it.t==='audio'?'audio/*':'application/pdf',style:'display:none'});
+  if(['img','audio','pdf','vid'].includes(it.t)){
+    const fi=el('input',{type:'file',accept:it.t==='img'?'image/*':it.t==='audio'?'audio/*':it.t==='vid'?'video/*':'application/pdf',style:'display:none'});
     fi.addEventListener('change',async()=>{const f=fi.files[0];if(!f)return;
       try{toast('Subiendo…');let u;
         if(FILES&&dest){u=await matSubirPublico(it,dest,f)}   /* R2: carpeta pública del landing */
         else{const p=await upTo('sitio',it.k.replace(/[^\w]+/g,'_')+'/'+Date.now()+'-'+safeName(f.name),f,25);u=SB.url+'/storage/v1/object/public/sitio/'+p}
         await sitioSet(it.k,u);toast('Guardado');await loadAc()}catch(e){toast(e.message||'No se pudo subir')}});
-    const prev=el('div',{class:'stp'},v&&it.t==='img'?el('img',{src:v,alt:''}):icoEl(it.t==='img'?'image':it.t==='audio'?'music':'pdf'));
+    const prev=el('div',{class:'stp'},v&&it.t==='img'?el('img',{src:v,alt:''}):icoEl(it.t==='img'?'image':it.t==='audio'?'music':it.t==='vid'?'camera':'pdf'));
     if(v&&it.t!=='img'){prev.style.cursor='pointer';prev.addEventListener('click',()=>window.open(v,'_blank','noopener'))}
     return el('div',{class:'st'+(v?' on':''),title:it.k},prev,el('b',{},it.l),
       el('span',{class:'stg'},v?'✓ Cargado':'Vacío · muestra el ejemplo'),
@@ -2432,6 +2533,7 @@ function avisosCalcular(){
   if(PREF.nHoy&&prox.length){const h=prox.filter(r=>r.fecha===t).length;out.push({id:'hoy',n:prox.length,i:'calendar',t:(h?h+' hoy':'')+(h&&prox.length>h?' · ':'')+(prox.length>h?(prox.length-h)+' mañana':''),d:prox.sort((a,b)=>(a.fecha+a.hora).localeCompare(b.fecha+b.hora))[0].categoria+' · '+hh(prox[0].hora),go:'cal',hot:h>0})}
   const sl=['chat','clchat'].reduce((s,k)=>s+L(k).filter(m=>m.de!=='academy'&&m.de!=='faro'&&!m.leido_admin).length,0);
   if(PREF.nMsg&&sl)out.push({id:'msg',n:sl,i:'mail',t:sl+' mensaje(s) sin leer',d:'De alumnos, padres o clientes',go:'aca',hot:true});
+  if(typeof WEB!=='undefined'&&WEB.nuevas)out.push({id:'web',n:WEB.nuevas,i:'message',t:WEB.nuevas+' sugerencia(s) o error(es) de la web',d:'Del buzón de farostudios.net',go:'web',hot:true});
   const fv=L('fac').filter(f=>f.estado==='pendiente'&&f.vence&&f.vence<t);
   if(PREF.nFac&&fv.length)out.push({id:'fac',n:fv.length,i:'card',t:fv.length+' factura(s) vencida(s)',d:'Por cobrar: '+Qf(fv.reduce((s,f)=>s+Number(f.monto||0),0)),go:'aca',hot:true});
   const tr=L('tar').filter(x=>x.estado==='hecha');
@@ -2867,7 +2969,7 @@ function renderAvs(){
 }
 
 /* ---------- secciones del menú (8) y sus pestañas internas ---------- */
-const SEC=[{s:'ini',tabs:[['ini']]},{s:'alc',tabs:[['pro'],['crm'],['red'],['ast'],['aac']]},{s:'age',tabs:[['cal'],['res'],['sem']]},{s:'cli',tabs:[['cli'],['cot'],['avs'],['rec']]},{s:'con',tabs:[['con']]},{s:'aca',tabs:[['aca']]},{s:'arc',tabs:[['mat'],['doc'],['sit'],['sub']]},{s:'aju',tabs:[['usr'],['cha'],['acc'],['pre']]}];
+const SEC=[{s:'ini',tabs:[['ini']]},{s:'alc',tabs:[['pro'],['crm'],['red'],['ast'],['aac']]},{s:'age',tabs:[['cal'],['res'],['sem']]},{s:'cli',tabs:[['cli'],['cot'],['web'],['avs'],['rec']]},{s:'con',tabs:[['con']]},{s:'aca',tabs:[['aca']]},{s:'arc',tabs:[['mat'],['doc'],['sit'],['sub']]},{s:'aju',tabs:[['usr'],['cha'],['acc'],['pre']]}];
 const SEC_DE={};SEC.forEach(x=>x.tabs.forEach(([t])=>{SEC_DE[t]=x.s}));
 const SUBULT={};
 const primerSub=x=>(x.tabs.find(([t])=>permiteTab(t))||x.tabs[0])[0];
@@ -2894,7 +2996,7 @@ const PERMISOS=[
   {k:'subir_material',n:'Subir material (solo carga)',d:'Solo ve su enlace personal para subir archivos; no ve ni borra nada',i:'upload'}];
 const PRESETS=[['Docente',['academy']],['Fotógrafo (solo subir)',['subir_material']],['Administración',['agenda','clientes','academy','academy_facturas']],['Contenido y redes',['contenido','metricas']]];
 /* qué permiso abre cada pestaña · lo que no aparece aquí es solo del director · '*' = todos */
-const TAB_PERM={pro:'clientes',ast:'metricas',aac:'metricas',red:'metricas',crm:'clientes',con:'contenido',cal:'agenda',res:'agenda',sem:'agenda',cot:'clientes',cli:'clientes',aca:'academy',avs:'clientes',sub:'subir_material',pre:'*',cha:'*'};
+const TAB_PERM={pro:'clientes',ast:'metricas',aac:'metricas',red:'metricas',crm:'clientes',con:'contenido',cal:'agenda',res:'agenda',sem:'agenda',cot:'clientes',cli:'clientes',aca:'academy',avs:'clientes',web:'clientes',sub:'subir_material',pre:'*',cha:'*'};
 const PRIMERA=['sub','con','cal','res','cot','cli','aca','avs','pro','crm','ast','aac','red','pre'];
 const ME={owner:false,ok:false,perms:new Set(),nombre:'',uid:'',email:'',fila:null};
 const puede=p=>ME.owner||ME.perms.has(p);

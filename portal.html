@@ -1087,8 +1087,8 @@ const TXT={do:['Ingreso de docentes','Escribe el usuario y la contraseña que te
 function loginUI(msg){
   const t=S.tab,cl=t==='cl';
   $('#login').innerHTML='<div class="lg-card"><div class="mascot"><span class="iso"></span></div>'
-   +(cl?'':'<div class="chips" role="tablist" aria-label="Tipo de acceso" style="justify-content:center">'+[['al','Estudiante'],['pa','Encargado'],['do','Docente']].map(x=>'<button class="chip" type="button" role="tab" data-t="'+x[0]+'" aria-pressed="'+(t===x[0])+'">'+x[1]+'</button>').join('')+'</div>')
-   +'<h1>'+TXT[t][0]+'</h1><p class="sub">'+TXT[t][1]+'</p>'
+   +(cl||S.only==='do'?'':'<div class="chips" role="tablist" aria-label="Tipo de acceso" style="justify-content:center">'+[['al','Estudiante'],['pa','Encargado'],['do','Docente']].map(x=>'<button class="chip" type="button" role="tab" data-t="'+x[0]+'" aria-pressed="'+(t===x[0])+'">'+x[1]+'</button>').join('')+'</div>')
+   +'<h1>'+TXT[t][0]+'</h1><p class="sub">'+TXT[t][1]+'</p>'+(S.only==='do'?'<p class="sub" style="font-size:.9em;opacity:.8">Esta entrada es solo para docentes. Estudiantes y padres ingresan desde el menú de Faro Academy.</p>':'')
    +'<form id="lf" autocomplete="on" style="display:grid;gap:14px;width:100%">'
    +(cl?'<label>Correo<input id="lu" type="email" placeholder="tucorreo@ejemplo.com" autocomplete="email" required></label><label>Código<input id="lp" placeholder="XXXX-XXXX" autocomplete="off" autocapitalize="characters" required></label>'
        :'<label>Usuario<input id="lu" placeholder="'+(t==='pa'?'enc-ana-k7m':t==='do'?'doc-ana-k7m':'ana-k7m')+'" autocomplete="username" autocapitalize="none" required></label><label>Contraseña<input id="lp" type="password" placeholder="XXXX-XXXX-XXXX" autocomplete="current-password" required></label>')
@@ -1139,7 +1139,10 @@ $('#out').onclick=()=>salir();
 function vigilaInact(){if(SES&&Date.now()-actGet()>INACT){salir(true);loginUI('Cerramos tu sesión por inactividad. Entra de nuevo.')}}
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)vigilaInact()});setInterval(vigilaInact,60000);
 (function(){const q=new URLSearchParams(location.search).get('r');if(['al','pa','do','cl'].includes(q))S.tab=q;
-  if(SES&&SES.access)iniciar();else render()})();
+  if(q==='do')S.only='do';
+  let h=null;try{h=JSON.parse(sessionStorage.getItem('faro_handoff')||'null');sessionStorage.removeItem('faro_handoff')}catch(e){}
+  if(SES&&SES.access)iniciar();else{render();
+    try{if(h&&h.t===S.tab&&h.u&&h.p&&$('#lu')&&$('#lp')){$('#lu').value=h.u;$('#lp').value=h.p;$('#lf').requestSubmit?$('#lf').requestSubmit():$('#lf').dispatchEvent(new Event('submit',{cancelable:true}))}}catch(e){}}})();
 
 /* ---------- textura de papel ---------- */
 (function(){const c=document.createElement('canvas');c.width=c.height=512;const x=c.getContext('2d');
