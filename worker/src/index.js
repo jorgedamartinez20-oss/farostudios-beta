@@ -40,6 +40,10 @@ const DOCUMENTOS = [
   ['otros', 'Otros documentos', false],
 ];
 
+// Subcarpetas de cada alumno (deben coincidir con archivo_permiso en la base de datos).
+export const TIPOS_ALUMNO = ['material', 'respuestas', 'practicas', 'mis-archivos', 'diplomas', 'facturas'];
+const EXT_PROHIBIDAS = /\.(html?|xhtml|svg|js|mjs|exe|bat|cmd|sh|php|jar|apk|msi|dll)$/i;
+
 // "entidad": la carpeta lleva debajo una carpeta por persona/empresa (se crea al darla de alta).
 export const DESTINOS = [
   ...STUDIOS.map(([id, et]) => ({ id: 'studios/' + id, bucket: 'privado', prefijo: `faro-studios/${id}/`, etiqueta: `Faro Studios › ${et}`, entidad: true })),
@@ -48,6 +52,10 @@ export const DESTINOS = [
     ...PERSONAS.map(([id, et]) => ({ id: `academy/${a}/${id}`, bucket: 'privado', prefijo: `faro-academy/${a}/${id}/`, etiqueta: `Faro Academy › ${aet} › ${et}`, entidad: true })),
   ]),
   ...DOCUMENTOS.map(([id, et, ent]) => ({ id: 'documentos/' + id, bucket: 'privado', prefijo: `documentos/${id}/`, etiqueta: `Documentos › ${et}`, entidad: ent })),
+  // Carpeta propia de cada alumno, docente y cliente (el nombre de la carpeta lo pone la base de datos: columna "carpeta").
+  { id: 'academy/estudiantes', bucket: 'privado', prefijo: 'faro-academy/estudiantes/', etiqueta: 'Faro Academy › Alumnos (carpeta propia)', entidad: true, persona: 'estudiante' },
+  { id: 'academy/docentes', bucket: 'privado', prefijo: 'faro-academy/docentes/', etiqueta: 'Faro Academy › Docentes (carpeta propia)', entidad: true, persona: 'docente' },
+  { id: 'studios/clientes', bucket: 'privado', prefijo: 'faro-studios/clientes/', etiqueta: 'Faro Studios › Clientes (carpeta propia)', entidad: true, persona: 'cliente' },
   ...LANDING.map(([id, et]) => ({ id: 'landing/' + id, bucket: 'publico', prefijo: `landing/${id}/`, etiqueta: `Landing › ${et}`, entidad: false })),
 ];
 
@@ -75,7 +83,10 @@ function claveValida(bucket, key) {
     if (d.bucket !== bucket || !key.startsWith(d.prefijo)) continue;
     const resto = key.slice(d.prefijo.length);
     const partes = resto.split('/');
-    if (d.entidad) {
+    if (d.persona === 'estudiante') {
+      if (partes.length !== 3 || !/^[a-z0-9]+(-[a-z0-9]+)*$/.test(partes[0]) || !TIPOS_ALUMNO.includes(partes[1]) || !partes[2]) continue;
+      if (partes[2] !== nombreArchivo(partes[2])) continue;
+    } else if (d.entidad) {
       if (partes.length !== 2 || !/^[a-z0-9]+(-[a-z0-9]+)*$/.test(partes[0]) || !partes[1]) continue;
       if (partes[1] !== nombreArchivo(partes[1])) continue;
     } else {
@@ -87,6 +98,13 @@ function claveValida(bucket, key) {
 }
 export function carpetasBase() {
   return DESTINOS.map((d) => ({ bucket: d.bucket, key: d.prefijo + '.keep' }));
+}
+// Carpeta de una persona: "faro-academy/estudiantes/ana-perez-1a2b3c4d/" (la genera la base de datos).
+const RE_CARPETA = /^(faro-academy\/(estudiantes|docentes)|faro-studios\/clientes)\/[a-z0-9]+(-[a-z0-9]+)*\/$/;
+export function marcadoresPersona(carpeta) {
+  if (!RE_CARPETA.test(carpeta || '') || carpeta.length > 120) return null;
+  const subs = carpeta.startsWith('faro-academy/estudiantes/') ? TIPOS_ALUMNO.map((t) => carpeta + t + '/') : [];
+  return [carpeta, ...subs].map((c) => c + '.keep');
 }
 
 /* ---------- Respuestas, CORS ---------- */
@@ -222,12 +240,12 @@ async function contar(env, key, tipo) { // tipo: 'd' descarga, 'v' reproducción
   } catch (e) { /* contar nunca debe romper una descarga */ }
 }
 // Recorre todo el bucket (por páginas) y resume cuántos archivos, peso y subidas por mes hay en cada área.
-async function resumenBucket(bucket, areaDeKey) {
+async function resumenBucket(bucket, areaDeKey, oculto = new Set(), nombre = '') {
   const areas = {}; let cursor, paginas = 0;
   do {
     const r = await bucket.list({ cursor, limit: 1000 });
     for (const o of r.objects) {
-      if (o.key.endsWith('/.keep') || o.key.startsWith('_stats/')) continue;
+      if (o.key.endsWith('/.keep') || o.key.startsWith('_stats/') || o.key.startsWith('_papelera/') || oculto.has(nombre + '|' + o.key)) continue;
       const a = areas[areaDeKey(o.key)] || (areas[areaDeKey(o.key)] = { n: 0, b: 0, meses: {} });
       a.n++; a.b += o.size;
       const m = new Date(o.uploaded).toISOString().slice(0, 7);
@@ -236,6 +254,83 @@ async function resumenBucket(bucket, areaDeKey) {
     cursor = r.truncated ? r.cursor : undefined;
   } while (cursor && ++paginas < 30);
   return { areas, completo: !cursor };
+}
+
+
+/* ---------- Papelera general ----------
+   Borrar nunca quita el archivo de R2: deja una marca en "_papelera/" y el archivo desaparece de las listas y de los enlaces.
+   Se puede restaurar. Solo el director lo borra de verdad ("purgar"). */
+const PAPELERA = '_papelera/';
+const DIAS_PAPELERA = 30;
+const marcaKey = (b, k) => PAPELERA + b64u(enc.encode(b + '|' + k));
+async function enPapelera(env, b, k) { return !!(await env.PRIVADO.head(marcaKey(b, k))); }
+async function clavesPapelera(env) { // Set "bucket|key" de todo lo que está en la papelera
+  const out = new Set(); let cursor;
+  do {
+    const r = await env.PRIVADO.list({ prefix: PAPELERA, cursor, limit: 1000, include: ['customMetadata'] });
+    for (const o of r.objects) if (o.customMetadata && o.customMetadata.k) out.add(o.customMetadata.b + '|' + o.customMetadata.k);
+    cursor = r.truncated ? r.cursor : undefined;
+  } while (cursor);
+  return out;
+}
+async function aPapelera(env, b, k, por, size) {
+  await env.PRIVADO.put(marcaKey(b, k), new Uint8Array(0), { customMetadata: { b, k, por: String(por || '').slice(0, 120), cuando: new Date().toISOString(), size: String(size || 0) } });
+}
+function usuarioDelToken(tok) {
+  try { const j = JSON.parse(atob(tok.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))); return j.email || j.sub || ''; } catch (e) { return ''; }
+}
+
+/* ---------- Portal (alumnos, familias, docentes, equipo): la base de datos decide quién puede qué ---------- */
+async function permiso(env, tok, key, accion) {
+  try {
+    const r = await fetch(`${env.SUPABASE_URL}/rest/v1/rpc/archivo_permiso`, {
+      method: 'POST', headers: { apikey: env.SUPABASE_KEY, Authorization: `Bearer ${tok}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ p_key: key, p_accion: accion }),
+    });
+    return r.ok && (await r.json()) === true;
+  } catch (e) { return false; }
+}
+function claveDePortal(key) { // estructura permitida en el portal (la base ya valida el dueño y el tipo)
+  if (typeof key !== 'string' || !key || key.length > 400 || key.includes('..') || key.includes('//') || key.includes('\\') || key.startsWith('/')) return false;
+  const d = claveValida('privado', key);
+  if (!d || !d.persona) return false;
+  const nom = key.split('/').pop();
+  return !!nom && nom !== '.keep' && !EXT_PROHIBIDAS.test(nom);
+}
+async function portal(request, env, ctx, ruta, url) {
+  const m = /^Bearer\s+(.+)$/i.exec(request.headers.get('Authorization') || '');
+  if (!m) return err(request, env, 'Inicia sesión', 401);
+  const tok = m[1];
+  const key = url.searchParams.get('key') || '';
+  if (!claveDePortal(key)) return err(request, env, 'Ruta no permitida');
+
+  if (ruta === '/p/enlace' && request.method === 'POST') {
+    if (!env.FIRMA_SECRETO) return err(request, env, 'Servicio sin configurar', 500);
+    if (!(await permiso(env, tok, key, 'leer'))) return err(request, env, 'No tienes acceso a este archivo', 403);
+    if (await enPapelera(env, 'privado', key)) return err(request, env, 'No existe ese archivo', 404);
+    const t = await firmar(env, { b: 'privado', k: key, e: Math.floor(Date.now() / 1000) + 3600 });
+    return json(request, env, { url: `${url.origin}/api/bajar?t=${t}`, urlVer: `${url.origin}/api/bajar?inline=1&t=${t}`, vence_en: 3600 });
+  }
+  if (ruta === '/p/subir' && request.method === 'PUT') {
+    const largo = Number(request.headers.get('Content-Length') || 0);
+    if (!largo) return err(request, env, 'Falta el tamaño del archivo');
+    if (largo > UMBRAL_SIMPLE) return err(request, env, 'El archivo es muy pesado (máximo 40 MB)', 413);
+    if (!(await permiso(env, tok, key, 'escribir'))) return err(request, env, 'No puedes subir aquí', 403);
+    const tipo = (request.headers.get('Content-Type') || 'application/octet-stream').toLowerCase();
+    if (/html|javascript|svg/.test(tipo)) return err(request, env, 'Tipo de archivo no permitido');
+    if (key.includes('/practicas/') || key.includes('/respuestas/')) { if (!/^audio\//.test(tipo) && !/^video\/(webm|mp4)$/.test(tipo)) return err(request, env, 'Aquí solo van grabaciones de audio'); if (largo > 25 * MB) return err(request, env, 'La grabación es muy larga', 413); }
+    if (await env.PRIVADO.head(key)) { await env.PRIVADO.delete(marcaKey('privado', key)); } // reemplazo: lo nuevo no queda oculto
+    await env.PRIVADO.put(key, request.body, { httpMetadata: { contentType: tipo } });
+    return json(request, env, { ok: true, key });
+  }
+  if (ruta === '/p/borrar' && request.method === 'POST') {
+    if (!(await permiso(env, tok, key, 'borrar'))) return err(request, env, 'No puedes borrar este archivo', 403);
+    const o = await env.PRIVADO.head(key);
+    if (!o) return err(request, env, 'No existe ese archivo', 404);
+    await aPapelera(env, 'privado', key, usuarioDelToken(tok), o.size);
+    return json(request, env, { ok: true, papelera: true });
+  }
+  return err(request, env, 'No encontrado', 404);
 }
 
 /* ---------- Servicio ---------- */
@@ -251,8 +346,11 @@ export default {
     if (ruta.startsWith('/pub/')) {
       const key = decodeURIComponent(ruta.slice(5));
       if (!key.startsWith('landing/') || key.includes('..') || key.endsWith('.keep')) return err(request, env, 'No existe ese archivo', 404);
+      if (await enPapelera(env, 'publico', key)) return err(request, env, 'No existe ese archivo', 404);
       return entregar(request, env, env.PUBLICO, key, { cache: 'public, max-age=31536000, immutable' });
     }
+
+    if (ruta.startsWith('/p/')) { try { return await portal(request, env, ctx, ruta, url); } catch (e) { return err(request, env, 'No se pudo completar la operación', 500); } }
 
     if (ruta === '/api/arbol') return json(request, env, { destinos: DESTINOS, umbralSimple: UMBRAL_SIMPLE });
 
@@ -260,6 +358,7 @@ export default {
     if (ruta === '/api/bajar') {
       const p = await verificar(env, url.searchParams.get('t'));
       if (!p || !B[p.b]) return err(request, env, 'El enlace no es válido o ya venció', 403);
+      if (await enPapelera(env, p.b, p.k)) return err(request, env, 'No existe ese archivo', 404);
       const descargar = url.searchParams.get('inline') !== '1';
       if (!p.a && request.method === 'GET') { // el administrador viendo una vista previa no cuenta
         const rango = request.headers.get('Range');
@@ -301,18 +400,20 @@ export default {
         const prefix = url.searchParams.get('prefix') || '';
         if (prefix.includes('..') || prefix.startsWith('/')) return err(request, env, 'Ruta inválida');
         const r = await bucket.list({ prefix, delimiter: '/', limit: 1000, include: ['customMetadata'] });
+        const oculto = await clavesPapelera(env);
         return json(request, env, {
-          carpetas: r.delimitedPrefixes.filter((c) => c !== '_stats/'),
-          archivos: r.objects.filter((o) => !o.key.endsWith('/.keep')).map((o) => ({ key: o.key, size: o.size, subido: o.uploaded })),
-          nombres: Object.fromEntries(r.objects.filter((o) => o.customMetadata && o.customMetadata.nombre).map((o) => [o.key, o.customMetadata.nombre])),
+          carpetas: r.delimitedPrefixes.filter((c) => c !== '_stats/' && c !== PAPELERA),
+          archivos: r.objects.filter((o) => !o.key.endsWith('/.keep') && !oculto.has(bucketNombre + '|' + o.key)).map((o) => ({ key: o.key, size: o.size, subido: o.uploaded })),
+          nombres: Object.fromEntries(r.objects.filter((o) => o.customMetadata && o.customMetadata.nombre && !oculto.has(bucketNombre + '|' + o.key)).map((o) => [o.key, o.customMetadata.nombre])),
         });
       }
 
       // Descargas, vistas y resumen de archivos por área (para las gráficas del admin)
       if (ruta === '/api/stats' && request.method === 'GET') {
         const st = await leerStats(env);
-        const rp = await resumenBucket(env.PRIVADO, areaDe);
-        const rl = await resumenBucket(env.PUBLICO, () => 'l');
+        const oc = await clavesPapelera(env);
+        const rp = await resumenBucket(env.PRIVADO, areaDe, oc, 'privado');
+        const rl = await resumenBucket(env.PUBLICO, () => 'l', oc, 'publico');
         return json(request, env, { ...st, areas: { ...rp.areas, ...rl.areas }, completo: rp.completo && rl.completo });
       }
 
@@ -358,16 +459,69 @@ export default {
       if (ruta === '/api/enlace' && request.method === 'POST') {
         if (!env.FIRMA_SECRETO) return err(request, env, 'Falta configurar FIRMA_SECRETO en el servicio (ver LEEME)', 500);
         if (!bucket || !key || key.includes('..') || key.endsWith('/.keep')) return err(request, env, 'Archivo inválido');
+        if (await enPapelera(env, bucketNombre, key)) return err(request, env, 'Ese archivo está en la papelera', 404);
         const seg = Math.min(Math.max(Number(url.searchParams.get('seg')) || 3600, 60), TTL_ENLACE_MAX);
         const t = await firmar(env, { b: bucketNombre, k: key, e: Math.floor(Date.now() / 1000) + seg, ...(url.searchParams.get('adm') === '1' ? { a: 1 } : {}) });
         return json(request, env, { url: `${url.origin}/api/bajar?t=${t}`, urlVer: `${url.origin}/api/bajar?inline=1&t=${t}`, vence_en: seg });
       }
 
-      // Borrar un archivo
+      // Borrar un archivo: va a la papelera (se puede restaurar)
       if (ruta === '/api/objeto' && request.method === 'DELETE') {
-        if (!bucket || !key || key.includes('..') || key.endsWith('/.keep')) return err(request, env, 'Archivo inválido');
-        await bucket.delete(key);
+        if (!bucket || !key || key.includes('..') || key.endsWith('/.keep') || key.startsWith(PAPELERA) || key.startsWith('_stats/')) return err(request, env, 'Archivo inválido');
+        const o = await bucket.head(key);
+        if (!o) return err(request, env, 'No existe ese archivo', 404);
+        await aPapelera(env, bucketNombre, key, env.ADMIN_EMAIL, o.size);
+        return json(request, env, { ok: true, papelera: true });
+      }
+
+      // Papelera: lista, restaurar, borrar de verdad
+      if (ruta === '/api/papelera' && request.method === 'GET') {
+        const items = []; let cursor;
+        do {
+          const r = await env.PRIVADO.list({ prefix: PAPELERA, cursor, limit: 1000, include: ['customMetadata'] });
+          for (const o of r.objects) if (o.customMetadata && o.customMetadata.k) items.push({ bucket: o.customMetadata.b, key: o.customMetadata.k, por: o.customMetadata.por || '', cuando: o.customMetadata.cuando || '', size: Number(o.customMetadata.size || 0) });
+          cursor = r.truncated ? r.cursor : undefined;
+        } while (cursor);
+        items.sort((a, b) => (a.cuando < b.cuando ? 1 : -1));
+        return json(request, env, { items, dias: DIAS_PAPELERA });
+      }
+      if (ruta === '/api/restaurar' && request.method === 'POST') {
+        if (!bucket || !key) return err(request, env, 'Archivo inválido');
+        await env.PRIVADO.delete(marcaKey(bucketNombre, key));
         return json(request, env, { ok: true });
+      }
+      if (ruta === '/api/purgar' && request.method === 'POST') {
+        // ?viejos=1 borra de verdad lo que lleva más de DIAS_PAPELERA días; si no, el archivo indicado
+        let n = 0;
+        if (url.searchParams.get('viejos') === '1') {
+          const limite = Date.now() - DIAS_PAPELERA * 864e5; let cursor;
+          do {
+            const r = await env.PRIVADO.list({ prefix: PAPELERA, cursor, limit: 1000, include: ['customMetadata'] });
+            for (const o of r.objects) {
+              const c = o.customMetadata || {};
+              if (c.k && B[c.b] && Date.parse(c.cuando) < limite) { await B[c.b].delete(c.k); await env.PRIVADO.delete(o.key); n++; }
+            }
+            cursor = r.truncated ? r.cursor : undefined;
+          } while (cursor);
+        } else {
+          if (!bucket || !key || !(await enPapelera(env, bucketNombre, key))) return err(request, env, 'Ese archivo no está en la papelera', 404);
+          await bucket.delete(key); await env.PRIVADO.delete(marcaKey(bucketNombre, key)); n = 1;
+        }
+        return json(request, env, { ok: true, borrados: n });
+      }
+
+      // Crea la carpeta de una persona (alumno, docente o cliente) con el nombre que generó la base de datos
+      if (ruta === '/api/carpeta-persona' && request.method === 'POST') {
+        const b = await request.json().catch(() => ({}));
+        const lista = (Array.isArray(b.carpetas) ? b.carpetas : [b.carpeta]).slice(0, 500);
+        let creadas = 0;
+        for (const c of lista) {
+          const marcas = marcadoresPersona(c);
+          if (!marcas) continue;
+          for (const m of marcas) await env.PRIVADO.put(m, new Uint8Array(0), { customMetadata: { marcador: 'carpeta' } });
+          creadas++;
+        }
+        return json(request, env, { ok: true, creadas });
       }
     } catch (e) {
       return err(request, env, 'No se pudo completar la operación', 500);

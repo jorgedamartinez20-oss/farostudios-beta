@@ -1,7 +1,7 @@
 // Pruebas locales del servicio de archivos (sin Cloudflare): R2 y Supabase simulados.
 // Ejecutar:  node test/prueba.mjs
 import assert from 'node:assert/strict';
-import worker, { DESTINOS, slug, nombreArchivo, firmar } from '../src/index.js';
+import worker, { DESTINOS, slug, nombreArchivo, firmar, marcadoresPersona } from '../src/index.js';
 
 /* ---- R2 simulado ---- */
 class R2Falso {
@@ -17,6 +17,7 @@ class R2Falso {
     if (h) { const mm = /bytes=(\d+)-(\d*)/.exec(h); const a = +mm[1], b = mm[2] ? +mm[2] : o.bytes.length - 1; bytes = o.bytes.slice(a, b + 1); r = { offset: a, length: bytes.length }; }
     return { key, size: o.bytes.length, httpEtag: '"x"', range: r, body: new Blob([bytes]).stream(), writeHttpMetadata: (hd) => o.ct && hd.set('Content-Type', o.ct) };
   }
+  async head(key) { const o = this.m.get(key); return o ? { key, size: o.bytes.length, customMetadata: o.meta } : null; }
   async list({ prefix = '', delimiter } = {}) {
     const objects = [], pref = new Set();
     for (const [k, v] of this.m) {
@@ -43,7 +44,15 @@ const jwtFalso = (aal) => 'x.' + btoa(JSON.stringify({ aal })).replace(/\+/g, '-
 const TOKEN_AAL1 = jwtFalso('aal1'), TOKEN_AAL2 = jwtFalso('aal2');
 
 /* ---- Supabase simulado ---- */
+// Reglas de archivo_permiso simuladas: ana (alumna) lee/sube práctica propia; prof (docente) lee práctica y escribe respuestas; nadie más borra
+const REGLAS = { 'alu-token': { leer: (k) => k.includes('ana-1111/'), escribir: (k) => k.includes('ana-1111/practicas/') || k.includes('ana-1111/mis-archivos/'), borrar: () => false },
+  'doc-token': { leer: (k) => k.includes('ana-1111/'), escribir: (k) => k.includes('ana-1111/respuestas/') || k.includes('ana-1111/material/'), borrar: (k) => k.includes('ana-1111/respuestas/') || k.includes('ana-1111/material/') } };
 globalThis.fetch = async (u, init) => {
+  if (String(u).endsWith('/rest/v1/rpc/archivo_permiso')) {
+    const t = (init.headers.Authorization || '').replace('Bearer ', ''); const b = JSON.parse(init.body); const rg = REGLAS[t];
+    if (!rg) return new Response('{}', { status: 401 });
+    return new Response(JSON.stringify(!!rg[b.p_accion](b.p_key)), { status: 200 });
+  }
   assert.ok(String(u).endsWith('/auth/v1/user'));
   const t = (init.headers.Authorization || '').replace('Bearer ', '');
   if (t === 'admin-token') return new Response(JSON.stringify({ email: 'reservas@farostudios.net' }), { status: 200 });
@@ -66,7 +75,7 @@ let n = 0; const ok = (m) => console.log('  ✓ ' + m, ++n && '');
 // utilidades
 assert.equal(slug('Maxi Despensa — Mamá Lucha'), 'maxi-despensa-mama-lucha'); ok('slug quita tildes y símbolos');
 assert.equal(nombreArchivo('Aftermovie Final (v2).mp4'), 'Aftermovie-Final-(v2).mp4'); ok('nombreArchivo limpia espacios');
-assert.equal(DESTINOS.length, 3 + 2 * 7 + 5 + 6); ok('árbol: ' + DESTINOS.length + ' carpetas base');
+assert.equal(DESTINOS.length, 3 + 2 * 7 + 5 + 3 + 6); ok('árbol: ' + DESTINOS.length + ' carpetas base');
 
 // CORS
 let r = await q('/api/arbol', { method: 'OPTIONS', headers: { Origin: ORI } });
@@ -160,7 +169,51 @@ assert.equal(st.areas.s.n, 1); assert.ok(st.areas.s.meses[new Date().toISOString
 r = await q('/api/stats'); assert.equal(r.status, 401); ok('stats solo para admin');
 r = await q('/api/lista?bucket=privado&prefix=', { headers: A }); assert.ok(!(await r.json()).carpetas.includes('_stats/')); ok('_stats oculto en la lista');
 
-// borrar
-r = await q(`/api/objeto?bucket=privado&key=${encodeURIComponent(K)}`, { method: 'DELETE', headers: A }); assert.equal(r.status, 200); assert.ok(!env.PRIVADO.m.has(K)); ok('borrado');
+// borrar = papelera (se puede restaurar)
+r = await q(`/api/objeto?bucket=privado&key=${encodeURIComponent(K)}`, { method: 'DELETE', headers: A }); assert.equal(r.status, 200); assert.ok(env.PRIVADO.m.has(K)); ok('borrar manda a la papelera (el archivo sigue en R2)');
+r = await q('/api/lista?bucket=privado&prefix=' + encodeURIComponent('faro-studios/agencias/maxi-despensa/'), { headers: A }); assert.deepEqual((await r.json()).archivos, []); ok('lo borrado desaparece de la lista');
+r = await q(`/api/enlace?bucket=privado&key=${encodeURIComponent(K)}`, { method: 'POST', headers: A }); assert.equal(r.status, 404); ok('no se generan enlaces de lo que está en la papelera');
+r = await q(u1.pathname + u1.search); assert.equal(r.status, 404); ok('un enlace viejo tampoco sirve');
+r = await q('/api/papelera'); assert.equal(r.status, 401);
+r = await q('/api/papelera', { headers: A }); let pap = await r.json(); assert.equal(pap.items.length, 1); assert.equal(pap.items[0].key, K); ok('la papelera lista lo borrado');
+r = await q('/api/lista?bucket=privado&prefix=', { headers: A }); assert.ok(!(await r.json()).carpetas.includes('_papelera/')); ok('_papelera oculta');
+r = await q(`/api/restaurar?bucket=privado&key=${encodeURIComponent(K)}`, { method: 'POST', headers: A }); assert.equal(r.status, 200);
+r = await q('/api/lista?bucket=privado&prefix=' + encodeURIComponent('faro-studios/agencias/maxi-despensa/'), { headers: A }); assert.equal((await r.json()).archivos.length, 1); ok('restaurar lo devuelve');
+await q(`/api/objeto?bucket=privado&key=${encodeURIComponent(K)}`, { method: 'DELETE', headers: A });
+r = await q(`/api/purgar?bucket=privado&key=${encodeURIComponent(K)}`, { method: 'POST', headers: A }); assert.equal(r.status, 200); assert.ok(!env.PRIVADO.m.has(K)); ok('purgar borra de verdad');
+r = await q(`/api/purgar?bucket=privado&key=${encodeURIComponent(K2)}`, { method: 'POST', headers: A }); assert.equal(r.status, 404); ok('solo se purga lo que está en la papelera');
+// purga automática de lo viejo
+await q(`/api/objeto?bucket=privado&key=${encodeURIComponent(K2)}`, { method: 'DELETE', headers: A });
+for (const [k, v] of env.PRIVADO.m) if (k.startsWith('_papelera/') && v.meta) v.meta.cuando = new Date(Date.now() - 40 * 864e5).toISOString();
+r = await q('/api/purgar?viejos=1', { method: 'POST', headers: A }); assert.equal((await r.json()).borrados, 1); assert.ok(!env.PRIVADO.m.has(K2)); ok('purga automática de lo que lleva más de 30 días');
+
+// carpetas por persona
+const CA = 'faro-academy/estudiantes/ana-1111/';
+r = await q('/api/carpeta-persona', { method: 'POST', headers: A, body: JSON.stringify({ carpeta: CA }) }); assert.equal((await r.json()).creadas, 1);
+for (const t of ['material', 'respuestas', 'practicas', 'mis-archivos', 'diplomas', 'facturas']) assert.ok(env.PRIVADO.m.has(CA + t + '/.keep'), t);
+ok('crea la carpeta del alumno con sus 6 subcarpetas');
+assert.equal(marcadoresPersona('faro-academy/estudiantes/../x/'), null); assert.equal(marcadoresPersona('otra/ana/'), null); assert.equal(marcadoresPersona('faro-studios/clientes/boda-gomez-33/').length, 1); ok('solo acepta nombres de carpeta válidos');
+
+// portal: la base de datos decide
+const AL = { Authorization: 'Bearer alu-token', Origin: ORI }, DO = { Authorization: 'Bearer doc-token', Origin: ORI };
+const KP = CA + 'practicas/p1.m4a', KR = CA + 'respuestas/r1.m4a', KB = 'faro-academy/estudiantes/beto-2222/practicas/p.m4a';
+const aud = new Uint8Array([1, 2, 3, 4]);
+const sub = (k, h, tipo = 'audio/mp4', len = 4) => q(`/p/subir?key=${encodeURIComponent(k)}`, { method: 'PUT', headers: { ...h, 'Content-Type': tipo, 'Content-Length': String(len) }, body: aud });
+r = await q(`/p/subir?key=${encodeURIComponent(KP)}`, { method: 'PUT', headers: { Origin: ORI, 'Content-Length': '4' }, body: aud }); assert.equal(r.status, 401); ok('portal: sin sesión → 401');
+r = await sub(KP, AL); assert.equal(r.status, 200); assert.ok(env.PRIVADO.m.has(KP)); ok('alumno sube su práctica');
+r = await sub(KB, AL); assert.equal(r.status, 403); assert.ok(!env.PRIVADO.m.has(KB)); ok('alumno NO sube en la carpeta de otro');
+r = await sub(KR, AL); assert.equal(r.status, 403); ok('alumno NO sube respuestas');
+r = await sub(KR, DO); assert.equal(r.status, 200); ok('docente sube su respuesta en audio');
+r = await sub(CA + 'practicas/x.m4a', AL, 'text/html'); assert.equal(r.status, 400); r = await sub(CA + 'practicas/x.m4a', AL, 'image/png'); assert.equal(r.status, 400); ok('en prácticas solo audio; nada de html');
+r = await sub(CA + 'mis-archivos/x.html', AL, 'text/plain'); assert.equal(r.status, 400); ok('extensiones peligrosas rechazadas');
+r = await sub('faro-academy/estudiantes/ana-1111/otro/x.m4a', AL); assert.equal(r.status, 400); r = await sub('faro-academy/ingles/videos/x.mp4', DO); assert.equal(r.status, 400); ok('portal: solo la estructura de personas');
+r = await q(`/p/enlace?key=${encodeURIComponent(KP)}`, { method: 'POST', headers: DO }); const en = await r.json(); assert.equal(r.status, 200);
+const ep = new URL(en.urlVer); r = await q(ep.pathname + ep.search, { headers: { Range: 'bytes=0-1' } }); assert.equal(r.status, 206); ok('docente escucha la práctica (enlace con rangos)');
+r = await q(`/p/enlace?key=${encodeURIComponent(KB)}`, { method: 'POST', headers: AL }); assert.equal(r.status, 403); ok('alumno NO obtiene enlace de otro alumno');
+r = await q(`/p/borrar?key=${encodeURIComponent(KP)}`, { method: 'POST', headers: AL }); assert.equal(r.status, 403); assert.ok(env.PRIVADO.m.has(KP)); ok('alumno NO borra');
+r = await q(`/p/borrar?key=${encodeURIComponent(KP)}`, { method: 'POST', headers: DO }); assert.equal(r.status, 403); ok('docente NO borra la práctica del alumno');
+r = await q(`/p/borrar?key=${encodeURIComponent(KR)}`, { method: 'POST', headers: DO }); assert.equal(r.status, 200); assert.ok(env.PRIVADO.m.has(KR));
+r = await q('/api/papelera', { headers: A }); pap = await r.json(); assert.ok(pap.items.some((i) => i.key === KR)); ok('docente borra su respuesta → va a la papelera, el director la ve');
+r = await q(`/p/enlace?key=${encodeURIComponent(KR)}`, { method: 'POST', headers: DO }); assert.equal(r.status, 404); ok('lo borrado ya no se sirve en el portal');
 
 console.log('\nTodo bien: ' + n + ' comprobaciones.');
