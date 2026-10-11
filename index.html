@@ -1599,6 +1599,22 @@ header.nav[data-side="academy"] .sw button[data-side="studios"]:hover{color:#000
 /* libros: hojas apenas asomadas */
 .bkc:hover .bkc-cv,.bkc:focus-visible .bkc-cv{transform:rotateY(-7deg) translateY(-6px);box-shadow:-6px 0 0 rgba(0,0,0,.28) inset,3px 1px 0 -1px #F6F1E6,5px 2px 0 -1px #CFC6B2,7px 3px 0 -1px #F6F1E6,0 30px 34px -14px rgba(0,0,0,.9)}
 
+
+/* ===== v17 · etapas del año con selector lateral (ocupa menos alto) ===== */
+.yr-lay{display:grid;grid-template-columns:minmax(190px,250px) minmax(0,1fr);gap:clamp(14px,2.4vw,28px);align-items:start}
+.yr-steps{position:static;display:grid;grid-template-columns:1fr;gap:10px;margin:0;padding:0}
+.yr-b{padding:14px 16px 14px 18px;border-radius:16px;box-shadow:none}
+.yr-b b{font-size:1.35rem}
+.yr-b[aria-pressed="true"]{box-shadow:0 14px 24px -12px rgba(0,0,0,.55);transform:translateX(6px)}
+.yr-b:hover{transform:translateX(3px)}
+.yr-b[aria-pressed="true"]:hover{transform:translateX(6px)}
+.yr-grid{grid-template-columns:1fr 1fr;align-items:stretch}
+.yr-card{padding:clamp(16px,2.2vw,26px)}
+.yr-card h3{font-size:clamp(1.8rem,3vw,2.5rem)}
+.yr-m{grid-template-columns:120px 1fr 40px}
+@media (max-width:1100px){.yr-grid{grid-template-columns:1fr}}
+@media (max-width:760px){.yr-lay{grid-template-columns:1fr}.yr-steps{grid-template-columns:1fr 1fr}.yr-b[aria-pressed="true"],.yr-b:hover,.yr-b[aria-pressed="true"]:hover{transform:none}}
+
 </style>
 </head>
 <body>
@@ -2896,8 +2912,8 @@ function pageHTML(k){
 
   <section class="yr sec pal-${k}" id="${k}-year" data-ph="0"><canvas id="${k}-fx" aria-hidden="true"></canvas><div class="wrap">
     <div class="sec-head"><div class="rule"></div><h2>Tu año en cuatro etapas</h2><p class="lead">${D.yearLead}</p></div>
-    <div class="yr-steps" id="${k}-steps"></div>
-    <div class="yr-grid"><div class="yr-card" id="${k}-yinfo"></div><div class="yr-card"><h4>Tu progreso</h4><div id="${k}-ymet"></div><svg class="yr-line" id="${k}-yline" viewBox="0 0 340 150" role="img" aria-label="Gráfica de progreso por etapa"></svg><p class="yr-note">Ilustración del avance típico. Cada estudiante avanza a su ritmo.</p></div></div>
+    <div class="yr-lay"><div class="yr-steps" id="${k}-steps"></div>
+    <div class="yr-grid"><div class="yr-card" id="${k}-yinfo"></div><div class="yr-card"><h4>Tu progreso</h4><div id="${k}-ymet"></div><svg class="yr-line" id="${k}-yline" viewBox="0 0 340 150" role="img" aria-label="Gráfica de progreso por etapa"></svg><p class="yr-note">Ilustración del avance típico. Cada estudiante avanza a su ritmo.</p></div></div></div>
   </div></section>
 
   <section class="sec pal-${k}-alt" id="${k}-clases"><div class="wrap">
@@ -3150,13 +3166,20 @@ $$('[data-wa]').forEach(a=>a.href=WA+encodeURIComponent(waMsg[a.dataset.wa]));
   });
 })();
 
+/* color de la barra del navegador: marfil en Academy, borgoña en Studios (se recrea la etiqueta para que Safari también la actualice) */
+window.setBrowserColor=function(c){
+  document.querySelectorAll('meta[name="theme-color"]').forEach(m=>m.remove());
+  const m=document.createElement('meta');m.name='theme-color';m.content=c;document.head.appendChild(m);
+  root.style.setProperty('background-color',c==='#F5F2EE'?'#F5F2EE':'#8B1A2A');
+};
 const _applyPage=applyPage;
 applyPage=function(p){
   Band.stop();const b=$('#mx-play');if(b){b.querySelector('span').textContent='Escúchalo en acción';b.querySelector('use').setAttribute('href','#i-play')}
   _applyPage(p);
   try{const u=new URL(location.href);if(p==='studios')u.searchParams.delete('p');else u.searchParams.set('p',p);history.replaceState(null,'',u.pathname+u.search+u.hash)}catch(x){}
-  try{var tc=document.querySelector('meta[name="theme-color"]');if(tc)tc.setAttribute("content",p==="studios"?"#8B1A2A":"#F5F2EE")}catch(e){}
+  try{window.setBrowserColor((PAGES[p].side||lastSide)==='academy'?'#F5F2EE':'#8B1A2A')}catch(e){}
 };
+try{window.setBrowserColor((PAGES[current]&&(PAGES[current].side||lastSide))==='academy'?'#F5F2EE':'#8B1A2A')}catch(e){}
 
 </script>
 <script>
