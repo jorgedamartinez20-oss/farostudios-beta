@@ -67,7 +67,8 @@ button,input,select,textarea{font:inherit;color:inherit}
 .acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px}
 .modal{position:fixed;inset:0;z-index:60;background:rgba(15,15,17,.85);display:grid;place-items:center;padding:16px}
 .modal .box{background:var(--gris);border:1px solid var(--line);border-radius:8px;max-width:900px;width:100%;max-height:92vh;overflow:auto;padding:16px}
-.modal img{max-width:100%;display:block;margin:0 auto;border-radius:4px}.modal iframe{width:100%;height:75vh;border:0;background:#fff;border-radius:4px}.modal video{width:100%;max-height:75vh;display:block;background:#000;border-radius:4px}.modal audio{width:100%;display:block}
+.modal img{max-width:100%;display:block;margin:0 auto;border-radius:4px}.modal iframe{width:100%;height:75vh;border:0;background:#fff;border-radius:4px}.mgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin-top:12px}.mt{border:1px solid var(--line);border-radius:8px;padding:10px;background:var(--gris);cursor:pointer;text-align:center;min-height:128px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;word-break:break-word}.mt:hover,.mt.over{border-color:var(--oro)}.mt .ic{font-size:38px;line-height:1}.mt .th{width:100%;height:90px;object-fit:cover;border-radius:4px;background:#000}.mt small{opacity:.7}.mt .mact{display:flex;gap:4px;justify-content:center;margin-top:2px}.mt.ghost{border-style:dashed;opacity:.8}.mcrumb{display:flex;gap:6px;flex-wrap:wrap;align-items:center}.mdrop{outline:2px dashed var(--oro);outline-offset:4px;border-radius:8px}
+.modal video{width:100%;max-height:75vh;display:block;background:#000;border-radius:4px}.modal audio{width:100%;display:block}
 .toast{position:fixed;left:50%;bottom:22px;transform:translate(-50%,20px);opacity:0;pointer-events:none;background:var(--marfil);color:var(--pizarra);padding:12px 20px;border-radius:6px;font-weight:700;transition:.3s;z-index:90;max-width:92vw;text-align:center}
 .toast.on{opacity:1;transform:translate(-50%,0)}
 @media (max-width:860px){.grid2{grid-template-columns:1fr}.rc dl{grid-template-columns:1fr}.rc dt{margin-top:6px}}
@@ -896,6 +897,12 @@ async function matEnlace(bucket,key,ver){
   const j=await fjson('/api/enlace?bucket='+bucket+'&key='+encodeURIComponent(key)+'&seg=3600',{method:'POST'});
   return ver?j.urlVer:j.url;
 }
+function matDestinoSubida(p){
+  const d=MAT.destinos.find(x=>p.startsWith(x.prefijo));if(!d)return null;
+  const r=p.slice(d.prefijo.length).replace(/\/$/,'');
+  if(d.entidad)return r&&!r.includes('/')?{d,ent:r}:null;
+  return r?null:{d,ent:''};
+}
 function matSugeridos(d){
   let k=null;try{if(d.id.startsWith('studios/'))k='cli';else if(/\/alumnos$/.test(d.id))k='est';else if(/\/docentes$/.test(d.id))k='doc';
     return k?(AC.list[k]||[]).map(x=>x.nombre).filter(Boolean):[]}catch(e){return[]}
@@ -918,70 +925,95 @@ async function matInit(){
   if(!FILES){box.append(el('div',{class:'card'},el('p',{class:'muted'},'Todavía no está conectado. Publica el servicio con los pasos de worker/LEEME.md, pega aquí su dirección y toca “Conectar”. Mientras tanto, “Sitio web” sigue subiendo archivos como antes.')));return}
   try{await matArbol()}catch(e){top.append(el('div',{class:'msg',style:'margin-top:12px'},e.message+'. Revisa la dirección y que el servicio esté publicado.'));return}
 
-  /* --- subir --- */
-  const sel=el('select',{id:'mat-dest'}),grupos={};
-  MAT.destinos.forEach(d=>{const g=d.id.startsWith('studios/')?'Privado · Faro Studios':d.id.startsWith('academy/ingles')?'Privado · Faro Academy · Inglés':d.id.startsWith('academy/musica')?'Privado · Faro Academy · Música':'Público · Landing (página web)';(grupos[g]=grupos[g]||[]).push(d)});
-  Object.keys(grupos).forEach(g=>{const og=el('optgroup',{label:g});grupos[g].forEach(d=>og.append(el('option',{value:d.id},d.etiqueta.split(' › ').slice(g.startsWith('Privado · Faro Academy')?2:1).join(' › '))));sel.append(og)});
-  const ent=el('input',{list:'mat-ents',placeholder:'Nombre (ej. Maxi Despensa)',autocomplete:'off',maxlength:'80'}),dl=el('datalist',{id:'mat-ents'});
-  const entF=el('div',{class:'field'},el('label',{},'¿De quién es?'),ent,dl);
-  const nota=el('p',{class:'muted',style:'margin-top:8px'});
-  const prog=el('div',{}),cont=el('div',{});
-  const crear=el('button',{class:'btn btn-ghost btn-sm',type:'button',style:'margin-top:10px',onclick:async()=>{const d=matDest(sel.value);
-    try{const j=await fjson('/api/carpeta',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({destino:d.id,nombre:ent.value})});toast('Carpeta lista: '+j.slug);await entradas();listar()}catch(e){toast(e.message)}}},'Crear carpeta');
-  async function entradas(){
-    const d=matDest(sel.value);dl.textContent='';if(!d.entidad)return;
-    const nombres=new Set(matSugeridos(d));
-    try{const j=await fjson('/api/lista?bucket='+d.bucket+'&prefix='+encodeURIComponent(d.prefijo));j.carpetas.forEach(c=>nombres.add(c.slice(d.prefijo.length).replace(/\/$/,'')))}catch(e){}
-    [...nombres].forEach(n=>dl.append(el('option',{value:n})));
-  }
-  function pinta(){const d=matDest(sel.value);entF.hidden=!d.entidad;crear.hidden=!d.entidad;
-    nota.textContent=d.bucket==='publico'?'Público: estos archivos tienen enlace permanente y se usan en la página. Para ponerlos en su lugar exacto del landing, súbelos desde la pestaña “Sitio web”.':'Privado: nadie puede abrirlos sin un enlace temporal que genera el administrador.'}
-  const drop=el('div',{class:'item',style:'text-align:center;border-style:dashed;cursor:pointer;padding:26px'},el('b',{},'Arrastra aquí los archivos o toca para elegirlos'),el('small',{style:'display:block;margin-top:6px'},'Los videos pesados se suben por partes automáticamente.'));
+  /* --- navegador de carpetas (estilo Drive) --- */
+  const LBL={'':'Inicio'};
+  MAT.destinos.forEach(d=>{const seg=d.prefijo.replace(/\/$/,'').split('/'),et=d.etiqueta.split(' › ');seg.forEach((s,i)=>{LBL[seg.slice(0,i+1).join('/')+'/']=et[i]||s})});
+  LBL['landing/']='Landing (página web, público)';
+  const ICONO={'faro-studios/':'🎬','faro-academy/':'🎓','landing/':'🌐','faro-academy/ingles/':'🔤','faro-academy/musica/':'🎵'};
+  const REAL={};
+  const bonito=s=>s.replace(/-/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
+  const nomCarpeta=p=>{const s=p.replace(/\/$/,'').split('/').pop();return LBL[p]||REAL[s]||bonito(s)};
+  const hijosVirtuales=p=>{const r=[];MAT.destinos.forEach(d=>{if(d.prefijo.startsWith(p)&&d.prefijo!==p){const q=p+d.prefijo.slice(p.length).split('/')[0]+'/';if(!r.includes(q))r.push(q)}});return r};
+  const ib=(txt,tit,fn,cls)=>el('button',{class:cls||'btn btn-ghost btn-sm',type:'button',title:tit,'aria-label':tit,onclick:e=>{e.stopPropagation();fn()}},txt);
+  let ruta='';
+  const bar=el('div',{class:'mcrumb'}),tools=el('div',{style:'display:flex;gap:8px;flex-wrap:wrap;margin:12px 0'}),nota=el('p',{class:'muted'}),grid=el('div',{class:'mgrid'}),area=el('div',{style:'min-height:260px'},grid),prog=el('div',{style:'margin-top:14px'});
   const fi=el('input',{type:'file',multiple:'multiple',style:'display:none'});
-  async function subir(files){
-    if(!files.length)return;const d=matDest(sel.value);
-    if(d.entidad&&!matSlug(ent.value)){toast('Escribe a quién pertenecen estos archivos');return}
+  const io=('IntersectionObserver' in window)?new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){io.unobserve(e.target);e.target.__mini()}}),{rootMargin:'200px'}):null;
+
+  async function subirA(p,files){
+    files=files.filter(f=>f.size>0);if(!files.length)return;
+    const t=matDestinoSubida(p);
+    if(!t){toast('Entra a una carpeta (la de la persona, o una de Academy o Landing) para subir archivos');return}
     for(const f of files){
-      const bar=el('progress',{max:String(Math.max(1,f.size)),value:'0',style:'width:100%;margin-top:8px'}),st=el('small',{},'Subiendo…');
-      const row=el('div',{class:'item'},el('b',{},f.name+' · '+matTam(f.size)),bar,st);prog.prepend(row);
-      try{await matSubir(f,d.id,ent.value,l=>{bar.value=l});bar.value=f.size;st.textContent='Listo ✓'}
+      const b=el('progress',{max:String(Math.max(1,f.size)),value:'0',style:'width:100%;margin-top:8px'}),st=el('small',{},'Subiendo…');
+      const row=el('div',{class:'item'},el('b',{},f.name+' · '+matTam(f.size)+' → '+nomCarpeta(p)),b,st);prog.prepend(row);
+      try{await matSubir(f,t.d.id,t.ent,l=>{b.value=l});b.value=f.size;st.textContent='Listo ✓'}
       catch(e){st.textContent='Error: '+(e.message||'no se pudo subir');row.style.borderColor='var(--rojo)'}
     }
-    listar();
+    if(ruta===p)render();
   }
-  drop.addEventListener('click',()=>fi.click());
-  ['dragover','dragenter'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.style.borderColor='var(--oro)'}));
-  ['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.style.borderColor=''}));
-  drop.addEventListener('drop',e=>subir([...e.dataTransfer.files]));
-  fi.addEventListener('change',()=>{subir([...fi.files]);fi.value=''});
-
-  /* --- contenido --- */
-  async function listar(prefix){
-    const d=matDest(sel.value),s=d.entidad?matSlug(ent.value):'',pre=prefix||(d.prefijo+(s?s+'/':''));
-    cont.textContent='Cargando…';
-    try{
-      const j=await fjson('/api/lista?bucket='+d.bucket+'&prefix='+encodeURIComponent(pre));cont.textContent='';
-      cont.append(el('p',{class:'muted'},(d.bucket==='publico'?'Público':'Privado')+' › '+pre.replace(/\/$/,'').split('/').join(' › ')));
-      const arriba=pre.replace(/[^/]+\/$/,'');
-      if(arriba&&arriba!==pre&&pre!==d.prefijo)cont.append(el('button',{class:'btn btn-ghost btn-sm',type:'button',style:'margin:4px 8px 4px 0',onclick:()=>listar(arriba)},'↑ Subir un nivel'));
-      j.carpetas.forEach(c=>cont.append(el('button',{class:'btn btn-ghost btn-sm',type:'button',style:'margin:4px 8px 4px 0',onclick:()=>listar(c)},'📁 '+c.slice(pre.length).replace(/\/$/,''))));
-      if(!j.archivos.length&&!j.carpetas.length)cont.append(el('p',{class:'muted'},'Esta carpeta está vacía.'));
-      j.archivos.forEach(a=>{
-        const nombre=a.key.split('/').pop();
-        cont.append(el('div',{class:'item'},el('b',{},'📄 '+nombre),el('small',{style:'display:block'},matTam(a.size)+' · '+new Date(a.subido).toLocaleDateString('es-GT',{timeZone:'America/Guatemala'})),
-          el('div',{class:'acts'},
-            el('button',{class:'btn btn-ghost btn-sm',type:'button',onclick:async()=>{try{await matVer(d.bucket,a.key)}catch(e){toast(e.message)}}},'Ver'),
-            el('button',{class:'btn btn-ghost btn-sm',type:'button',onclick:async()=>{try{location.href=await matEnlace(d.bucket,a.key,false)}catch(e){toast(e.message)}}},'Descargar'),
-            el('button',{class:'btn btn-ghost btn-sm',type:'button',onclick:async()=>{try{await navigator.clipboard.writeText(await matEnlace(d.bucket,a.key,false));toast(d.bucket==='publico'?'Enlace permanente copiado':'Enlace copiado (válido por 1 hora)')}catch(e){toast('No se pudo copiar')}}},'Copiar enlace'),
-            el('button',{class:'btn btn-red btn-sm',type:'button',onclick:async()=>{if(!confirm('¿Eliminar '+nombre+'? No se puede deshacer.'))return;try{await fjson('/api/objeto?bucket='+d.bucket+'&key='+encodeURIComponent(a.key),{method:'DELETE'});toast('Eliminado');listar(pre)}catch(e){toast(e.message)}}},'Eliminar'))))});
-    }catch(e){cont.textContent=e.message||'No se pudo listar'}
+  function enTile(t,q){
+    t.addEventListener('dragover',e=>{e.preventDefault();e.stopPropagation();t.classList.add('over')});
+    t.addEventListener('dragleave',()=>t.classList.remove('over'));
+    t.addEventListener('drop',e=>{e.preventDefault();e.stopPropagation();t.classList.remove('over');subirA(q,[...e.dataTransfer.files])});
   }
-  let tm;ent.addEventListener('input',()=>{clearTimeout(tm);tm=setTimeout(()=>listar(),350)});
-  sel.addEventListener('change',async()=>{pinta();await entradas();listar()});
-  box.append(el('div',{class:'grid2'},
-    el('div',{class:'card'},el('h2',{},'Subir material'),el('div',{class:'field'},el('label',{},'¿Dónde va?'),sel),entF,crear,nota,el('div',{style:'margin-top:14px'},drop,fi),prog),
-    el('div',{class:'card'},el('h2',{},'Contenido de esta carpeta'),cont)));
-  pinta();await entradas();listar();
+  function tileCarpeta(q){
+    const t=el('div',{class:'mt',title:'Abrir'},el('div',{class:'ic'},ICONO[q]||'📁'),el('b',{},nomCarpeta(q)));
+    t.addEventListener('click',()=>render(q));enTile(t,q);return t;
+  }
+  async function crearCarpeta(d,n){
+    await fjson('/api/carpeta',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({destino:d.id,nombre:n})});
+    render(d.prefijo+matSlug(n)+'/');
+  }
+  function tileFantasma(d,n){
+    const t=el('div',{class:'mt ghost',title:'Crear su carpeta'},el('div',{class:'ic'},'＋'),el('b',{},n),el('small',{},'Crear carpeta'));
+    t.addEventListener('click',async()=>{try{await crearCarpeta(d,n)}catch(e){toast(e.message)}});return t;
+  }
+  function tileArchivo(d,a,mini){
+    const nombre=a.key.split('/').pop(),esImg=MAT_VER.img.test(nombre);
+    const ic=el('div',{class:'ic'},esImg?'🖼':MAT_VER.vid.test(nombre)?'🎬':MAT_VER.aud.test(nombre)?'🎵':MAT_VER.pdf.test(nombre)?'📕':'📄');
+    const t=el('div',{class:'mt',title:nombre},ic,el('b',{style:'font-size:12px'},nombre),el('small',{},matTam(a.size)+' · '+new Date(a.subido).toLocaleDateString('es-GT',{timeZone:'America/Guatemala'})),
+      el('div',{class:'mact'},
+        ib('⬇','Descargar',async()=>{try{location.href=await matEnlace(d.bucket,a.key,false)}catch(e){toast(e.message)}}),
+        ib('🔗','Copiar enlace',async()=>{try{await navigator.clipboard.writeText(await matEnlace(d.bucket,a.key,false));toast(d.bucket==='publico'?'Enlace permanente copiado':'Enlace copiado (válido por 1 hora)')}catch(e){toast('No se pudo copiar')}}),
+        ib('🗑','Eliminar',async()=>{if(!confirm('¿Eliminar '+nombre+'? No se puede deshacer.'))return;try{await fjson('/api/objeto?bucket='+d.bucket+'&key='+encodeURIComponent(a.key),{method:'DELETE'});toast('Eliminado');render()}catch(e){toast(e.message)}},'btn btn-red btn-sm')));
+    t.addEventListener('click',()=>{matVer(d.bucket,a.key).catch(e=>toast(e.message))});
+    if(esImg&&mini){
+      t.__mini=async()=>{try{const im=new Image();im.className='th';im.alt=nombre;im.onload=()=>ic.replaceWith(im);im.src=await matEnlace(d.bucket,a.key,true)}catch(e){}};
+      if(io)io.observe(t);else t.__mini();
+    }
+    return t;
+  }
+  async function render(p){
+    if(p!==undefined)ruta=p;
+    const mi=ruta;
+    MAT.destinos.filter(x=>x.entidad).forEach(x=>matSugeridos(x).forEach(n=>{REAL[matSlug(n)]=n}));
+    bar.textContent='';
+    const partes=[''];ruta.replace(/\/$/,'').split('/').filter(Boolean).forEach((s,i,a)=>partes.push(a.slice(0,i+1).join('/')+'/'));
+    partes.forEach((q,i)=>{if(i)bar.append(el('span',{class:'muted'},'›'));bar.append(i===partes.length-1?el('b',{},q===''?'🏠 Inicio':nomCarpeta(q)):el('button',{class:'btn btn-ghost btn-sm',type:'button',onclick:()=>render(q)},q===''?'🏠 Inicio':nomCarpeta(q)))});
+    const up=matDestinoSubida(ruta),d=MAT.destinos.find(x=>ruta.startsWith(x.prefijo)),nivelEnt=!!(d&&d.entidad&&ruta===d.prefijo);
+    tools.textContent='';
+    if(up)tools.append(el('button',{class:'btn btn-gold btn-sm',type:'button',onclick:()=>fi.click()},'⬆ Subir archivos'));
+    if(nivelEnt)tools.append(el('button',{class:'btn btn-gold btn-sm',type:'button',onclick:async()=>{const n=prompt('Nombre de la carpeta (persona o empresa)');if(!n||!n.trim())return;try{await crearCarpeta(d,n.trim())}catch(e){toast(e.message)}}},'＋ Nueva carpeta'));
+    tools.append(el('button',{class:'btn btn-ghost btn-sm',type:'button',onclick:()=>render()},'↻ Actualizar'));
+    nota.textContent=up?(d.bucket==='publico'?'Público: estos archivos tienen enlace permanente y se usan en la página. Arrastra archivos aquí para subirlos.':'Privado: nadie los abre sin un enlace temporal que genera el administrador. Arrastra archivos aquí para subirlos.'):nivelEnt?'Elige a la persona o empresa (o crea su carpeta). También puedes arrastrar archivos sobre su carpeta.':'Elige una carpeta. También puedes arrastrar archivos sobre una carpeta para subirlos directo.';
+    grid.textContent='';
+    if(!d){hijosVirtuales(ruta).forEach(q=>grid.append(tileCarpeta(q)));return}
+    grid.append(el('p',{class:'muted',style:'grid-column:1/-1'},'Cargando…'));
+    let j;try{j=await fjson('/api/lista?bucket='+d.bucket+'&prefix='+encodeURIComponent(ruta))}catch(e){if(mi===ruta)grid.textContent=e.message||'No se pudo listar';return}
+    if(mi!==ruta)return;grid.textContent='';
+    j.carpetas.forEach(c=>grid.append(tileCarpeta(c)));
+    if(nivelEnt){const ya=new Set(j.carpetas.map(c=>c.slice(ruta.length).replace(/\/$/,'')));matSugeridos(d).forEach(n=>{const s=matSlug(n);if(s&&!ya.has(s)){ya.add(s);grid.append(tileFantasma(d,n))}})}
+    j.archivos.forEach((a,i)=>grid.append(tileArchivo(d,a,i<40)));
+    if(!grid.children.length)grid.append(el('p',{class:'muted',style:'grid-column:1/-1'},'Esta carpeta está vacía. Arrastra archivos aquí.'));
+  }
+  area.addEventListener('dragover',e=>{e.preventDefault();area.classList.add('mdrop')});
+  area.addEventListener('dragleave',e=>{if(e.target===area)area.classList.remove('mdrop')});
+  area.addEventListener('drop',e=>{e.preventDefault();area.classList.remove('mdrop');subirA(ruta,[...e.dataTransfer.files])});
+  fi.addEventListener('change',()=>{subirA(ruta,[...fi.files]);fi.value=''});
+  box.append(el('div',{class:'card'},el('h2',{},'Archivos'),bar,tools,nota,area,fi,prog));
+  window.__matNav=render;
+  await render('');
 }
 
 </script>
