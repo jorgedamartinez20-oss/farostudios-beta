@@ -1462,6 +1462,111 @@ body:has(.wa-wrap.open) .ftabs{opacity:0;pointer-events:none;transition:opacity 
 .ph{min-height:220px}
 
 @media (hover:hover) and (min-width:961px){.half-in{max-width:100%}.half{min-width:0}}
+
+/* ===== v14 · reproductor de producciones en teléfonos ===== */
+.amp2{display:block;padding:clamp(28px,5vw,64px) clamp(14px,4vw,48px);background:radial-gradient(80% 90% at 50% 0%,rgba(139,26,43,.4),transparent 65%),radial-gradient(60% 70% at 85% 100%,rgba(184,160,106,.22),transparent 70%),linear-gradient(160deg,#2f2f34,#1c1c20);overflow:hidden}
+.phones{display:flex;justify-content:center;align-items:center;gap:clamp(8px,3vw,40px);flex-wrap:wrap}
+.mph{position:relative;width:min(100%,330px);aspect-ratio:9/18.6;border-radius:44px;padding:10px;background:linear-gradient(145deg,#4a4a50,#18181b 55%,#3b3b41);box-shadow:0 0 0 1.5px #B8A06A,0 40px 60px -26px rgba(0,0,0,.95),0 14px 22px -10px rgba(0,0,0,.6),inset 0 0 0 2px rgba(255,255,255,.08);transition:transform .6s var(--ease)}
+.mph::before,.mph::after{content:"";position:absolute;width:3px;border-radius:2px;background:#B8A06A;left:-4px;opacity:.9}
+.mph::before{top:17%;height:8%}.mph::after{top:28%;height:13%}
+.ph-a{transform:rotate(-3deg) translateY(-8px)}.ph-b{transform:rotate(3deg) translateY(14px)}
+.phones:hover .mph{transform:none}
+.isl{position:absolute;z-index:3;top:20px;left:50%;width:30%;height:22px;margin-left:-15%;border-radius:20px;background:#050506}
+.pscr{position:relative;height:100%;border-radius:34px;overflow:hidden;padding:52px 18px 18px;display:flex;flex-direction:column;gap:8px;background:linear-gradient(rgba(10,10,12,.5),rgba(10,10,12,.82)),var(--cov,linear-gradient(135deg,#8b1a2b,#3a0c14)) center/cover;color:var(--marfil)}
+.ph-b .pscr{background:linear-gradient(rgba(10,10,12,.62),rgba(10,10,12,.88)),linear-gradient(160deg,#B8A06A,#8B1A2A)}
+.amp2 .amp-disc{width:78%;max-width:none;margin:0 auto 6px;aspect-ratio:1;flex:none}
+.amp2 .vinyl{inset:0;border-radius:16px;background:none;animation:none!important;box-shadow:0 22px 30px -14px rgba(0,0,0,.85)}
+.amp2 .vinyl::before{display:none}
+.amp2 .vinyl .label{inset:0;border-radius:16px;background:var(--cov,linear-gradient(135deg,#8b1a2b,#3a0c14)) center/cover}
+.amp2 .vinyl .label::after{display:none}
+.amp2 .amp-k{margin:2px 0 0;font-size:.62rem;text-align:center}
+.amp2 h3{font-size:clamp(1.4rem,2.6vw,1.8rem);text-align:center;margin:0;overflow-wrap:anywhere}
+.amp2 .amp-a{margin:0;font-size:.8rem;text-align:center;color:rgba(245,242,238,.78)}
+.amp2 .amp-wf{height:34px;margin:2px 0}
+.amp2 .amp-bar{margin:0;font-size:.7rem}
+.amp2 .amp-ctl{justify-content:center;gap:12px;margin-top:auto}
+.amp2 .amp-ctl button{width:42px;height:42px}
+.amp2 .amp-ctl .big{width:58px;height:58px}
+.pl-h{display:grid;gap:2px;margin-bottom:6px}.pl-h b{font:400 1.6rem/1 var(--display);letter-spacing:.06em}.pl-h small{font-size:.7rem;color:rgba(245,242,238,.75)}
+.pl{display:grid;gap:4px;overflow:auto;scrollbar-width:none;flex:1}.pl::-webkit-scrollbar{display:none}
+.pl-i{display:grid;grid-template-columns:18px 40px minmax(0,1fr) 26px;gap:10px;align-items:center;padding:7px 8px;border:0;border-radius:12px;background:rgba(255,255,255,.06);color:inherit;font:inherit;text-align:left;cursor:pointer;transition:background .25s,transform .25s}
+.pl-i:hover{background:rgba(255,255,255,.16);transform:translateX(3px)}
+.pl-i.sel{background:rgba(184,160,106,.34);box-shadow:inset 0 0 0 1px rgba(240,222,170,.6)}
+.pl-n{font-size:.7rem;opacity:.7;text-align:center}
+.pl-c{width:40px;height:40px;border-radius:8px;background:var(--cov) center/cover;box-shadow:0 6px 10px -4px rgba(0,0,0,.7)}
+.pl-t{min-width:0}.pl-t b{display:block;font:700 .84rem/1.15 var(--body);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pl-t small{display:block;font-size:.68rem;color:rgba(245,242,238,.7);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pl-p{display:grid;place-items:center;width:26px;height:26px;border-radius:50%;background:rgba(245,242,238,.16)}.pl-p svg{width:12px;height:12px}
+.pl-i.sel .pl-p{background:#F0DEAA;color:#252528}
+@media (max-width:700px){.mph{width:min(86vw,320px)}.ph-a,.ph-b{transform:none}.ph-b{margin-top:6px}}
+
+
+/* ===== v14 · píldora Studios/Academy: dos indicadores que se deslizan juntos y cambian de color con suavidad ===== */
+.sw,header.nav[data-side="academy"] .sw{background:rgba(245,242,238,.12)!important}
+header.nav[data-side="academy"] .sw{background:rgba(37,37,40,.07)!important}
+.sw::before,.sw::after{content:"";position:absolute;top:3px;bottom:3px;left:3px;width:calc(50% - 3px);border-radius:999px;transition:transform .6s cubic-bezier(.65,0,.25,1),opacity .45s ease,box-shadow .45s;pointer-events:none}
+.sw::before{background:linear-gradient(180deg,#FBF8F2,#E6DDCB)!important;box-shadow:0 6px 16px -6px rgba(0,0,0,.5)!important}
+.sw::after{background:linear-gradient(180deg,#7A8847,#4F5A2A);box-shadow:0 6px 16px -6px rgba(79,90,42,.7)}
+.sw[data-on="studios"]::before,.sw[data-on="studios"]:has(button:hover)::before{transform:none!important;opacity:1!important}
+.sw[data-on="studios"]::after,.sw[data-on="studios"]:has(button:hover)::after{transform:none;opacity:0}
+.sw[data-on="academy"]::before,.sw[data-on="academy"]:has(button:hover)::before,header.nav[data-side="academy"] .sw:has(button:hover)::before{transform:translateX(100%)!important;opacity:0!important}
+.sw[data-on="academy"]::after,.sw[data-on="academy"]:has(button:hover)::after{transform:translateX(100%);opacity:1}
+.sw button{position:relative;z-index:2}
+/* íconos de servicios: círculos, y el texto siempre por encima de todo */
+.svc-row{position:relative;z-index:60}
+.svc{border-radius:50%;width:66px;height:66px}
+.svc:hover,.svc:focus-visible,.svc.show{z-index:70}
+.svc-g{z-index:80;background:rgba(255,255,255,.94);border:1px solid rgba(184,160,106,.6);border-radius:22px;-webkit-backdrop-filter:none;backdrop-filter:none;box-shadow:0 22px 40px -14px rgba(37,37,40,.6),inset 0 1px 0 #fff;padding:14px 18px;text-align:center}
+.svc-g::after{content:"";position:absolute;left:50%;bottom:-7px;width:14px;height:14px;margin-left:-7px;background:rgba(255,255,255,.94);border-right:1px solid rgba(184,160,106,.6);border-bottom:1px solid rgba(184,160,106,.6);transform:rotate(45deg)}
+/* encabezado siempre sólido */
+header.nav.sc::before{opacity:1;-webkit-backdrop-filter:none;backdrop-filter:none}
+/* equipo: protagonistas de la página */
+@media (min-width:1000px){.who{grid-template-columns:minmax(0,.75fr) minmax(0,1.35fr);gap:clamp(24px,4vw,64px)}}
+.who-ph{max-width:920px;gap:clamp(14px,2.4vw,30px)}
+.ph{min-height:clamp(300px,42vw,560px)}
+.ph-in .cap2{padding:44px 20px 20px}
+.ph-in .cap2 b{font-size:clamp(1.6rem,3.2vw,2.4rem)}
+.ph-in .cap2 span{font-size:clamp(.9rem,1.5vw,1.05rem)}
+.ph-in small{font-size:clamp(.82rem,1.3vw,1rem)}
+.ph-in .ico{width:48px;height:48px}
+@media (max-width:520px){.who-ph{grid-template-columns:1fr 1fr}.ph{min-height:300px}}
+/* etapas del año: menú fijo y sin saltos; al tocar se ve la animación */
+.yr{overflow:clip}
+.yr-steps{position:sticky;top:78px;z-index:6;padding:8px 0;margin-bottom:18px}
+.yr-b,.yr-b:hover,.yr-b[aria-pressed="true"]{transform:none}
+.yr-b:hover{background:rgba(255,255,255,.26)}
+.yr-b[aria-pressed="true"]{background:#fff;color:#252528;box-shadow:0 14px 24px -12px rgba(0,0,0,.55),0 0 0 3px rgba(255,255,255,.35)}
+/* botón de WhatsApp sólido */
+.btn-solid.btn-wa{background:linear-gradient(180deg,#2BD06C,#128C7E);color:#fff;border-color:transparent;box-shadow:0 14px 22px -12px rgba(18,140,126,.8)}
+.btn-solid.btn-wa .ico{width:18px;height:18px}
+/* descargas de Academy */
+.dlp{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:clamp(14px,2.4vw,28px);align-items:stretch}
+.dlp-main{display:grid;grid-template-columns:minmax(130px,.55fr) 1fr;gap:clamp(16px,3vw,32px);align-items:center;padding:clamp(18px,3vw,34px);border-radius:24px;background:color-mix(in srgb,currentColor 9%,transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,currentColor 20%,transparent),0 30px 50px -30px rgba(0,0,0,.6)}
+.dlp-art{aspect-ratio:3/4;border-radius:14px;padding:16px;display:flex;flex-direction:column;justify-content:space-between;background:linear-gradient(150deg,var(--p1,#B8A06A),var(--p3,#4F5A2A));color:#fff;box-shadow:0 26px 36px -16px rgba(0,0,0,.7),inset 0 0 0 1px rgba(255,255,255,.25);transform:rotate(-2deg);transition:transform .6s var(--ease)}
+.dlp.go .dlp-art{animation:dlpIn .6s var(--ease)}
+@keyframes dlpIn{from{opacity:.3;transform:rotate(-8deg) translateY(14px) scale(.94)}to{opacity:1;transform:rotate(-2deg)}}
+.dlp-art .ico{width:34px;height:34px}.dlp-art b{font:400 clamp(1.1rem,2vw,1.5rem)/1.05 var(--display);letter-spacing:.05em}.dlp-art small{opacity:.85}
+.dlp-k{font:800 .7rem/1 var(--body);letter-spacing:.2em;text-transform:uppercase;opacity:.8}
+.dlp-info h3{font-size:clamp(1.6rem,3.2vw,2.4rem);margin:8px 0 6px}.dlp-info p{opacity:.9;margin-bottom:12px}
+.dlp-wf{display:flex;align-items:flex-end;gap:3px;height:36px;margin-bottom:14px}
+.dlp-wf i{flex:1;border-radius:3px;background:currentColor;opacity:.35;height:30%;animation:dlpEq 1.6s ease-in-out infinite;animation-delay:calc(var(--k)*-.09s)}
+@keyframes dlpEq{50%{height:100%;opacity:.7}}
+.dlp-ctl{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.dlp-ctl .pv,.dlp-ctl .nx{display:grid;place-items:center;width:44px;height:44px;border-radius:50%;border:1.5px solid currentColor;background:none;color:inherit;cursor:pointer;transition:transform .25s}
+.dlp-ctl .pv:hover,.dlp-ctl .nx:hover{transform:scale(1.1)}
+.dlp-ctl svg{width:18px;height:18px}
+.dlp-n{display:block;margin-top:10px;opacity:.7}
+.dlp-list{display:grid;gap:8px;align-content:start;max-height:430px;overflow:auto;padding:2px}
+.dlp-i{display:grid;grid-template-columns:28px minmax(0,1fr) 22px;gap:10px;align-items:center;padding:12px 14px;border:0;border-radius:14px;color:inherit;font:inherit;text-align:left;cursor:pointer;background:color-mix(in srgb,currentColor 7%,transparent);transition:background .25s,transform .25s}
+.dlp-i:hover{background:color-mix(in srgb,currentColor 15%,transparent);transform:translateX(3px)}
+.dlp-i.sel{background:color-mix(in srgb,currentColor 22%,transparent);box-shadow:inset 0 0 0 1.5px currentColor}
+.dlp-i .n{font:800 .8rem var(--body);opacity:.7;text-align:center}.dlp-i .t b{display:block;font:700 .92rem/1.2 var(--body)}.dlp-i .t small{opacity:.75}.dlp-i .ico{width:18px;height:18px}
+@media (max-width:900px){.dlp{grid-template-columns:1fr}.dlp-main{grid-template-columns:1fr 1.6fr}.dlp-list{max-height:none}}
+@media (max-width:520px){.dlp-main{grid-template-columns:1fr}.dlp-art{max-width:200px;margin:auto}}
+
+
+.ph{aspect-ratio:auto;min-height:0;height:clamp(320px,36vw,540px)}
+@media (max-width:520px){.ph{height:300px}}
+
 </style>
 </head>
 <body>
@@ -1621,30 +1726,26 @@ body:has(.wa-wrap.open) .ftabs{opacity:0;pointer-events:none;transition:opacity 
     <i class="orb o2"></i><i class="orb o3"></i>
     <div class="wrap">
       <div class="sec-head"><div class="rule"></div><h2>Conoce nuestras producciones musicales</h2><p class="lead">Grabación, mezcla y masterización de discos y sencillos. Elige una producción y dale play. <em style="opacity:.7">(Demo visual: aquí se conectan tus audios y portadas reales.)</em></p></div>
-      <div class="amp" id="amp">
-        <div class="amp-disc"><div class="vinyl" id="vinyl"><div class="label"></div></div><div class="arm"><svg viewBox="0 0 100 130" aria-hidden="true">
-<defs>
-<linearGradient id="armM" x1="0" x2="1"><stop offset="0" stop-color="#F4F4F6"/><stop offset=".5" stop-color="#BDBDC2"/><stop offset="1" stop-color="#7C7C82"/></linearGradient>
-<radialGradient id="armB" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#EDEDEF"/><stop offset=".6" stop-color="#9A9AA0"/><stop offset="1" stop-color="#5E5E64"/></radialGradient>
-<linearGradient id="armC" x1="0" x2="1"><stop offset="0" stop-color="#8E8E94"/><stop offset=".5" stop-color="#C9C9CE"/><stop offset="1" stop-color="#6A6A70"/></linearGradient>
-</defs>
-<g transform="rotate(27 88 13)">
-<rect x="83" y="-9" width="10" height="16" rx="3.5" fill="url(#armC)"/>
-<rect x="85.2" y="4" width="5.6" height="12" rx="2" fill="#6A6A70"/>
-<path d="M88 13V84Q88 96 82 104" fill="none" stroke="url(#armM)" stroke-width="4.4" stroke-linecap="round"/>
-<path d="M87.2 15V83" fill="none" stroke="#fff" stroke-opacity=".55" stroke-width="1" stroke-linecap="round"/>
-<g transform="rotate(-20 82 104)"><rect x="76.500" y="99" width="11" height="16" rx="2.500" fill="#2A2A2F" stroke="#9A9AA0" stroke-width=".8"/><rect x="78.500" y="101" width="7" height="2.500" rx="1.200" fill="#C9C9CE"/></g>
-<path d="M79.200 112.500l-1.200 4.200" stroke="#E6E6E8" stroke-width="1.200" stroke-linecap="round"/>
-<circle cx="88" cy="13" r="11" fill="#2A2A2F" stroke="#9A9AA0" stroke-width="1"/>
-<circle cx="88" cy="13" r="7.500" fill="url(#armB)"/>
-<circle cx="88" cy="13" r="2.200" fill="#3A3A40"/>
-</g></svg></div></div>
-        <div>
-          <span class="amp-k">Ahora suena <small>· preview de 30 s</small></span>
-          <h3 id="amp-t">—</h3><p class="amp-a" id="amp-a">—</p>
-          <div class="amp-wf" id="amp-wf" aria-hidden="true"></div>
-          <div class="amp-bar"><span id="amp-c">0:00</span><input type="range" id="amp-r" min="0" max="1000" value="0" aria-label="Posición de la canción"><span id="amp-d">0:00</span></div>
-          <div class="amp-ctl"><button type="button" id="amp-prev" aria-label="Anterior"><svg class="ico-f"><use href="#i-prev"/></svg></button><button type="button" class="big" id="amp-play" aria-label="Reproducir"><svg class="ico-f"><use href="#i-play"/></svg></button><button type="button" id="amp-next" aria-label="Siguiente"><svg class="ico-f"><use href="#i-next"/></svg></button></div>
+      <div class="amp amp2" id="amp">
+        <div class="phones">
+          <div class="mph ph-a" aria-label="Reproductor">
+            <i class="isl"></i>
+            <div class="pscr">
+              <div class="amp-disc"><div class="vinyl" id="vinyl"><div class="label"></div></div></div>
+              <span class="amp-k">Ahora suena <small>· preview de 30 s</small></span>
+              <h3 id="amp-t">—</h3><p class="amp-a" id="amp-a">—</p>
+              <div class="amp-wf" id="amp-wf" aria-hidden="true"></div>
+              <div class="amp-bar"><span id="amp-c">0:00</span><input type="range" id="amp-r" min="0" max="1000" value="0" aria-label="Posición de la canción"><span id="amp-d">0:00</span></div>
+              <div class="amp-ctl"><button type="button" id="amp-prev" aria-label="Anterior"><svg class="ico-f"><use href="#i-prev"/></svg></button><button type="button" class="big" id="amp-play" aria-label="Reproducir"><svg class="ico-f"><use href="#i-play"/></svg></button><button type="button" id="amp-next" aria-label="Siguiente"><svg class="ico-f"><use href="#i-next"/></svg></button></div>
+            </div>
+          </div>
+          <div class="mph ph-b" aria-label="Lista de producciones">
+            <i class="isl"></i>
+            <div class="pscr">
+              <div class="pl-h"><b>Producciones</b><small>Faro Studios · toca una para escucharla</small></div>
+              <div class="pl" id="amp-list" role="list"></div>
+            </div>
+          </div>
         </div>
       </div>
       <h3 class="sub-h" style="margin-top:56px">Discos y producciones</h3>
@@ -2739,11 +2840,11 @@ function pageHTML(k){
   return `<section class="hero2 sec pal-${k} wm" id="${k}-top">${shapes(eng?[['c','54px','78%','18%','var(--p1)'],['q','38px','90%','52%','var(--p2)'],['g','70px','66%','60%','var(--p3)','', 'Hi'],['c','22px','56%','12%','var(--p2)'],['t','34px','84%','74%','var(--p1)'],['g','54px','92%','24%','var(--p2)','','!']]:[['c','54px','80%','16%','var(--p1)'],['q','38px','92%','46%','var(--p2)'],['g','80px','68%','58%','var(--p3)','','♫'],['c','22px','58%','10%','var(--p2)'],['t','34px','86%','76%','var(--p1)'],['g','56px','94%','22%','var(--p2)','','♪']])}<div class="wrap">
     <h1><span class="line"><span>${D.h1a}</span></span><span class="line"><span class="l2">${D.h1b}</span></span></h1>
     <p class="sub">${D.sub}</p>
-    <div class="cta"><a class="btn btn-solid" href="#${k}-plan">Ver plan de estudios</a><a class="btn btn-ghost" data-wa="${k}" target="_blank" rel="noopener" href="#">Reservar clase por WhatsApp</a></div>
+    <div class="cta"><a class="btn btn-solid" href="#${k}-plan">Ver plan de estudios</a><a class="btn btn-solid btn-wa" data-wa="${k}" target="_blank" rel="noopener" href="#"><svg class="ico"><use href="#i-wa"/></svg>Reservar clase por WhatsApp</a></div>
     <div class="widget">${eng?`<small>Toca una frase: la escuchas en inglés y ves su significado.</small><div class="phrases" id="phrases"></div>`:`<small>Toca las teclas o usa A S D F G H J K en tu teclado.</small><div class="piano" id="keys"></div>`}</div>
   </div></section>
   ${eng?`<section class="docs sec pal-english" id="english-docentes" style="background:var(--p3)!important">${shapes([['c','60px','88%','20%','#fff'],['q','40px','6%','70%','var(--p2)'],['c','26px','50%','8%','var(--p3)']])}<div class="wrap">
-    <div class="sec-head"><div class="rule"></div><h2>¿Eres maestro o maestra y quieres <span class="hl-b">mejorar tu contenido</span>?</h2><p class="lead">Mejora tu inglés y tus clases con un plan hecho para docentes. Precio especial para docentes de nivel medio.</p></div>
+    <div class="sec-head"><div class="rule"></div><h2>¿Eres maestro o maestra y quieres <span class="hl-b">mejorar tus clases</span>?</h2><p class="lead">Mejora tu inglés y tus clases con un plan hecho para docentes. Precio especial para docentes de nivel medio.</p></div>
     <div class="tcards">
      <div class="tcard"><svg class="ico"><use href="#i-award"/></svg><h3>Plan de capacitación</h3><p>Sesiones en línea para mejorar tu inglés y el contenido que llevas a tu aula. Precio especial para docentes de nivel medio.</p><a class="btn btn-solid" data-wa="docentes" target="_blank" rel="noopener" href="#">Quiero el plan</a></div>
      <div class="tcard"><svg class="ico"><use href="#i-chat"/></svg><h3>Charlas para tu centro</h3><p>¿Prefieres llevar esto a todo tu equipo? Damos charlas para tu centro educativo.</p><a class="btn btn-solid" data-wa="charlas" target="_blank" rel="noopener" href="#">Pedir una charla</a></div>
@@ -2784,11 +2885,8 @@ function pageHTML(k){
   </div></section>
 
   <section class="sec pal-${k}" id="${k}-desc"><div class="wrap">
-    <div class="sec-head"><div class="rule"></div><h2>Descargas</h2><p class="lead">Lo primero que puedes llevarte: el plan de estudio de cada curso, en PDF.</p></div>
-    <div class="sub-h">Planes de estudio</div>
-    <div class="dl-grid" id="${k}-plans"></div>
-    <div class="sub-h">Material gratis</div>
-    <div class="dl-grid" id="${k}-free"></div>
+    <div class="sec-head"><div class="rule"></div><h2>Descargas</h2><p class="lead">Elige un documento, mira de qué trata y descárgalo gratis: el plan de estudio de cada curso y material de apoyo.</p></div>
+    <div class="dlp" id="${k}-dlp"></div>
   </div></section>
 
   <section class="sec pal-${k}-alt" id="${k}-vac"><div class="wrap">
@@ -2927,14 +3025,32 @@ function bindPage(k){
     D.phases.forEach((p,n)=>{const b=document.createElement('button');b.type='button';b.className='yr-b';b.innerHTML=`<i></i><b>${p.t}</b><span>${p.h}</span>`;b.addEventListener('click',()=>show(n));steps.appendChild(b)});
     sec.style.setProperty('--yb',D.yb[0]);show(0,true);
   })();
-  D.plans.forEach(d=>$('#'+k+'-plans').appendChild(card(d)));
-  D.free.forEach(d=>$('#'+k+'-free').appendChild(card(d)));
+  mountDlPlayer(k,D);
   mountTesti($('#'+k+'-tm'),[
    {k:k+'-t1',q:'Aquí va la reseña de tu estudiante: 2 o 3 líneas contando cómo ha sido aprender en Faro Academy.',n:'Nombre del estudiante',r:eng?'Inglés · nivel':'Música · instrumento'},
    {k:k+'-t2',q:'Otra reseña de ejemplo. Cámbiala por el comentario real de un estudiante o de su familia.',n:'Nombre del estudiante o familia',r:'Faro Academy'},
    {k:k+'-t3',q:'Una tercera reseña de ejemplo, con la foto de la persona a la izquierda.',n:'Nombre del estudiante',r:'Faro Academy'}
   ],'tu estudiante');
   fillSlots($('#p-'+k));
+}
+/* descargas de Academy como reproductor interactivo (con descarga habilitada) */
+function mountDlPlayer(k,D){
+  const host=$('#'+k+'-dlp');if(!host)return;
+  const items=[...D.plans.map((d,i)=>({id:'pl'+k[0]+(i+1),t:d[0],d:d[1],kind:'Plan de estudio'})),...D.free.map((d,i)=>({id:'fr'+k[0]+(i+1),t:d[0],d:d[1],kind:'Material gratis'}))];
+  let cur=0,tick;
+  host.innerHTML='<div class="dlp-main"><div class="dlp-art"><svg class="ico"><use href="#i-file"/></svg><b></b><small>Faro Academy</small></div><div class="dlp-info"><span class="dlp-k"></span><h3></h3><p></p><div class="dlp-wf" aria-hidden="true">'+Array.from({length:28},(_,i)=>'<i style="--k:'+i+'"></i>').join('')+'</div><div class="dlp-ctl"><button type="button" class="pv" aria-label="Anterior"><svg class="ico-f"><use href="#i-prev"/></svg></button><button type="button" class="big btn btn-solid" aria-label="Descargar"><svg class="ico"><use href="#i-dl"/></svg>Descargar PDF</button><button type="button" class="nx" aria-label="Siguiente"><svg class="ico-f"><use href="#i-next"/></svg></button></div><small class="dlp-n"></small></div></div><div class="dlp-list" role="list"></div>';
+  const art=$('.dlp-art',host),L=$('.dlp-list',host);
+  items.forEach((it,i)=>{const b=document.createElement('button');b.type='button';b.className='dlp-i';b.setAttribute('role','listitem');b.innerHTML='<span class="n">'+(i+1)+'</span><span class="t"><b></b><small></small></span><svg class="ico"><use href="#i-dl"/></svg>';$('b',b).textContent=it.t;$('small',b).textContent=it.kind;b.addEventListener('click',()=>show(i));L.appendChild(b)});
+  function show(i){cur=(i+items.length)%items.length;const it=items[cur];
+    $('b',art).textContent=it.t;$('.dlp-k',host).textContent=it.kind;$('h3',host).textContent=it.t;$('.dlp-info p',host).textContent=it.d;
+    $('.dlp-n',host).textContent=(cur+1)+' de '+items.length;
+    $$('.dlp-i',L).forEach((x,j)=>x.classList.toggle('sel',j===cur));
+    host.classList.remove('go');void host.offsetWidth;host.classList.add('go');
+    const urls=SITE.pdf||{};$('.big',host).dataset.has=urls[it.id]?'1':'';}
+  $('.pv',host).addEventListener('click',()=>show(cur-1));$('.nx',host).addEventListener('click',()=>show(cur+1));
+  $('.big',host).addEventListener('click',()=>{const it=items[cur],u=(SITE.pdf||{})[it.id];
+    if(u){const a=document.createElement('a');a.href=u;a.download='';a.target='_blank';a.rel='noopener';document.body.appendChild(a);a.click();a.remove();toast('Descargando: '+it.t)}else openGet(it.t)});
+  show(0);
 }
 ['music','english'].forEach(k=>{$('#p-'+k).innerHTML=pageHTML(k);bindPage(k)});
 $$('[data-wa]').forEach(a=>a.href=WA+encodeURIComponent(waMsg[a.dataset.wa]));
@@ -3512,6 +3628,30 @@ window.rebuildPortfolio&&window.rebuildPortfolio();
     const it=[];for(let n=1;n<=6;n++){const q=X['rv.'+n+'.q'];if(q)it.push({k:'t'+n,q:escH(q),n:escH(X['rv.'+n+'.n']||'Cliente'),r:escH(X['rv.'+n+'.r']||'')})}
     const h=$('#testi-s');if(it.length&&h)mountTesti(h,it,'tu cliente');
   };})();
+
+</script>
+<script>
+/* ===== v12 ===== */
+
+/* lista de producciones del reproductor tipo teléfono */
+(function(){const L=$('#amp-list');if(!L)return;
+  function build(){L.innerHTML='';
+    ALB.forEach((a,i)=>{const u=imgOf('alb'+(i+1));const b=document.createElement('button');b.type='button';b.className='pl-i';b.setAttribute('role','listitem');
+      b.innerHTML='<span class="pl-n">'+(i+1)+'</span><span class="pl-c'+(u?' has':'')+'" style="--cov:'+(u?'url(\''+u+'\')':a[2])+'"></span><span class="pl-t"><b></b><small></small></span><span class="pl-p"><svg class="ico-f"><use href="#i-play"/></svg></span>';
+      $('b',b).textContent=a[0];$('small',b).textContent=a[1];
+      b.addEventListener('click',()=>{const c=$$('#covers .cv')[i];if(c)c.click()});
+      L.appendChild(b)})}
+  function sel(){const k=$$('#covers .cv').findIndex(c=>c.classList.contains('sel'));$$('.pl-i',L).forEach((x,i)=>x.classList.toggle('sel',i===k))}
+  build();
+  const cv=$('#covers');if(cv)new MutationObserver(sel).observe(cv,{subtree:true,attributes:true,attributeFilter:['class']});
+  const _r=window.refreshCovers;window.refreshCovers=function(){_r&&_r();build();sel()};
+  const _v=window.v12Config;window.v12Config=function(){_v&&_v();build();sel()};
+})();
+
+</script>
+<script>
+/* ===== v12 ===== */
+
 
 </script>
 <script>
