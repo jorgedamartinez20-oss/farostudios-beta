@@ -912,7 +912,8 @@ async function matInit(){
         if(v&&!/^https:\/\//.test(v)){toast('La dirección debe empezar con https://');return}
         try{localStorage.setItem(FILES_LS,v)}catch(e){}FILES=v;MAT.destinos=[];toast(v?'Conectado a esta dirección':'Desconectado');matInit()}},'Conectar'),
       FILES?el('button',{class:'btn btn-ghost',type:'button',onclick:async()=>{try{const j=await fjson('/api/init',{method:'POST'});toast('Carpetas listas ('+j.carpetas+')')}catch(e){toast(e.message)}}},'Preparar carpetas'):null));
-  if(FILES)top.append(el('p',{style:'margin-top:10px'},'✓ Conectado'),el('details',{style:'margin-top:8px'},el('summary',{class:'muted',style:'cursor:pointer'},'Ajustes del servicio (ya está conectado, no hace falta tocar)'),cfg));else top.append(cfg);
+  if(FILES){cfg.hidden=true;cfg.style.cssText='margin-top:12px;padding-top:12px;border-top:1px solid var(--line)';cfg.prepend(el('p',{class:'muted'},'Solo cambia esto si moviste el servicio de archivos a otra dirección.'));
+    top.append(el('div',{style:'display:flex;align-items:center;gap:10px;margin-top:10px'},el('span',{},'✓ Conectado'),el('button',{class:'btn btn-ghost btn-sm',type:'button',title:'Configuración de la conexión','aria-label':'Configuración de la conexión',onclick:()=>{cfg.hidden=!cfg.hidden}},'⚙')),cfg)}else top.append(cfg);
   box.append(top);
   if(!FILES){box.append(el('div',{class:'card'},el('p',{class:'muted'},'Todavía no está conectado. Publica el servicio con los pasos de worker/LEEME.md, pega aquí su dirección y toca “Conectar”. Mientras tanto, “Sitio web” sigue subiendo archivos como antes.')));return}
   try{await matArbol()}catch(e){top.append(el('div',{class:'msg',style:'margin-top:12px'},e.message+'. Revisa la dirección y que el servicio esté publicado.'));return}
