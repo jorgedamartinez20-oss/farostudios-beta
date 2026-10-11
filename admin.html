@@ -360,6 +360,11 @@ button,.btn,.chip,.nav,.tab,.stab,.seg{-webkit-user-select:none;user-select:none
 @media (hover:none),(pointer:coarse){.btn:hover,.kpi:hover{transform:none}}
 
 @media (hover:none){*{-webkit-tap-highlight-color:transparent}}
+/* ---------- pantalla de acceso: sin campanita ni selector de tema, isotipo fantasma de textura ---------- */
+body:has(#v-login:not([hidden])) :is(#bell,#notif,#tema){display:none!important}
+body:has(#v-login:not([hidden]))::before{content:"";position:fixed;left:50%;top:calc(var(--toph,64px) + 6px);height:min(76vh,860px);aspect-ratio:850/1595;transform:translateX(-50%);z-index:0;pointer-events:none;
+ background:var(--oro-t);opacity:.12;-webkit-mask:url(isotipo-fantasma.png) center/contain no-repeat;mask:url(isotipo-fantasma.png) center/contain no-repeat}
+body:has(#v-login:not([hidden])) .wrap{position:relative;z-index:1}
 
 /* ---------- móvil: fondo liso, sin velo blanco bajo el encabezado ---------- */
 @media (max-width:900px){
