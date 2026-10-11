@@ -420,7 +420,8 @@ function K(){return S.D[S.kid]}
 
 /* ---------- herramientas según el instrumento del perfil ---------- */
 /* Instrumento → herramientas que se activan solas. Para sumar otra, basta una línea aquí y su montaje en herramientas.js. */
-const HERR={electrica:['afinador','metronomo'],piano:['piano']};
+const HERR={electrica:['afinador','metronomo'],acustica:['afinador','metronomo'],clasica:['afinador','metronomo'],bajo:['afinadorbajo','metronomo'],piano:['piano','metronomo'],canto:['piano','metronomo'],bateria:['metronomo'],ukelele:['metronomo'],produccion:['metronomo']};
+const HERR_ORDEN=['afinador','afinadorbajo','piano','metronomo'];
 /* Lista de instrumentos del alumno. Viene de la columna "instrumentos" (que el admin elige de una lista).
    Solo si esa columna aún no existe en la base, se intenta leer del texto antiguo de "detalle". */
 function instrDe(g){
@@ -428,9 +429,13 @@ function instrDe(g){
   if('instrumentos' in g)return Array.isArray(g.instrumentos)?g.instrumentos:[];
   const t=String(g.detalle||'').toLowerCase(),o=[];
   if(/guitarra/.test(t)&&/el[eé]ctric/.test(t))o.push('electrica');
+  if(/guitarra/.test(t)&&/ac[uú]stic/.test(t))o.push('acustica');
+  if(/guitarra/.test(t)&&/cl[aá]sic/.test(t))o.push('clasica');
+  if(/bajo/.test(t))o.push('bajo');
   if(/piano/.test(t))o.push('piano');
+  if(/canto|vocal/.test(t))o.push('canto');
   return o}
-function herrDe(k){const o=[];((k&&k.instr)||[]).forEach(i=>(HERR[i]||[]).forEach(t=>{if(!o.includes(t))o.push(t)}));return o}
+function herrDe(k){const o=[];((k&&k.instr)||[]).forEach(i=>(HERR[i]||[]).forEach(t=>{if(!o.includes(t))o.push(t)}));return o.sort((x,y)=>HERR_ORDEN.indexOf(x)-HERR_ORDEN.indexOf(y))}
 
 /* ---------- carga de datos ---------- */
 async function cargarAlumno(id){

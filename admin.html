@@ -779,13 +779,14 @@ const AREAS=[['musica','Música'],['ingles','Inglés']];
 /* Instrumentos y niveles: siempre se eligen de la lista, nunca se escriben. El portal activa herramientas según estos valores. */
 const INSTR=[['canto','Canto'],['acustica','Guitarra acústica'],['clasica','Guitarra clásica'],['electrica','Guitarra eléctrica'],['bajo','Bajo'],['bateria','Batería'],['piano','Piano'],['ukelele','Ukelele'],['produccion','Producción musical']];
 const NIVELES=[['','Sin definir'],['principiante','Principiante'],['intermedio','Intermedio'],['avanzado','Avanzado']];
-const INSTR_TOOLS={electrica:'Afinador y metrónomo',piano:'Piano interactivo'};
+const INSTR_TOOLS={electrica:['Afinador de guitarra','Metrónomo'],acustica:['Afinador de guitarra','Metrónomo'],clasica:['Afinador de guitarra','Metrónomo'],bajo:['Afinador de bajo','Metrónomo'],piano:['Piano','Metrónomo'],canto:['Piano','Metrónomo'],bateria:['Metrónomo'],ukelele:['Metrónomo'],produccion:['Metrónomo']};
+const herrNombres=ins=>[...new Set((ins||[]).flatMap(i=>INSTR_TOOLS[i]||[]))];
 const PORTAL_URL='farostudios.net/portal.html';
 const ENT={
   est:{g:'ac',tabla:'ac_estudiantes',t:'Alumnos',ord:'nombre.asc',ico:'🎓',rol:'alumno',f:[
     {k:'nombre',l:'Nombre completo',req:1},{k:'apodo',l:'Cómo le decimos (apodo)'},{k:'contacto',l:'WhatsApp o correo (solo lo ves tú)'},
     {k:'area',l:'Área',t:'sel',o:AREAS,def:'musica'},
-    {k:'instrumentos',l:'Instrumentos (marca todos los que cursa)',t:'multi',o:INSTR,def:[],showIf:{k:'area',v:'musica'},ayuda:'Al marcar Guitarra eléctrica se activa el afinador y el metrónomo en su portal; al marcar Piano, el piano interactivo.'},
+    {k:'instrumentos',l:'Instrumentos (marca todos los que cursa)',t:'multi',o:INSTR,def:[],showIf:{k:'area',v:'musica'},ayuda:'Según lo que marques se activan herramientas en su portal: guitarras → afinador de guitarra; bajo → afinador de bajo; piano y canto → piano. Todos los instrumentos incluyen el metrónomo.'},
     {k:'nivel',l:'Nivel',t:'sel',o:NIVELES,def:''},
     {k:'modalidad',l:'Modalidad',t:'sel',o:[['presencial','Presencial'],['online','En línea']],def:'presencial'},
     {k:'xp',l:'Puntos de experiencia (XP)',t:'number',def:0},{k:'racha',l:'Racha (días seguidos)',t:'number',def:0},
@@ -795,7 +796,7 @@ const ENT={
       if(b.area!=='musica')b.instrumentos=[];
       b.instrumentos=b.instrumentos||[];b.nivel=b.nivel||null;
       b.detalle=[b.instrumentos.map(i=>nm[i]).join(' + '),b.nivel?lv[b.nivel]:''].filter(Boolean).join(' · ')||null},
-    row:r=>[(r.apodo||r.nombre)+(r.activo?'':' (inactivo)'),(r.area==='musica'?'Música':'Inglés')+' · '+(r.detalle||'sin detalle')+' · '+(r.modalidad==='online'?'en línea':'presencial')+' · '+r.xp+' XP · '+accTxt('alumno','estudiante_id',r.id)+((r.instrumentos||[]).some(i=>INSTR_TOOLS[i])?' · herramientas: '+[...new Set((r.instrumentos||[]).map(i=>INSTR_TOOLS[i]).filter(Boolean))].join(', '):'')],
+    row:r=>[(r.apodo||r.nombre)+(r.activo?'':' (inactivo)'),(r.area==='musica'?'Música':'Inglés')+' · '+(r.detalle||'sin detalle')+' · '+(r.modalidad==='online'?'en línea':'presencial')+' · '+r.xp+' XP · '+accTxt('alumno','estudiante_id',r.id)+(herrNombres(r.instrumentos).length?' · herramientas: '+herrNombres(r.instrumentos).join(', '):'')],
     acts:r=>[[accHas('estudiante_id',r.id)?'Regenerar acceso':'Crear acceso',()=>acGenerar('alumno',r)]].concat(accHas('estudiante_id',r.id)?[['Ver acceso',()=>acVer('alumno','estudiante_id',r)]]:[])},
   enc:{g:'ac',tabla:'ac_encargados',t:'Encargados',ord:'nombre.asc',ico:'👪',rol:'encargado',f:[
     {k:'nombre',l:'Nombre',req:1},{k:'whatsapp',l:'WhatsApp'},{k:'correo',l:'Correo (opcional)',t:'email'}],

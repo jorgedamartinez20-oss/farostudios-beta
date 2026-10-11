@@ -14,15 +14,23 @@ const cif=m=>CIF[pc(m)], sol=m=>SOL[pc(m)], oct=m=>Math.floor(Math.round(m)/12)-
 
 /* cuerdas de grave (6.ª) a aguda (1.ª), en notas MIDI */
 const TUNINGS=[
-  {id:'estandar',n:'Estándar (E A D G B E)',s:[40,45,50,55,59,64]},
-  {id:'medio',n:'Medio tono abajo (Eb)',s:[39,44,49,54,58,63]},
-  {id:'tono',n:'Un tono abajo (D)',s:[38,43,48,53,57,62]},
+  {id:'estandar',n:'Estándar',s:[40,45,50,55,59,64]},
+  {id:'medio',n:'Medio tono abajo',s:[39,44,49,54,58,63]},
+  {id:'tono',n:'Un tono abajo',s:[38,43,48,53,57,62]},
   {id:'dropd',n:'Drop D',s:[38,45,50,55,59,64]},
   {id:'dropc',n:'Drop C',s:[36,43,48,53,57,62]},
   {id:'dadgad',n:'DADGAD',s:[38,45,50,55,57,62]},
   {id:'openg',n:'Open G',s:[38,43,50,55,59,62]},
   {id:'opend',n:'Open D',s:[38,45,50,54,57,62]},
   {id:'opene',n:'Open E',s:[40,47,52,56,59,64]}
+];
+/* bajo de 4 cuerdas, de la 4.ª (grave) a la 1.ª */
+const BASS_TUNINGS=[
+  {id:'estandar',n:'Estándar',s:[28,33,38,43]},
+  {id:'medio',n:'Medio tono abajo',s:[27,32,37,42]},
+  {id:'tono',n:'Un tono abajo',s:[26,31,36,41]},
+  {id:'dropd',n:'Drop D',s:[26,33,38,43]},
+  {id:'dropc',n:'Drop C',s:[24,31,36,41]}
 ];
 
 /* Detector de tono YIN: robusto con cuerdas graves, donde los armónicos son más fuertes que la fundamental. */
@@ -105,29 +113,38 @@ const CSS=`
 .ft-err{color:#D98A96;font-size:1rem;min-height:1.4em;margin:6px 0 0}
 .ft-light .ft-err{color:var(--borgona)}
 
-/* afinador */
-.tu-gauge{width:min(100%,430px);margin:6px auto 0;display:block}
-.tu-read{display:grid;gap:2px;justify-items:center;margin-top:-6px}
-.tu-note{font:400 clamp(4.2rem,14vw,6.5rem)/1 var(--display);letter-spacing:.03em;transition:color .2s}
-.tu-note sup{font-size:.38em;margin-left:2px;color:#C9C4BA;vertical-align:top;position:relative;top:.25em}
-.tu-sol{font-size:1.125rem;color:#C9C4BA}
-.tu-cents{font:400 1.82rem/1 var(--display);letter-spacing:.06em}
-.tu-msg{font-size:1.125rem;min-height:1.6em;margin:6px 0 0}
-.tu-ok .tu-note,.tu-ok .tu-cents{color:var(--oliva-c)}
-.tu-near .tu-note,.tu-near .tu-cents{color:var(--oro)}
-.tu-far .tu-note,.tu-far .tu-cents{color:#D98A96}
-.tu-head{position:relative;height:340px;max-width:440px;margin:18px auto 0}
-.tu-head svg{position:absolute;left:50%;top:0;height:100%;width:auto;transform:translateX(-50%)}
-.tu-peg{position:absolute;width:76px;height:76px;margin-top:-38px;border-radius:50%;border:3px solid rgba(245,242,238,.3);background:#3A3A3A;color:var(--marfil);box-shadow:0 6px 0 #000;display:grid;place-items:center;align-content:center;gap:0;cursor:pointer;font:inherit;padding:0;transition:transform .12s,background .2s,border-color .2s}
-.tu-peg:active{transform:translateY(4px);box-shadow:0 2px 0 #000}
-.tu-peg b{font:400 1.82rem/1 var(--display);letter-spacing:.03em}
-.tu-peg small{font-size:.9rem;color:#C9C4BA;line-height:1}
-.tu-peg.l{left:0}.tu-peg.r{right:0}
-.tu-peg[aria-pressed="true"]{border-color:var(--oro)}
-.tu-peg.on{background:var(--oliva-d);border-color:var(--oliva-c)}
-.tu-peg.done::after{content:"✓";position:absolute;right:-6px;top:-8px;width:28px;height:28px;border-radius:50%;background:var(--oliva-c);color:var(--pizarra);font-size:1.1rem;display:grid;place-items:center;box-shadow:0 3px 0 #000}
-.tu-tip{font-size:1rem;color:#C9C4BA;margin:12px auto 0;max-width:46ch}
-@media (max-width:480px){.tu-peg{width:66px;height:66px;margin-top:-33px}.tu-head{height:310px}}
+/* afinador (estilo paleta de guitarra) */
+.tu-card{background-color:#0c0c0e;background-image:linear-gradient(rgba(255,255,255,.055) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.055) 1px,transparent 1px);background-size:30px 30px;text-align:left;--peg:clamp(50px,14.5vw,62px);--grn:#8DC63F}
+.tu-top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.tu-pill{appearance:none;-webkit-appearance:none;background:rgba(0,0,0,.45);color:#fff;font:700 1.25rem/1.2 var(--body);border:3px solid rgba(255,255,255,.28);border-radius:99px;padding:11px 24px;text-align:center;text-align-last:center;cursor:pointer;max-width:62%}
+.tu-pill option{background:#222;color:#fff}
+.tu-sw{display:flex;align-items:center;gap:12px;background:none;border:0;padding:4px;color:#7d7d7d;font:700 1.15rem/1 var(--body);letter-spacing:.08em;cursor:pointer}
+.tu-sw[aria-checked="true"]{color:var(--grn)}
+.tu-sw i{width:66px;height:38px;border-radius:99px;background:#4a4a4e;position:relative;transition:background .2s;box-shadow:inset 0 2px 4px rgba(0,0,0,.5)}
+.tu-sw i::after{content:"";position:absolute;top:3px;left:3px;width:32px;height:32px;border-radius:50%;background:#fff;transition:transform .2s;box-shadow:0 2px 4px rgba(0,0,0,.4)}
+.tu-sw[aria-checked="true"] i{background:var(--grn)}
+.tu-sw[aria-checked="true"] i::after{transform:translateX(28px)}
+.tu-meter{position:relative;height:170px;margin-top:6px}
+.tu-fl,.tu-sh{position:absolute;top:96px;font-size:2rem;color:#9a9a9a;line-height:1}
+.tu-fl{left:6%}.tu-sh{right:6%}
+.tu-line{position:absolute;left:50%;top:0;bottom:-6px;width:4px;margin-left:-2px;background:linear-gradient(#b5411f,#7a2410);border-radius:2px;transition:background .25s}
+.tu-bub{position:absolute;top:34px;left:50%;width:70px;height:70px;margin-left:-35px;border-radius:50%;background:#000;border:4px solid #fff;display:grid;place-items:center;color:#fff;font:400 1.9rem/1 var(--body);transition:border-color .25s,color .25s;will-change:transform}
+.tu-bub::after{content:"";position:absolute;left:50%;bottom:-17px;margin-left:-9px;border-left:9px solid transparent;border-right:9px solid transparent;border-top:15px solid #fff;transition:border-top-color .25s}
+.tu-ok .tu-line{background:var(--grn)}
+.tu-ok .tu-bub{border-color:var(--grn);color:var(--grn)}.tu-ok .tu-bub::after{border-top-color:var(--grn)}
+.tu-near .tu-bub{border-color:var(--oro)}.tu-near .tu-bub::after{border-top-color:var(--oro)}
+.tu-head{position:relative;margin-top:2px}
+.tu-hw{position:relative;width:min(250px,calc(100% - 2*(var(--peg) + 8px)));aspect-ratio:260/380;margin:0 auto}
+.tu-hw svg{width:100%;height:100%;display:block;overflow:visible}
+.tu-peg{position:absolute;width:var(--peg);height:var(--peg);margin-top:calc(var(--peg)/-2);border-radius:50%;border:2px solid rgba(255,255,255,.16);background:rgba(0,0,0,.4);color:var(--grn);font:400 clamp(1.7rem,6vw,2.1rem)/1 var(--body);display:grid;place-items:center;cursor:pointer;padding:0;transition:border-color .2s,background .2s,transform .12s}
+.tu-peg:active{transform:scale(.94)}
+.tu-peg.l{right:calc(100% + 8px)}.tu-peg.r{left:calc(100% + 8px)}
+.tu-peg[aria-pressed="true"]{border-color:#fff}
+.tu-peg.on{border-color:var(--grn);background:rgba(141,198,63,.2)}
+.tu-peg.done::after{content:"✓";position:absolute;right:-5px;top:-7px;width:26px;height:26px;border-radius:50%;background:var(--grn);color:#10120a;font:700 1rem/1 var(--body);display:grid;place-items:center;box-shadow:0 2px 0 #000}
+.tu-msg{font-size:1.125rem;text-align:center;margin:10px 0 0;min-height:1.7em;color:#E9E3D6}
+.tu-ok .tu-msg{color:var(--grn)}
+.tu-tip{font-size:1rem;color:#B7B2A8;margin:14px auto 0;max-width:46ch;text-align:center}
 
 /* metrónomo */
 .mt-bpm{display:flex;align-items:center;justify-content:center;gap:clamp(8px,3vw,22px)}
@@ -161,117 +178,128 @@ const CSS=`
 `;
 function injectCSS(){if(document.getElementById('ft-css'))return;const s=document.createElement('style');s.id='ft-css';s.textContent=CSS;document.head.append(s)}
 
-/* ================= AFINADOR ================= */
-function mountTuner(box){
-  const st={tun:TUNINGS[0],auto:true,target:0,on:false,done:new Set(),hist:[],lastPitch:0,okSince:0,okIdx:-1,ang:0,toneUntil:0,cat:''};
-  let stream=null,src=null,an=null,buf=null,raf=0,lastDet=0;
-  const R=130,CX=150,CY=150;
-  const P=(deg,r)=>{const a=deg*Math.PI/180;return[(CX+r*Math.sin(a)).toFixed(1),(CY-r*Math.cos(a)).toFixed(1)]};
-  const arc=(a0,a1,r)=>{const p=P(a0,r),q=P(a1,r);return'M'+p[0]+' '+p[1]+' A'+r+' '+r+' 0 0 1 '+q[0]+' '+q[1]};
-  let ticks='';
-  for(let c=-50;c<=50;c+=5){const big=c%25===0,p=P(c*1.5,R-(big?20:11)),q=P(c*1.5,R+2);ticks+='<line x1="'+p[0]+'" y1="'+p[1]+'" x2="'+q[0]+'" y2="'+q[1]+'" stroke="'+(c===0?'#A3B15F':'#8c887f')+'" stroke-width="'+(c===0?4:big?3:2)+'" stroke-linecap="round"/>'}
-  const gauge='<svg class="tu-gauge" viewBox="0 10 300 160" role="img" aria-label="Indicador de afinación en cents">'
-    +'<path d="'+arc(-75,75,R+8)+'" fill="none" stroke="#3a3a40" stroke-width="10" stroke-linecap="round"/>'
-    +'<path d="'+arc(-7.5,7.5,R+8)+'" fill="none" stroke="#A3B15F" stroke-width="10" stroke-linecap="butt"/>'
-    +ticks
-    +'<text x="'+P(-75,R-34)[0]+'" y="'+(+P(-75,R-34)[1]+4)+'" fill="#C9C4BA" font-size="15" text-anchor="middle">♭</text>'
-    +'<text x="'+P(75,R-34)[0]+'" y="'+(+P(75,R-34)[1]+4)+'" fill="#C9C4BA" font-size="15" text-anchor="middle">♯</text>'
-    +'<g id="tu-needle"><path d="M'+CX+' '+(CY-R+6)+' L'+(CX-6)+' '+CY+' L'+(CX+6)+' '+CY+' Z" fill="#B8A06A"/></g>'
-    +'<circle cx="'+CX+'" cy="'+CY+'" r="11" fill="#B8A06A"/><circle cx="'+CX+'" cy="'+CY+'" r="4" fill="#252528"/></svg>';
-  /* clavijas: 3 a cada lado, como en una paleta de guitarra de 3+3 */
-  const LEFT=[2,1,0],RIGHT=[3,4,5],YS=[18,48,78];
-  const pegY=y=>y+'%';
-  const strLines=()=>{let s='';const xs=[80,92,104,116,128,140];
-    const dest=i=>{const L=LEFT.indexOf(i);return L>=0?[34,YS[L]*3.3]:[186,YS[RIGHT.indexOf(i)]*3.3]};
-    for(let i=0;i<6;i++){const d=dest(i);s+='<path id="tu-str'+i+'" d="M'+xs[i]+' 330 L'+xs[i]+' 262 L'+d[0]+' '+d[1]+'" fill="none" stroke="#D9D4CA" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>'}
-    return s};
-  const head='<svg viewBox="0 0 220 330" aria-hidden="true"><path d="M30 24Q30 8 48 8L172 8Q190 8 190 24L188 205Q187 238 154 262L154 330L66 330L66 262Q33 238 32 205Z" fill="#33333a" stroke="#4a4a52" stroke-width="3"/><rect x="64" y="258" width="92" height="7" rx="2" fill="#E9E3D6"/>'+strLines()+'</svg>';
-  box.classList.add('ft-card','ft-dark');
-  box.innerHTML='<div class="ft-row"><label class="ft-lab">Afinación<select class="ft-sel" id="tu-sel">'+TUNINGS.map(t=>'<option value="'+t.id+'">'+t.n+'</option>').join('')+'</select></label>'
-    +'<button class="ft-btn gh" type="button" id="tu-auto" aria-pressed="true">Detección automática</button></div>'
-    +'<div id="tu-state" class="tu-far">'+gauge+'<div class="tu-read"><div class="tu-note" id="tu-note">–</div><div class="tu-sol" id="tu-sol">&nbsp;</div><div class="tu-cents" id="tu-cents">&nbsp;</div></div><p class="tu-msg" id="tu-msg" role="status">Activa el micrófono y toca una cuerda.</p></div>'
-    +'<div class="ft-row" style="margin-top:14px"><button class="ft-btn go" type="button" id="tu-mic">Activar micrófono</button></div><p class="ft-err" id="tu-err" role="alert"></p>'
-    +'<div class="tu-head" id="tu-head">'+head+'</div>'
-    +'<p class="tu-tip">Toca una clavija para escuchar su nota y afinar de oído. Con guitarra eléctrica sin amplificador, acércala al micrófono y toca la cuerda con fuerza.</p>';
+/* ================= AFINADOR (guitarra y bajo) ================= */
+/* cfg: tunings = lista de afinaciones, minF/maxF = rango del detector, fft = tamaño de ventana, cada = ms entre lecturas */
+const CFG_GUITARRA={tunings:TUNINGS,minF:60,maxF:1100,fft:4096,cada:45,tip:'Toca una clavija para escuchar su nota y afinar de oído. Con guitarra eléctrica sin amplificador, acércala al micrófono y toca la cuerda con fuerza.'};
+const CFG_BAJO={tunings:BASS_TUNINGS,minF:28,maxF:420,fft:8192,cada:90,tip:'Toca una clavija para escuchar su nota y afinar de oído. El bajo suena muy grave: toca la cuerda al aire, con fuerza, y acerca el celular al altavoz o al bajo.'};
+
+function mountTuner(box,cfg){
+  const T=cfg.tunings,N=T[0].s.length,half=Math.ceil(N/2);
+  const st={tun:T[0],auto:true,target:0,on:false,done:new Set(),hist:[],lastPitch:0,okSince:0,okIdx:-1,px:0,toneUntil:0,cat:'',msg:'',cur:null};
+  let stream=null,src=null,an=null,buf=null,raf=0,lastDet=0,span=120;
+  /* clavijas: la mitad grave a la izquierda (de abajo hacia arriba) y el resto a la derecha (de arriba hacia abajo) */
+  const LEFT=[];for(let i=half-1;i>=0;i--)LEFT.push(i);
+  const RIGHT=[];for(let i=half;i<N;i++)RIGHT.push(i);
+  const YS=half>=3?[84,148,212]:half===2?[108,190]:[148];
+  const postXY=i=>{const L=LEFT.indexOf(i);return L>=0?[96,YS[L]]:[204,YS[RIGHT.indexOf(i)]]};
+  const nutX=i=>118+i*64/(N-1);
+  const gauge=i=>(N>=6?2.8-i*.28:3.6-i*.3).toFixed(2);
+  /* paleta realista: madera con borde crema, tapa del alma, clavijas negras con brillo, cuerdas de acero */
+  let strings='';
+  for(let i=0;i<N;i++){const p=postXY(i);strings+='<path id="tu-str'+i+'" d="M'+p[0]+' '+p[1]+' L'+nutX(i).toFixed(1)+' 298 L'+nutX(i).toFixed(1)+' 380" fill="none" stroke="#D5D8DB" stroke-width="'+gauge(i)+'" stroke-linecap="round" stroke-linejoin="round"/>'}
+  let knobs='';
+  LEFT.forEach((i,k)=>{const y=YS[k];knobs+='<rect x="64" y="'+(y-3.5)+'" width="34" height="7" rx="3" fill="url(#tu-steel)"/><rect x="28" y="'+(y-21)+'" width="38" height="42" rx="14" fill="url(#tu-knob)" stroke="#000" stroke-width="1.5"/><rect x="34" y="'+(y-16)+'" width="9" height="32" rx="4.5" fill="rgba(255,255,255,.22)"/>'});
+  RIGHT.forEach((i,k)=>{const y=YS[k];knobs+='<rect x="202" y="'+(y-3.5)+'" width="34" height="7" rx="3" fill="url(#tu-steel)"/><rect x="234" y="'+(y-21)+'" width="38" height="42" rx="14" fill="url(#tu-knob)" stroke="#000" stroke-width="1.5"/><rect x="260" y="'+(y-16)+'" width="9" height="32" rx="4.5" fill="rgba(255,255,255,.22)"/>'});
+  let posts='';
+  for(let i=0;i<N;i++){const p=postXY(i);posts+='<circle cx="'+p[0]+'" cy="'+p[1]+'" r="10" fill="url(#tu-steel)" stroke="#4a4a4e" stroke-width="1.5"/><circle cx="'+p[0]+'" cy="'+p[1]+'" r="3.4" fill="#2a2a2d"/>'}
+  const head='<svg viewBox="20 0 260 380" aria-hidden="true"><defs>'
+    +'<linearGradient id="tu-wood" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8f4a28"/><stop offset=".55" stop-color="#6c3319"/><stop offset="1" stop-color="#4b2210"/></linearGradient>'
+    +'<linearGradient id="tu-knob" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4a4a4f"/><stop offset="1" stop-color="#0b0b0c"/></linearGradient>'
+    +'<linearGradient id="tu-steel" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#F6F6F6"/><stop offset="1" stop-color="#8b8f94"/></linearGradient></defs>'
+    +'<rect x="110" y="298" width="80" height="82" fill="#17110e"/><path d="M110 340H190M110 374H190" stroke="#3b322c" stroke-width="3"/>'
+    +'<path d="M72 50C72 32 86 26 102 28C122 30 136 40 150 40C164 40 178 30 198 28C214 26 228 32 228 50L222 232C220 264 200 284 190 298L110 298C100 284 80 264 78 232Z" fill="url(#tu-wood)" stroke="#F1E6CF" stroke-width="4.5" stroke-linejoin="round"/>'
+    +'<path d="M132 248C132 238 168 238 168 248L162 284C160 293 140 293 138 284Z" fill="#1a120e" stroke="#0a0705" stroke-width="1.5"/><circle cx="150" cy="254" r="2.3" fill="#9a9a9a"/><circle cx="150" cy="281" r="2.3" fill="#9a9a9a"/>'
+    +'<rect x="106" y="292" width="88" height="9" rx="2" fill="#EFE6D2"/>'
+    +strings+knobs+posts+'</svg>';
+  box.classList.add('ft-card','ft-dark','tu-card');
+  box.innerHTML='<div id="tu-st" class="">'
+    +'<div class="tu-top"><select class="tu-pill" id="tu-sel" aria-label="Afinación">'+T.map(t=>'<option value="'+t.id+'">'+t.n+'</option>').join('')+'</select>'
+    +'<button class="tu-sw" type="button" id="tu-auto" role="switch" aria-checked="true">AUTO<i></i></button></div>'
+    +'<div class="tu-meter" id="tu-meter"><span class="tu-fl" aria-hidden="true">♭</span><span class="tu-sh" aria-hidden="true">♯</span><i class="tu-line"></i><div class="tu-bub" id="tu-bub" aria-hidden="true"></div></div>'
+    +'<div class="tu-head" id="tu-head"><div class="tu-hw" id="tu-hw">'+head+'</div></div>'
+    +'<p class="tu-msg" id="tu-msg" role="status">Activa el micrófono y toca una cuerda.</p></div>'
+    +'<div class="ft-row" style="margin-top:12px"><button class="ft-btn go" type="button" id="tu-mic">Activar micrófono</button></div><p class="ft-err" id="tu-err" role="alert"></p>'
+    +'<p class="tu-tip">'+cfg.tip+'</p>';
   const $=s=>box.querySelector(s);
-  const headBox=$('#tu-head'),pegs=[];
+  const hw=$('#tu-hw'),pegs=[];
   function buildPegs(){
-    headBox.querySelectorAll('.tu-peg').forEach(x=>x.remove());pegs.length=0;
+    hw.querySelectorAll('.tu-peg').forEach(x=>x.remove());pegs.length=0;
     [[LEFT,'l'],[RIGHT,'r']].forEach(g=>g[0].forEach((idx,k)=>{
       const m=st.tun.s[idx];
-      const b=h('button',{class:'tu-peg '+g[1],type:'button','aria-pressed':'false','aria-label':'Cuerda '+(6-idx)+', '+cif(m)+oct(m)+'. Toca para escucharla',style:'top:'+pegY(YS[k])},h('b',{},cif(m)),h('small',{},sol(m)));
-      b.addEventListener('click',()=>{st.auto=false;st.target=idx;sync();try{st.toneUntil=getAC().currentTime+2.1;playTone(midiToFreq(m),2,.45)}catch(e){}});
-      b.dataset.i=idx;pegs[idx]=b;headBox.append(b)}));
+      const b=h('button',{class:'tu-peg '+g[1],type:'button','aria-pressed':'false','aria-label':'Cuerda '+(N-idx)+', '+cif(m)+oct(m)+'. Toca para escucharla',style:'top:'+(YS[k]/380*100).toFixed(2)+'%'},cif(m));
+      b.addEventListener('click',()=>{st.auto=false;st.target=idx;st.hist.length=0;sync();try{st.toneUntil=getAC().currentTime+2.1;playTone(midiToFreq(m),2,.45)}catch(e){}});
+      pegs[idx]=b;hw.append(b)}));
   }
   function sync(){
-    $('#tu-auto').setAttribute('aria-pressed',String(st.auto));
-    $('#tu-auto').textContent=st.auto?'Detección automática':'Volver a detección automática';
+    const a=$('#tu-auto');a.setAttribute('aria-checked',String(st.auto));
     pegs.forEach((b,i)=>{b.setAttribute('aria-pressed',String(!st.auto&&st.target===i));b.classList.toggle('done',st.done.has(i))});
-    for(let i=0;i<6;i++){const p=$('#tu-str'+i);if(p)p.setAttribute('stroke',(!st.auto&&st.target===i)?'#B8A06A':'#D9D4CA')}
+    for(let i=0;i<N;i++){const p=$('#tu-str'+i);if(!p)continue;const act=st.cur&&st.cur.idx===i&&Math.abs(st.cur.cents)<=5,man=!st.auto&&st.target===i;p.setAttribute('stroke',act?'#8DC63F':man?'#FFFFFF':'#D5D8DB')}
   }
   function setCat(c,msg){
-    const s=$('#tu-state');if(st.cat!==c){st.cat=c;s.className=c}
+    const s=$('#tu-st');if(st.cat!==c){st.cat=c;s.className=c;sync()}
     if(st.msg!==msg){st.msg=msg;$('#tu-msg').textContent=msg}
   }
-  $('#tu-sel').addEventListener('change',e=>{st.tun=TUNINGS.find(t=>t.id===e.target.value)||TUNINGS[0];st.done.clear();st.hist.length=0;st.target=0;buildPegs();sync()});
-  $('#tu-auto').addEventListener('click',()=>{st.auto=true;sync()});
-  function paint(cents,idx,freq){
-    const m=st.tun.s[idx],a=Math.abs(cents);
-    $('#tu-note').innerHTML=cif(m)+'<sup>'+oct(m)+'</sup>';$('#tu-sol').textContent=sol(m);
-    $('#tu-cents').textContent=(cents>0?'+':cents<0?'−':'')+Math.round(a)+' cents · '+freq.toFixed(1)+' Hz';
-    if(a<=5)setCat('tu-ok','¡Afinada!');
-    else if(cents<0)setCat(a<=15?'tu-near':'tu-far','Muy baja: aprieta la clavija para subir');
-    else setCat(a<=15?'tu-near':'tu-far','Muy alta: afloja la clavija para bajar');
-    $('#tu-state').dataset.idx=idx;
+  $('#tu-sel').addEventListener('change',e=>{st.tun=T.find(t=>t.id===e.target.value)||T[0];st.done.clear();st.hist.length=0;st.target=0;st.cur=null;buildPegs();sync()});
+  $('#tu-auto').addEventListener('click',()=>{st.auto=!st.auto;if(!st.auto&&st.cur)st.target=st.cur.idx;st.hist.length=0;sync()});
+  function paint(r,freq){
+    const m=st.tun.s[r.idx],a=Math.abs(r.cents),nm=cif(m)+oct(m)+' · '+sol(m);
+    $('#tu-bub').textContent=cif(m);
+    if(a<=5)setCat('tu-ok',nm+' · ¡Afinada!');
+    else if(r.cents<0)setCat(a<=15?'tu-near':'tu-far',nm+' · Baja ('+Math.round(r.cents)+' cents): aprieta la clavija');
+    else setCat(a<=15?'tu-near':'tu-far',nm+' · Alta (+'+Math.round(r.cents)+' cents): afloja la clavija');
   }
   function detect(now){
     const ac=getAC();if(ac.currentTime<st.toneUntil)return;
     an.getFloatTimeDomainData(buf);
-    let r=null;if(rms(buf)>0.006)r=yin(buf,ac.sampleRate,60,1100,.12);
-    if(r&&r.clarity>.82&&r.freq>=60&&r.freq<=1100){
+    let r=null;if(rms(buf)>0.005)r=yin(buf,ac.sampleRate,cfg.minF,cfg.maxF,.12);
+    if(r&&r.clarity>.82&&r.freq>=cfg.minF&&r.freq<=cfg.maxF){
       st.hist.push(freqToMidi(r.freq));if(st.hist.length>5)st.hist.shift();st.lastPitch=now;
       const mm=median(st.hist),res=analyze(midiToFreq(mm),st.tun.s,st.auto,st.target);
-      st.cur=res;paint(res.cents,res.idx,midiToFreq(mm));
+      st.cur=res;paint(res,midiToFreq(mm));
       pegs.forEach((b,i)=>b.classList.toggle('on',i===res.idx&&Math.abs(res.cents)<=5));
       if(Math.abs(res.cents)<=5){if(st.okIdx!==res.idx){st.okIdx=res.idx;st.okSince=now}else if(now-st.okSince>700&&!st.done.has(res.idx)){st.done.add(res.idx);sync()}}
       else st.okIdx=-1;
-    }else if(now-st.lastPitch>450){
-      st.hist.length=0;st.cur=null;st.okIdx=-1;pegs.forEach(b=>b.classList.remove('on'));
-      $('#tu-note').textContent='–';$('#tu-sol').innerHTML='&nbsp;';$('#tu-cents').innerHTML='&nbsp;';
-      setCat('tu-far','Toca una cuerda');
+      sync();
+    }else if(now-st.lastPitch>450&&st.cur){
+      st.hist.length=0;st.cur=null;st.okIdx=-1;pegs.forEach(b=>b.classList.remove('on'));$('#tu-bub').textContent='';
+      setCat('','Toca una cuerda');sync();
     }
   }
   function loop(ts){
     raf=requestAnimationFrame(loop);
-    if(ts-lastDet>45){lastDet=ts;try{detect(ts)}catch(e){}}
-    const tgt=st.cur?clamp(st.cur.cents,-50,50)*1.5:0;
-    st.ang+=(tgt-st.ang)*.22;
-    const n=$('#tu-needle');if(n)n.setAttribute('transform','rotate('+st.ang.toFixed(2)+' '+CX+' '+CY+')');
+    if(ts-lastDet>cfg.cada){lastDet=ts;try{detect(ts)}catch(e){}}
+    const tgt=st.cur?clamp(st.cur.cents,-50,50)/50:0;
+    st.px+=(tgt-st.px)*.2;
+    const bub=$('#tu-bub');if(bub)bub.style.transform='translateX('+(st.px*span).toFixed(1)+'px)';
   }
+  const measure=()=>{const m=$('#tu-meter');if(m)span=Math.max(40,m.clientWidth/2-52)};
+  window.addEventListener('resize',measure);measure();
   async function start(){
     $('#tu-err').textContent='';
     if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){$('#tu-err').textContent='Este navegador no permite usar el micrófono aquí. Abre el portal desde Chrome o Safari.';return}
     try{
       stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
-      const ac=getAC();src=ac.createMediaStreamSource(stream);an=ac.createAnalyser();an.fftSize=4096;buf=new Float32Array(an.fftSize);src.connect(an);
+      const ac=getAC();src=ac.createMediaStreamSource(stream);an=ac.createAnalyser();an.fftSize=cfg.fft;buf=new Float32Array(an.fftSize);src.connect(an);
       st.on=true;st.lastPitch=0;$('#tu-mic').textContent='Detener micrófono';$('#tu-mic').classList.remove('go');$('#tu-mic').classList.add('gh');
-      setCat('tu-far','Toca una cuerda');cancelAnimationFrame(raf);raf=requestAnimationFrame(loop);
+      setCat('','Toca una cuerda');measure();cancelAnimationFrame(raf);raf=requestAnimationFrame(loop);
     }catch(e){
       const n=e&&e.name;
       $('#tu-err').textContent=n==='NotAllowedError'||n==='SecurityError'?'No tenemos permiso para usar el micrófono. Permítelo en el candado de la barra de direcciones y vuelve a intentar.':n==='NotFoundError'?'No encontramos un micrófono en este dispositivo.':'No se pudo activar el micrófono. Intenta de nuevo.';
     }
   }
   function stop(){
-    cancelAnimationFrame(raf);raf=0;
+    cancelAnimationFrame(raf);raf=0;window.removeEventListener('resize',measure);
     if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}
-    try{src&&src.disconnect()}catch(e){}src=null;st.on=false;st.cur=null;st.ang=0;
+    try{src&&src.disconnect()}catch(e){}src=null;st.on=false;st.cur=null;st.px=0;
     const b=$('#tu-mic');if(b){b.textContent='Activar micrófono';b.classList.add('go');b.classList.remove('gh')}
-    const n=$('#tu-needle');if(n)n.setAttribute('transform','rotate(0 '+CX+' '+CY+')');
+    const bub=$('#tu-bub');if(bub){bub.style.transform='';bub.textContent=''}
   }
   $('#tu-mic').addEventListener('click',()=>st.on?stop():start());
   buildPegs();sync();
   return{stop};
 }
+const mountTunerGuitarra=box=>mountTuner(box,CFG_GUITARRA);
+const mountTunerBajo=box=>mountTuner(box,CFG_BAJO);
 
 /* ================= METRÓNOMO ================= */
 function mountMetro(box){
@@ -422,9 +450,10 @@ function mountPiano(box){
 
 /* ================= montaje ================= */
 const DEF={
-  afinador:{n:'Afinador',sub:'Afina tu guitarra con el micrófono del celular o de la computadora.',mount:mountTuner},
-  metronomo:{n:'Metrónomo',sub:'Elige la velocidad, los tiempos del compás y cuál pulso suena fuerte.',mount:mountMetro},
-  piano:{n:'Piano',sub:'Un teclado para encontrar notas y practicar de oído.',mount:mountPiano}
+  afinador:{n:'Afinador de guitarra',sub:'Afina tu guitarra con el micrófono del celular o de la computadora.',mount:mountTunerGuitarra},
+  afinadorbajo:{n:'Afinador de bajo',sub:'Afina tu bajo de 4 cuerdas con el micrófono del celular o de la computadora.',mount:mountTunerBajo},
+  piano:{n:'Piano',sub:'Un teclado para encontrar notas y practicar de oído.',mount:mountPiano},
+  metronomo:{n:'Metrónomo',sub:'Elige la velocidad, los tiempos del compás y cuál pulso suena fuerte.',mount:mountMetro}
 };
 let cur=null,lastTool=null;
 function stop(){if(cur&&cur.stop){try{cur.stop()}catch(e){}}cur=null}
@@ -449,7 +478,7 @@ function mount(rootEl,opts){
   show(tool);
 }
 
-const api={mount,stop,yin,analyze,rms,tempoName,tapBpm,fixPat,nextState,nearestString,TUNINGS,midiToFreq,freqToMidi,cif,sol,oct};
+const api={mount,stop,yin,analyze,rms,tempoName,tapBpm,fixPat,nextState,nearestString,TUNINGS,BASS_TUNINGS,CFG_GUITARRA,CFG_BAJO,midiToFreq,freqToMidi,cif,sol,oct};
 root.FaroTools=api;
 if(typeof module!=='undefined'&&module.exports)module.exports=api;
 })(typeof window!=='undefined'?window:globalThis);
