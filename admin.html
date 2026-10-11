@@ -67,7 +67,7 @@ button,input,select,textarea{font:inherit;color:inherit}
 .acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px}
 .modal{position:fixed;inset:0;z-index:60;background:rgba(15,15,17,.85);display:grid;place-items:center;padding:16px}
 .modal .box{background:var(--gris);border:1px solid var(--line);border-radius:8px;max-width:900px;width:100%;max-height:92vh;overflow:auto;padding:16px}
-.modal img{max-width:100%;display:block;margin:0 auto;border-radius:4px}.modal iframe{width:100%;height:75vh;border:0;background:#fff;border-radius:4px}
+.modal img{max-width:100%;display:block;margin:0 auto;border-radius:4px}.modal iframe{width:100%;height:75vh;border:0;background:#fff;border-radius:4px}.modal video{width:100%;max-height:75vh;display:block;background:#000;border-radius:4px}.modal audio{width:100%;display:block}
 .toast{position:fixed;left:50%;bottom:22px;transform:translate(-50%,20px);opacity:0;pointer-events:none;background:var(--marfil);color:var(--pizarra);padding:12px 20px;border-radius:6px;font-weight:700;transition:.3s;z-index:90;max-width:92vw;text-align:center}
 .toast.on{opacity:1;transform:translate(-50%,0)}
 @media (max-width:860px){.grid2{grid-template-columns:1fr}.rc dl{grid-template-columns:1fr}.rc dt{margin-top:6px}}
@@ -877,6 +877,19 @@ async function matSubirPublico(it,dest,f){
   const r=await matSubir(f,dest,'',null,it.k.replace(/[^\w]+/g,'-')+'-'+Date.now()+'-'+f.name);
   return FILES+'/pub/'+matKey(r.key);
 }
+const MAT_VER={img:/\.(jpe?g|png|gif|webp|avif|svg)$/i,vid:/\.(mp4|m4v|mov|webm)$/i,aud:/\.(mp3|m4a|wav|ogg|aac|flac)$/i,pdf:/\.pdf$/i};
+async function matVer(bucket,key){
+  const nombre=key.split('/').pop();
+  const tipo=MAT_VER.img.test(nombre)?'img':MAT_VER.vid.test(nombre)?'vid':MAT_VER.aud.test(nombre)?'aud':MAT_VER.pdf.test(nombre)?'pdf':'';
+  if(!tipo){const w=window.open('','_blank');try{const u=await matEnlace(bucket,key,true);if(w)w.location=u;else location.href=u}catch(e){if(w)w.close();throw e}return}
+  const m=$('#modal'),b=$('#mbody');b.textContent='Cargando…';m.hidden=false;$('#mtl').textContent=nombre;
+  try{
+    const ver=await matEnlace(bucket,key,true),bajar=await matEnlace(bucket,key,false);
+    $('#mdl').href=bajar;$('#mdl').setAttribute('download',nombre);b.textContent='';
+    const nodo=tipo==='img'?el('img',{src:ver,alt:nombre}):tipo==='vid'?el('video',{src:ver,controls:'',preload:'metadata',playsinline:''}):tipo==='aud'?el('audio',{src:ver,controls:'',preload:'metadata'}):el('iframe',{src:ver,title:nombre});
+    b.append(nodo);
+  }catch(e){m.hidden=true;b.textContent='';throw e}
+}
 async function matEnlace(bucket,key,ver){
   if(bucket==='publico')return FILES+'/pub/'+matKey(key);
   const j=await fjson('/api/enlace?bucket='+bucket+'&key='+encodeURIComponent(key)+'&seg=3600',{method:'POST'});
@@ -953,7 +966,7 @@ async function matInit(){
         const nombre=a.key.split('/').pop();
         cont.append(el('div',{class:'item'},el('b',{},'📄 '+nombre),el('small',{style:'display:block'},matTam(a.size)+' · '+new Date(a.subido).toLocaleDateString('es-GT',{timeZone:'America/Guatemala'})),
           el('div',{class:'acts'},
-            el('button',{class:'btn btn-ghost btn-sm',type:'button',onclick:async()=>{const w=window.open('','_blank');try{const u=await matEnlace(d.bucket,a.key,true);if(w)w.location=u;else location.href=u}catch(e){if(w)w.close();toast(e.message)}}},'Abrir'),
+            el('button',{class:'btn btn-ghost btn-sm',type:'button',onclick:async()=>{try{await matVer(d.bucket,a.key)}catch(e){toast(e.message)}}},'Ver'),
             el('button',{class:'btn btn-ghost btn-sm',type:'button',onclick:async()=>{try{location.href=await matEnlace(d.bucket,a.key,false)}catch(e){toast(e.message)}}},'Descargar'),
             el('button',{class:'btn btn-ghost btn-sm',type:'button',onclick:async()=>{try{await navigator.clipboard.writeText(await matEnlace(d.bucket,a.key,false));toast(d.bucket==='publico'?'Enlace permanente copiado':'Enlace copiado (válido por 1 hora)')}catch(e){toast('No se pudo copiar')}}},'Copiar enlace'),
             el('button',{class:'btn btn-red btn-sm',type:'button',onclick:async()=>{if(!confirm('¿Eliminar '+nombre+'? No se puede deshacer.'))return;try{await fjson('/api/objeto?bucket='+d.bucket+'&key='+encodeURIComponent(a.key),{method:'DELETE'});toast('Eliminado');listar(pre)}catch(e){toast(e.message)}}},'Eliminar'))))});
