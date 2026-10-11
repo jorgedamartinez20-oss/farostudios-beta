@@ -1350,6 +1350,30 @@ async function tabVincular(est,enc,par){
 async function tabDesvincular(est,enc){
   const r=await api('/rest/v1/ac_vinculos?encargado_id=eq.'+enc+'&estudiante_id=eq.'+est,{method:'DELETE',headers:{Prefer:'return=minimal'}});
   if(!r.ok){toast(await errText(r));return}toast('Encargado desvinculado');await loadAc()}
+function accFila(rol,fk,ent,etq,par){
+  const c=(AC.list.acc||[]).find(x=>x[fk]===ent.id),v=c&&vaultGet()[c.user_id];
+  const nom=ent.apodo||ent.nombre,fila=el('div',{class:'item',style:'flex-wrap:wrap;gap:8px'});
+  fila.append(el('div',{style:'min-width:150px'},el('small',{},etq+(par?' · '+par:'')),el('br'),el('b',{},ent.nombre)));
+  if(!c){fila.append(el('span',{class:'muted'},'Sin acceso todavía'),el('div',{class:'acts'},el('button',{class:'btn btn-gold btn-sm',type:'button',onclick:()=>acGenerar(rol,ent)},'Crear acceso')));return fila}
+  let ver=false;const clv=el('code',{style:'font:700 1rem monospace;letter-spacing:.06em'},v?'••••••••':'(no guardada en este equipo)');
+  fila.append(el('div',{style:'flex:1;min-width:170px'},el('small',{},'Usuario'),el('br'),el('code',{style:'font:700 1rem monospace;word-break:break-all'},c.usuario+(c.activo?'':' (desactivado)'))),
+    el('div',{style:'flex:1;min-width:150px'},el('small',{},'Contraseña'),el('br'),clv));
+  const acts=el('div',{class:'acts'});
+  if(v){acts.append(el('button',{class:'btn btn-ghost btn-sm',type:'button',onclick:ev=>{ver=!ver;clv.textContent=ver?v.clave:'••••••••';ev.target.textContent=ver?'Ocultar':'Ver'}},'Ver'),
+    el('button',{class:'btn btn-ghost btn-sm',type:'button',onclick:()=>copyTxt(acMsg(rol,nom,v.usuario,v.clave))},'Copiar mensaje'))}
+  acts.append(el('button',{class:'btn btn-ghost btn-sm',type:'button',onclick:()=>acGenerar(rol,ent)},v?'Regenerar':'Nueva contraseña'));
+  fila.append(acts);return fila;
+}
+async function tabNuevoEnc(est,nombre,wa,par){
+  if(!nombre){toast('Escribe el nombre del encargado');return}
+  const r=await api('/rest/v1/ac_encargados',{method:'POST',body:{nombre,whatsapp:wa||null},headers:{Prefer:'return=representation'}});
+  if(!r.ok){toast(await errText(r));return}
+  const j=await r.json().catch(()=>null),e=Array.isArray(j)?j[0]:j;if(!e||!e.id){toast('No se pudo crear al encargado');return}
+  const v=await api('/rest/v1/ac_vinculos?on_conflict=encargado_id,estudiante_id',{method:'POST',body:{encargado_id:e.id,estudiante_id:est,parentesco:par||null},headers:{Prefer:'return=minimal,resolution=merge-duplicates'}});
+  if(!v.ok){toast(await errText(v));return}
+  toast('Encargado creado y vinculado');await loadAc();
+  const ent=(AC.list.enc||[]).find(x=>x.id===e.id);if(ent)acGenerar('encargado',ent);
+}
 function renderTablero(box){
   const L=AC.list,alus=L.est||[];
   const sel=el('select',{onchange:ev=>{AC.tabAlu=ev.target.value;renderGrp('ac')}},el('option',{value:''},'Elige un alumno'));
@@ -1380,6 +1404,21 @@ function renderTablero(box){
   box.append(el('div',{class:'card',style:'margin-top:18px'},el('h2',{},a.nombre+(a.apodo?' · '+a.apodo:'')),
     el('p',{class:'muted'},(a.area==='musica'?'Música':'Inglés')+' · '+(a.detalle||'sin detalle')+' · '+(a.modalidad==='online'?'en línea':'presencial')+' · '+accTxt('alumno','estudiante_id',a.id)),stats,
     hab.length?el('div',{class:'uchips',style:'margin-top:12px'},...hab.map(h=>el('span',{class:'chip'},h.habilidad+' '+'★'.repeat(h.nivel)))):null));
+
+  /* accesos de la familia: alumno + encargados con sus credenciales */
+  {const vin0=(L.vin||[]).filter(r=>r.estudiante_id===a.id);
+   const ca=el('div',{class:'card',style:'margin-top:18px'},el('h3',{style:'font-size:1.6rem'},'Accesos y familia'),
+     el('p',{class:'muted'},'Aquí ves el usuario y la contraseña del alumno y de cada encargado vinculado a su tablero. Las contraseñas solo se pueden mostrar en el equipo donde las creaste; si no aparece, toca "Nueva contraseña".'));
+   ca.append(accFila('alumno','estudiante_id',a,'Alumno'));
+   vin0.forEach(r=>{const e=(L.enc||[]).find(x=>x.id===r.encargado_id);if(e)ca.append(accFila('encargado','encargado_id',e,'Encargado',r.parentesco))});
+   if(!vin0.length){
+     const n=el('input',{type:'text',placeholder:'Nombre del encargado',maxlength:'80'}),w=el('input',{type:'text',placeholder:'WhatsApp',maxlength:'30'}),pa=el('input',{type:'text',placeholder:'Parentesco (madre, padre…)',maxlength:'40'});
+     ca.append(el('div',{class:'msg',style:'background:rgba(226,190,70,.18);border-color:var(--amar);margin-top:12px'},'⚠ Este alumno no tiene encargado vinculado. Créalo aquí y queda ligado a su tablero (ve su avance, material y facturas).'),
+       el('div',{class:'row',style:'margin-top:10px'},el('div',{class:'field'},n),el('div',{class:'field'},w),el('div',{class:'field'},pa),
+       el('button',{class:'btn btn-gold',type:'button',onclick:()=>tabNuevoEnc(a.id,n.value.trim(),w.value.trim(),pa.value.trim())},'Crear y vincular')),
+       el('p',{class:'muted'},'¿Ya existe el encargado? Vincúlalo abajo en "Encargados".'));
+   }
+   box.append(ca)}
 
   /* docentes asignados */
   const asg=(L.asg||[]).filter(r=>r.estudiante_id===a.id),libres=(L.doc||[]).filter(d=>d.activo&&!asg.some(r=>r.docente_id===d.id));
