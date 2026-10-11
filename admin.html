@@ -754,7 +754,7 @@ async function start(){
     if(!ME.ok){logout();const e=$('#lerr');e.hidden=false;e.textContent='Esta cuenta todavía no tiene permisos en el panel (o fue desactivada). Pídele al director que te los active.';return}
   }finally{$('#v-wait').hidden=true}
   $('#v-login').hidden=true;$('#v-app').hidden=false;$('#out').hidden=false;
-  aplicarPermisos();showTab(ME.owner?'ini':primeraPestana());
+  aplicarPermisos();{let g=null;try{g=localStorage.getItem('faro_tab')}catch(e){}showTab(g&&$('#t-'+g)&&permiteTab(g)?g:(ME.owner?'ini':primeraPestana()))}
   if(!cy){const t=today();cy=+t.slice(0,4);cm=+t.slice(5,7)-1}
   await loadAll();if(puede('contenido'))ctCargar().catch(()=>{});
   if(!ME.owner)equipoLatido();else equipoVigilar();
@@ -905,7 +905,7 @@ $('#cgo').addEventListener('click',()=>{const v=$('#cod').value.trim();if(!/^[A-
 $('#mgo').addEventListener('click',()=>{const v=parseInt($('#mar').value,10);if(!(v>=0&&v<=12)){toast('Escribe un número de 0 a 12');return}saveCfg('margen_horas',v,'Margen actualizado')});
 
 /* ---------- pestañas ---------- */
-function showTab(t){if(!permiteTab(t)){toast('No tienes permiso para esta sección');return}seccionActiva(t);['ini','ast','aac','pro','crm','red','cal','res','cot','aca','cli','mat','doc','sit','sem','acc','pre','con','rec','avs','sub','usr','cha'].forEach(x=>$('#t-'+x).hidden=x!==t);if(t==='mat')matInit();if(t==='doc')docInit();if(t==='ini')renderDash();if(['ast','aac','crm','red'].includes(t))anTab(t);if(t==='pro')proTab();if(t==='pre')renderPre();if(['con','rec','avs'].includes(t))ctTab(t);if(t==='usr')usrInit();if(t==='cha')chaInit();if(t==='sub')renderSub();window.scrollTo({top:0})}
+function showTab(t){if(!permiteTab(t)){toast('No tienes permiso para esta sección');return}try{localStorage.setItem('faro_tab',t)}catch(e){}seccionActiva(t);['ini','ast','aac','pro','crm','red','cal','res','cot','aca','cli','mat','doc','sit','sem','acc','pre','con','rec','avs','sub','usr','cha'].forEach(x=>$('#t-'+x).hidden=x!==t);if(t==='mat')matInit();if(t==='doc')docInit();if(t==='ini')renderDash();if(['ast','aac','crm','red'].includes(t))anTab(t);if(t==='pro')proTab();if(t==='pre')renderPre();if(['con','rec','avs'].includes(t))ctTab(t);if(t==='usr')usrInit();if(t==='cha')chaInit();if(t==='sub')renderSub();window.scrollTo({top:0})}
 $$('.tab').forEach(b=>b.addEventListener('click',()=>{const x=SEC.find(y=>y.s===b.dataset.s),u=SUBULT[x.s];showTab(u&&permiteTab(u)?u:primerSub(x))}));$$('.stab').forEach(b=>b.addEventListener('click',()=>showTab(b.dataset.t)));
 const ESTC=['nueva','contactada','cotizada','ganada','perdida'];
 function renderCot(){
