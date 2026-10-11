@@ -260,6 +260,37 @@ button,.btn,.chip,.nav,.tab,.stab,.seg{-webkit-user-select:none;user-select:none
 @media (pointer:coarse){input,select,textarea{font-size:max(16px,1em)!important;touch-action:manipulation}}
 .top{padding-top:calc(10px + env(safe-area-inset-top));padding-left:max(clamp(14px,3vw,36px),env(safe-area-inset-left));padding-right:max(clamp(14px,3vw,36px),env(safe-area-inset-right))}
 .toast{bottom:calc(22px + env(safe-area-inset-bottom))}
+/* burbuja flotante: chat + recordatorios rápidos */
+.stab[data-t="cha"]{display:none!important}
+#fl{position:fixed;right:max(14px,env(safe-area-inset-right));bottom:calc(16px + env(safe-area-inset-bottom));z-index:80;display:flex;flex-direction:column;align-items:flex-end;gap:10px}
+#fl[hidden]{display:none}
+#fl-btn{position:relative;width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:var(--surface);color:var(--oro-t);display:grid;place-items:center;cursor:pointer;opacity:.6;box-shadow:0 6px 18px rgba(0,0,0,.2),0 1px 3px rgba(0,0,0,.22);transition:opacity .2s,transform .2s}
+#fl-btn:hover,#fl-btn:focus-visible,#fl.open #fl-btn{opacity:1}
+#fl-btn:active{transform:scale(.94)}
+#flbadge{position:absolute;top:-5px;right:-5px;min-width:19px;height:19px;padding:0 5px;border-radius:10px;background:var(--borgona);color:#fff;font-size:.72rem;font-weight:700;display:grid;place-items:center;box-shadow:0 2px 6px rgba(0,0,0,.3)}
+#flbadge[hidden]{display:none}
+#fl-panel{width:min(340px,calc(100vw - 28px));height:min(440px,68dvh);display:none;flex-direction:column;background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:0 20px 48px rgba(0,0,0,.3),0 2px 8px rgba(0,0,0,.16);overflow:hidden}
+#fl.open #fl-panel{display:flex}
+.fl-head{display:flex;align-items:center;gap:4px;padding:8px 8px 8px 10px;border-bottom:1px solid var(--line);background:var(--soft)}
+.fl-tab{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:999px;border:1px solid transparent;background:none;cursor:pointer;font-size:.88rem;color:var(--muted)}
+.fl-tab[aria-pressed="true"]{background:var(--surface);border-color:var(--oro);color:var(--text);box-shadow:0 2px 6px rgba(0,0,0,.12)}
+.fl-x{border:0;background:none;cursor:pointer;font-size:1.5rem;line-height:1;padding:2px 8px;color:var(--muted)}
+.fl-body{flex:1;min-height:0;display:flex;flex-direction:column;padding:10px;gap:10px;overflow:auto}
+.fl-lst{flex:1;min-height:0;overflow:auto;display:flex;flex-direction:column;gap:6px;padding:2px}
+.fl-m{align-self:flex-start;max-width:86%;padding:8px 11px;border-radius:12px 12px 12px 3px;background:var(--soft);border:1px solid var(--line);display:grid;gap:2px;overflow-wrap:anywhere;font-size:.92rem;box-shadow:0 2px 5px rgba(0,0,0,.08)}
+.fl-m small{font-size:.7rem;color:var(--muted)}
+.fl-m span{white-space:pre-wrap}
+.fl-m.mine{align-self:flex-end;border-radius:12px 12px 3px 12px;border-color:var(--oro)}
+.fl-row{display:flex;gap:8px;align-items:flex-end}
+.fl-row textarea{flex:1;resize:none;max-height:90px;padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:var(--input);color:var(--text)}
+.fl-send{width:42px;height:42px;padding:0;border-radius:50%;display:grid;place-items:center;flex:none}
+.fl-form{display:grid;gap:8px}
+.fl-form input,.fl-form select{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--input);color:var(--text)}
+.fl-two{display:grid;grid-template-columns:1.2fr 1fr;gap:8px}
+.fl-up{display:grid;gap:6px}
+.fl-r{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:10px;background:var(--soft);border:1px solid var(--line);box-shadow:0 2px 5px rgba(0,0,0,.07)}
+.fl-r .fl-d{font-size:.78rem;color:var(--oro-t);font-weight:700;min-width:48px}
+.fl-r .fl-rt{flex:1;min-width:0;font-size:.9rem;overflow-wrap:anywhere}
 .drawer{height:100dvh;padding-bottom:env(safe-area-inset-bottom)}
 @media (hover:none),(pointer:coarse){.btn:hover,.kpi:hover{transform:none}}
 
@@ -411,6 +442,7 @@ button,.btn,.chip,.nav,.tab,.stab,.seg{-webkit-user-select:none;user-select:none
 
 <div class="modal" id="modal" hidden><div class="box"><div style="display:flex;justify-content:space-between;gap:10px;margin-bottom:10px"><b id="mtl">Comprobante</b><span><a class="btn btn-ghost btn-sm" id="mdl" download>Descargar</a> <button class="btn btn-ghost btn-sm" id="mx" type="button">Cerrar</button></span></div><div id="mbody"></div></div></div>
 <div class="modal" id="acc-modal" hidden></div>
+<div id="fl" hidden><div id="fl-panel" role="dialog" aria-label="Chat del equipo y recordatorios"></div><button id="fl-btn" type="button" aria-label="Chat del equipo" aria-expanded="false"><span id="fl-ic"></span><span id="flbadge" hidden>0</span></button></div>
 <div class="toast" id="toast" role="status"></div>
 
 <script>
@@ -505,7 +537,7 @@ async function api(path,o){
   return r;
 }
 async function errText(r){try{const j=await r.json();return j.message||j.msg||('Error '+r.status)}catch(e){return 'Error '+r.status}}
-function logout(){S=null;try{sessionStorage.removeItem('faro_adm');localStorage.removeItem('faro_adm')}catch(e){}$('#v-app').hidden=true;$('#v-login').hidden=false;$('#out').hidden=true}
+function logout(){S=null;try{sessionStorage.removeItem('faro_adm');localStorage.removeItem('faro_adm')}catch(e){}$('#v-app').hidden=true;$('#v-login').hidden=false;$('#out').hidden=true;try{$('#fl').hidden=true;FL.open=false;$('#fl').classList.remove('open')}catch(e){}}
 $('#out').addEventListener('click',logout);
 async function doLogin(){
   const e=$('#lerr');e.hidden=true;const b=$('#lgo');if(b.disabled)return;b.disabled=true;b.textContent='Entrando…';
@@ -626,7 +658,7 @@ async function start(){
   if(!cy){const t=today();cy=+t.slice(0,4);cm=+t.slice(5,7)-1}
   await loadAll();if(puede('contenido'))ctCargar().catch(()=>{});
   if(!ME.owner)equipoLatido();else equipoVigilar();
-  chaVigilar();
+  chaVigilar();flIniciar();
 }
 
 /* ---------- calendario ---------- */
@@ -2506,16 +2538,18 @@ async function chaCargar(){
   try{const r=await api('/rest/v1/admin_chat?select=*&order=id.desc&limit=100');if(!r.ok)throw 0;CHA.msgs=(await r.json()).reverse();CHA.err=null}catch(e){CHA.err='tabla'}
   chaBadge()}
 function chaBadge(){
-  const me=(jwtDatos()||{}).uid,v=chaVistoGet(),abierto=!$('#t-cha').hidden;
+  const me=(jwtDatos()||{}).uid,v=chaVistoGet(),abierto=!$('#t-cha').hidden||flChatAbierto();
   const n=abierto?0:CHA.msgs.filter(m=>m.id>v&&m.de!==me).length;
   const b=$('#ncha');if(b){b.hidden=!n;b.textContent=n}
+  const b2=$('#flbadge');if(b2){b2.hidden=!n;b2.textContent=n>9?'9+':n}
   return n}
 async function chaPoll(){
   const antes=CHA.msgs.length?CHA.msgs[CHA.msgs.length-1].id:0,me=(jwtDatos()||{}).uid;
   await chaCargar();
   const nuevos=CHA.msgs.filter(m=>m.id>antes&&m.de!==me);
-  if(CHA.ini&&nuevos.length&&$('#t-cha').hidden){const m=nuevos[nuevos.length-1];toast((m.nombre||'Equipo')+': '+String(m.texto).slice(0,50));avisoNav('Chat del equipo',(m.nombre||'')+': '+m.texto)}
-  CHA.ini=true;if(!$('#t-cha').hidden)chaPintar()}
+  if(CHA.ini&&nuevos.length&&$('#t-cha').hidden&&!flChatAbierto()){const m=nuevos[nuevos.length-1];toast((m.nombre||'Equipo')+': '+String(m.texto).slice(0,50));avisoNav('Chat del equipo',(m.nombre||'')+': '+m.texto)}
+  CHA.ini=true;if(!$('#t-cha').hidden)chaPintar();
+  if(flChatAbierto()){flLista();flVisto()}}
 function chaVigilar(){if(CHA.vig)return;CHA.vig=true;chaPoll();setInterval(()=>{if(S&&!document.hidden)chaPoll()},15000)}
 function avisoNav(t,b){try{if(PREF.nav&&'Notification' in window&&Notification.permission==='granted')new Notification(t,{body:b})}catch(e){}}
 function chaInit(){chaPintar();chaCargar().then(()=>{chaPintar();const u=CHA.msgs.length?CHA.msgs[CHA.msgs.length-1].id:0;chaVistoSet(u);chaBadge()})}
@@ -2539,6 +2573,66 @@ function chaPintar(){
   box.append(lst,el('div',{class:'field',style:'margin-top:12px'},ta),el('button',{class:'btn btn-gold',type:'button',onclick:enviar},'Enviar'));
   root.append(box);lst.scrollTop=lst.scrollHeight;
   const u=CHA.msgs.length?CHA.msgs[CHA.msgs.length-1].id:0;if(u>chaVistoGet()){chaVistoSet(u);chaBadge()}}
+/* ---------- Burbuja flotante: chat del equipo + recordatorios rápidos ---------- */
+const FL={open:false,tab:'chat',listo:false};
+const flChatAbierto=()=>FL.open&&FL.tab==='chat';
+function flIniciar(){
+  $('#fl').hidden=false;
+  if(FL.listo)return;FL.listo=true;
+  $('#fl-ic').append(icoEl('message'));
+  $('#fl-btn').addEventListener('click',()=>flToggle());
+  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&FL.open)flToggle(false)})}
+function flToggle(on){
+  FL.open=on===undefined?!FL.open:!!on;
+  $('#fl').classList.toggle('open',FL.open);$('#fl-btn').setAttribute('aria-expanded',String(FL.open));
+  if(FL.open){flPintar();flVisto();setTimeout(()=>{const t=$('#fl-txt');if(t)t.focus()},60)}else chaBadge()}
+function flVisto(){const u=CHA.msgs.length?CHA.msgs[CHA.msgs.length-1].id:0;if(u>chaVistoGet())chaVistoSet(u);chaBadge()}
+function flTab(t){FL.tab=t;flPintar();if(t==='chat')flVisto()}
+function flPintar(){
+  const p=$('#fl-panel');p.textContent='';
+  const tabs=[['chat','Chat','message']];if(ME.owner)tabs.push(['rec','Recordar','bell']);
+  const head=el('div',{class:'fl-head'});
+  tabs.forEach(([k,n,i])=>head.append(el('button',{type:'button',class:'fl-tab','aria-pressed':String(FL.tab===k),onclick:()=>flTab(k)},icoEl(i),n)));
+  head.append(el('span',{style:'flex:1'}),el('button',{type:'button',class:'fl-x','aria-label':'Cerrar',onclick:()=>flToggle(false)},'×'));
+  const body=el('div',{class:'fl-body'});p.append(head,body);
+  if(FL.tab==='rec'&&ME.owner)flRec(body);else flChat(body)}
+function flLista(){
+  const lst=$('#fl-lst');if(!lst)return;const me=(jwtDatos()||{}).uid;lst.textContent='';
+  if(CHA.err){lst.append(el('p',{class:'muted',style:'font-size:.85rem'},'No se pudo cargar el chat. Recarga la página.'));return}
+  if(!CHA.msgs.length)lst.append(el('p',{class:'muted',style:'font-size:.85rem'},'Sin mensajes todavía.'));
+  CHA.msgs.slice(-40).forEach(m=>{const mine=m.de===me;
+    lst.append(el('div',{class:'fl-m'+(mine?' mine':'')},
+      el('small',{},(mine?'Tú':m.nombre||'Equipo')+' · '+new Date(m.creado).toLocaleString('es-GT',{timeZone:'America/Guatemala',day:'numeric',month:'short',hour:'numeric',minute:'2-digit'})),
+      el('span',{},m.texto)))});
+  lst.scrollTop=lst.scrollHeight}
+function flChat(body){
+  const lst=el('div',{id:'fl-lst',class:'fl-lst'});
+  const ta=el('textarea',{id:'fl-txt',rows:'1',maxlength:'1000',placeholder:'Escribe un mensaje…'});
+  const enviar=async()=>{const t=ta.value.trim();if(!t)return;ta.disabled=true;
+    try{const r=await api('/rest/v1/admin_chat',{method:'POST',body:{texto:t},headers:{Prefer:'return=minimal'}});if(!r.ok){toast(await errText(r));return}ta.value='';await chaCargar();flLista();flVisto()}
+    finally{ta.disabled=false;ta.focus()}};
+  ta.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();enviar()}});
+  body.append(lst,el('div',{class:'fl-row'},ta,el('button',{type:'button',class:'btn btn-gold fl-send','aria-label':'Enviar',onclick:enviar},icoEl('up'))));
+  flLista()}
+function flRec(body){
+  const t=today();
+  const tx=el('input',{id:'fl-rt',placeholder:'¿Qué quieres recordar?',maxlength:'120'}),
+    fe=el('input',{id:'fl-rf',type:'date',value:t,min:t}),
+    rp=el('select',{id:'fl-rr'},...[['una_vez','Una vez'],['mensual','Cada mes'],['anual','Cada año']].map(([v,n])=>el('option',{value:v},n))),
+    av=el('select',{id:'fl-ra'},...[['0','Avisar el mismo día'],['1','Avisar 1 día antes'],['3','Avisar 3 días antes'],['7','Avisar 7 días antes']].map(([v,n])=>el('option',{value:v},n)));
+  const f=el('form',{class:'fl-form'},tx,el('div',{class:'fl-two'},fe,rp),av,el('button',{class:'btn btn-gold btn-sm',type:'submit'},icoEl('plus'),' Guardar recordatorio'));
+  f.addEventListener('submit',async e=>{e.preventDefault();
+    const titulo=tx.value.trim();if(!titulo){toast('Escribe qué quieres recordar');return}if(!fe.value){toast('Elige la fecha');return}
+    const k=rp.value,b={titulo,tipo:'otro',recurrencia:k,aviso_dias:+av.value};
+    if(k==='una_vez')b.fecha=fe.value;else{b.dia=+fe.value.slice(8,10);if(k==='anual')b.mes=+fe.value.slice(5,7)}
+    if(await recCrear(b)){toast('Recordatorio guardado');flPintar();try{renderRec()}catch(x){}try{avisosPintar()}catch(x){}}});
+  body.append(f);
+  if(CT.errRec){body.append(el('p',{class:'muted',style:'font-size:.82rem'},'No se pudieron cargar los recordatorios existentes.'));return}
+  const items=(CT.rec||[]).filter(r=>r.activo).map(r=>({r,n:recSiguiente(r,t)})).filter(x=>x.n).sort((a,b)=>a.n.due>b.n.due?1:-1).slice(0,4);
+  if(items.length){const up=el('div',{class:'fl-up'},el('small',{class:'muted'},'Próximos'));
+    items.forEach(({r,n})=>up.append(el('div',{class:'fl-r'},el('span',{class:'fl-d'},lbDia(n.due)),el('span',{class:'fl-rt'},r.titulo),
+      el('button',{type:'button',class:'btn btn-ghost btn-sm','aria-label':'Marcar hecho',onclick:async()=>{if(await ctPatch('recordatorios','rec',r.id,{hecho_periodo:n.key})){toast('Hecho');flPintar();try{renderRec()}catch(x){}try{avisosPintar()}catch(x){}}}},icoEl('check')))));
+    body.append(up)}}
 /* el director ve un aviso cuando alguien del equipo entra */
 const VIG={prev:null};
 function equipoVigilar(){
