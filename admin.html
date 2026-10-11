@@ -372,6 +372,11 @@ button,.btn,.chip,.nav,.tab,.stab,.seg{-webkit-user-select:none;user-select:none
  .side{top:calc(var(--toph,64px) + 8px)!important;z-index:25;background:var(--nav);box-shadow:0 6px 14px -10px rgba(0,0,0,.35)}
  .top{z-index:30;box-shadow:inset 0 -1px 0 rgba(184,160,106,.45)}
 }
+/* app instalada (PWA) en móvil: encabezado sin fijar arriba, para que iOS no le ponga velo ni desenfoque */
+@media (max-width:900px) and (display-mode:standalone){
+ .top{position:relative;top:auto;box-shadow:inset 0 -1px 0 rgba(184,160,106,.45)}
+ .side{top:calc(env(safe-area-inset-top) + 8px)!important}
+}
 </style>
 </head>
 <body>
