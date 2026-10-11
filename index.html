@@ -1375,6 +1375,93 @@ dialog.apl.pal-academy .apl-help a{color:#B45F1B}
 .apl-f input::placeholder{color:#b3ada1;font-weight:400}
 .apl-f input,.apl-f select{font-weight:400}
 .phone{grid-template-columns:minmax(170px,42%) minmax(0,1fr)}
+
+/* ===== v13 · correcciones V4 ===== */
+/* encabezado */
+header.nav::before{background:#8B1A2A;-webkit-backdrop-filter:none;backdrop-filter:none;transition:background-color .45s var(--ease),opacity .45s}
+header.nav[data-side="academy"]::before{background:#F5F2EE}
+header.nav.sc::before{opacity:.8;-webkit-backdrop-filter:blur(10px) saturate(1.2);backdrop-filter:blur(10px) saturate(1.2)}
+/* logo: nunca se aplasta ni desaparece */
+.brand{flex:0 0 auto;min-width:max-content}
+.brand img{flex:0 0 auto;height:46px;width:auto;min-width:0;max-width:none;object-fit:contain}
+@media (max-width:760px){.brand img{height:36px}}
+@media (max-width:360px){.brand img{height:32px}}
+/* píldora Studios / Academy: marfil y verde oliva */
+.sw{background:linear-gradient(90deg,rgba(245,242,238,.14) 50%,rgba(79,90,42,.6) 50%)}
+header.nav[data-side="academy"] .sw{background:linear-gradient(90deg,rgba(37,37,40,.06) 50%,rgba(110,122,61,.3) 50%)}
+.sw::before{background:linear-gradient(180deg,#FBF8F2,#E6DDCB);box-shadow:0 6px 16px -6px rgba(0,0,0,.5)}
+.sw[data-on="academy"]::before,header.nav[data-side="academy"] .sw::before{background:linear-gradient(180deg,#7A8847,#4F5A2A);box-shadow:0 6px 16px -6px rgba(79,90,42,.7)}
+.sw:has(button[data-side="academy"]:hover)::before,.sw:has(button[data-side="studios"]:hover)::before{box-shadow:0 6px 16px -6px rgba(0,0,0,.5)}
+.sw[data-on="academy"]:has(button[data-side="studios"]:hover)::before,header.nav[data-side="academy"] .sw:has(button[data-side="studios"]:hover)::before{background:linear-gradient(180deg,#7A8847,#4F5A2A);box-shadow:0 6px 16px -6px rgba(79,90,42,.7)}
+.sw:has(button[data-side="academy"]:hover)[data-on="studios"]::before{background:linear-gradient(180deg,#FBF8F2,#E6DDCB)}
+/* colores de texto */
+.sw button[data-side="studios"]{color:var(--borgona)}
+.sw button[data-side="academy"]{color:var(--marfil)}
+header.nav[data-side="academy"] .sw button[data-side="studios"]{color:var(--pizarra)}
+header.nav[data-side="academy"] .sw button[data-side="academy"]{color:var(--marfil)}
+header.nav:not([data-side="academy"]) .sw button[data-side="studios"][aria-selected="false"]{color:var(--marfil)}
+.sw:has(button[data-side="academy"]:hover) button[data-side="academy"],.sw:has(button[data-side="studios"]:hover) button[data-side="studios"]{color:inherit}
+.sw button[data-side="studios"][aria-selected="true"]{color:var(--borgona)}
+.sw button[data-side="academy"][aria-selected="true"]{color:var(--marfil)}
+/* al pasar el mouse, el lado se "enciende" */
+.sw button{transition:color .3s,transform .3s,background-color .3s,box-shadow .3s}
+.sw button[data-side="studios"]:hover{background:rgba(245,242,238,.34);box-shadow:0 0 18px rgba(245,242,238,.5)}
+.sw button[data-side="academy"]:hover{background:rgba(110,122,61,.85);box-shadow:0 0 18px rgba(110,122,61,.7)}
+header.nav[data-side="academy"] .sw button[data-side="studios"]:hover{background:rgba(245,242,238,.95);box-shadow:0 0 16px rgba(37,37,40,.25);color:var(--borgona)}
+.sw button[aria-selected="true"]:hover{background:none;box-shadow:none}
+.nl-plat{background:rgba(184,160,106,.16)!important;box-shadow:inset 0 0 0 1px rgba(184,160,106,.65)}
+/* transición a Academy en arena */
+#loader[data-to="academy"]{--ld-bg:#F5F2EE;--ld-f1:#F0E2C0;--ld-f2:#D9C49A;--ld-f3:#A8915F;--ld-base:rgba(37,37,40,.12);--ld-glow:rgba(217,196,154,.5)}
+dialog.apl.pal-academy{--ap-acc:#5C6A30;--ap-acc2:#B8A06A}
+/* portada Academy: la mitad sin mouse se oscurece ~5%, sin opacidad ni brillo */
+@media (hover:hover) and (min-width:961px){
+  .split:has(.half:hover) .half{opacity:1;transition:flex 1.15s cubic-bezier(.65,0,.25,1),filter .6s ease}
+  .split:has(.half:hover) .half:not(:hover){filter:brightness(.93)}
+  .split:has(.half:hover) .half:not(:hover) h2 span.lt{opacity:1}
+  .half:hover h2 span.lt{text-shadow:none;animation:none}
+}
+.half h2,.half h2 span.lt{text-shadow:none!important}
+/* pestañas flotantes: siempre a la derecha, sin salirse de la pantalla */
+.ftabs{right:0;left:auto;top:34%;bottom:auto;flex-direction:column;align-items:flex-end;gap:10px;max-width:100vw}
+.ftab{transform:none;transform-origin:right center}
+.ftab:hover,.ftab:focus-visible{transform:translateX(-6px) scale(1.03);padding-right:18px}
+body:has(.wa-wrap.open) .ftabs{opacity:0;pointer-events:none;transition:opacity .25s}
+@media (max-width:760px){
+  .ftabs{right:0;left:auto;top:30%;bottom:auto;flex-direction:column;align-items:flex-end;gap:8px}
+  .ftab{flex:none;justify-content:flex-start;text-align:left;border-radius:14px 0 0 14px;padding:9px 12px 9px 10px;font-size:.72rem;gap:7px;transform:none}
+  .ftab svg{display:block;width:17px;height:17px}.ftab::after{display:none}
+  .ftab:hover,.ftab:focus-visible{transform:translateX(-4px);padding-right:12px}
+}
+@media (max-height:560px){.ftabs{top:18%;gap:6px}.ftab{padding-top:8px;padding-bottom:8px}}
+/* equipo: tarjetas que se ajustan y bajan si no caben */
+.who-ph{grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr));max-width:540px;gap:16px}
+.ph{aspect-ratio:3/4;min-height:260px}
+.ph-in:not(.has){padding-bottom:88px}
+.ph-in .cap2{padding:30px 12px 12px}
+.ph-in .cap2 b{font-size:clamp(1.1rem,3.4vw,1.4rem);overflow-wrap:anywhere}
+.ph-in .cap2 span{display:block;overflow-wrap:anywhere}
+@media (max-width:520px){.who-ph .ph:nth-child(2){margin-top:0}}
+/* visor del portafolio: marco marfil y animación de entrada */
+#dlg-lb{background:#F5F2EE;color:#252528;border:0;border-radius:10px;max-width:min(760px,94vw);box-shadow:0 0 0 9px #F5F2EE,0 0 0 10px #B8A06A,0 50px 90px -30px rgba(0,0,0,.7)}
+#dlg-lb[open]{animation:lbIn .55s cubic-bezier(.2,.9,.25,1.08)}
+#dlg-lb[open]::backdrop{animation:lbBd .5s ease both}
+#dlg-lb .lb-img{background-color:#EDE6D8;background-image:linear-gradient(135deg,#F3EDE0,#DCCFB4);color:#6B5B3A;font-weight:600;border:1px solid rgba(184,160,106,.55)}
+#dlg-lb .lb-img[style*="url"]{background-color:#EDE6D8}
+#dlg-lb h3{color:#252528}#dlg-lb p{color:#5a5a60!important}
+#dlg-lb .x{color:#252528}
+@keyframes lbIn{0%{opacity:0;transform:translateY(24px) scale(.92)}100%{opacity:1;transform:none}}
+@keyframes lbBd{from{opacity:0}to{opacity:1}}
+
+
+@media (hover:hover) and (min-width:961px){
+  .split:has(.half:hover) .half:hover{flex:2.3}
+  .half h2{transition:font-size .8s cubic-bezier(.65,0,.25,1)}
+  .split:has(.half:hover) .half:not(:hover) h2{font-size:clamp(3rem,5.6vw,5.6rem)}
+}
+.who-ph{grid-template-columns:repeat(auto-fit,minmax(min(100%,150px),1fr));gap:12px}
+.ph{min-height:220px}
+
+@media (hover:hover) and (min-width:961px){.half-in{max-width:100%}.half{min-width:0}}
 </style>
 </head>
 <body>
@@ -2264,7 +2351,7 @@ function rvDone(ref,d,hora){
 $('#rv-new').addEventListener('click',()=>{rvReset();rvView('form');$('#rv-card').scrollIntoView({block:'start'})});
 rvCalRender();rvClock();
 
-{let q0='studios';try{const q=new URLSearchParams(location.search).get('p');if(q&&PAGES[q]&&PAGES[q].side==='academy'&&q!=='studios')q0=q}catch(e){}applyPage(q0)}window.scrollTo(0,0);
+{let q0='studios';try{const q=new URLSearchParams(location.search).get('p');if(q&&PAGES[q])q0=q}catch(e){}applyPage(q0)}window.scrollTo(0,0);
 </script>
 <script>
 /* ===== v11 Stage 2: Studios ===== */
@@ -2373,7 +2460,7 @@ const ALB=[
   }
   function load(i){
     stop();cur=(i+ALB.length)%ALB.length;pos=0;
-    $('#amp-t').textContent=ALB[cur][0];$('#amp-a').textContent=ALB[cur][1];
+    $('#amp-t').textContent=ALB[cur][0];$('#amp-a').textContent=ALB[cur][1]+(ALB[cur][3]?' · Similar a '+ALB[cur][3]:'');
     amp.style.setProperty('--cov',covBg(cur));$('#vinyl .label').style.setProperty('--cov',covBg(cur));
     shape(cur);
     const src=SITE.audio['alb'+(cur+1)];
@@ -2653,7 +2740,7 @@ function pageHTML(k){
     <h1><span class="line"><span>${D.h1a}</span></span><span class="line"><span class="l2">${D.h1b}</span></span></h1>
     <p class="sub">${D.sub}</p>
     <div class="cta"><a class="btn btn-solid" href="#${k}-plan">Ver plan de estudios</a><a class="btn btn-ghost" data-wa="${k}" target="_blank" rel="noopener" href="#">Reservar clase por WhatsApp</a></div>
-    <div class="widget">${eng?`<small>Toca una frase: la escuchas en inglés y ves su significado.</small><div class="phrases" id="phrases"></div>`:`<div class="amo"><h3>Amo el piano <span class="heart">♥</span></h3><button class="btn btn-solid" type="button" id="piano-demo"><svg class="ico-f"><use href="#i-play"/></svg>Escucha una melodía</button></div><small>Toca las teclas o usa A S D F G H J K en tu teclado.</small><div class="piano" id="keys"></div>`}</div>
+    <div class="widget">${eng?`<small>Toca una frase: la escuchas en inglés y ves su significado.</small><div class="phrases" id="phrases"></div>`:`<small>Toca las teclas o usa A S D F G H J K en tu teclado.</small><div class="piano" id="keys"></div>`}</div>
   </div></section>
   ${eng?`<section class="docs sec pal-english" id="english-docentes" style="background:var(--p3)!important">${shapes([['c','60px','88%','20%','#fff'],['q','40px','6%','70%','var(--p2)'],['c','26px','50%','8%','var(--p3)']])}<div class="wrap">
     <div class="sec-head"><div class="rule"></div><h2>¿Eres maestro o maestra y quieres <span class="hl-b">mejorar tu contenido</span>?</h2><p class="lead">Mejora tu inglés y tus clases con un plan hecho para docentes. Precio especial para docentes de nivel medio.</p></div>
@@ -2865,7 +2952,7 @@ $$('[data-wa]').forEach(a=>a.href=WA+encodeURIComponent(waMsg[a.dataset.wa]));
   document.addEventListener('keydown',e=>{if(current!=='music'||e.repeat||e.metaKey||e.ctrlKey||e.altKey)return;if(/INPUT|TEXTAREA/.test(e.target.tagName))return;const m=map[e.key.toUpperCase()];if(m)press(m[0],m[1])});
   /* melodía de demostración (Oda a la alegría, dominio público) */
   let demo=0;const SEQ=[[2,1],[2,1],[3,1],[4,1],[4,1],[3,1],[2,1],[1,1],[0,1],[0,1],[1,1],[2,1],[2,1.5],[1,.5],[1,2]];
-  $('#piano-demo').addEventListener('click',()=>{
+  const _pd=$('#piano-demo');if(_pd)_pd.addEventListener('click',()=>{
     if(demo)return;demo=1;let t=0;
     SEQ.forEach(([i,d],n)=>{setTimeout(()=>{press(wk[i][0],wk[i][1]);wk[i][0].classList.add('hl');setTimeout(()=>wk[i][0].classList.remove('hl'),d*380)},t*420);t+=d});
     setTimeout(()=>demo=0,t*420+300);
@@ -2906,8 +2993,11 @@ $$('[data-wa]').forEach(a=>a.href=WA+encodeURIComponent(waMsg[a.dataset.wa]));
     el.innerHTML='<div class="jr-line">'+J.map((x,i)=>`<button type="button" class="jr-n" aria-label="${x[1]}"><svg class="ico"><use href="#${x[0]}"/></svg></button>`).join('')+'</div><div class="jr-cap" aria-live="polite"></div>';
     const ns=$$('.jr-n',el),cap=$('.jr-cap',el);
     function go(i){k=i;ns.forEach((n,m)=>{n.classList.toggle('on',m===i);n.classList.toggle('done',m<i)});el.style.setProperty('--jp',i/(J.length-1));cap.innerHTML=`<div><b>${J[i][1]}</b><small>${J[i][2]}</small></div>`}
+    let rs;
     function auto(){clearInterval(t);t=setInterval(()=>{if(el.offsetParent)go((k+1)%J.length)},2400)}
-    ns.forEach((n,i)=>{n.addEventListener('click',()=>{go(i);auto()});n.addEventListener('pointerenter',()=>go(i))});
+    ns.forEach((n,i)=>{n.addEventListener('click',()=>{go(i)});n.addEventListener('pointerenter',()=>go(i));n.addEventListener('focus',()=>go(i))});
+    el.addEventListener('pointerenter',()=>{clearInterval(t);clearTimeout(rs)});
+    el.addEventListener('pointerleave',()=>{clearTimeout(rs);rs=setTimeout(auto,3500)});
     go(0);auto();
   });
 })();
@@ -2916,6 +3006,7 @@ const _applyPage=applyPage;
 applyPage=function(p){
   Band.stop();const b=$('#mx-play');if(b){b.querySelector('span').textContent='Escúchalo en acción';b.querySelector('use').setAttribute('href','#i-play')}
   _applyPage(p);
+  try{const u=new URL(location.href);if(p==='studios')u.searchParams.delete('p');else u.searchParams.set('p',p);history.replaceState(null,'',u.pathname+u.search+u.hash)}catch(x){}
   try{var tc=document.querySelector('meta[name="theme-color"]');if(tc)tc.setAttribute("content",p==="studios"?"#8B1A2A":"#F5F2EE")}catch(e){}
 };
 
@@ -3082,8 +3173,8 @@ const rpcJ=async(n,a)=>{const r=await rvRpc(n,a);if(!r.ok)throw new Error(await 
     (function f(now){
       const cur=ps.map(p=>{const r=p.getBoundingClientRect();return r.width+r.height});
       const d=Math.max(...cur.map((v,i)=>Math.abs(v-prev[i])));prev=cur;
-      box.style.setProperty('--b',Math.min(2.4,d*.07).toFixed(2)+'px');
-      if(now-t0<1150)requestAnimationFrame(f);else{box.style.setProperty('--b','0px');busy=0}
+      box.style.setProperty('--b',(Math.min(2.4,d*.07)*Math.max(0,1-(now-t0)/720)).toFixed(2)+'px');
+      if(now-t0<740)requestAnimationFrame(f);else{box.style.setProperty('--b','0px');busy=0}
     })(t0);
   }
   $$('.panel',box).forEach(p=>p.addEventListener('click',()=>{if(!reduce)run()}));
@@ -3187,8 +3278,10 @@ window.rebuildPortfolio=function(){
   tabs.addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b)return;tab=b.dataset.t;$$('.chip',tabs).forEach(o=>o.setAttribute('aria-pressed',o===b));draw()});
   function stat(r){const s=st(r.k);return `<span class="st">${s.votos?starsTxt(s.promedio):'☆☆☆☆☆'}</span> <b>${s.votos?s.promedio.toFixed(1):'—'}</b><span>${s.votos?'('+s.votos+')':''}</span><span>⬇ <b>${s.descargas}</b></span><span>💬 <b>${s.comentarios}</b></span>`}
   function draw(){
-    const list=R.filter(r=>tab==='todos'||(tab==='rapidas'?r.q:r.g.includes(tab)));
-    shelf.innerHTML='';
+    const X=SITE.x||{};R.forEach(r=>{if(X['rt.'+r.k])r.t=X['rt.'+r.k];if(X['rd.'+r.k])r.d=X['rd.'+r.k]});
+    const any=R.some(r=>SITE.pdf[r.k]);
+    const list=R.filter(r=>(!any||SITE.pdf[r.k])&&(tab==='todos'||(tab==='rapidas'?r.q:r.g.includes(tab))));
+    shelf.innerHTML=list.length?'':'<p style="color:var(--muted);padding:18px 4px">Pronto subiremos más recursos en esta categoría.</p>';
     list.forEach(r=>{
       const b=document.createElement('div');b.className='bkc tilt';b.tabIndex=0;b.setAttribute('role','button');b.setAttribute('aria-label','Abrir '+r.t);
       b.innerHTML=`<div class="bkc-cv" style="--cvbg:${r.bg}"><span class="bkc-tag">${r.q?'Guía rápida':'Gratis'}</span><svg class="ico"><use href="#${r.ic}"/></svg><div><h3>${escH(r.t)}</h3><small>Faro Studios</small></div></div><div class="bkc-m">${stat(r)}</div><div class="bkc-go"><span class="p">Ver dentro</span><span>Descargar</span></div>`;
@@ -3398,6 +3491,30 @@ window.rebuildPortfolio&&window.rebuildPortfolio();
 
 </script>
 <script>
+/* ===== v12 ===== */
+
+/* encabezado: sólido arriba, 20% transparente al hacer scroll */
+(function(){const h=document.querySelector('header.nav');if(!h)return;let on=null;
+  function u(){const v=(window.scrollY||document.documentElement.scrollTop)>6;if(v!==on){on=v;h.classList.toggle('sc',v)}}
+  addEventListener('scroll',u,{passive:true});u();})();
+
+</script>
+<script>
+/* ===== v12 ===== */
+
+/* textos editables desde el Workspace: recursos, producciones, reseñas */
+(function(){const _v=window.v12Config;
+  window.v12Config=function(){_v&&_v();
+    const X=SITE.x||{};
+    ALB.forEach((a,i)=>{const n=i+1,t=X['at.'+n],ar=X['aa.'+n],y=X['ay.'+n],s=X['as.'+n];
+      if(t)a[0]=t;if(ar||y)a[1]=[ar||a[1].split(' · ')[0],y].filter(Boolean).join(' · ');if(s)a[3]=s});
+    $$('#covers .cv').forEach((b,i)=>{const bb=$('b',b),sm=$('small',b);if(bb&&ALB[i])bb.textContent=ALB[i][0];if(sm&&ALB[i])sm.textContent=ALB[i][1]});
+    const it=[];for(let n=1;n<=6;n++){const q=X['rv.'+n+'.q'];if(q)it.push({k:'t'+n,q:escH(q),n:escH(X['rv.'+n+'.n']||'Cliente'),r:escH(X['rv.'+n+'.r']||'')})}
+    const h=$('#testi-s');if(it.length&&h)mountTesti(h,it,'tu cliente');
+  };})();
+
+</script>
+<script>
 /* ===== Configuración remota: lo que cargas en Admin > Sitio web (fotos, audios, PDFs, textos, contacto) ===== */
 (function(){
   const U='https://keivqvsgdfhthouzlqxo.supabase.co',K='sb_publishable_5nj3M7rjQs3phGU6u2uNqw_3tjTL6PE';
@@ -3415,6 +3532,7 @@ window.rebuildPortfolio&&window.rebuildPortfolio();
       else if(k==='portafolio'){try{SITE.pf=JSON.parse(v)}catch(_){}}
       else if(k==='catalogoPdf')SITE.catalogoPdf=v;
       else if(k.startsWith('songs.')){SITE.songs=SITE.songs||{};SITE.songs[k.slice(6)]={spotify:v}}
+      else if(/^(rt|rd|at|aa|ay|as|rv)\./.test(k)){SITE.x=SITE.x||{};SITE.x[k]=v}
       else if(k.startsWith('txt.'))$$('[data-cfg="'+k.slice(4)+'"]').forEach(n=>{n.textContent=v});
     });
     if(WA!==oldWA)$$('a[href^="'+oldWA+'"]').forEach(a=>{a.href=WA+a.getAttribute('href').slice(oldWA.length)});

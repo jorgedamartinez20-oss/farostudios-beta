@@ -294,7 +294,7 @@ button,.btn,.chip,.nav,.tab,.stab,.seg{-webkit-user-select:none;user-select:none
 .sgc[aria-pressed="true"]{border-color:var(--oro);background:linear-gradient(180deg,rgba(184,160,106,.2),var(--surface));box-shadow:0 8px 20px rgba(0,0,0,.16)}
 .sgc[aria-pressed="true"] .gi{background:linear-gradient(180deg,#CBB583,#B8A06A 55%,#A58E5A);color:var(--pizarra);box-shadow:0 3px 8px rgba(0,0,0,.2)}
 .sgp h2{margin-bottom:12px}
-.sgt{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px}
+.sgt{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(160px,100%),1fr));gap:12px}
 .st{display:flex;flex-direction:column;gap:6px;padding:10px;border-radius:14px;border:1px solid var(--line);background:var(--soft);box-shadow:0 3px 8px rgba(0,0,0,.08)}
 .st.on{border-color:rgba(184,160,106,.7)}
 .st b{font-weight:700;font-size:.88rem;line-height:1.25}
@@ -1532,8 +1532,9 @@ const SITIO=[
  {g:'Fotos de Studios',dest:'landing/fotos-studios',items:[{k:'img.david',l:'Foto de David (Quiénes somos)',t:'img'},{k:'img.equipo2',l:'Foto de la segunda persona del equipo',t:'img'},{k:'vid.david',l:'Video de saludo de David (se reproduce al pasar el cursor)',t:'vid'},{k:'vid.equipo2',l:'Video de saludo de la segunda persona',t:'vid'},
   ...rng('t',3).map(x=>({k:'img.'+x,l:'Foto del testimonio '+x.slice(1),t:'img'}))]},
  {g:'Portafolio · 14 tablones',dest:'landing/portafolio',items:rng('w',14).map(x=>({k:'img.'+x,l:'Tablón '+x.slice(1),t:'img'}))},
- {g:'Producciones musicales · portadas y audios',dest:'landing/producciones-musicales',items:rng('alb',8).flatMap(x=>[{k:'img.'+x,l:'Portada del disco '+x.slice(3),t:'img'},{k:'audio.'+x,l:'Audio del disco '+x.slice(3)+' (MP3)',t:'audio'}])},
- {g:'Recursos gratis (PDF)',dest:'landing/recursos-gratis',items:[...rng('r',6).map(x=>({k:'pdf.'+x,l:'Recurso '+x.slice(1)+' (PDF)',t:'pdf'})),...rng('s',4).map(x=>({k:'pdf.'+x,l:'Guía rápida '+x.slice(1)+' (PDF)',t:'pdf'}))]},
+ {g:'Producciones musicales · portadas y audios',dest:'landing/producciones-musicales',items:rng('alb',8).flatMap(x=>{const n=x.slice(3);return[{k:'img.'+x,l:'Portada del disco '+n,t:'img'},{k:'audio.'+x,l:'Audio del disco '+n+' (MP3)',t:'audio'},{k:'at.'+n,l:'Disco '+n+' · título',t:'text',ph:'Sencillo 01'},{k:'aa.'+n,l:'Disco '+n+' · artista',t:'text',ph:'Nombre del artista'},{k:'ay.'+n,l:'Disco '+n+' · año',t:'text',ph:'2025'},{k:'as.'+n,l:'Disco '+n+' · artistas similares',t:'text',ph:'Ej. Alex Campos, Miel San Marcos'}]})},
+ {g:'Recursos gratis (PDF)',dest:'landing/recursos-gratis',items:[...rng('r',6).flatMap(x=>[{k:'pdf.'+x,l:'Recurso '+x.slice(1)+' (PDF)',t:'pdf'},{k:'rt.'+x,l:'Recurso '+x.slice(1)+' · título',t:'text'},{k:'rd.'+x,l:'Recurso '+x.slice(1)+' · descripción',t:'area'}]),...rng('s',4).flatMap(x=>[{k:'pdf.'+x,l:'Guía rápida '+x.slice(1)+' (PDF)',t:'pdf'},{k:'rt.'+x,l:'Guía rápida '+x.slice(1)+' · título',t:'text'},{k:'rd.'+x,l:'Guía rápida '+x.slice(1)+' · descripción',t:'area'}])]},
+ {g:'Reseñas de clientes',items:rng('',6).flatMap(n=>[{k:'rv.'+n+'.q',l:'Reseña '+n+' · opinión',t:'area'},{k:'rv.'+n+'.n',l:'Reseña '+n+' · nombre del cliente',t:'text'},{k:'rv.'+n+'.r',l:'Reseña '+n+' · empresa o evento',t:'text'},{k:'img.t'+n,l:'Reseña '+n+' · foto del cliente',t:'img'}])},
  {g:'Catálogo en libro',dest:'landing/catalogo',items:[{k:'catalogoPdf',l:'Catálogo completo (PDF). Se muestra como libro, sin descarga.',t:'pdf'}]},
  {g:'Academy · fotos',dest:'landing/academy-fotos',items:[{k:'img.music-t1',l:'Foto testimonio Música',t:'img'},{k:'img.english-t1',l:'Foto testimonio Inglés',t:'img'},
   ...INST.map(i=>({k:'img.music-'+i[0],l:'Foto de '+i[1],t:'img'})),...NIV.map(i=>({k:'img.english-'+i[0],l:'Foto de Inglés · '+i[1],t:'img'}))]},
@@ -1640,7 +1641,7 @@ function webPintar(){
 
 function sitioVal(k){return AC.cfg[k]||''}
 let SIT_SEL=0;
-const SITIO_META={'Contacto y redes':['Contacto y redes','mail'],'Textos del sitio':['Textos','edit'],'Fotos de Studios':['Fotos Studios','camera'],'Portafolio · 14 tablones':['Portafolio','image'],'Producciones musicales · portadas y audios':['Producciones','music'],'Recursos gratis (PDF)':['Recursos gratis','pdf'],'Catálogo en libro':['Catálogo','book'],'Academy · fotos':['Fotos Academy','cap'],'Academy · canciones de Spotify por instrumento':['Spotify','link']};
+const SITIO_META={'Contacto y redes':['Contacto y redes','mail'],'Textos del sitio':['Textos','edit'],'Fotos de Studios':['Fotos Studios','camera'],'Portafolio · 14 tablones':['Portafolio','image'],'Producciones musicales · portadas y audios':['Producciones','music'],'Recursos gratis (PDF)':['Recursos gratis','pdf'],'Reseñas de clientes':['Reseñas','edit'],'Catálogo en libro':['Catálogo','book'],'Academy · fotos':['Fotos Academy','cap'],'Academy · canciones de Spotify por instrumento':['Spotify','link']};
 const sitCambios=()=>$$('.sit-txt').some(i=>i.value.trim()!==(i.dataset.orig||''));
 function renderSitio(){
   const box=$('#sit-body');if(!box)return;box.textContent='';
