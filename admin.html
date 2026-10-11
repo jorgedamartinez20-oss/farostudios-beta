@@ -2444,8 +2444,9 @@ async function renderPre(){
     setRow('Planificación de contenido','Publicar hoy, grabaciones y material',swEl(PREF.nCon,v=>cambia('nCon',v))),
     setRow('Recordatorios (SAT y otros)','',swEl(PREF.nRec,v=>cambia('nRec',v))),
     setRow('Cotización "sin responder" después de','',selEl([[1,'1 día'],[2,'2 días'],[3,'3 días'],[5,'5 días']],PREF.dias,v=>cambia('dias',+v))));
-  card('w6','Avisos del navegador y actualización','',
-    setRow('Avisarme con una notificación del navegador','Cuando llegue algo nuevo mientras tienes el admin abierto',swEl(PREF.nav&&'Notification' in window&&Notification.permission==='granted',async v=>{
+  if(ME.owner){const np=card('w6','Notificaciones en este aparato','Funciona con la app cerrada, con sonido, como una app de verdad: reservas, cotizaciones y qué publicar hoy (resumen a las 8:00)');pushCard(np)}
+  card('w6','Avisos con la página abierta y actualización','Solo funcionan mientras tienes el Workspace abierto',
+    setRow('Aviso solo con el admin abierto','Si cierras la app no suena. Para recibir avisos con la app cerrada usa la tarjeta "Notificaciones en este aparato" de abajo',swEl(PREF.nav&&'Notification' in window&&Notification.permission==='granted',async v=>{
       if(!v){cambia('nav',false);return}
       if(!('Notification' in window)){toast('Tu navegador no permite avisos');renderPre();return}
       const r=await Notification.requestPermission();if(r==='granted'){cambia('nav',true);try{new Notification('Faro Admin',{body:'Los avisos están activados'})}catch(e){}}else{toast('No diste permiso en el navegador');cambia('nav',false,true)}})),
@@ -2453,7 +2454,6 @@ async function renderPre(){
     setRow('Cada cuánto','',selEl([[1,'1 minuto'],[3,'3 minutos'],[5,'5 minutos'],[10,'10 minutos']],PREF.min,v=>cambia('min',+v))),
     el('div',{style:'margin-top:10px;display:flex;gap:8px;flex-wrap:wrap'},el('button',{class:'btn btn-ghost btn-sm',type:'button',onclick:()=>refrescar(true)},icoEl('refresh'),' Actualizar ahora'),
       el('button',{class:'btn btn-ghost btn-sm',type:'button',onclick:()=>{PREF=Object.assign({},PREF0);prefGuardar();DASH.meses=PREF.rd;AN.rango=PREF.ra;relojPintar();avisosPintar();renderPre();toast('Preferencias restablecidas')}},'Restablecer')));
-  if(ME.owner){const np=card('w6','Notificaciones en este aparato','Aviso con sonido, como una app: reservas, cotizaciones y qué publicar hoy');pushCard(np)}
   const sg=card('w6','Seguridad en 2 pasos','Pide un código de tu teléfono además de la contraseña');mfaCard(sg);
   /* estado del sistema */
   const est=card('w6','Estado del sistema','Para saber si todo está conectado',el('p',{class:'muted'},'Revisando…'));
