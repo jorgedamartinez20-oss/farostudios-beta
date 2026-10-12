@@ -5,6 +5,7 @@
 <meta name="robots" content="noindex,nofollow">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#8B1A2A">
+<meta name="theme-color" content="#5F1020" media="(prefers-color-scheme: dark)">
 <title>Faro Studios — Creatividad con propósito (demo v2)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1643,6 +1644,77 @@ dialog.apl.pal-academy::backdrop{background:rgba(245,242,238,.62);-webkit-backdr
 .gp-ch em{height:22px;border-radius:5px;background:linear-gradient(135deg,var(--ap-acc2),var(--ap-acc));opacity:.85}.gp-ch em:nth-child(2n){opacity:.5}
 .gp-tag{position:absolute;z-index:2;left:12px;top:12px;padding:5px 10px;border-radius:99px;background:#252528;color:#fff;font:800 .62rem var(--body);letter-spacing:.14em;text-transform:uppercase}
 @media (prefers-reduced-motion:reduce){.dgeo i{animation:none}}
+/* ===== v20: MODO OSCURO (solo cuando el teléfono/navegador pide oscuro; el modo claro no cambia) ===== */
+:root{color-scheme:light dark}
+@media (prefers-color-scheme:dark){
+:root{--dk0:#161618;--dk1:#1D1D20;--dk2:#252528;--dk3:#2E2E32;--dk4:#38383D;--dk-ink:#F2EEE8;--dk-mut:#B6B1A7}
+html,body{background:#161618}
+.pal-studios-alt{--bg:var(--dk1);--ink:var(--dk-ink);--muted:var(--dk-mut);--hi:var(--oro);--btn:var(--oro);--btn-ink:var(--pizarra);--link:var(--borg-claro);--line:rgba(245,242,238,.16);--card:var(--dk3);
+  --fx-a:radial-gradient(70% 55% at 100% 0%,rgba(184,160,106,.12),transparent 70%),linear-gradient(180deg,#1F1F22,#19191B);--fx-b:radial-gradient(70% 55% at 0% 0%,rgba(184,160,106,.12),transparent 70%),linear-gradient(180deg,#1F1F22,#19191B);
+  --sh:inset 0 1px 0 rgba(245,242,238,.06),0 24px 40px -22px rgba(0,0,0,.8),0 4px 10px -4px rgba(0,0,0,.5);--sh-h:inset 0 1px 0 rgba(245,242,238,.09),0 34px 50px -22px rgba(0,0,0,.9)}
+.pal-academy{--bg:var(--dk1);--ink:var(--dk-ink);--muted:var(--dk-mut);--hi:var(--borg-claro);--btn:var(--borgona);--btn-ink:var(--marfil);--link:var(--borg-claro);--line:rgba(245,242,238,.16);--card:var(--dk3);
+  --fx-a:radial-gradient(70% 55% at 100% 0%,rgba(139,26,42,.16),transparent 70%),linear-gradient(180deg,#1F1F22,#19191B);--fx-b:var(--fx-a);
+  --sh:inset 0 1px 0 rgba(245,242,238,.06),0 24px 40px -22px rgba(0,0,0,.8),0 4px 10px -4px rgba(0,0,0,.5);--sh-h:inset 0 1px 0 rgba(245,242,238,.09),0 34px 50px -22px rgba(0,0,0,.9)}
+.pal-music-alt{--bg:#1B1D16;--ink:var(--dk-ink);--muted:var(--dk-mut);--hi:var(--oliva-c);--btn:var(--oliva-c);--btn-ink:#1B1D16;--link:var(--borg-claro);--line:rgba(245,242,238,.16);--card:#2A2D22;
+  --fx-a:radial-gradient(70% 55% at 100% 0%,rgba(110,122,61,.22),transparent 70%),linear-gradient(180deg,#1E2018,#181A13);--fx-b:radial-gradient(70% 55% at 0% 0%,rgba(110,122,61,.22),transparent 70%),linear-gradient(180deg,#1E2018,#181A13);
+  --sh:inset 0 1px 0 rgba(245,242,238,.06),0 24px 40px -22px rgba(0,0,0,.8),0 4px 10px -4px rgba(0,0,0,.5);--sh-h:inset 0 1px 0 rgba(245,242,238,.09),0 34px 50px -22px rgba(0,0,0,.9)}
+.pal-english{--bg:#2A211B;--ink:var(--crema);--muted:#D8CCB7;--hi:var(--arena);--btn:var(--arena);--btn-ink:var(--cafe);--link:var(--arena);--line:rgba(244,241,230,.22);--cta:var(--bronce);--cta-ink:var(--crema);--card:#3A2E26;
+  --fx-a:radial-gradient(75% 60% at 90% 0%,rgba(160,120,69,.28),transparent 70%),linear-gradient(180deg,#2C231C,#231B15);--fx-b:radial-gradient(75% 60% at 10% 0%,rgba(160,120,69,.28),transparent 70%),linear-gradient(180deg,#2C231C,#231B15);
+  --sh:inset 0 1px 0 rgba(244,241,230,.06),0 24px 40px -22px rgba(0,0,0,.7),0 4px 10px -4px rgba(0,0,0,.45);--sh-h:inset 0 1px 0 rgba(244,241,230,.1),0 34px 50px -22px rgba(0,0,0,.8)}
+.pal-english-alt{--bg:#1F1813}
+/* encabezado */
+header.nav::before{background:#5F1020}
+header.nav[data-side="academy"]::before{background:#1E1E21}
+header.nav[data-side="academy"]{color:var(--dk-ink);box-shadow:inset 0 -1px 0 rgba(184,160,106,.35),0 14px 34px -16px rgba(0,0,0,.7)}
+header.nav[data-side="academy"] .brand,header.nav[data-side="academy"] .brand-tag{color:var(--dk-ink)}
+header.nav[data-side="academy"] .brand img,header.nav[data-side="academy"] .brand:hover img{filter:none}
+header.nav[data-side="academy"] .nav-links a,header.nav[data-side="academy"] .nav-links button{color:rgba(242,238,232,.85)}
+header.nav[data-side="academy"] .nav-links a:hover,header.nav[data-side="academy"] .nav-links button:hover,header.nav[data-side="academy"] .nav-links [aria-current="page"]{color:#fff;background:rgba(163,177,95,.18)}
+header.nav[data-side="academy"] .nav-links:not([hidden]){background:#1E1E21!important}
+header.nav[data-side="academy"] .sw{background:linear-gradient(90deg,rgba(245,242,238,.08) 50%,rgba(110,122,61,.3) 50%)}
+header.nav[data-side="academy"] .sw button,header.nav[data-side="academy"] .sw button[data-side="studios"]{color:var(--dk-ink)}
+header.nav[data-side="academy"] .menu-btn,header.nav[data-side="academy"].open .menu-btn{color:var(--dk-ink)}
+}
+
+@media (prefers-color-scheme:dark){
+/* secciones de color de marca: más profundas */
+.guia,.docs,.mx,.gar,.sec.fl[class*="pal-"] .gar{filter:brightness(.7) saturate(.92)}
+.docs,.guia{--ink:#2a2a1a;--muted:#43391c;--hi:#2a2a1a}
+.guia .lead,.docs .lead,.docs p.lead{color:#2f2a14}
+.dip{filter:brightness(.82)}
+/* tarjetas blancas → oscuras */
+.tcard,.gq-main,.yr-card{filter:invert(.9) hue-rotate(180deg) brightness(1.35)}
+.gq-side{filter:invert(.88) hue-rotate(180deg)}
+.pal-english.yr{--yi:#F4F1E6}
+.yr-box{background:rgba(0,0,0,.28);box-shadow:0 34px 60px -30px rgba(0,0,0,.7),inset 0 0 0 1px rgba(255,255,255,.1)}
+.yr-b[aria-pressed="true"]{background:#3A3A3F;color:#F2EEE8}
+.yr-b{background:rgba(255,255,255,.07)}
+.yr-m .tr{background:rgba(255,255,255,.14)}
+.tray-g div{filter:brightness(.8)}
+.sv[data-k="academy"],.sv-ac{filter:brightness(.8)}
+}
+
+@media (prefers-color-scheme:dark){
+.gq-side{filter:none;background:rgba(0,0,0,.26);color:#F2EEE8}
+.gq-side h4,.gq-side li{color:#F2EEE8}.gq-side li{background:rgba(255,255,255,.08)}
+.pal-studios-alt .form-card{color-scheme:dark;background:var(--dk3);border-color:var(--line);box-shadow:0 30px 60px -30px rgba(0,0,0,.8)}
+.pal-studios-alt .field input,.pal-studios-alt .field select,.pal-studios-alt .field textarea{background:rgba(0,0,0,.28);color:var(--dk-ink)}
+.pal-studios-alt .drop,.pal-studios-alt .cat .cb,.pal-studios-alt .clock,.pal-studios-alt .cal{background:rgba(0,0,0,.22)}
+.pal-studios-alt .cd{color:var(--dk-ink)}
+.pal-studios-alt .rv-note,.pal-studios-alt .rv-hint,.pal-studios-alt .pay-note{background:rgba(245,242,238,.05)}
+.pal-studios-alt .rv-err{background:rgba(139,26,42,.4);border-color:var(--borg-claro);color:var(--marfil)}
+.pal-studios-alt .slot.ok{color:#7FD197}.pal-studios-alt .slot.no{color:#F08B98}
+.pal-studios-alt .btn-ghost{color:var(--dk-ink)}
+.pal-studios-alt .logo-slot{background:rgba(245,242,238,.04)}
+.pal-studios-alt .cat input:checked+.cb,.pal-studios-alt .drop:hover,.pal-studios-alt .drop.on{background:rgba(184,160,106,.14)}
+.pal-studios-alt .hrs button[aria-pressed="true"],.pal-studios-alt .mins button[aria-pressed="true"],.pal-studios-alt .cd[aria-pressed="true"]{background:var(--oro);border-color:var(--oro);color:var(--pizarra)}
+dialog.apl{filter:invert(.9) hue-rotate(180deg) brightness(1.3);box-shadow:0 40px 90px -30px rgba(0,0,0,.9),0 0 0 1px rgba(255,255,255,.12)}
+dialog.apl::backdrop,dialog.apl.pal-academy::backdrop{background:rgba(10,10,12,.55);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+dialog:not(.apl){background:var(--dk3);color:var(--dk-ink)}
+.pn4{background:#34343A;color:var(--dk-ink)}
+.wa-bub{filter:brightness(.86)}
+}
+
 </style>
 </head>
 <body>
@@ -3197,11 +3269,16 @@ $$('[data-wa]').forEach(a=>a.href=WA+encodeURIComponent(waMsg[a.dataset.wa]));
 })();
 
 /* color de la barra del navegador: marfil en Academy, borgoña en Studios (se recrea la etiqueta para que Safari también la actualice) */
+const _mqDark=window.matchMedia?matchMedia('(prefers-color-scheme: dark)'):null;
 window.setBrowserColor=function(c){
+  /* c llega en tono claro ('#F5F2EE' Academy / '#8B1A2A' Studios); en modo oscuro del teléfono se usan sus tonos oscuros */
+  const ac=c==='#F5F2EE',dk=!!(_mqDark&&_mqDark.matches),col=ac?(dk?'#1E1E21':'#F5F2EE'):(dk?'#5F1020':'#8B1A2A');
+  window._bc=c;
   document.querySelectorAll('meta[name="theme-color"]').forEach(m=>m.remove());
-  const m=document.createElement('meta');m.name='theme-color';m.content=c;document.head.appendChild(m);
-  root.style.setProperty('background-color',c==='#F5F2EE'?'#F5F2EE':'#8B1A2A');
+  const m=document.createElement('meta');m.name='theme-color';m.content=col;document.head.appendChild(m);
+  root.style.setProperty('background-color',col);
 };
+if(_mqDark){const _f=()=>{try{window.setBrowserColor(window._bc||'#8B1A2A')}catch(e){}};_mqDark.addEventListener?_mqDark.addEventListener('change',_f):_mqDark.addListener(_f)}
 const _applyPage=applyPage;
 applyPage=function(p){
   Band.stop();const b=$('#mx-play');if(b){b.querySelector('span').textContent='Escúchalo en acción';b.querySelector('use').setAttribute('href','#i-play')}

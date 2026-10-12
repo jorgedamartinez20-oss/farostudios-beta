@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <meta name="theme-color" content="#F5F2EE">
+<meta name="theme-color" content="#1E1E21" media="(prefers-color-scheme: dark)">
 <title>Plataforma educativa y app web — Faro Academy (vista previa)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -123,6 +124,12 @@ header .links a:hover{border-color:var(--oro);transform:translateY(-2px)}
 footer{padding:26px;text-align:center;color:var(--muted);font-size:.84rem}
 @media (max-width:520px){header .sp .btn{padding:9px 14px;font-size:.8rem;white-space:nowrap}header .pill{display:none}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+/* modo oscuro automático (teléfono en oscuro); el modo claro no cambia */
+@media (prefers-color-scheme:dark){
+html{background:#151517;filter:invert(.92) hue-rotate(180deg)}
+img,video,canvas,picture,iframe,.iso,#wafab svg,[style*="background-image"]{filter:invert(1) hue-rotate(180deg)}
+}
 </style>
 </head>
 <body>

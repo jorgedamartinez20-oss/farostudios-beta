@@ -431,6 +431,13 @@ button,.btn,.chip,.nav,.tab,.stab,.seg{-webkit-user-select:none;user-select:none
 html.is-app{--top-extra:30px}
 html.is-app .top{padding-top:calc(12px + var(--top-extra) + env(safe-area-inset-top))}
 html.hand #login{visibility:hidden}#hand{display:none;position:fixed;inset:0;z-index:999;place-items:center;background:var(--paper,#F6F2EA);background-color:#F6F2EA;text-align:center;font:900 1.1rem var(--body,Lato,sans-serif);color:#252528}html.hand #hand{display:grid}#hand div{display:grid;gap:14px;justify-items:center}#hand .iso{width:34px;height:66px;background:#252528;-webkit-mask:var(--iso) center/contain no-repeat;mask:var(--iso) center/contain no-repeat;animation:hpulse 1.2s ease-in-out infinite}@keyframes hpulse{50%{opacity:.35;transform:scale(.92)}}
+
+/* modo oscuro automático (teléfono en oscuro); el modo claro no cambia */
+@media (prefers-color-scheme:dark){
+html{background:#151517;filter:invert(.92) hue-rotate(180deg)}
+img,video,canvas,picture,iframe,.iso,#wafab svg,[style*="background-image"]{filter:invert(1) hue-rotate(180deg)}
+header.top{filter:invert(1) hue-rotate(180deg)}header.top img,header.top .iso{filter:none}
+}
 </style>
 <script>if(navigator.standalone||(window.matchMedia&&matchMedia("(display-mode:standalone)").matches))document.documentElement.classList.add("is-app")</script>
 </head>
