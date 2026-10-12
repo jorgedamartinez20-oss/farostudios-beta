@@ -1715,6 +1715,104 @@ dialog:not(.apl){background:var(--dk3);color:var(--dk-ink)}
 .wa-bub{filter:brightness(.86)}
 }
 
+@media (prefers-color-scheme:dark){
+/* hero de Studios: tipografía e isotipo claros */
+#inicio.hero-light h1{color:var(--marfil)}
+#inicio.hero-light p.kick{color:var(--oro)}
+#inicio.hero-light p.kick .blink{color:#F0DEAA}
+#inicio.hero-light .lhw>img{filter:drop-shadow(0 0 34px rgba(184,160,106,.28))}
+#inicio.hero-light .glow{display:block}
+#inicio.hero-light .floor{background:radial-gradient(closest-side,rgba(0,0,0,.55),transparent)}
+#inicio.hero-light .btn-solid{background:linear-gradient(180deg,#CBB583,#B8A06A 55%,#A58E5A);color:var(--pizarra)}
+#inicio.hero-light .btn-ghost{color:var(--marfil);border-color:rgba(245,242,238,.4)}
+#inicio.hero-light .svc{color:var(--oro)}
+.pal-studios-alt .btn-ghost,.pal-academy .btn-ghost,.pal-music-alt .btn-ghost,.pal-english .btn-ghost{color:var(--ink);border-color:color-mix(in srgb,var(--ink) 40%,transparent)}
+header.nav[data-side="academy"] .sw button[data-side="studios"],header.nav[data-side="academy"] .sw button[data-side="studios"]:hover{color:var(--dk-ink)}
+header.nav[data-side="academy"] .sw:has(button[data-side="academy"]:hover) button[data-side="studios"]{color:var(--dk-ink)}
+}
+
+@media (prefers-color-scheme:dark){
+#loader[data-to="academy"]{--ld-bg:#1E1E21;--ld-f1:#F6A765;--ld-f2:#EE8A3C;--ld-f3:#A3B15F;--ld-base:rgba(245,242,238,.14);--ld-glow:rgba(238,138,60,.25)}
+#loader[data-to="english"]{--ld-bg:#241B15;--ld-f1:#EAD9B8;--ld-f2:#C9B597;--ld-f3:#A07845;--ld-base:rgba(244,241,230,.14);--ld-glow:rgba(160,120,69,.3)}
+#loader[data-to="academy"] .ld-wrap,#loader[data-to="english"] .ld-wrap{filter:drop-shadow(0 22px 22px rgba(0,0,0,.4))}
+}
+
+/* ===== v21: móvil — sin cortes en "Elige tu instrumento/nivel" ===== */
+.mat>*{min-width:0}
+@media (max-width:900px){.mat{grid-template-columns:minmax(0,1fr)}.mat .detail{padding:clamp(16px,4vw,32px)}.inst{max-width:100%}}
+
+.detail .dt-ph{width:auto;min-width:0;max-width:calc(100% + 16px)}
+.detail .dt-ph .ph-in{position:absolute;inset:3px;width:auto;height:auto}
+.detail .dt-ph{height:auto!important;min-height:0!important;aspect-ratio:16/8}
+@media (max-width:520px){.detail .dt-ph{aspect-ratio:16/10}}
+/* ===== v21: franja de plataforma visible en móvil (Academy) ===== */
+.plat-strip{display:none}
+@media (max-width:960px){
+header.nav[data-side="academy"] .plat-strip{display:flex;position:absolute;left:0;right:0;top:100%;z-index:-1;align-items:center;justify-content:center;gap:8px;min-height:38px;padding:8px 14px;text-decoration:none;font:800 .8rem/1.15 var(--body);letter-spacing:.01em;color:#F5F2EE;text-align:center;background:linear-gradient(90deg,#4F5A2A,#6E7A3D);box-shadow:0 10px 18px -12px rgba(0,0,0,.5)}
+.plat-strip .ico{width:16px;height:16px;flex:none}
+.plat-strip b{font-size:1rem;flex:none}
+html[data-page="academy"] .hero2,html[data-page="music"] .hero2,html[data-page="english"] .hero2{padding-top:calc(clamp(96px,14vw,150px) + 22px)}
+}
+@media (max-width:960px) and (max-height:720px){body:has(.wa-wrap.open) .ftabs{top:112px}}
+@media (max-width:960px){.ftabs{top:max(120px,26%)}}
+@media (prefers-color-scheme:dark){header.nav[data-side="academy"] .sw button[data-side="studios"],header.nav[data-side="academy"] .sw button[data-side="studios"][aria-selected]{color:var(--dk-ink)!important}}
+/* ===== v21: vista previa de descargas ===== */
+.dlp-art{cursor:pointer;transition:transform .5s var(--ease),box-shadow .4s}
+.dlp-art:hover,.dlp-art:focus-visible{transform:rotate(-1deg) translateY(-4px);box-shadow:0 34px 44px -16px rgba(0,0,0,.75),inset 0 0 0 1px rgba(255,255,255,.4);outline:none}
+.dlp-pvb{position:absolute;right:10px;top:10px;font:800 .6rem/1 var(--body);font-style:normal;letter-spacing:.12em;text-transform:uppercase;padding:6px 9px;border-radius:99px;background:rgba(0,0,0,.34);color:#fff;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+.dlp-art{position:relative}
+#dlg-pv{max-width:min(440px,94vw)}
+.pv-sheet{position:relative;display:grid;place-items:center;padding:18px 14px 8px;border-radius:20px;background:linear-gradient(150deg,color-mix(in srgb,var(--ap-acc2) 16%,#fff),color-mix(in srgb,var(--ap-acc) 14%,#fff));box-shadow:inset 0 0 0 1px rgba(37,37,40,.06);overflow:hidden;max-height:56vh}
+.pv-pg{width:min(100%,300px);padding:18px 18px 40px;border-radius:8px 8px 0 0;background:#fff;box-shadow:0 22px 34px -14px rgba(37,37,40,.5),0 0 0 1px rgba(37,37,40,.06);display:grid;gap:8px;align-content:start}
+.pv-top{display:flex;justify-content:space-between;align-items:baseline;border-bottom:2px solid var(--ap-acc);padding-bottom:6px}
+.pv-top b{font:400 1.1rem var(--display);letter-spacing:.08em}.pv-top span{font:700 .5rem var(--body);letter-spacing:.2em;color:#8a857b}
+.pv-pg h4{font:400 1.5rem/1 var(--display);letter-spacing:.03em;margin:6px 0 0;color:#252528}
+.pv-pg small{font:800 .55rem var(--body);letter-spacing:.18em;text-transform:uppercase;color:var(--ap-acc)}
+.pv-pg p{font-size:.78rem;line-height:1.4;color:#6a665e;margin:0}
+.pv-it{display:grid;grid-template-columns:22px 1fr;gap:8px;align-items:start;padding:7px 8px;border-radius:9px;background:rgba(37,37,40,.045)}
+.pv-it span{display:grid;place-items:center;width:22px;height:22px;border-radius:50%;background:linear-gradient(145deg,var(--ap-acc2),var(--ap-acc));color:#fff;font:800 .7rem var(--body)}
+.pv-it b{display:block;font-size:.76rem;color:#252528}.pv-it em{font-style:normal;font-size:.7rem;color:#6a665e}
+.pv-lock{position:absolute;left:0;right:0;bottom:0;display:grid;justify-items:center;gap:2px;padding:46px 14px 14px;text-align:center;background:linear-gradient(transparent,#fbf8f2 62%);color:#252528}
+.pv-lock svg{width:22px;height:22px;fill:none;stroke:var(--ap-acc);stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.pv-lock b{font-size:.84rem}.pv-lock span{font-size:.74rem;color:#6a665e}
+.pv-sheet iframe{width:100%;height:46vh;border:0;border-radius:8px;background:#fff}
+@media (prefers-color-scheme:dark){.pv-lock{background:linear-gradient(transparent,#fbf8f2 62%)}}
+/* ===== v21: reproductor de producciones — cuadro oscuro estilo Apple Music (sin teléfono) ===== */
+.amp3{position:relative;padding:clamp(18px,3vw,36px);border-radius:28px;background:linear-gradient(160deg,#1f1f23,#121214);box-shadow:inset 0 0 0 1px rgba(245,242,238,.1),0 50px 80px -40px rgba(0,0,0,.9),0 16px 30px -16px rgba(0,0,0,.6);overflow:hidden;isolation:isolate}
+.amp3-bg{position:absolute;inset:-25%;z-index:-1;background:var(--cov,linear-gradient(135deg,#8b1a2b,#3a0c14)) center/cover;filter:blur(70px) saturate(1.5);opacity:.5;transition:opacity .6s,background .6s;transform:translateZ(0)}
+.amp3.on .amp3-bg{animation:amp3Br 3.6s ease-in-out infinite}
+@keyframes amp3Br{0%,100%{opacity:.42}50%{opacity:.62}}
+.amp3::after{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(rgba(10,10,12,.35),rgba(10,10,12,.7));pointer-events:none}
+.amp3-g{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:clamp(18px,3vw,40px);align-items:stretch}
+.amp3-now{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);gap:clamp(16px,2.6vw,32px);align-items:center}
+.amp3 .amp-disc{width:100%;max-width:none;margin:0;aspect-ratio:1;transition:transform .6s var(--ease)}
+.amp3.on .amp-disc{transform:scale(1.025)}
+.amp3 .vinyl{inset:0;border-radius:18px;box-shadow:0 40px 60px -26px rgba(0,0,0,.95),0 0 0 1px rgba(255,255,255,.12)}
+.amp3 .vinyl .label{border-radius:18px}
+.amp3.on .vinyl{box-shadow:0 40px 70px -24px rgba(0,0,0,.95),0 0 40px -6px rgba(240,222,170,.35),0 0 0 1px rgba(240,222,170,.4)}
+.amp3-r{display:grid;gap:10px;min-width:0}
+.amp3 .amp-k{margin:0;text-align:left;font-size:.66rem}
+.amp3 h3{text-align:left;font-size:clamp(1.8rem,3.4vw,2.8rem);line-height:.95;margin:0}
+.amp3 .amp-a{text-align:left;margin:0 0 4px;font-size:.92rem;color:rgba(245,242,238,.75)}
+.amp3 .amp-wf{height:clamp(64px,8vw,92px);gap:3px;margin:4px 0;cursor:pointer;touch-action:none;padding:0}
+.amp3 .amp-wf i{min-width:2px;border-radius:99px;background:rgba(245,242,238,.26);transition:background .15s,transform .22s,opacity .2s}
+.amp3 .amp-wf i.on{background:linear-gradient(180deg,#F0DEAA,#B8A06A)}
+.amp3 .amp-wf i.hv{transform:scaleY(1.22);background:rgba(240,222,170,.8)}
+.amp3 .amp-wf i.on.hv{background:#fff}
+.amp3.on .amp-wf i.on{animation:eq 1.1s ease-in-out infinite;animation-delay:calc(var(--k)*-.07s)}
+.amp3 .amp-bar{margin:0;font-size:.74rem}
+.amp3 .amp-ctl{justify-content:flex-start;gap:14px;margin-top:6px}
+.amp3 .amp-ctl button{width:46px;height:46px}
+.amp3 .amp-ctl .big{width:66px;height:66px}
+.amp3-q{display:grid;grid-template-rows:auto minmax(0,1fr);height:0;min-height:100%;padding:16px 14px 14px;border-radius:20px;background:rgba(10,10,12,.46);box-shadow:inset 0 0 0 1px rgba(245,242,238,.1);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+.amp3-q .pl{align-content:start;overflow:auto;min-height:0}
+.amp3-q .pl-i{background:rgba(255,255,255,.05)}
+.amp3-q .pl-i.sel{background:rgba(184,160,106,.3)}
+@media (max-width:980px){.amp3-g{grid-template-columns:1fr}.amp3-q{height:auto;min-height:0;max-height:360px}}
+@media (max-width:560px){.amp3-now{grid-template-columns:1fr}.amp3 .amp-disc{max-width:260px;margin:0 auto}.amp3 .amp-k,.amp3 h3,.amp3 .amp-a{text-align:center}.amp3 .amp-ctl{justify-content:center}}
+@media (prefers-reduced-motion:reduce){.amp3.on .amp3-bg,.amp3.on .amp-wf i.on{animation:none}}
+.amp3 .vinyl{border:0!important;padding:0}.amp3 .vinyl .label{border:0}
+.amp3 .vinyl .label{box-shadow:none!important}
 </style>
 </head>
 <body>
@@ -1772,6 +1870,7 @@ dialog:not(.apl){background:var(--dk3);color:var(--dk-ink)}
     <button role="tab" data-side="studios" aria-selected="true">Studios</button>
     <button role="tab" data-side="academy" aria-selected="false">Academy</button>
   </div>
+<a class="plat-strip" href="plataforma.html" target="_blank" rel="noopener"><svg class="ico" aria-hidden="true"><use href="#i-compass"/></svg><span>Conoce nuestra plataforma educativa y app web</span><b aria-hidden="true">→</b></a>
 </header>
 <div class="nav-scrim" aria-hidden="true"></div>
 
@@ -1874,25 +1973,22 @@ dialog:not(.apl){background:var(--dk3);color:var(--dk-ink)}
     <i class="orb o2"></i><i class="orb o3"></i>
     <div class="wrap">
       <div class="sec-head"><div class="rule"></div><h2>Conoce nuestras producciones musicales</h2><p class="lead">Grabación, mezcla y masterización de discos y sencillos. Elige una producción y dale play. <em style="opacity:.7">(Demo visual: aquí se conectan tus audios y portadas reales.)</em></p></div>
-      <div class="amp amp2" id="amp">
-        <div class="phones">
-          <div class="mph ph-a" aria-label="Reproductor">
-            <i class="isl"></i>
-            <div class="pscr">
-              <div class="amp-disc"><div class="vinyl" id="vinyl"><div class="label"></div></div></div>
+      <div class="amp amp2 amp3" id="amp">
+        <div class="amp3-bg" aria-hidden="true"></div>
+        <div class="amp3-g">
+          <div class="amp3-now" aria-label="Reproductor">
+            <div class="amp-disc"><div class="vinyl" id="vinyl"><div class="label"></div></div></div>
+            <div class="amp3-r">
               <span class="amp-k">Ahora suena <small>· preview de 30 s</small></span>
               <h3 id="amp-t">—</h3><p class="amp-a" id="amp-a">—</p>
-              <div class="amp-wf" id="amp-wf" aria-hidden="true"></div>
+              <div class="amp-wf" id="amp-wf" role="slider" aria-label="Toca la onda para avanzar" tabindex="-1"></div>
               <div class="amp-bar"><span id="amp-c">0:00</span><input type="range" id="amp-r" min="0" max="1000" value="0" aria-label="Posición de la canción"><span id="amp-d">0:00</span></div>
               <div class="amp-ctl"><button type="button" id="amp-prev" aria-label="Anterior"><svg class="ico-f"><use href="#i-prev"/></svg></button><button type="button" class="big" id="amp-play" aria-label="Reproducir"><svg class="ico-f"><use href="#i-play"/></svg></button><button type="button" id="amp-next" aria-label="Siguiente"><svg class="ico-f"><use href="#i-next"/></svg></button></div>
             </div>
           </div>
-          <div class="mph ph-b" aria-label="Lista de producciones">
-            <i class="isl"></i>
-            <div class="pscr">
-              <div class="pl-h"><b>Producciones</b><small>Faro Studios · toca una para escucharla</small></div>
-              <div class="pl" id="amp-list" role="list"></div>
-            </div>
+          <div class="amp3-q" aria-label="Lista de producciones">
+            <div class="pl-h"><b>Producciones</b><small>Faro Studios · toca una para escucharla</small></div>
+            <div class="pl" id="amp-list" role="list"></div>
           </div>
         </div>
       </div>
@@ -2220,6 +2316,13 @@ dialog:not(.apl){background:var(--dk3);color:var(--dk-ink)}
   <h3>¿Salir sin enviar?</h3>
   <p style="color:var(--muted)">Tienes información escrita en este formulario que todavía no se ha enviado. Si sales ahora, se pierde.</p>
   <div class="row"><button class="btn btn-solid" id="lv-stay" type="button">Seguir editando</button><button class="btn btn-ghost" id="lv-go" type="button">Salir de todos modos</button></div>
+</div></dialog>
+
+<dialog id="dlg-pv" class="apl pal-academy"><div class="dlg">
+  <button class="x" data-close aria-label="Cerrar">×</button>
+  <div class="apl-hd"><span class="apl-ic"><svg class="ico"><use href="#i-file"/></svg></span><h3 id="pv-title">Vista previa</h3><p id="pv-kind"></p></div>
+  <div class="pv-sheet" id="pv-sheet"></div>
+  <button class="btn btn-solid apl-go" id="pv-dl" type="button"><svg class="ico"><use href="#i-dl"/></svg>Descargar para ver completo</button>
 </div></dialog>
 
 <dialog id="dlg-get" class="apl pal-academy"><div class="dlg">
@@ -3188,7 +3291,7 @@ function mountDlPlayer(k,D){
   const host=$('#'+k+'-dlp');if(!host)return;
   const items=[...D.plans.map((d,i)=>({id:'pl'+k[0]+(i+1),t:d[0],d:d[1],kind:'Plan de estudio'})),...D.free.map((d,i)=>({id:'fr'+k[0]+(i+1),t:d[0],d:d[1],kind:'Material gratis'}))];
   let cur=0,tick;
-  host.innerHTML='<div class="dlp-main"><div class="dlp-art"><svg class="ico"><use href="#i-file"/></svg><b></b><small>Faro Academy</small></div><div class="dlp-info"><span class="dlp-k"></span><h3></h3><p></p><div class="dlp-wf" aria-hidden="true">'+Array.from({length:28},(_,i)=>'<i style="--k:'+i+'"></i>').join('')+'</div><div class="dlp-ctl"><button type="button" class="pv" aria-label="Anterior"><svg class="ico-f"><use href="#i-prev"/></svg></button><button type="button" class="big btn btn-solid" aria-label="Descargar"><svg class="ico"><use href="#i-dl"/></svg>Descargar PDF</button><button type="button" class="nx" aria-label="Siguiente"><svg class="ico-f"><use href="#i-next"/></svg></button></div><small class="dlp-n"></small></div></div><div class="dlp-list" role="list"></div>';
+  host.innerHTML='<div class="dlp-main"><div class="dlp-art" role="button" tabindex="0" aria-label="Ver vista previa del documento"><svg class="ico"><use href="#i-file"/></svg><b></b><small>Faro Academy</small><em class="dlp-pvb">Vista previa</em></div><div class="dlp-info"><span class="dlp-k"></span><h3></h3><p></p><div class="dlp-wf" aria-hidden="true">'+Array.from({length:28},(_,i)=>'<i style="--k:'+i+'"></i>').join('')+'</div><div class="dlp-ctl"><button type="button" class="pv" aria-label="Anterior"><svg class="ico-f"><use href="#i-prev"/></svg></button><button type="button" class="big btn btn-solid" aria-label="Descargar"><svg class="ico"><use href="#i-dl"/></svg>Descargar PDF</button><button type="button" class="nx" aria-label="Siguiente"><svg class="ico-f"><use href="#i-next"/></svg></button></div><small class="dlp-n"></small></div></div><div class="dlp-list" role="list"></div>';
   const art=$('.dlp-art',host),L=$('.dlp-list',host);
   items.forEach((it,i)=>{const b=document.createElement('button');b.type='button';b.className='dlp-i';b.setAttribute('role','listitem');b.innerHTML='<span class="n">'+(i+1)+'</span><span class="t"><b></b><small></small></span><svg class="ico"><use href="#i-dl"/></svg>';$('b',b).textContent=it.t;$('small',b).textContent=it.kind;b.addEventListener('click',()=>show(i));L.appendChild(b)});
   function show(i){cur=(i+items.length)%items.length;const it=items[cur];
@@ -3198,8 +3301,15 @@ function mountDlPlayer(k,D){
     host.classList.remove('go');void host.offsetWidth;host.classList.add('go');
     const urls=SITE.pdf||{};$('.big',host).dataset.has=urls[it.id]?'1':'';}
   $('.pv',host).addEventListener('click',()=>show(cur-1));$('.nx',host).addEventListener('click',()=>show(cur+1));
-  $('.big',host).addEventListener('click',()=>{const it=items[cur],u=(SITE.pdf||{})[it.id];
-    if(u){const a=document.createElement('a');a.href=u;a.download='';a.target='_blank';a.rel='noopener';document.body.appendChild(a);a.click();a.remove();toast('Descargando: '+it.t)}else openGet(it.t,it.d,it.kind)});
+  const dlGo=it=>{const u=(SITE.pdf||{})[it.id];
+    if(u){const a=document.createElement('a');a.href=u;a.download='';a.target='_blank';a.rel='noopener';document.body.appendChild(a);a.click();a.remove();toast('Descargando: '+it.t)}else openGet(it.t,it.d,it.kind)};
+  $('.big',host).addEventListener('click',()=>dlGo(items[cur]));
+  const openPv=()=>{const it=items[cur],u=(SITE.pdf||{})[it.id],eng=k==='english',plan=it.kind==='Plan de estudio';
+    $('#pv-title').textContent=it.t;$('#pv-kind').textContent=it.kind+' · Faro Academy';
+    const sec=plan?[['Qué lograrás',eng?'Hablar, entender y escribir con más seguridad.':'Tocar piezas completas y practicar con método.'],['Etapas del año','Meses 1–3 · 4–6 · 7–9 · 10–12'],['Cómo se trabaja','Una clase por semana y práctica guiada en casa.'],['Material de apoyo','Guías, ejercicios y recursos descargables.']]:[['De qué trata',it.d],['Cómo usarlo','Paso a paso, a tu ritmo.'],['Para practicar','Ejemplos y mini ejercicios incluidos.']];
+    const body=u?'<iframe title="Vista previa del PDF" src="'+esc(u)+'#page=1&toolbar=0&navpanes=0" loading="lazy"></iframe>':'<div class="pv-pg"><div class="pv-top"><b>FARO</b><span>ACADEMY</span></div><h4>'+esc(it.t)+'</h4><small>'+esc(it.kind)+'</small><p>'+esc(it.d)+'</p>'+sec.map((s,i)=>'<div class="pv-it"><span>'+(i+1)+'</span><div><b>'+esc(s[0])+'</b><em>'+esc(s[1])+'</em></div></div>').join('')+'</div><div class="pv-lock"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg><b>Hay más páginas</b><span>Descarga el documento para verlo completo.</span></div>';
+    $('#pv-sheet').innerHTML=body;$('#pv-dl').onclick=()=>{$('#dlg-pv').close();dlGo(it)};$('#dlg-pv').showModal()};
+  art.addEventListener('click',openPv);art.addEventListener('keydown',ev=>{if(ev.key==='Enter'||ev.key===' '){ev.preventDefault();openPv()}});
   show(0);
 }
 ['music','english'].forEach(k=>{$('#p-'+k).innerHTML=pageHTML(k);bindPage(k)});
@@ -3815,6 +3925,20 @@ window.rebuildPortfolio&&window.rebuildPortfolio();
 /* ===== v12 ===== */
 
 
+</script>
+<script>
+/* ===== v12 ===== */
+(function(){
+  const wf=document.getElementById('amp-wf'),r=document.getElementById('amp-r');if(!wf||!r)return;
+  const bars=()=>[...wf.children];let drag=false;
+  const frac=ev=>{const b=wf.getBoundingClientRect();return Math.min(1,Math.max(0,(ev.clientX-b.left)/b.width))};
+  const seek=ev=>{r.value=Math.round(frac(ev)*1000);r.dispatchEvent(new Event('input'))};
+  const hv=ev=>{const n=bars(),c=Math.round(frac(ev)*(n.length-1));n.forEach((b,k)=>b.classList.toggle('hv',Math.abs(k-c)<=2))};
+  wf.addEventListener('pointerdown',ev=>{drag=true;try{wf.setPointerCapture(ev.pointerId)}catch(x){}seek(ev);hv(ev)});
+  wf.addEventListener('pointermove',ev=>{hv(ev);if(drag)seek(ev)});
+  wf.addEventListener('pointerup',()=>{drag=false});wf.addEventListener('pointercancel',()=>{drag=false});
+  wf.addEventListener('pointerleave',()=>{if(!drag)bars().forEach(b=>b.classList.remove('hv'))});
+})();
 </script>
 <script>
 /* ===== Configuración remota: lo que cargas en Admin > Sitio web (fotos, audios, PDFs, textos, contacto) ===== */

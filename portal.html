@@ -21,7 +21,7 @@
 :root{
   --pizarra:#252528;--borgona:#8B1A2A;--oro:#B8A06A;--marfil:#F5F2EE;--crema:#F4F1E6;
   --oliva:#6E7A3D;--oliva-d:#4F5A2A;--oliva-c:#A3B15F;
-  --y:#E0B63E;--yd:#B58E1F;--c:#E4664F;--cd:#B84A36;--t:#3FA7A3;--td:#2C7F7C;--g:#6E7A3D;--gd:#4F5A2A;--b:#8B1A2A;--bd:#5E101C;
+  --y:#E0B63E;--yd:#B58E1F;--c:#E4664F;--cd:#B84A36;--t:#3FA7A3;--td:#2C7F7C;--g:#3A3A40;--gd:#1C1C1E;--b:#8B1A2A;--bd:#5E101C;
   --ink:#252528;--muted:#5A5853;--card:#FBF9F4;--line:rgba(37,37,40,.08);
   /* escala áurea 1.618 sobre 18 px */
   --t0:1.125rem;--t1:1.82rem;--t2:2.94rem;--t3:4.76rem;--tm:1rem;
@@ -432,6 +432,20 @@ html.is-app{--top-extra:30px}
 html.is-app .top{padding-top:calc(12px + var(--top-extra) + env(safe-area-inset-top))}
 html.hand #login{visibility:hidden}#hand{display:none;position:fixed;inset:0;z-index:999;place-items:center;background:var(--paper,#F6F2EA);background-color:#F6F2EA;text-align:center;font:900 1.1rem var(--body,Lato,sans-serif);color:#252528}html.hand #hand{display:grid}#hand div{display:grid;gap:14px;justify-items:center}#hand .iso{width:34px;height:66px;background:#252528;-webkit-mask:var(--iso) center/contain no-repeat;mask:var(--iso) center/contain no-repeat;animation:hpulse 1.2s ease-in-out infinite}@keyframes hpulse{50%{opacity:.35;transform:scale(.92)}}
 
+
+/* ===== v21: nuevo juego de contrastes (sin bloques sólidos de color ni verde) ===== */
+.tile{--ta:var(--pizarra);--tc:rgba(37,37,40,.08);--tk:var(--pizarra);background:var(--card);color:var(--ink);border:1.5px solid rgba(37,37,40,.08);box-shadow:0 18px 30px -22px rgba(37,37,40,.45)!important;padding:22px 16px 26px}
+.tile::after{content:"";position:absolute;left:18%;right:18%;bottom:0;height:5px;border-radius:5px 5px 0 0;background:var(--ta)}
+.tile .ico{box-sizing:content-box;padding:11px;border-radius:16px;background:var(--tc);color:var(--tk);margin-bottom:4px}
+.tile b{color:var(--ink)}.tile span{color:var(--muted)}
+.tile.y{--ta:var(--y);--tc:rgba(224,182,62,.2);--tk:#8A6A10;background:var(--card);color:var(--ink)}
+.tile.c{--ta:var(--c);--tc:rgba(228,102,79,.16);--tk:#B84A36;background:var(--card)}
+.tile.t{--ta:var(--t);--tc:rgba(63,167,163,.16);--tk:#2C7F7C;background:var(--card)}
+.tile.g{--ta:var(--pizarra);--tc:rgba(37,37,40,.09);--tk:var(--pizarra);background:var(--card)}
+.tile.b{--ta:var(--borgona);--tc:rgba(139,26,42,.12);--tk:var(--borgona);background:var(--card)}
+.av{background:var(--pizarra);color:var(--oro);box-shadow:0 5px 0 #000}
+body.sv .av{background:var(--pizarra)}
+.node.done{background:var(--pizarra);box-shadow:0 8px 0 #000}
 /* modo oscuro automático (teléfono en oscuro); el modo claro no cambia */
 @media (prefers-color-scheme:dark){
 html{background:#151517;filter:invert(.92) hue-rotate(180deg)}
