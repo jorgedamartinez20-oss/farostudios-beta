@@ -1,0 +1,29 @@
+name: Mantener Supabase despierto
+
+# Hace una consulta de solo lectura a Supabase cada 3 días para que el plan
+# gratuito no pause el proyecto "Faro Studios" por inactividad.
+# No manda visitas a la web ni toca las estadísticas: solo lee la tabla pública
+# sitio_config, la misma que la web ya lee al cargar.
+# La llave "publishable" es pública por diseño (igual que en worker/wrangler.toml).
+
+on:
+  schedule:
+    - cron: '17 14 */3 * *'
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Consultar sitio_config
+        env:
+          SUPABASE_URL: https://keivqvsgdfhthouzlqxo.supabase.co
+          SUPABASE_KEY: sb_publishable_5nj3M7rjQs3phGU6u2uNqw_3tjTL6PE
+        run: |
+          curl --fail --silent --show-error --retry 3 --retry-delay 10 \
+            -H "apikey: $SUPABASE_KEY" \
+            "$SUPABASE_URL/rest/v1/sitio_config?select=clave&limit=1" \
+            -o /dev/null -w "Supabase respondió: HTTP %{http_code}\n"
