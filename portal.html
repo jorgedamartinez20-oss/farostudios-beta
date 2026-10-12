@@ -505,6 +505,7 @@ header.top{filter:invert(1) hue-rotate(180deg)}header.top img,header.top .iso{fi
 <div id="login"></div>
 <div class="sheet" id="sheet" role="dialog" aria-live="polite"></div>
 <script src="herramientas.js"></script>
+<script src="perfil.js"></script>
 <script>
 /* ============ PORTAL FARO · conectado a Supabase ============ */
 const $=(s,r=document)=>r.querySelector(s),$$=(s,r=document)=>[...r.querySelectorAll(s)];
@@ -539,6 +540,8 @@ async function api(path,o){
   let r=await go();if(r.status===401&&await refreshSes())r=await go();
   if(r.status===401){salir(true);throw new Error('sesion')}return r}
 const rows=async(t,qs)=>{try{const r=await api('/rest/v1/'+t+'?'+qs);return r.ok?await r.json():[]}catch(e){return[]}};
+/* avatar y color de cada persona (perfil.js; se guarda en perfiles_ws) */
+try{FaroPerfil.iniciar({modo:'pt',api:(p,o)=>api(p,o),uid:()=>jwtSub()})}catch(e){}
 /* Archivos en R2 (servicio faro-archivos). La base de datos decide quién puede ver, subir o borrar cada ruta. */
 const RW='https://faro-archivos.jorgedamartinez20.workers.dev';
 const esR2=r=>/^faro-(academy|studios)\//.test(r||'');
@@ -655,7 +658,7 @@ function renderSide(){
   else if(S.rol==='cliente'){const c=S.cli.k;me='<div class="av" style="background:var(--c);box-shadow:0 5px 0 var(--cd)">'+ic('camera')+'</div><h3>'+esc(c.nombre)+'</h3><small>'+esc(c.proyecto||'Tu proyecto')+'</small>'}
   else{me='<div class="av" style="background:var(--b);box-shadow:0 5px 0 var(--bd)">'+ic('users')+'</div><h3>'+esc((S.perfil.usuario||'Encargado'))+'</h3><small>'+S.kids.length+(S.kids.length===1?' estudiante':' estudiantes')+' en Faro Academy</small>'}
   $('#me').innerHTML=me;
-  $('#me .av .ico')&&($('#me .av .ico').style.cssText='width:44px;height:44px');$$('#me .iso').forEach(e=>e.style.height='50px');
+  $('#me .av .ico')&&($('#me .av .ico').style.cssText='width:44px;height:44px');$$('#me .iso').forEach(e=>e.style.height='50px');try{FaroPerfil.portalMe()}catch(e){}
   const pend=S.rol==='alumno'?K().tareas.filter(t=>t.estado==='pendiente').length:0;
   const NV=navDe(),MAXM=5;
   // En el celular caben 5 botones: los 4 más usados + "Más". En computadora se ven todos.
@@ -1153,10 +1156,11 @@ async function iniciar(esperado){
       S.kid=S.kids[0].id;S.D[S.kid]=await cargarAlumno(S.kid);S.page='resumen'}
     else if(p.rol==='docente'){S.doc=await cargarDocente(p);S.page='d-inicio'}
     else{S.cli=await cargarCliente(p.cliente.id);S.page='c-inicio'}
+    try{FaroPerfil.entrar()}catch(e){}
     render()}
   catch(e){if(e.message!=='sesion'){salir(true);loginUI('No pudimos entrar ahora. Intenta de nuevo en un momento.')}}
 }
-function salir(silencio){window.FaroTools&&FaroTools.stop();pracStop();plStop();SES=null;try{sessionStorage.removeItem('faro_portal');localStorage.removeItem('faro_portal')}catch(e){}S.rol=null;S.D={};S.cli=null;S.doc=null;S.perfil=null;if(!silencio){render()}}
+function salir(silencio){try{FaroPerfil.salir()}catch(e){}window.FaroTools&&FaroTools.stop();pracStop();plStop();SES=null;try{sessionStorage.removeItem('faro_portal');localStorage.removeItem('faro_portal')}catch(e){}S.rol=null;S.D={};S.cli=null;S.doc=null;S.perfil=null;if(!silencio){render()}}
 $('#out').onclick=()=>salir();
 ['gesturestart','gesturechange','gestureend'].forEach(g=>document.addEventListener(g,e=>e.preventDefault()));
 ['pointerdown','keydown','touchstart','scroll'].forEach(ev=>addEventListener(ev,()=>{if(SES)actMarca()},{passive:true,capture:true}));
