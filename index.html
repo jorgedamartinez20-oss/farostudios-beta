@@ -1615,6 +1615,34 @@ header.nav[data-side="academy"] .sw button[data-side="studios"]:hover{color:#000
 @media (max-width:1100px){.yr-grid{grid-template-columns:1fr}}
 @media (max-width:760px){.yr-lay{grid-template-columns:1fr}.yr-steps{grid-template-columns:1fr 1fr}.yr-b[aria-pressed="true"],.yr-b:hover,.yr-b[aria-pressed="true"]:hover{transform:none}}
 
+/* ===== v18: tablero mostaza, contenedor del año, diálogo de descarga, marfil arriba ===== */
+.shp.r{background:none!important;border:5px solid var(--col);border-radius:50%}
+.docs{background-image:radial-gradient(rgba(42,42,26,.22) 1.6px,transparent 2px),radial-gradient(rgba(251,248,242,.35) 1.2px,transparent 1.6px)!important;background-size:22px 22px,22px 22px!important;background-position:0 0,11px 11px!important}
+.docs::after{content:"";position:absolute;left:0;right:0;bottom:0;height:46%;pointer-events:none;z-index:0;background:linear-gradient(rgba(42,42,26,.14) 1px,transparent 1px) 0 0/44px 44px,linear-gradient(90deg,rgba(42,42,26,.14) 1px,transparent 1px) 0 0/44px 44px;-webkit-mask-image:linear-gradient(transparent,#000 70%);mask-image:linear-gradient(transparent,#000 70%)}
+.dgeo{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:14px;margin-top:clamp(28px,5vw,52px)}
+.dgeo i{display:block;width:clamp(26px,4.4vw,52px);height:clamp(26px,4.4vw,52px);background:var(--c);animation:dgf 6s ease-in-out infinite;box-shadow:0 10px 14px -8px rgba(0,0,0,.35)}
+.dgeo i:nth-child(odd){animation-delay:-2.4s}.dgeo i:nth-child(3n){animation-delay:-4.2s}
+.dgeo i.c{border-radius:50%}.dgeo i.q{border-radius:10px;transform:rotate(14deg)}
+.dgeo i.r{background:none;border:5px solid var(--c);border-radius:50%;box-shadow:none}
+.dgeo i.t{width:0;height:0;background:none;box-shadow:none;border-left:calc(clamp(26px,4.4vw,52px)/2) solid transparent;border-right:calc(clamp(26px,4.4vw,52px)/2) solid transparent;border-bottom:clamp(26px,4.4vw,52px) solid var(--c)}
+@keyframes dgf{0%,100%{translate:0 0}50%{translate:0 -10px}}
+.yr-box{padding:clamp(14px,2.4vw,28px);border-radius:28px;background:rgba(255,255,255,.78);box-shadow:0 34px 60px -34px rgba(60,40,20,.55),inset 0 0 0 1px rgba(255,255,255,.7);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)}
+.pal-music.yr .yr-box{background:rgba(0,0,0,.26);box-shadow:0 34px 60px -30px rgba(0,0,0,.6),inset 0 0 0 1px rgba(255,255,255,.14)}
+dialog.apl.pal-academy::backdrop{background:rgba(245,242,238,.62);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+#dlg-get{max-width:min(440px,94vw)}
+.gp{position:relative;height:210px;display:grid;place-items:center;border-radius:20px;background:linear-gradient(150deg,color-mix(in srgb,var(--ap-acc2) 16%,#fff),color-mix(in srgb,var(--ap-acc) 14%,#fff));box-shadow:inset 0 0 0 1px rgba(37,37,40,.06);overflow:hidden}
+.gp-pg{position:relative;z-index:1;width:150px;height:186px;padding:14px 14px 12px;border-radius:8px;background:#fff;box-shadow:0 22px 34px -14px rgba(37,37,40,.5),0 0 0 1px rgba(37,37,40,.06);transform:rotate(-4deg);display:grid;align-content:start;gap:5px}
+.gp-b{position:absolute;z-index:0;padding:0;transform:rotate(5deg) translate(34px,4px);background:#F3EDE0}
+.gp-top{display:flex;justify-content:space-between;align-items:baseline;border-bottom:2px solid var(--ap-acc);padding-bottom:5px}
+.gp-top b{font:400 .95rem var(--display);letter-spacing:.08em}.gp-top span{font:700 .46rem var(--body);letter-spacing:.2em;color:#8a857b}
+.gp-t{font:400 1.1rem/1 var(--display);letter-spacing:.03em;margin-top:6px;color:#252528}
+.gp-pg small{font:800 .46rem var(--body);letter-spacing:.18em;text-transform:uppercase;color:var(--ap-acc)}
+.gp-pg p{font-size:.5rem;line-height:1.35;color:#6a665e;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;margin:2px 0}
+.gp-pg i{display:block;height:4px;border-radius:2px;background:rgba(37,37,40,.12)}.gp-pg i.s{width:62%}
+.gp-ch{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-top:4px}
+.gp-ch em{height:22px;border-radius:5px;background:linear-gradient(135deg,var(--ap-acc2),var(--ap-acc));opacity:.85}.gp-ch em:nth-child(2n){opacity:.5}
+.gp-tag{position:absolute;z-index:2;left:12px;top:12px;padding:5px 10px;border-radius:99px;background:#252528;color:#fff;font:800 .62rem var(--body);letter-spacing:.14em;text-transform:uppercase}
+@media (prefers-reduced-motion:reduce){.dgeo i{animation:none}}
 </style>
 </head>
 <body>
@@ -2122,13 +2150,14 @@ header.nav[data-side="academy"] .sw button[data-side="studios"]:hover{color:#000
   <div class="row"><button class="btn btn-solid" id="lv-stay" type="button">Seguir editando</button><button class="btn btn-ghost" id="lv-go" type="button">Salir de todos modos</button></div>
 </div></dialog>
 
-<dialog id="dlg-get"><div class="dlg">
+<dialog id="dlg-get" class="apl pal-academy"><div class="dlg">
   <button class="x" data-close aria-label="Cerrar">×</button>
-  <h3 id="get-title">Descargar</h3>
-  <p style="color:var(--muted)">Déjanos tus datos y te enviamos novedades, o descarga directo.</p>
-  <label>Nombre<input id="get-name" autocomplete="name"></label>
-  <label>Correo o WhatsApp<input id="get-contact" autocomplete="email"></label>
-  <div class="row"><button class="btn btn-solid" id="get-ok">Descargar</button><button class="btn btn-ghost" id="get-skip">Descargar sin datos</button></div>
+  <div class="apl-hd"><span class="apl-ic"><svg class="ico"><use href="#i-dl"/></svg></span><h3 id="get-title">Descargar</h3><p>Mira de qué trata y llévatelo gratis.</p></div>
+  <div class="gp" aria-label="Vista previa del documento"><div class="gp-pg"><div class="gp-top"><b>FARO</b><span>ACADEMY</span></div><div class="gp-t" id="get-pt">Documento</div><small id="get-pk">Plan de estudio</small><p id="get-pd"></p><i></i><i></i><i class="s"></i><div class="gp-ch"><em></em><em></em><em></em><em></em></div></div><div class="gp-pg gp-b"></div><span class="gp-tag">Vista previa</span></div>
+  <div class="apl-f2"><label class="apl-f"><span>Nombre</span><input id="get-name" autocomplete="name" maxlength="120" placeholder="Tu nombre"></label>
+  <label class="apl-f"><span>Correo o WhatsApp</span><input id="get-contact" autocomplete="email" maxlength="160" placeholder="tucorreo@ejemplo.com"></label></div>
+  <button class="btn btn-solid apl-go" id="get-ok" type="button"><svg class="ico"><use href="#i-dl"/></svg>Descargar</button>
+  <div class="apl-help">Tus datos solo sirven para enviarte novedades. <a href="#" id="get-skip">Descargar sin datos</a></div>
 </div></dialog>
 
 <dialog id="dlg-lb"><div class="dlg">
@@ -2269,9 +2298,9 @@ function card(d){
   $('button',el).addEventListener('click',()=>openGet(d[0]));
   return el;
 }
-function openGet(name){pending=name;$('#get-title').textContent=name;$('#dlg-get').showModal()}
+function openGet(name,desc,kind){pending=name;$('#get-title').textContent=name;$('#get-pt').textContent=name;$('#get-pd').textContent=desc||'Documento de Faro Academy con el contenido, las etapas y los materiales de apoyo.';$('#get-pk').textContent=kind||'Plan de estudio';$('#dlg-get').showModal()}
 $('#get-ok').addEventListener('click',()=>{$('#dlg-get').close();toast('Listo: "'+pending+'" se descargaría ahora (demo)')});
-$('#get-skip').addEventListener('click',()=>{$('#dlg-get').close();toast('Listo: "'+pending+'" se descargaría ahora (demo)')});
+$('#get-skip').addEventListener('click',ev=>{ev.preventDefault();$('#dlg-get').close();toast('Listo: "'+pending+'" se descargaría ahora (demo)')});
 $$('dialog').forEach(d=>{d.addEventListener('click',e=>{if(e.target===d||e.target.closest('[data-close]'))d.close()})});
 
 /* ---------- Agenda Studios (Supabase) ---------- */
@@ -2891,13 +2920,14 @@ function pageHTML(k){
     <div class="cta"><a class="btn btn-solid" href="#${k}-plan">Ver plan de estudios</a><a class="btn btn-solid btn-wa" data-wa="${k}" target="_blank" rel="noopener" href="#"><svg class="ico"><use href="#i-wa"/></svg>Reservar clase por WhatsApp</a></div>
     <div class="widget">${eng?`<small>Toca una frase: la escuchas en inglés y ves su significado.</small><div class="phrases" id="phrases"></div>`:`<small>Toca las teclas o usa A S D F G H J K en tu teclado.</small><div class="piano" id="keys"></div>`}</div>
   </div></section>
-  ${eng?`<section class="docs sec pal-english" id="english-docentes" style="background:var(--p3)!important">${shapes([['c','60px','88%','20%','#fff'],['q','40px','6%','70%','var(--p2)'],['c','26px','50%','8%','var(--p3)']])}<div class="wrap">
+  ${eng?`<section class="docs sec pal-english" id="english-docentes" style="background:var(--p3)!important">${shapes([['c','60px','88%','20%','#fff'],['q','40px','6%','70%','var(--p2)'],['c','26px','50%','8%','var(--p3)'],['r','74px','3%','84%','#2a2a1a'],['t','46px','90%','88%','#FBF8F2'],['c','18px','24%','92%','#4F5A2A'],['q','30px','62%','90%','var(--p2)'],['r','44px','78%','72%','#FBF8F2'],['c','14px','40%','86%','#2a2a1a'],['t','30px','14%','56%','#4F5A2A'],['q','22px','96%','60%','#2a2a1a']])}<div class="wrap">
     <div class="sec-head"><div class="rule"></div><h2>¿Eres maestro o maestra y quieres <span class="hl-b">mejorar tus clases</span>?</h2><p class="lead">Mejora tu inglés y tus clases con un plan hecho para docentes. Precio especial para docentes de nivel medio.</p></div>
     <div class="tcards">
      <div class="tcard"><svg class="ico"><use href="#i-award"/></svg><h3>Plan de capacitación</h3><p>Sesiones en línea para mejorar tu inglés y el contenido que llevas a tu aula. Precio especial para docentes de nivel medio.</p><a class="btn btn-solid" data-wa="docentes" target="_blank" rel="noopener" href="#">Quiero el plan</a></div>
      <div class="tcard"><svg class="ico"><use href="#i-chat"/></svg><h3>Charlas para tu centro</h3><p>¿Prefieres llevar esto a todo tu equipo? Damos charlas para tu centro educativo.</p><a class="btn btn-solid" data-wa="charlas" target="_blank" rel="noopener" href="#">Pedir una charla</a></div>
      <div class="tcard"><svg class="ico"><use href="#i-layers"/></svg><h3>Material para tus clases</h3><p>Actividades, vocabulario y recursos listos para usar con tus estudiantes.</p><a class="btn btn-solid" data-wa="docentes" target="_blank" rel="noopener" href="#">Preguntar</a></div>
-    </div></div></section>`:''}
+    </div>
+    <div class="dgeo" aria-hidden="true"><i class="c" style="--c:#FBF8F2"></i><i class="r" style="--c:#2a2a1a"></i><i class="q" style="--c:#4F5A2A"></i><i class="t" style="--c:#FBF8F2"></i><i class="c" style="--c:#2a2a1a"></i><i class="r" style="--c:#FBF8F2"></i><i class="q" style="--c:var(--p2)"></i><i class="c" style="--c:#4F5A2A"></i><i class="t" style="--c:#2a2a1a"></i><i class="r" style="--c:#4F5A2A"></i><i class="q" style="--c:#FBF8F2"></i><i class="c" style="--c:var(--p2)"></i></div></div></section>`:''}
 
   <section class="sec pal-${k}-alt fl" id="${k}-plan"><i class="orb o1"></i><i class="orb o3"></i><div class="wrap">
     <div class="sec-head"><div class="rule"></div><h2>${D.learnTitle}</h2><p class="lead">${D.learnLead}</p></div>
@@ -2912,8 +2942,8 @@ function pageHTML(k){
 
   <section class="yr sec pal-${k}" id="${k}-year" data-ph="0"><canvas id="${k}-fx" aria-hidden="true"></canvas><div class="wrap">
     <div class="sec-head"><div class="rule"></div><h2>Tu año en cuatro etapas</h2><p class="lead">${D.yearLead}</p></div>
-    <div class="yr-lay"><div class="yr-steps" id="${k}-steps"></div>
-    <div class="yr-grid"><div class="yr-card" id="${k}-yinfo"></div><div class="yr-card"><h4>Tu progreso</h4><div id="${k}-ymet"></div><svg class="yr-line" id="${k}-yline" viewBox="0 0 340 150" role="img" aria-label="Gráfica de progreso por etapa"></svg><p class="yr-note">Ilustración del avance típico. Cada estudiante avanza a su ritmo.</p></div></div></div>
+    <div class="yr-box"><div class="yr-lay"><div class="yr-steps" id="${k}-steps"></div>
+    <div class="yr-grid"><div class="yr-card" id="${k}-yinfo"></div><div class="yr-card"><h4>Tu progreso</h4><div id="${k}-ymet"></div><svg class="yr-line" id="${k}-yline" viewBox="0 0 340 150" role="img" aria-label="Gráfica de progreso por etapa"></svg><p class="yr-note">Ilustración del avance típico. Cada estudiante avanza a su ritmo.</p></div></div></div></div>
   </div></section>
 
   <section class="sec pal-${k}-alt" id="${k}-clases"><div class="wrap">
@@ -3097,7 +3127,7 @@ function mountDlPlayer(k,D){
     const urls=SITE.pdf||{};$('.big',host).dataset.has=urls[it.id]?'1':'';}
   $('.pv',host).addEventListener('click',()=>show(cur-1));$('.nx',host).addEventListener('click',()=>show(cur+1));
   $('.big',host).addEventListener('click',()=>{const it=items[cur],u=(SITE.pdf||{})[it.id];
-    if(u){const a=document.createElement('a');a.href=u;a.download='';a.target='_blank';a.rel='noopener';document.body.appendChild(a);a.click();a.remove();toast('Descargando: '+it.t)}else openGet(it.t)});
+    if(u){const a=document.createElement('a');a.href=u;a.download='';a.target='_blank';a.rel='noopener';document.body.appendChild(a);a.click();a.remove();toast('Descargando: '+it.t)}else openGet(it.t,it.d,it.kind)});
   show(0);
 }
 ['music','english'].forEach(k=>{$('#p-'+k).innerHTML=pageHTML(k);bindPage(k)});
