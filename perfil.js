@@ -21,6 +21,7 @@
       case 'bob': back = `<path d="M31 46Q28 20 50 20Q72 20 69 46L70 64Q50 70 30 64Z" fill="${h}"/>`; front = `<path d="M32 44Q34 26 50 27Q66 26 68 44Q56 31 50 36Q44 31 32 44Z" fill="${h}"/>`; break;
       case 'shoulder': back = `<path d="M29 46Q26 19 50 19Q74 19 71 46L73 74Q50 80 27 74Z" fill="${h}"/>`; front = `<path d="M32 44Q34 26 50 27Q66 26 68 44Q58 33 50 35Q42 33 32 44Z" fill="${h}"/>`; break;
       case 'mshoulder': back = `<path d="M30 46Q27 20 50 20Q73 20 70 46L72 76Q50 70 28 76Z" fill="${h}"/>`; front = `<path d="M32 44Q33 24 50 25Q67 24 68 44Q56 35 50 30Q44 35 32 44Z" fill="${h}"/>`; break;
+      case 'semi': back = `<path d="M30 46Q27 19 50 19Q73 19 70 46L69 59Q66 52 66 46L34 46Q34 52 31 59Z" fill="${h}"/>`; front = `<path d="M31 45Q29 22 50 22Q71 22 69 45Q66 34 60 33Q50 38 38 31Q33 36 31 45Z" fill="${h}"/>`; break;
       case 'braids': back = `<rect x="26" y="44" width="9" height="42" rx="4.5" fill="${h}"/><rect x="65" y="44" width="9" height="42" rx="4.5" fill="${h}"/>`; front = `<path d="M32 44Q31 24 50 24Q69 24 68 44Q58 34 50 36Q42 34 32 44Z" fill="${h}"/>`; break;
       case 'short': front = `<path d="M32 42Q30 21 50 21Q70 21 68 42Q62 31 50 32Q38 31 32 42Z" fill="${h}"/>`; break;
       case 'wavy': front = `<path d="M31 43Q28 19 52 21Q72 23 69 43Q65 29 50 31Q38 33 31 43Z" fill="${h}"/><circle cx="40" cy="26" r="6" fill="${h}"/>`; break;
@@ -50,14 +51,14 @@
     { g: 'M', skin: '#F0C8A4', hair: '#7A4A2A', bg: '#DCE3EE', shirt: '#4A6670', style: 'bun' },
     { g: 'M', skin: '#E3AE86', hair: '#3A2218', bg: '#F0E3C8', shirt: '#B8923A', style: 'bob' },
     { g: 'M', skin: '#6F4630', hair: '#151010', bg: '#E9D8EA', shirt: '#7B5E8C', style: 'braids' },
-    { g: 'M', skin: '#EBC3A0', hair: '#8A5A35', bg: '#F3E1D6', shirt: '#C4876F', style: 'shoulder', glasses: 'thick' },
+    { g: 'M', skin: '#EBC3A0', hair: '#1A1413', bg: '#F3E1D6', shirt: '#C4876F', style: 'shoulder', glasses: 'thick' },
     { g: 'H', skin: '#B87A55', hair: '#231713', bg: '#DDE6EE', shirt: '#E9A98A', style: 'short' },
     { g: 'H', skin: '#7A4B32', hair: '#181010', bg: '#F2E0C9', shirt: '#2F3A40', style: 'curly' },
     { g: 'H', skin: '#D9A27A', hair: '#2A1D18', bg: '#D8E6D9', shirt: '#6B1F2E', style: 'bald', beard: 1 },
     { g: 'H', skin: '#F0C8A4', hair: '#5A3A24', bg: '#EBDCCB', shirt: '#4A6670', style: 'wavy' },
     { g: 'H', skin: '#C58B63', hair: '#1F1613', bg: '#E3DCEF', shirt: '#6B7A3A', style: 'pony', beard: 1 },
     { g: 'H', skin: '#F6DCC6', hair: '#E4C26A', bg: '#DCE8EE', shirt: '#8FA7BF', style: 'short' },
-    { g: 'H', skin: '#E2B28C', hair: '#4A3020', bg: '#DDE4D6', shirt: '#5E7A6B', style: 'mshoulder', glasses: 'thin' }
+    { g: 'H', skin: '#E2B28C', hair: '#4A3020', bg: '#DDE4D6', shirt: '#5E7A6B', style: 'semi', glasses: 'thin' }
   ];
   /* -1 = personaje gris · null = todavía no eligió */
   function avatarSvg(i) { return i === -1 ? neutro() : AVS[i] ? persona(AVS[i]) : neutro(); }
