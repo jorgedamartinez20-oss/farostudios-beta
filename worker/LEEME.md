@@ -13,7 +13,8 @@ faro-privado/
 ├─ faro-studios/
 │   ├─ agencias/<agencia>/archivo          (sin subcarpetas por ahora)
 │   ├─ corporativo/<empresa>/archivo
-│   └─ clientes-individuales/<cliente>/archivo
+│   ├─ clientes-individuales/<cliente>/archivo
+│   └─ contenido/<AAAA-MM-DD>/archivo        (publicaciones para redes, una carpeta por día)
 └─ faro-academy/
     ├─ ingles/   contenido-de-clase · material-didactico · videos · ejercicios · clases
     │            alumnos/<alumno>/…  (lo que sube el alumno)

@@ -80,7 +80,7 @@ let n = 0; const ok = (m) => console.log('  ✓ ' + m, ++n && '');
 // utilidades
 assert.equal(slug('Maxi Despensa — Mamá Lucha'), 'maxi-despensa-mama-lucha'); ok('slug quita tildes y símbolos');
 assert.equal(nombreArchivo('Aftermovie Final (v2).mp4'), 'Aftermovie-Final-(v2).mp4'); ok('nombreArchivo limpia espacios');
-assert.equal(DESTINOS.length, 3 + 2 * 7 + 5 + 3 + 6); ok('árbol: ' + DESTINOS.length + ' carpetas base');
+assert.equal(DESTINOS.length, 4 + 2 * 7 + 5 + 3 + 6); ok('árbol: ' + DESTINOS.length + ' carpetas base');
 
 // CORS
 let r = await q('/api/arbol', { method: 'OPTIONS', headers: { Origin: ORI } });
@@ -113,6 +113,17 @@ for (const mala of ['otra-carpeta/x.mp4', 'faro-studios/agencias/maxi-despensa/s
   assert.equal(r.status, 400, mala);
 }
 ok('rechaza rutas fuera del árbol (y subcarpetas bajo cada agencia)');
+// contenido para redes: una carpeta por día (AAAA-MM-DD), sin subcarpetas
+for (const buena of ['faro-studios/contenido/2026-10-13/carrusel-01.png', 'faro-studios/contenido/2026-10-13/story-1.mp4']) {
+  r = await q(`/api/subir?bucket=privado&key=${encodeURIComponent(buena)}`, { method: 'PUT', headers: { ...A, 'Content-Length': '8' }, body: cuerpo });
+  assert.equal(r.status, 200, buena);
+}
+for (const mala of ['faro-studios/contenido/2026-10-13/sub/x.png', 'faro-studios/contenido/x.png', 'faro-studios/contenido/2026-10-13/mi archivo.png']) {
+  r = await q(`/api/subir?bucket=privado&key=${encodeURIComponent(mala)}`, { method: 'PUT', headers: { ...A, 'Content-Length': '8' }, body: cuerpo });
+  assert.equal(r.status, 400, mala);
+}
+for (const k of ['faro-studios/contenido/2026-10-13/carrusel-01.png', 'faro-studios/contenido/2026-10-13/story-1.mp4']) env.PRIVADO.m.delete(k); // no ensuciar las estadísticas de las pruebas siguientes
+ok('contenido en redes: carpeta por día, sin subcarpetas');
 // documentos del director: catálogos planos; SAT por año
 for (const buena of ['documentos/catalogos/Catalogo-2026.pdf', 'documentos/sat/2026/2026-10-IVA.pdf']) {
   r = await q(`/api/subir?bucket=privado&key=${encodeURIComponent(buena)}`, { method: 'PUT', headers: { ...A, 'Content-Length': '8' }, body: cuerpo });

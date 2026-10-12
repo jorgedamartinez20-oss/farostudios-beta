@@ -11,6 +11,7 @@ const STUDIOS = [
   ['agencias', 'Agencias'],
   ['corporativo', 'Corporativo'],
   ['clientes-individuales', 'Clientes individuales'],
+  ['contenido', 'Contenido en redes'], // una carpeta por día: contenido/AAAA-MM-DD/archivo
 ];
 const AREAS = [['ingles', 'Inglés'], ['musica', 'Música']];
 const CATS_ACADEMY = [
