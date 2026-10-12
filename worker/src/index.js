@@ -164,6 +164,37 @@ async function esAdmin(request, env) {
   return ok;
 }
 
+/* ---------- Lectores del equipo (permiso "ver_archivos": solo ver y descargar) ---------- */
+const CACHE_LECTOR = new Map();
+async function esLector(request, env) {
+  const m = /^Bearer\s+(.+)$/i.exec(request.headers.get('Authorization') || '');
+  if (!m) return false;
+  const tok = m[1];
+  const hasta = CACHE_LECTOR.get(tok);
+  if (hasta && hasta > Date.now()) return true;
+  let ok = false;
+  try {
+    // la base decide (incluye cuenta activa y código de 2 pasos): tiene_permiso('ver_archivos')
+    const r = await fetch(`${env.SUPABASE_URL}/rest/v1/rpc/tiene_permiso`, {
+      method: 'POST', headers: { apikey: env.SUPABASE_KEY, Authorization: `Bearer ${tok}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ p: 'ver_archivos' }),
+    });
+    ok = r.ok && (await r.json()) === true;
+  } catch (e) { return false; }
+  if (ok) {
+    if (CACHE_LECTOR.size > 50) CACHE_LECTOR.clear();
+    CACHE_LECTOR.set(tok, Date.now() + 60000);
+  }
+  return ok;
+}
+/* Lo único que puede ver un lector: Studios y Academy (privado) y el landing (público). Nunca documentos, estadísticas ni papelera. */
+function alcanceLector(bucketNombre, ref) {
+  if (typeof ref !== 'string' || ref.includes('..') || ref.includes('//') || ref.includes('\\') || ref.startsWith('/')) return false;
+  if (bucketNombre === 'privado') return ref.startsWith('faro-studios/') || ref.startsWith('faro-academy/');
+  if (bucketNombre === 'publico') return ref.startsWith('landing/');
+  return false;
+}
+
 /* ---------- Enlaces firmados (temporales) ---------- */
 const enc = new TextEncoder();
 const b64u = (buf) => btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
@@ -370,7 +401,15 @@ export default {
 
     // Todo lo demás es solo para el administrador
     if (!ruta.startsWith('/api/')) return err(request, env, 'No encontrado', 404);
-    if (!(await esAdmin(request, env))) return err(request, env, 'Necesitas entrar como administrador', 401);
+    let lector = false;
+    if (!(await esAdmin(request, env))) {
+      // Equipo con permiso "ver_archivos": solo listar y pedir enlace de descarga, dentro de su alcance
+      const lee = (ruta === '/api/lista' && request.method === 'GET') || (ruta === '/api/enlace' && request.method === 'POST');
+      if (!lee || !(await esLector(request, env))) return err(request, env, 'Necesitas entrar como administrador', 401);
+      const refL = ruta === '/api/lista' ? (url.searchParams.get('prefix') || '') : (url.searchParams.get('key') || '');
+      if (!alcanceLector(url.searchParams.get('bucket') || '', refL)) return err(request, env, 'No tienes permiso para esta carpeta', 403);
+      lector = true;
+    }
 
     const bucketNombre = url.searchParams.get('bucket') || '';
     const bucket = B[bucketNombre];
@@ -460,8 +499,8 @@ export default {
         if (!env.FIRMA_SECRETO) return err(request, env, 'Falta configurar FIRMA_SECRETO en el servicio (ver LEEME)', 500);
         if (!bucket || !key || key.includes('..') || key.endsWith('/.keep')) return err(request, env, 'Archivo inválido');
         if (await enPapelera(env, bucketNombre, key)) return err(request, env, 'Ese archivo está en la papelera', 404);
-        const seg = Math.min(Math.max(Number(url.searchParams.get('seg')) || 3600, 60), TTL_ENLACE_MAX);
-        const t = await firmar(env, { b: bucketNombre, k: key, e: Math.floor(Date.now() / 1000) + seg, ...(url.searchParams.get('adm') === '1' ? { a: 1 } : {}) });
+        const seg = Math.min(Math.max(Number(url.searchParams.get('seg')) || 3600, 60), lector ? 3600 : TTL_ENLACE_MAX);
+        const t = await firmar(env, { b: bucketNombre, k: key, e: Math.floor(Date.now() / 1000) + seg, ...(url.searchParams.get('adm') === '1' && !lector ? { a: 1 } : {}) });
         return json(request, env, { url: `${url.origin}/api/bajar?t=${t}`, urlVer: `${url.origin}/api/bajar?inline=1&t=${t}`, vence_en: seg });
       }
 

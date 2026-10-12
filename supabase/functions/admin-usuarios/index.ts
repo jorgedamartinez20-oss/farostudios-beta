@@ -8,7 +8,7 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 
 const DIRECTOR = "reservas@farostudios.net";
 const DOMINIO = "@acceso.farostudios.net";
-const PERMISOS = ["agenda", "contenido", "clientes", "academy", "academy_accesos", "academy_facturas", "metricas", "subir_material"];
+const PERMISOS = ["agenda", "contenido", "clientes", "academy", "academy_accesos", "academy_facturas", "metricas", "subir_material", "ver_archivos"];
 const ORIGENES = [
   "https://jorgedamartinez20-oss.github.io",
   "https://farostudios.net",

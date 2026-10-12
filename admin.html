@@ -1803,8 +1803,9 @@ async function matPapelera(box){
         el('button',{class:'btn btn-red btn-sm',type:'button',onclick:async()=>{if(!confirm('¿Eliminar "'+nom+'" para siempre? No se puede deshacer.'))return;try{await fjson('/api/purgar?bucket='+x.bucket+'&key='+encodeURIComponent(x.key),{method:'POST'});toast('Eliminado');matPapelera(box)}catch(e){toast(e.message)}}},'Eliminar definitivo'))))})}
 async function matInit(){
   const box=$('#mat-body');if(!box)return;box.textContent='';
+  const SOLO=!ME.owner; /* equipo con permiso "ver_archivos": solo ve y descarga */
   const top=el('div',{class:'card',style:'margin-bottom:18px'},el('h2',{},'Materiales · archivos en Cloudflare R2'),
-    el('p',{class:'muted'},'Un solo lugar para los archivos de Faro Studios, Faro Academy y el landing. Quién es quién sigue en Supabase; aquí solo viven los archivos.'));
+    el('p',{class:'muted'},SOLO?'Solo lectura: abre y descarga los archivos de Faro Studios y Faro Academy. Los enlaces duran 1 hora.':'Un solo lugar para los archivos de Faro Studios, Faro Academy y el landing. Quién es quién sigue en Supabase; aquí solo viven los archivos.'));
   const inp=el('input',{type:'url',placeholder:'https://faro-archivos.TU-CUENTA.workers.dev',value:FILES,autocomplete:'off'});
   const cfg=el('div',{});
   cfg.append(el('div',{class:'field'},el('label',{},'Dirección del servicio de archivos'),inp),
@@ -1814,11 +1815,12 @@ async function matInit(){
         try{localStorage.setItem(FILES_LS,v)}catch(e){}FILES=v;MAT.destinos=[];toast(v?'Conectado a esta dirección':'Desconectado');matInit()}},'Conectar'),
       FILES?el('button',{class:'btn btn-ghost',type:'button',onclick:async()=>{try{const j=await fjson('/api/init',{method:'POST'});toast('Carpetas listas ('+j.carpetas+')')}catch(e){toast(e.message)}}},'Preparar carpetas'):null,
       FILES?el('button',{class:'btn btn-ghost',type:'button',onclick:async()=>{try{toast('Sincronizando…');const n=await r2Sync();toast('Carpetas de personas listas ('+n+')')}catch(e){toast(e.message)}}},'Sincronizar carpetas de alumnos, docentes y clientes'):null));
-  if(FILES){cfg.hidden=true;cfg.style.cssText='margin-top:12px;padding-top:12px;border-top:1px solid var(--line)';cfg.prepend(el('p',{class:'muted'},'Solo cambia esto si moviste el servicio de archivos a otra dirección.'));
+  if(SOLO){}else if(FILES){cfg.hidden=true;cfg.style.cssText='margin-top:12px;padding-top:12px;border-top:1px solid var(--line)';cfg.prepend(el('p',{class:'muted'},'Solo cambia esto si moviste el servicio de archivos a otra dirección.'));
     top.append(el('div',{style:'display:flex;align-items:center;gap:10px;margin-top:10px'},el('span',{},icoEl('check'),' Conectado'),el('button',{class:'btn btn-ghost btn-sm',type:'button',title:'Configuración de la conexión','aria-label':'Configuración de la conexión',onclick:()=>{cfg.hidden=!cfg.hidden}},icoEl('sliders'))),cfg)}else top.append(cfg);
   box.append(top);
   if(!FILES){box.append(el('div',{class:'card'},el('p',{class:'muted'},'Todavía no está conectado. Publica el servicio con los pasos de worker/LEEME.md, pega aquí su dirección y toca “Conectar”. Mientras tanto, “Sitio web” sigue subiendo archivos como antes.')));return}
   try{await matArbol()}catch(e){top.append(el('div',{class:'msg',style:'margin-top:12px'},e.message+'. Revisa la dirección y que el servicio esté publicado.'));return}
+  if(SOLO)MAT.destinos=MAT.destinos.filter(d=>!d.prefijo.startsWith('documentos/'));
 
   /* --- navegador de carpetas (estilo Drive) --- */
   const LBL={'':'Inicio'};
@@ -1836,6 +1838,7 @@ async function matInit(){
   const io=('IntersectionObserver' in window)?new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){io.unobserve(e.target);e.target.__mini()}}),{rootMargin:'200px'}):null;
 
   async function subirA(p,files){
+    if(SOLO)return;
     files=files.filter(f=>f.size>0);if(!files.length)return;
     const t=matDestinoSubida(p);
     if(!t){toast('Entra a una carpeta (la de la persona, o una de Academy o Landing) para subir archivos');return}
@@ -1854,7 +1857,7 @@ async function matInit(){
   }
   function tileCarpeta(q){
     const t=el('div',{class:'mt',title:'Abrir'},el('div',{class:'ic'},icoEl(ICONO[q]||'folder')),el('b',{},nomCarpeta(q)));
-    t.addEventListener('click',()=>render(q));enTile(t,q);return t;
+    t.addEventListener('click',()=>render(q));if(!SOLO)enTile(t,q);return t;
   }
   async function crearCarpeta(d,n){
     await fjson('/api/carpeta',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({destino:d.id,nombre:n})});
@@ -1871,7 +1874,7 @@ async function matInit(){
       el('div',{class:'mact'},
         ib(icoEl('download'),'Descargar',async()=>{try{location.href=await matEnlace(d.bucket,a.key,false,1)}catch(e){toast(e.message)}}),
         ib(icoEl('link'),'Copiar enlace',async()=>{try{await navigator.clipboard.writeText(await matEnlace(d.bucket,a.key,false));toast(d.bucket==='publico'?'Enlace permanente copiado':'Enlace copiado (válido por 1 hora)')}catch(e){toast('No se pudo copiar')}}),
-        ib(icoEl('trash'),'Eliminar',async()=>{if(!confirm('¿Mover '+nombre+' a la papelera? Podrás restaurarlo.'))return;try{await fjson('/api/objeto?bucket='+d.bucket+'&key='+encodeURIComponent(a.key),{method:'DELETE'});toast('Enviado a la papelera');render()}catch(e){toast(e.message)}},'btn btn-red btn-sm')));
+        SOLO?null:ib(icoEl('trash'),'Eliminar',async()=>{if(!confirm('¿Mover '+nombre+' a la papelera? Podrás restaurarlo.'))return;try{await fjson('/api/objeto?bucket='+d.bucket+'&key='+encodeURIComponent(a.key),{method:'DELETE'});toast('Enviado a la papelera');render()}catch(e){toast(e.message)}},'btn btn-red btn-sm')));
     t.addEventListener('click',()=>{matVer(d.bucket,a.key).catch(e=>toast(e.message))});
     if(esImg&&mini){
       t.__mini=async()=>{try{const im=new Image();im.className='th';im.alt=nombre;im.onload=()=>ic.replaceWith(im);im.src=await matEnlace(d.bucket,a.key,true,1)}catch(e){}};
@@ -1889,28 +1892,31 @@ async function matInit(){
     partes.forEach((q,i)=>{if(i)bar.append(el('span',{class:'muted'},'›'));bar.append(i===partes.length-1?el('b',{},q===''?[icoEl('home'),' Inicio']:nomCarpeta(q)):el('button',{class:'btn btn-ghost btn-sm',type:'button',onclick:()=>render(q)},q===''?[icoEl('home'),' Inicio']:nomCarpeta(q)))});
     const up=matDestinoSubida(ruta),d=MAT.destinos.find(x=>ruta.startsWith(x.prefijo)),nivelEnt=!!(d&&d.entidad&&ruta===d.prefijo);
     tools.textContent='';
-    if(up)tools.append(el('button',{class:'btn btn-gold btn-sm',type:'button',onclick:()=>fi.click()},icoEl('upload'),' Subir archivos'));
-    if(nivelEnt&&!d.persona)tools.append(el('button',{class:'btn btn-gold btn-sm',type:'button',onclick:async()=>{const n=prompt('Nombre de la carpeta (persona o empresa)');if(!n||!n.trim())return;try{await crearCarpeta(d,n.trim())}catch(e){toast(e.message)}}},icoEl('plus'),' Nueva carpeta'));
+    if(up&&!SOLO)tools.append(el('button',{class:'btn btn-gold btn-sm',type:'button',onclick:()=>fi.click()},icoEl('upload'),' Subir archivos'));
+    if(!SOLO&&nivelEnt&&!d.persona)tools.append(el('button',{class:'btn btn-gold btn-sm',type:'button',onclick:async()=>{const n=prompt('Nombre de la carpeta (persona o empresa)');if(!n||!n.trim())return;try{await crearCarpeta(d,n.trim())}catch(e){toast(e.message)}}},icoEl('plus'),' Nueva carpeta'));
     tools.append(el('button',{class:'btn btn-ghost btn-sm',type:'button',onclick:()=>render()},icoEl('refresh'),' Actualizar'));
     nota.textContent=up?(d.bucket==='publico'?'Público: estos archivos tienen enlace permanente y se usan en la página. Arrastra archivos aquí para subirlos.':'Privado: nadie los abre sin un enlace temporal que genera el administrador. Arrastra archivos aquí para subirlos.'):nivelEnt?'Elige a la persona o empresa (o crea su carpeta). También puedes arrastrar archivos sobre su carpeta.':'Elige una carpeta. También puedes arrastrar archivos sobre una carpeta para subirlos directo.';
+    if(SOLO)nota.textContent=d&&d.bucket==='publico'?'Solo lectura. Estos archivos son públicos en la página.':'Solo lectura: abre o descarga. Los enlaces son temporales (1 hora).';
     grid.textContent='';
     if(!d){hijosVirtuales(ruta).forEach(q=>grid.append(tileCarpeta(q)));return}
     grid.append(el('p',{class:'muted',style:'grid-column:1/-1'},'Cargando…'));
     let j;try{j=await fjson('/api/lista?bucket='+d.bucket+'&prefix='+encodeURIComponent(ruta))}catch(e){if(mi===ruta)grid.textContent=e.message||'No se pudo listar';return}
     if(mi!==ruta)return;grid.textContent='';
     j.carpetas.forEach(c=>grid.append(tileCarpeta(c)));
-    if(nivelEnt&&d.persona){const k={estudiante:'est',docente:'doc',cliente:'cli'}[d.persona],ya=new Set(j.carpetas);(AC.list[k]||[]).forEach(x=>{if(x.carpeta&&x.carpeta.startsWith(d.prefijo)&&!ya.has(x.carpeta)){ya.add(x.carpeta);const t=el('div',{class:'mt ghost',title:'Crear su carpeta'},el('div',{class:'ic'},icoEl('plus')),el('b',{},x.nombre),el('small',{},'Crear carpeta'));t.addEventListener('click',async()=>{try{await r2Sync([x.carpeta]);render()}catch(e){toast(e.message)}});grid.append(t)}})}
-    else if(nivelEnt){const ya=new Set(j.carpetas.map(c=>c.slice(ruta.length).replace(/\/$/,'')));matSugeridos(d).forEach(n=>{const s=matSlug(n);if(s&&!ya.has(s)){ya.add(s);grid.append(tileFantasma(d,n))}})}
+    if(!SOLO&&nivelEnt&&d.persona){const k={estudiante:'est',docente:'doc',cliente:'cli'}[d.persona],ya=new Set(j.carpetas);(AC.list[k]||[]).forEach(x=>{if(x.carpeta&&x.carpeta.startsWith(d.prefijo)&&!ya.has(x.carpeta)){ya.add(x.carpeta);const t=el('div',{class:'mt ghost',title:'Crear su carpeta'},el('div',{class:'ic'},icoEl('plus')),el('b',{},x.nombre),el('small',{},'Crear carpeta'));t.addEventListener('click',async()=>{try{await r2Sync([x.carpeta]);render()}catch(e){toast(e.message)}});grid.append(t)}})}
+    else if(!SOLO&&nivelEnt){const ya=new Set(j.carpetas.map(c=>c.slice(ruta.length).replace(/\/$/,'')));matSugeridos(d).forEach(n=>{const s=matSlug(n);if(s&&!ya.has(s)){ya.add(s);grid.append(tileFantasma(d,n))}})}
     j.archivos.forEach((a,i)=>grid.append(tileArchivo(d,a,i<40)));
-    if(!grid.children.length)grid.append(el('p',{class:'muted',style:'grid-column:1/-1'},'Esta carpeta está vacía. Arrastra archivos aquí.'));
+    if(!grid.children.length)grid.append(el('p',{class:'muted',style:'grid-column:1/-1'},(SOLO?'Esta carpeta está vacía.':'Esta carpeta está vacía. Arrastra archivos aquí.')));
   }
+  if(!SOLO){
   area.addEventListener('dragover',e=>{e.preventDefault();area.classList.add('mdrop')});
   area.addEventListener('dragleave',e=>{if(e.target===area)area.classList.remove('mdrop')});
   area.addEventListener('drop',e=>{e.preventDefault();area.classList.remove('mdrop');subirA(ruta,[...e.dataTransfer.files])});
   fi.addEventListener('change',()=>{subirA(ruta,[...fi.files]);fi.value=''});
+  }
   box.append(el('div',{class:'card'},el('h2',{},'Archivos'),bar,tools,nota,area,fi,prog));
   const pbox=el('div',{});const pdet=el('details',{class:'card',style:'margin-top:18px'},el('summary',{style:'cursor:pointer;font-weight:700'},icoEl('trash'),' Papelera general'),pbox);
-  pdet.addEventListener('toggle',()=>{if(pdet.open)matPapelera(pbox)});box.append(pdet);
+  pdet.addEventListener('toggle',()=>{if(pdet.open)matPapelera(pbox)});if(!SOLO)box.append(pdet);
   window.__matNav=render;
   await render('');
 }
@@ -2992,11 +2998,12 @@ const PERMISOS=[
   {k:'academy_accesos',n:'Crear accesos del portal',d:'Dar usuario y contraseña a alumnos, encargados, docentes y clientes',i:'key'},
   {k:'academy_facturas',n:'Facturas y pagos de Academy',d:'Ver y registrar las facturas de las clases',i:'card'},
   {k:'metricas',n:'Estadísticas y redes',d:'Visitas, alcance y seguimiento de redes sociales',i:'chart'},
-  {k:'subir_material',n:'Subir material (solo carga)',d:'Solo ve su enlace personal para subir archivos; no ve ni borra nada',i:'upload'}];
-const PRESETS=[['Docente',['academy']],['Fotógrafo (solo subir)',['subir_material']],['Administración',['agenda','clientes','academy','academy_facturas']],['Contenido y redes',['contenido','metricas']]];
+  {k:'subir_material',n:'Subir material (solo carga)',d:'Solo ve su enlace personal para subir archivos; no ve ni borra nada',i:'upload'},
+  {k:'ver_archivos',n:'Ver y descargar material (solo lectura)',d:'Abre la pestaña Materiales para ver y descargar archivos de Studios y Academy; no sube, no borra ni ve Documentos',i:'download'}];
+const PRESETS=[['Docente',['academy']],['Fotógrafo (solo subir)',['subir_material']],['Solo ver y descargar',['ver_archivos']],['Administración',['agenda','clientes','academy','academy_facturas']],['Contenido y redes',['contenido','metricas']]];
 /* qué permiso abre cada pestaña · lo que no aparece aquí es solo del director · '*' = todos */
-const TAB_PERM={pro:'clientes',ast:'metricas',aac:'metricas',red:'metricas',crm:'clientes',con:'contenido',cal:'agenda',res:'agenda',sem:'agenda',cot:'clientes',cli:'clientes',aca:'academy',avs:'clientes',web:'clientes',sub:'subir_material',pre:'*',cha:'*'};
-const PRIMERA=['sub','con','cal','res','cot','cli','aca','avs','pro','crm','ast','aac','red','pre'];
+const TAB_PERM={pro:'clientes',ast:'metricas',aac:'metricas',red:'metricas',crm:'clientes',con:'contenido',cal:'agenda',res:'agenda',sem:'agenda',cot:'clientes',cli:'clientes',aca:'academy',avs:'clientes',web:'clientes',sub:'subir_material',mat:'ver_archivos',pre:'*',cha:'*'};
+const PRIMERA=['sub','con','cal','res','cot','cli','aca','avs','pro','crm','ast','aac','red','mat','pre'];
 const ME={owner:false,ok:false,perms:new Set(),nombre:'',uid:'',email:'',fila:null};
 const puede=p=>ME.owner||ME.perms.has(p);
 function permiteTab(t){

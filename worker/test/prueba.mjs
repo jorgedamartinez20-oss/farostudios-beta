@@ -48,6 +48,11 @@ const TOKEN_AAL1 = jwtFalso('aal1'), TOKEN_AAL2 = jwtFalso('aal2');
 const REGLAS = { 'alu-token': { leer: (k) => k.includes('ana-1111/'), escribir: (k) => k.includes('ana-1111/practicas/') || k.includes('ana-1111/mis-archivos/'), borrar: () => false },
   'doc-token': { leer: (k) => k.includes('ana-1111/'), escribir: (k) => k.includes('ana-1111/respuestas/') || k.includes('ana-1111/material/'), borrar: (k) => k.includes('ana-1111/respuestas/') || k.includes('ana-1111/material/') } };
 globalThis.fetch = async (u, init) => {
+  if (String(u).endsWith('/rest/v1/rpc/tiene_permiso')) { // permiso "ver_archivos": solo 'lector-token' lo tiene
+    const t = (init.headers.Authorization || '').replace('Bearer ', ''); const b = JSON.parse(init.body);
+    if (t !== 'lector-token' && t !== 'otro-token') return new Response('{}', { status: 401 });
+    return new Response(JSON.stringify(t === 'lector-token' && b.p === 'ver_archivos'), { status: 200 });
+  }
   if (String(u).endsWith('/rest/v1/rpc/archivo_permiso')) {
     const t = (init.headers.Authorization || '').replace('Bearer ', ''); const b = JSON.parse(init.body); const rg = REGLAS[t];
     if (!rg) return new Response('{}', { status: 401 });
@@ -215,5 +220,27 @@ r = await q(`/p/borrar?key=${encodeURIComponent(KP)}`, { method: 'POST', headers
 r = await q(`/p/borrar?key=${encodeURIComponent(KR)}`, { method: 'POST', headers: DO }); assert.equal(r.status, 200); assert.ok(env.PRIVADO.m.has(KR));
 r = await q('/api/papelera', { headers: A }); pap = await r.json(); assert.ok(pap.items.some((i) => i.key === KR)); ok('docente borra su respuesta → va a la papelera, el director la ve');
 r = await q(`/p/enlace?key=${encodeURIComponent(KR)}`, { method: 'POST', headers: DO }); assert.equal(r.status, 404); ok('lo borrado ya no se sirve en el portal');
+
+// equipo con permiso "ver_archivos": solo ver y descargar, dentro de Studios, Academy y landing
+const LE = { Authorization: 'Bearer lector-token', Origin: ORI }, KL = 'faro-studios/agencias/lector/video.mp4';
+await env.PRIVADO.put(KL, new Uint8Array([1, 2, 3, 4]));
+await env.PRIVADO.put('documentos/sat/2026/declaracion.pdf', new Uint8Array([9]));
+r = await q('/api/lista?bucket=privado&prefix=' + encodeURIComponent('faro-studios/agencias/lector/'), { headers: LE });
+assert.equal(r.status, 200); assert.equal((await r.json()).archivos.length, 1); ok('lector: ve la lista de archivos de Studios');
+r = await q(`/api/enlace?bucket=privado&key=${encodeURIComponent(KL)}&seg=99999&adm=1`, { method: 'POST', headers: LE });
+assert.equal(r.status, 200); const jl = await r.json(); assert.ok(jl.vence_en <= 3600); assert.equal((await q(new URL(jl.url).pathname + new URL(jl.url).search)).status, 200); ok('lector: descarga con enlace que vence en máx. 1 hora');
+const vistasAntes = (await (await q('/api/stats', { headers: A })).json()).archivos[KL]?.d || 0;
+assert.equal(vistasAntes, 1); ok('lector: su descarga SÍ cuenta (no puede saltarse el conteo con adm=1)');
+for (const [p, m, pf] of [['/api/lista?bucket=privado&prefix=documentos/', 'GET'], ['/api/lista?bucket=privado&prefix=', 'GET'], ['/api/lista?bucket=privado&prefix=_stats/', 'GET'], ['/api/lista?bucket=privado&prefix=_papelera/', 'GET'], ['/api/lista?bucket=privado&prefix=faro-studios/../documentos/', 'GET']]) {
+  r = await q(p, { method: m, headers: LE }); assert.equal(r.status, 403, p);
+}
+ok('lector: no abre documentos, la raíz, estadísticas ni papelera');
+r = await q(`/api/enlace?bucket=privado&key=${encodeURIComponent('documentos/sat/2026/declaracion.pdf')}`, { method: 'POST', headers: LE }); assert.equal(r.status, 403); ok('lector: tampoco genera enlaces de Documentos');
+r = await q(`/api/objeto?bucket=privado&key=${encodeURIComponent(KL)}`, { method: 'DELETE', headers: LE }); assert.equal(r.status, 401); assert.ok(env.PRIVADO.m.has(KL)); ok('lector: no borra');
+for (const [p, m] of [['/api/init', 'POST'], ['/api/subir?bucket=privado&key=' + encodeURIComponent('faro-studios/agencias/lector/x.txt'), 'PUT'], ['/api/stats', 'GET'], ['/api/papelera', 'GET'], ['/api/carpeta', 'POST'], ['/api/restaurar?bucket=privado&key=a', 'POST'], ['/api/purgar?viejos=1', 'POST']]) {
+  r = await q(p, { method: m, headers: LE, body: m === 'GET' ? undefined : '{}' }); assert.equal(r.status, 401, p);
+}
+ok('lector: no sube, no crea carpetas, no ve estadísticas ni papelera');
+r = await q('/api/lista?bucket=privado&prefix=' + encodeURIComponent('faro-studios/agencias/lector/'), { headers: { Authorization: 'Bearer otro-token', Origin: ORI } }); assert.equal(r.status, 401); ok('quien no tiene el permiso → 401');
 
 console.log('\nTodo bien: ' + n + ' comprobaciones.');

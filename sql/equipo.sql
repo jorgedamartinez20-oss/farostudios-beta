@@ -60,6 +60,7 @@ grant execute on function public.equipo_registrar(text) to authenticated;
 --   academy_facturas Facturas y pagos de Academy
 --   metricas         Estadísticas y redes
 --   subir_material   Solo ve su enlace de subida (no necesita tablas)
+--   ver_archivos     Solo lectura de Materiales: ve y descarga archivos de Studios y Academy (lo valida el servicio de archivos; no necesita tablas)
 -- Solo el director: usuarios y permisos, recordatorios, materiales (R2), sitio web, reglas y config.
 do $$
 declare m record;
