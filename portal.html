@@ -495,11 +495,11 @@ const MESES=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','
 /* sesión que se recuerda: sobrevive a salir de la app unos segundos; se cierra tras 1 hora sin usarla */
 const INACT=60*60*1000;
 const recOn=()=>{try{return localStorage.getItem('faro_rec')!=='0'}catch(e){return true}};
-const stor=()=>{try{return recOn()?localStorage:sessionStorage}catch(e){return sessionStorage}};
-const actGet=()=>{try{return +localStorage.getItem('faro_portal_act')||0}catch(e){return 0}};
-let actUlt=0;function actMarca(f){const n=Date.now();if(!f&&n-actUlt<15000)return;actUlt=n;try{localStorage.setItem('faro_portal_act',String(n))}catch(e){}}
-let SES=null;try{SES=JSON.parse(localStorage.getItem('faro_portal')||sessionStorage.getItem('faro_portal')||'null')}catch(e){}
-if(SES&&Date.now()-actGet()>INACT){SES=null;try{localStorage.removeItem('faro_portal');sessionStorage.removeItem('faro_portal')}catch(e){}}
+const stor=()=>sessionStorage; /* la sesión vive solo en esta pestaña: así puedes tener docente y estudiante abiertos a la vez sin que se crucen */
+const actGet=()=>{try{return +sessionStorage.getItem('faro_portal_act')||0}catch(e){return 0}};
+let actUlt=0;function actMarca(f){const n=Date.now();if(!f&&n-actUlt<15000)return;actUlt=n;try{sessionStorage.setItem('faro_portal_act',String(n))}catch(e){}}
+let SES=null;try{localStorage.removeItem('faro_portal');localStorage.removeItem('faro_portal_act');SES=JSON.parse(sessionStorage.getItem('faro_portal')||'null')}catch(e){}
+if(SES&&Date.now()-actGet()>INACT){SES=null;try{sessionStorage.removeItem('faro_portal')}catch(e){}}
 function jwtSub(){try{return JSON.parse(atob(SES.access.split('.')[1].replace(/-/g,'+').replace(/_/g,'/'))).sub}catch(e){return null}}
 function saveSes(){try{stor().setItem('faro_portal',JSON.stringify(SES))}catch(e){}actMarca(true)}
 var LASTERR='';
@@ -1095,7 +1095,7 @@ function loginUI(msg){
    +'<form id="lf" autocomplete="on" style="display:grid;gap:14px;width:100%">'
    +(cl?'<label>Correo<input id="lu" type="email" placeholder="tucorreo@ejemplo.com" autocomplete="email" required></label><label>Código<input id="lp" placeholder="XXXX-XXXX" autocomplete="off" autocapitalize="characters" required></label>'
        :'<label>Usuario<input id="lu" placeholder="'+(t==='pa'?'enc-ana-k7m':t==='do'?'doc-ana-k7m':'ana-k7m')+'" autocomplete="username" autocapitalize="none" required></label><label>Contraseña<input id="lp" type="password" placeholder="XXXX-XXXX-XXXX" autocomplete="current-password" required></label>')
-   +'<label style="display:flex;gap:8px;align-items:center;font-weight:400"><input type="checkbox" id="lr" style="width:auto"'+(recOn()?' checked':'')+'> Recordarme en este dispositivo</label>'
+   +'<label style="display:flex;gap:8px;align-items:center;font-weight:400"><input type="checkbox" id="lr" style="width:auto"'+(recOn()?' checked':'')+'> Recordar mi usuario en este dispositivo</label>'
    +'<p id="le" class="sub" role="alert" style="color:var(--borgona);min-height:1.2em;text-align:center">'+esc(msg||'')+'</p>'
    +'<button class="btn '+(cl?'y':'')+'" type="submit" id="lb">Entrar</button></form>'
    +'</div>';
@@ -1126,7 +1126,7 @@ async function iniciar(esperado){
     if(p.rol==='cliente'&&esperado&&esperado!=='cl'){salir(true);loginUI('Ese acceso es de Faro Studios (clientes). Entra desde «Mi espacio» en farostudios.net.');return}
     if(esperado&&ROL_TAB[p.rol]!==esperado){const t=ROL_TAB[p.rol];salir(true);S.tab=t;loginUI('Ese usuario es de '+ROL_NOM[p.rol].toUpperCase()+'. Te pasamos a la pestaña «'+ROL_NOM[p.rol]+'»: escribe tu usuario y contraseña ahí.');return}
     if((p.rol==='alumno'&&!p.alumno)||(p.rol==='docente'&&!p.docente)){salir(true);loginUI('Tu acceso todavía no tiene un espacio asignado ('+ROL_NOM[p.rol].toLowerCase()+'). Escríbenos por WhatsApp para vincularlo.');return}
-    S.perfil=p;S.rol=p.rol;
+    S.perfil=p;S.rol=p.rol;if(SES){SES.rol=p.rol;saveSes()}
     if(p.rol==='alumno'){S.kid=p.alumno.id;S.kids=[p.alumno];S.D[S.kid]=await cargarAlumno(S.kid);S.page='inicio'}
     else if(p.rol==='encargado'){S.kids=p.hijos||[];if(!S.kids.length){salir(true);loginUI('Todavía no hay estudiantes vinculados a tu acceso. Escríbenos por WhatsApp.');return}
       S.kid=S.kids[0].id;S.D[S.kid]=await cargarAlumno(S.kid);S.page='resumen'}
@@ -1145,6 +1145,8 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden)vigilaInac
   if(q==='do')S.only='do';
   let h=null;try{h=JSON.parse(sessionStorage.getItem('faro_handoff')||'null');sessionStorage.removeItem('faro_handoff')}catch(e){}
   if(h&&h.u&&h.p){document.documentElement.classList.add('hand');var hd=document.createElement('div');hd.id='hand';hd.innerHTML='<div><span class="iso"></span><b>Entrando a tu portal…</b></div>';document.body.appendChild(hd);setTimeout(()=>document.documentElement.classList.remove('hand'),9000)}
+  /* si piden una pestaña distinta a la de la sesión de esta pestaña, o vienen de un ingreso nuevo, se descarta la sesión y se muestra el ingreso correcto */
+  if(SES&&(h||(['al','pa','do','cl'].includes(q)&&SES.rol&&ROL_TAB[SES.rol]!==q))){SES=null;try{sessionStorage.removeItem('faro_portal')}catch(e){}}
   if(SES&&SES.access)iniciar();else{render();
     try{if(h&&h.t===S.tab&&h.u&&h.p&&$('#lu')&&$('#lp')){$('#lu').value=h.u;$('#lp').value=h.p;$('#lf').requestSubmit?$('#lf').requestSubmit():$('#lf').dispatchEvent(new Event('submit',{cancelable:true}))}}catch(e){}}})();
 
