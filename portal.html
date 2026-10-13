@@ -501,6 +501,15 @@ header.top{filter:invert(1) hue-rotate(180deg)}header.top img,header.top .iso{fi
 .proy-up,.proy-f{display:grid;gap:8px;margin-top:10px}.proy-up input,.proy-f input,.proy-f textarea,.proy-f select,#py-form input,#py-form textarea{width:100%;font:inherit;padding:8px 10px;border-radius:10px;border:1px solid #0003;background:rgba(255,255,255,.7)}
 .proy-f .row,#py-form .row{display:flex;gap:10px;flex-wrap:wrap}.proy-f label,#py-form label{display:grid;gap:4px;flex:1;min-width:130px;font-size:.9em}.chk{display:flex!important;align-items:center;gap:6px;flex:0!important}.chk input{width:auto!important}
 .proy-new summary{cursor:pointer;font-weight:700}#py-form{display:grid;gap:10px;margin-top:12px}
+
+.fog{position:absolute;left:-20px;right:-20px;bottom:0;pointer-events:none;display:grid;align-items:end;justify-items:center;padding-bottom:26px;
+ background:radial-gradient(60% 40% at 25% 70%,rgba(255,255,255,.85),transparent 70%),radial-gradient(55% 45% at 78% 55%,rgba(255,255,255,.8),transparent 70%),linear-gradient(to bottom,transparent,var(--card) 78%);animation:fogm 9s ease-in-out infinite alternate}
+.fog span{font-weight:700;opacity:.75;font-size:var(--t0);text-align:center;padding:0 24px}
+@keyframes fogm{from{background-position:0 0,0 0,0 0}to{background-position:26px 8px,-26px -6px,0 0}}
+.meta{background:var(--y);color:var(--pizarra);border-radius:18px;padding:16px 20px;margin-bottom:16px;display:grid;gap:4px;box-shadow:0 6px 0 var(--yd);text-align:center}.meta b{font-size:1.5rem}
+.confeti{position:fixed;inset:0;pointer-events:none;z-index:90;overflow:hidden}.confeti i{position:absolute;top:-14px;width:10px;height:16px;border-radius:3px;animation:cae linear forwards}
+@keyframes cae{to{transform:translateY(105vh) rotate(720deg);opacity:.9}}
+@media (prefers-reduced-motion:reduce){.fog{animation:none}.confeti{display:none}}
 </style>
 <script>if(navigator.standalone||(window.matchMedia&&matchMedia("(display-mode:standalone)").matches))document.documentElement.classList.add("is-app")</script>
 </head>
@@ -995,13 +1004,18 @@ P.material.bind=()=>{
     catch(e){$('#upmsg').textContent='No se pudo subir. Intenta de nuevo.';}};
 };
 
+function claseEnlace(c){
+  if(c.estado==='dada'||c.estado==='cancelada')return '';
+  const u=String(c.enlace||'').trim();
+  if(c.modalidad==='online'&&/^https?:\/\//i.test(u))return '<a class="btn y" style="margin-top:6px;display:inline-block" href="'+esc(u)+'" target="_blank" rel="noopener noreferrer">Entrar a la clase en línea</a>';
+  return '<small class="sub" style="display:block">'+(c.modalidad==='online'?'Enlace en línea: tu docente lo compartirá pronto':'No hay clases online: esta es presencial')+'</small>'}
 P.clases=()=>{const k=K(),hoy=new Date(),y=hoy.getFullYear(),m=hoy.getMonth();
   const dias=['L','M','M','J','V','S','D'],primero=(new Date(y,m,1).getDay()+6)%7,tot=new Date(y,m+1,0).getDate(),mapa={};
   k.clases.forEach(c=>{const d=new Date(c.fecha+'T12:00:00');if(d.getFullYear()===y&&d.getMonth()===m)mapa[d.getDate()]=c.estado==='dada'?'p':c.estado==='cancelada'?'n':'h'});
   const lista=k.clases.slice().sort((a,b)=>(b.fecha+(b.hora||'')).localeCompare(a.fecha+(a.hora||'')));
   const pill=e=>e==='dada'?'<span class="pill ok">Dada</span>':e==='cancelada'?'<span class="pill no">Cancelada</span>':e==='reprogramada'?'<span class="pill warn">Reprogramada</span>':'<span class="pill mute">Programada</span>';
   return '<section class="page"><div class="ph"><h1>Clases</h1><p>Programa y asistencia'+(S.rol==='encargado'?' de '+esc(k.corto):'')+'.</p></div>'+kidsSwitch()+'<div class="grid g2"><div class="card"><h2 style="text-transform:capitalize">'+MESES[m]+' '+y+'</h2><div class="cal" style="margin-top:14px">'+dias.map(d=>'<b>'+d+'</b>').join('')+Array.from({length:42},(_,i)=>{const d=i-primero+1,ok=d>=1&&d<=tot;return '<i class="'+(ok?(mapa[d]||''):'')+'" style="'+(ok?'':'visibility:hidden')+'">'+(ok?d:'')+'</i>'}).join('')+'</div><div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-top:16px;font-size:var(--tm)"><span><i class="pill ok">&nbsp;</i> Dada</span><span><i class="pill no">&nbsp;</i> Cancelada</span><span><i class="pill mute" style="outline:2px dashed var(--borgona)">&nbsp;</i> Próxima</span></div></div>'
-  +'<div class="card"><h2>Programa</h2>'+(lista.length?'<div class="ls" style="margin-top:12px">'+lista.slice(0,12).map(c=>'<div class="it">'+ic('cal')+'<div>'+esc(c.titulo)+'<small>'+esc(fecha(c.fecha))+(c.hora?' · '+esc(hora(c.hora)):'')+(c.nota?' · '+esc(c.nota):'')+'</small></div><span style="margin-left:auto">'+pill(c.estado)+'</span></div>').join('')+'</div>':vacio('Aún no hay clases en el programa.'))+'</div></div></section>'};
+  +'<div class="card"><h2>Programa</h2>'+(lista.length?'<div class="ls" style="margin-top:12px">'+lista.slice(0,12).map(c=>'<div class="it">'+ic('cal')+'<div>'+esc(c.titulo)+'<small>'+esc(fecha(c.fecha))+(c.hora?' · '+esc(hora(c.hora)):'')+(c.nota?' · '+esc(c.nota):'')+'</small>'+claseEnlace(c)+'</div><span style="margin-left:auto">'+pill(c.estado)+'</span></div>').join('')+'</div>':vacio('Aún no hay clases en el programa.'))+'</div></div></section>'};
 
 P.logros=()=>{const k=K();
   return '<section class="page"><div class="ph"><h1>Mis logros</h1><p>Insignias que ganas por practicar, y tu meta grande: el diploma del nivel.</p></div><div class="card"><h2>Insignias</h2>'+(k.logros.length?'<div class="grid g4" style="margin-top:18px">'+k.logros.map((b,i)=>'<div class="badge"><div class="bd on" style="background:var('+COLORES[i%5]+')">'+ic(ICONO[b.icono]||'star')+'</div><span>'+esc(b.titulo)+'</span></div>').join('')+'</div>':vacio('Tu primera insignia está en camino. ¡Sigue practicando!'))+'</div>'
@@ -1081,13 +1095,19 @@ P.camino=()=>{const k=K(),N=nodosCamino(k);
   if(!N.length)return '<section class="page"><div class="ph"><h1>Mi camino</h1><p>Cada círculo es una lección. Termina uno para abrir el siguiente.</p></div><div class="card">'+vacio('Tu camino aparece cuando tu profe arme tu programa de clases.')+'</div></section>';
   let y=70,pts=[],out='',CX=190,H=0;
   N.forEach((n,i)=>{if(n[0]==='unit'){out+='<div class="unit" style="top:'+(y-26)+'px"><span>'+esc(n[1])+'</span></div>';y+=84;return}
-    pts.push([CX+n[3],y,n,i]);y+=122});H=y+10;
+    pts.push([CX+n[3],y,n,i]);y+=122});H=y+10+150;
   let path='';pts.forEach((p,i)=>{if(!i)path='M'+p[0]+' '+p[1];else{const q=pts[i-1];path+=' C '+q[0]+' '+(q[1]+60)+' '+p[0]+' '+(p[1]-60)+' '+p[0]+' '+p[1]}});
+  let lk=0;
   const nodes=pts.map((p,i)=>{const n=p[2],t=n[0],prevLock=pts[i-1]&&pts[i-1][2][0]==='lock'||pts[i-1]&&pts[i-1][2][0]==='now',cls=t==='chest'?'chest'+(prevLock?' lock':''):t,icon=t==='done'?'check':t==='now'?'play':t==='chest'?'gift':'lock';
     const label=t==='now'?'<div class="start" style="left:'+p[0]+'px;top:'+(p[1]-58)+'px">¡Sigue aquí!</div>':'';
-    return label+'<button type="button" class="node '+cls+'" style="left:'+p[0]+'px;top:'+p[1]+'px" data-i="'+p[3]+'" aria-label="'+esc(n[1])+'">'+ic(icon)+'</button>'}).join('');
-  return '<section class="page"><div class="ph"><h1>Mi camino</h1><p>Cada círculo es una clase de tu programa. Las que ya diste se abren con una palomita.</p></div><div class="card" style="padding-bottom:36px"><div class="wayw" data-h="'+H+'"><div class="way" style="height:'+H+'px"><svg viewBox="0 0 380 '+H+'" preserveAspectRatio="xMidYMin meet"><path d="'+path+'" fill="none" stroke="rgba(37,37,40,.18)" stroke-width="12" stroke-linecap="round" stroke-dasharray="2 22"/></svg>'+out+nodes+'</div></div></div></section>'};
-P.camino.bind=()=>{const N=nodosCamino(K()),w=$('.wayw'),wy=$('.way');if(!w)return;const H=+w.dataset.h;let lw=0;const fit=()=>{const cw=w.clientWidth;if(!cw){requestAnimationFrame(fit);return}if(cw===lw)return;lw=cw;const sc=Math.min(1,cw/380);wy.style.transform='scale('+sc+')';w.style.height=(H*sc)+'px'};fit();if(window.__fitCam)removeEventListener('resize',window.__fitCam);window.__fitCam=fit;addEventListener('resize',fit);
+    const fade=(t==='lock'||cls.indexOf('lock')>-1)?';opacity:'+Math.max(.2,.62-.1*(++lk)).toFixed(2):'';
+    return label+'<button type="button" class="node '+cls+'" style="left:'+p[0]+'px;top:'+p[1]+'px'+fade+'" data-i="'+p[3]+'" aria-label="'+esc(n[1])+'">'+ic(icon)+'</button>'}).join('');
+  const cn=N.filter(n=>n[0]==='done'||n[0]==='now'||n[0]==='lock'),meta=cn.length>0&&cn.every(n=>n[0]==='done');
+  return '<section class="page"><div class="ph"><h1>Mi camino</h1><p>Cada círculo es una clase de tu programa. Las que ya diste se abren con una palomita.</p></div>'+(meta?'<div class="meta" id="meta-ok"><b>¡Objetivo alcanzado!</b><span>Completaste las '+cn.length+' clases de tu camino. Tu docente prepara los siguientes retos.</span></div>':'')+'<div class="card" style="padding-bottom:36px"><div class="wayw" data-h="'+H+'"><div class="way" style="height:'+H+'px"><svg viewBox="0 0 380 '+H+'" preserveAspectRatio="xMidYMin meet"><path d="'+path+'" fill="none" stroke="rgba(37,37,40,.18)" stroke-width="12" stroke-linecap="round" stroke-dasharray="2 22"/></svg>'+out+nodes+'<div class="fog" style="height:260px"><span>'+(meta?'Más aventuras vienen en camino…':'Hay más clases por delante…')+'</span></div></div></div></div></section>'};
+P.camino.bind=()=>{const N=nodosCamino(K()),w=$('.wayw'),wy=$('.way');if(!w)return;
+  const mo=$('#meta-ok');if(mo){const kk='faro_meta_'+K().id+'_'+N.filter(n=>n[0]==='done').length;let visto=false;try{visto=!!localStorage.getItem(kk);localStorage.setItem(kk,'1')}catch(e){}
+    if(!visto){const cf=document.createElement('div');cf.className='confeti';cf.setAttribute('aria-hidden','true');cf.innerHTML=Array.from({length:42},(_,i)=>'<i style="left:'+(Math.random()*100).toFixed(1)+'%;background:var('+COLORES[i%5]+');animation-delay:'+(Math.random()*1.2).toFixed(2)+'s;animation-duration:'+(2.4+Math.random()*1.8).toFixed(2)+'s"></i>').join('');document.body.append(cf);setTimeout(()=>cf.remove(),5200)}}
+const H=+w.dataset.h;let lw=0;const fit=()=>{const cw=w.clientWidth;if(!cw){requestAnimationFrame(fit);return}if(cw===lw)return;lw=cw;const sc=Math.min(1,cw/380);wy.style.transform='scale('+sc+')';w.style.height=(H*sc)+'px'};fit();if(window.__fitCam)removeEventListener('resize',window.__fitCam);window.__fitCam=fit;addEventListener('resize',fit);
   $$('.node').forEach(b=>b.onclick=()=>{const n=N[+b.dataset.i],t=n[0],c=n[4];
     const cuando=c?esc(fecha(c.fecha))+(c.hora?' · '+esc(hora(c.hora)):''):'';
     const msg=t==='done'?'¡Clase completada'+(cuando?' ('+cuando+')':'')+'! Puedes repasarla cuando quieras.':t==='now'?'Es tu próxima clase: '+cuando+'.':t==='chest'?'Un cofre de recompensa. Se abre al terminar las clases anteriores.':'Todavía está bloqueada. Termina la clase anterior para abrirla.';
@@ -1167,12 +1187,15 @@ P['d-alumnos'].bind=()=>{$$('[data-para]').forEach(b=>b.onclick=()=>{S.doc.para=
 /* ---------- docente: perfil de cada alumno (resumen, prácticas y material) ---------- */
 P['d-alumno']=()=>{const d=S.doc,a=d.alumnos.find(x=>x.id===d.sel);
   if(!a)return '<section class="page"><div class="card">'+vacio('No encontramos a ese estudiante.')+'<button class="btn" type="button" onclick="go(\'d-alumnos\')">Volver a mis alumnos</button></div></section>';
-  const tab=d.ptab||'resumen',T=[['resumen','Resumen'],['proyectos','Proyectos'],['practicas','Prácticas'],['material','Material']];
+  const tab=d.ptab||'resumen',T=[['resumen','Resumen'],['programa','Programa'],['proyectos','Proyectos'],['practicas','Prácticas'],['material','Material']];
   return '<section class="page"><div class="card" style="text-align:left"><div class="perfil-al">'+avAl(a.id,92)+'<div><h1>'+esc(a.nombre)+'</h1><p class="sub">'+(a.area==='ingles'?'Inglés':'Música')+(a.detalle?' · '+esc(a.detalle):'')+'</p></div><button class="btn ghost" type="button" style="margin-left:auto" onclick="go(\'d-alumnos\')">← Mis alumnos</button></div>'
    +'<div class="ptabs" role="tablist" aria-label="Perfil del estudiante">'+T.map(t=>'<button type="button" role="tab" data-pt="'+t[0]+'" aria-pressed="'+(tab===t[0])+'">'+t[1]+'</button>').join('')+'</div><div id="pa-body"></div></div></section>'};
 P['d-alumno'].bind=()=>{const d=S.doc,id=d.sel,body=$('#pa-body'),a=d.alumnos.find(x=>x.id===id);if(!body||!a)return;
   $$('[data-pt]').forEach(b=>b.onclick=()=>{d.ptab=b.dataset.pt;render()});
   const tab=d.ptab||'resumen',nom=esc(a.apodo||String(a.nombre).split(' ')[0]);
+  if(tab==='programa'){
+    body.innerHTML='<p class="sub" style="margin-bottom:12px">Programa las clases de '+nom+': día, hora y enlace si es en línea. Al terminarla, márcala <b>finalizada</b>: queda su asistencia y gana XP.</p><div id="pg-root"><p class="sub">Cargando…</p></div>';
+    programaMontar($('#pg-root'),id,a.nombre);return}
   if(tab==='proyectos'){
     body.innerHTML='<p class="sub" style="margin-bottom:12px">Pon una tarea por clase. '+nom+' entrega foto, video, audio o documento y tú la evalúas con XP y una insignia.</p><div id="py-root"><p class="sub">Cargando…</p></div>';
     proyMontar($('#py-root'),'docente',id,a.carpeta,a.nombre);return}
@@ -1258,6 +1281,30 @@ async function proyMontar(root,modo,est,carpeta,nombre){
   pintar()}
 P.proyectos=()=>'<section class="page"><div class="ph"><h1>Proyectos</h1><p>Cada clase tiene un proyecto. Súbelo aquí, tu docente lo evalúa y ganas XP e insignias.</p></div><div id="py-root"><p class="sub">Cargando…</p></div></section>';
 P.proyectos.bind=()=>{const k=K(),r=$('#py-root');if(r)proyMontar(r,'alumno',k.id,k.carpeta,k.corto)};
+/* ---------- Programa de clases del estudiante (docente) ---------- */
+async function programaMontar(root,est,nombre){
+  let L=await rows('ac_clases','estudiante_id=eq.'+est+'&order=fecha.asc,hora.asc');
+  const lblEst={programada:'Programada',reprogramada:'Reprogramada',dada:'Finalizada',cancelada:'Cancelada'};
+  const pintar=()=>{
+    const n=L.filter(c=>c.estado==='dada').length;
+    root.innerHTML='<details class="card proy-new"'+(L.length?'':' open')+'><summary>'+ic('cal')+' Programar una clase</summary><form id="pg-form"><div class="row"><label>Día<input type="date" name="f" required></label><label>Hora<input type="time" name="h"></label><label style="flex:2">Título<input type="text" name="t" maxlength="120" required placeholder="Ej. Clase 5 · Acordes mayores" value="Clase '+(L.length+1)+'"></label></div><div class="row"><label>Modalidad<select name="m"><option value="presencial">Presencial (no hay clase online)</option><option value="online">En línea</option></select></label><label style="flex:2">Enlace de la clase en línea<input type="url" name="e" maxlength="500" placeholder="https://meet.google.com/…"></label></div><button class="btn y" type="submit">Programar</button></form></details>'
+     +'<div class="card" style="margin-top:14px"><h2>Programa · '+n+' de '+L.length+' finalizadas</h2>'+(L.length?'<div class="ls">'+L.map(c=>'<div class="it" data-cid="'+c.id+'">'+ic('cal')+'<div>'+esc(c.titulo)+'<small>'+esc(fecha(c.fecha))+(c.hora?' · '+esc(hora(c.hora)):'')+' · '+(c.modalidad==='online'?(c.enlace?'En línea con enlace':'En línea sin enlace'):'Presencial · no hay clase online')+'</small></div><span class="pill '+(c.estado==='dada'?'ok':c.estado==='cancelada'?'no':'mute')+'" style="margin-left:auto">'+lblEst[c.estado]+(c.estado==='dada'&&c.xp?' · +'+c.xp+' XP':'')+'</span>'
+       +(c.estado==='dada'?'':'<label class="sub" style="display:flex;gap:4px;align-items:center">XP<input type="number" data-xp min="0" max="50" value="10" style="width:60px"></label><button class="btn y" type="button" data-fin="'+c.id+'">Finalizada</button><button class="btn ghost" type="button" data-can="'+c.id+'">'+(c.estado==='cancelada'?'Reactivar':'Cancelar')+'</button>')+'</div>').join('')+'</div>':vacio('Aún no hay clases programadas.'))+'</div>';
+    enlazar()};
+  const recargar=async()=>{L=await rows('ac_clases','estudiante_id=eq.'+est+'&order=fecha.asc,hora.asc');pintar()};
+  const enlazar=()=>{
+    const f=$('#pg-form',root);
+    f.onsubmit=async ev=>{ev.preventDefault();const b=f.querySelector('button[type=submit]');b.disabled=true;
+      const u=f.e.value.trim();if(u&&!/^https?:\/\//i.test(u)){aviso('El enlace debe empezar con https://');b.disabled=false;return}
+      const r=await api('/rest/v1/rpc/ac_programar_clase',{method:'POST',body:{p_est:est,p_fecha:f.f.value,p_hora:f.h.value||null,p_titulo:f.t.value.trim(),p_modalidad:f.m.value,p_enlace:f.m.value==='online'?(u||null):null,p_nota:null}}).catch(()=>null);
+      if(r&&r.ok){aviso('Clase programada');await recargar()}else{aviso('No se pudo programar. ¿Ya corriste el SQL de la etapa 2B?');b.disabled=false}};
+    $$('[data-fin]',root).forEach(b=>b.onclick=async()=>{const xp=+b.closest('.it').querySelector('[data-xp]').value||0;b.disabled=true;
+      const r=await api('/rest/v1/rpc/ac_finalizar_clase',{method:'POST',body:{p_id:b.dataset.fin,p_xp:xp}}).catch(()=>null);
+      if(r&&r.ok){aviso('Clase finalizada · +'+xp+' XP para '+nombre);await recargar()}else{aviso('No se pudo finalizar');b.disabled=false}});
+    $$('[data-can]',root).forEach(b=>b.onclick=async()=>{const c=L.find(x=>x.id===b.dataset.can);if(!c)return;b.disabled=true;
+      const r=await api('/rest/v1/rpc/ac_actualizar_clase',{method:'POST',body:{p_id:c.id,p_fecha:c.fecha,p_hora:c.hora,p_titulo:c.titulo,p_modalidad:c.modalidad,p_enlace:c.enlace||null,p_estado:c.estado==='cancelada'?'programada':'cancelada'}}).catch(()=>null);
+      if(r&&r.ok)await recargar();else{aviso('No se pudo cambiar');b.disabled=false}})};
+  pintar()}
 /* ---------- docente: evalúa prácticas grabadas ---------- */
 /* mini grabadora para la respuesta en audio del docente */
 function miniRec(host){
