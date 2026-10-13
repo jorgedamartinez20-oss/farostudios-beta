@@ -308,6 +308,14 @@ button,.btn,.chip,.nav,.tab,.stab,.seg{-webkit-user-select:none;user-select:none
 .sgc[aria-pressed="true"]{border-color:var(--oro);background:linear-gradient(180deg,rgba(184,160,106,.2),var(--surface));box-shadow:0 8px 20px rgba(0,0,0,.16)}
 .sgc[aria-pressed="true"] .gi{background:linear-gradient(180deg,#CBB583,#B8A06A 55%,#A58E5A);color:var(--pizarra);box-shadow:0 3px 8px rgba(0,0,0,.2)}
 .sgp h2{margin-bottom:12px}
+.pvw{margin:4px 0 18px}.pvg{display:grid;grid-template-columns:repeat(8,1fr);grid-auto-rows:38px;gap:5px;margin-top:8px;max-width:760px}
+.pvx{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));grid-auto-rows:60px;gap:5px;margin-top:6px;max-width:760px}
+.pvc{position:relative;overflow:hidden;border-radius:6px;background:linear-gradient(150deg,#4a3a31,#2c231f);border:1px solid var(--line);cursor:grab;display:flex;align-items:flex-end}
+.pvc img,.pvc video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.85;pointer-events:none}
+.pvc i{position:absolute;top:4px;left:6px;font:700 .72rem/1 var(--body);font-style:normal;background:rgba(0,0,0,.6);color:#fff;border-radius:999px;padding:3px 7px}
+.pvc span{position:relative;width:100%;padding:12px 6px 4px;font-size:.68rem;color:#fff;background:linear-gradient(transparent,rgba(0,0,0,.7));white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pvc.off{opacity:.4}.pvc.drag{opacity:.35}.pvc.over{outline:2px dashed var(--gold,#B8A06A);outline-offset:-3px}
+.st.pulse{outline:2px solid var(--gold,#B8A06A);outline-offset:2px}
 .pfmv{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}.pfmv span{display:flex;gap:4px}.pfmv b{font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
 .st.dz,.field.dz{outline:2px dashed var(--gold,#B8A06A);outline-offset:-3px;background:rgba(184,160,106,.14)}
 .sgt{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(160px,100%),1fr));gap:12px}
@@ -1620,6 +1628,7 @@ const SECC=[
 const secKeys=s=>s.keys?s.keys():(s.items||[]).map(x=>x.k);
 /* ---------- PORTAFOLIO: elegir qué se muestra, categorías y fotos/videos extra ---------- */
 const PF_BASE=[['Boda','eventos'],['Marca','corporativo'],['XV años','eventos'],['Auditorio','audio'],['Álbum','audio'],['Restaurante','corporativo'],['Podcast','audio'],['Bautizo','eventos'],['Graduación','eventos'],['Coro','audio'],['Redes','corporativo'],['Retratos','eventos'],['Conferencia','corporativo'],['Spot','corporativo']];
+const PF_GEO=[[1,1,3,4],[4,1,2,2],[4,3,2,2],[6,1,3,2],[6,3,3,2],[1,5,4,2],[1,7,2,2],[3,7,2,2],[5,5,2,4],[7,5,2,2],[7,7,2,2],[1,9,2,3],[3,9,3,3],[6,9,3,3]];
 const PF_CATS0=[{id:'eventos',n:'Eventos',s:''},{id:'corporativo',n:'Corporativo',s:''},{id:'audio',n:'Audio',s:''}];
 let PFM=null;
 function pfLeer(){let p={};try{p=JSON.parse(sitioVal('portafolio')||'{}')||{}}catch(e){}
@@ -1643,9 +1652,29 @@ async function pfGuardar(){
 }
 function pfOrden(P){const ids=PF_BASE.map((_,i)=>'w'+(i+1)).concat(P.extra.map(x=>x.id));
   const o=(P.order||[]).filter((id,k,ar)=>ids.includes(id)&&ar.indexOf(id)===k);ids.forEach(id=>{if(!o.includes(id))o.push(id)});P.order=o;return o}
+function pfVista(P,ord){
+  const nom=id=>{const bi=/^w\d+$/.test(id)?+id.slice(1)-1:-1;if(bi>=0)return(P.over[id]&&P.over[id].n)||PF_BASE[bi][0];const x=P.extra.find(z=>z.id===id);return(x&&x.n)||'Nueva'};
+  const med=id=>{const bi=/^w\d+$/.test(id)?+id.slice(1)-1:-1;if(bi>=0)return{u:sitioVal('img.'+id),v:false};const x=P.extra.find(z=>z.id===id);return x?{u:x.src,v:x.type==='vid'}:{}};
+  const oculto=id=>/^w\d+$/.test(id)?P.off.includes(id):(P.extra.find(z=>z.id===id)||{}).on===false;
+  let from=-1;
+  const cell=(id,k,geo)=>{const m=med(id),c=el('div',{class:'pvc'+(oculto(id)?' off':''),draggable:'true',title:'Arrastra para cambiar de lugar · clic para ir a su casilla'},
+      m.u&&!m.v?el('img',{src:m.u,alt:'',loading:'lazy',draggable:'false'}):m.u&&m.v?vidThumb(m.u):null,el('i',{},String(k+1)),el('span',{},nom(id)));
+    if(geo)c.style.cssText='grid-column:'+geo[0]+' / span '+geo[2]+';grid-row:'+geo[1]+' / span '+geo[3];
+    c.addEventListener('dragstart',e=>{from=k;c.classList.add('drag');try{e.dataTransfer.setData('text/plain',String(k));e.dataTransfer.effectAllowed='move'}catch(_){}});
+    c.addEventListener('dragend',()=>{c.classList.remove('drag');$$('.pvc.over').forEach(x=>x.classList.remove('over'))});
+    c.addEventListener('dragover',e=>{if(from<0)return;e.preventDefault();c.classList.add('over')});
+    c.addEventListener('dragleave',()=>c.classList.remove('over'));
+    c.addEventListener('drop',e=>{if(from<0)return;e.preventDefault();const f=from;from=-1;if(f===k)return;[ord[f],ord[k]]=[ord[k],ord[f]];renderSitio()});
+    c.addEventListener('click',()=>{const t=$$('#sit-body .sgt .st')[k];if(t){t.scrollIntoView({behavior:'smooth',block:'center'});t.classList.add('pulse');setTimeout(()=>t.classList.remove('pulse'),1200)}});
+    return c};
+  const mosaico=el('div',{class:'pvg'});ord.slice(0,PF_GEO.length).forEach((id,k)=>mosaico.append(cell(id,k,PF_GEO[k])));
+  const wrap=el('div',{class:'pvw'},el('b',{class:'hlb'},'Vista previa del mosaico · arrastra una casilla sobre otra para intercambiarlas'),mosaico);
+  if(ord.length>PF_GEO.length){const ex=el('div',{class:'pvx'});ord.slice(PF_GEO.length).forEach((id,j)=>ex.append(cell(id,PF_GEO.length+j,null)));wrap.append(el('small',{class:'muted'},'Después del mosaico (se acomodan solas)'),ex)}
+  return wrap}
 function rPfTablones(card){
   if(!PFM)PFM=pfLeer();
   const P=PFM,ord=pfOrden(P),g=el('div',{class:'sgt',style:'grid-template-columns:repeat(auto-fill,minmax(min(230px,100%),1fr))'});
+  card.append(pfVista(P,ord));
   const mv=(k,d)=>{const j=k+d;if(j<0||j>=ord.length)return;[ord[k],ord[j]]=[ord[j],ord[k]];renderSitio()};
   const bar=k=>{const b=(tx,d,lb)=>{const x=el('button',{class:'btn btn-ghost btn-sm',type:'button','aria-label':lb,title:lb,onclick:()=>mv(k,d)},tx);x.disabled=k+d<0||k+d>=ord.length;return x};
     return el('div',{class:'pfmv'},el('b',{},'Casilla '+(k+1)),el('span',{},b('◀',-1,'Mover antes'),b('▶',1,'Mover después')))};
