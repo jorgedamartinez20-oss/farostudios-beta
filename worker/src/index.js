@@ -29,6 +29,12 @@ const LANDING = [
   ['recursos-gratis', 'Recursos gratis'],
   ['catalogo', 'Catálogo'],
   ['academy-fotos', 'Fotos de Academy'],
+  ['academy-descargas', 'Descargas de Academy'],
+  ['hero', 'Portada (video)'],
+  ['servicios', 'Servicios'],
+  ['equipo', 'Equipo (Quiénes somos)'],
+  ['resenas', 'Reseñas'],
+  ['logos', 'Logos de pago'],
 ];
 
 // Documentos propios del director (catálogos, afiches, datos de cuenta, SAT…). Siempre privados.

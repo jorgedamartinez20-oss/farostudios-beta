@@ -319,6 +319,44 @@ button,.btn,.chip,.nav,.tab,.stab,.seg{-webkit-user-select:none;user-select:none
 .st.on .stg{color:var(--oro-t);font-weight:700}
 .sgf{display:grid;gap:4px}
 .sf label{font-weight:700;font-size:.92rem}
+.sct{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+.sctb{display:flex;align-items:center;gap:12px;padding:8px 18px 8px 8px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--text);cursor:pointer;text-align:left;font:inherit;box-shadow:0 4px 12px rgba(0,0,0,.08);transition:border-color .2s,box-shadow .2s}
+.sctb .gi{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:var(--soft);color:var(--oro-t);flex:none}
+.sctb .gi .sv{width:21px;height:21px}
+.sctt{display:flex;flex-direction:column;line-height:1.2}.sctt b{font-weight:700}.sctt small{color:var(--muted);font-size:.78rem}
+.sctb[aria-selected="true"]{border-color:var(--oro);background:linear-gradient(180deg,rgba(184,160,106,.22),var(--surface));box-shadow:0 8px 20px rgba(0,0,0,.16)}
+.sctb[aria-selected="true"] .gi{background:linear-gradient(180deg,#CBB583,#B8A06A 55%,#A58E5A);color:var(--pizarra);box-shadow:0 3px 8px rgba(0,0,0,.2)}
+.mdg{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:10px;margin:12px 0 16px}
+.mdc{position:relative;display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 8px;border-radius:14px;border:1px solid var(--line);background:var(--soft);color:var(--text);cursor:pointer;font:inherit;text-align:center;box-shadow:0 3px 8px rgba(0,0,0,.08);transition:transform .15s,border-color .2s}
+.mdc:hover{transform:translateY(-2px);border-color:var(--oro)}
+.mdc .mdt{width:56px;height:56px;border-radius:12px;overflow:hidden;display:grid;place-items:center;background:var(--surface);border:1px dashed var(--line);color:var(--oro-t)}
+.mdc .mdt img{width:100%;height:100%;object-fit:cover}
+.mdc .mdt .sv{width:26px;height:26px;stroke-width:1.5}
+.mdc b{font-size:.82rem;font-weight:700;line-height:1.2;max-width:100%;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.mdc small{font-size:.72rem;color:var(--muted);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mdc.on{border-color:rgba(184,160,106,.7)}
+.mdk{position:absolute;top:6px;right:8px;font-style:normal;font-size:.8rem;font-weight:700;color:var(--oro-t)}
+.mdc[aria-pressed="true"]{border-color:var(--oro);background:linear-gradient(180deg,rgba(184,160,106,.24),var(--surface));box-shadow:0 8px 18px rgba(0,0,0,.18)}
+.mda{border-style:dashed;justify-content:center}
+.mdd{border:1px solid var(--line);border-radius:16px;padding:clamp(12px,2vw,18px);background:var(--soft)}
+.mdd h3{font-size:1.15rem;margin-bottom:6px}
+.mdcols{display:grid;grid-template-columns:minmax(0,1fr);gap:14px;align-items:start}
+@media (min-width:760px){.mdcols{grid-template-columns:minmax(200px,.8fr) minmax(0,1.4fr)}}
+.mdcols .mdf{grid-template-columns:repeat(auto-fill,minmax(min(150px,100%),1fr))}
+.mdh{margin:18px 0 0;font-size:1.05rem}
+.mdp small{display:block;margin-top:6px}
+.svp{position:relative;height:150px;border-radius:12px;overflow:hidden;display:flex;align-items:flex-end;padding:12px;border:1px solid var(--line)}
+.svp .svm{position:absolute;inset:0;opacity:.42}
+.svp .svm video,.svp .svm img{width:100%;height:100%;object-fit:cover;display:block}
+.svp b{position:relative;font-size:1.1rem}
+.hpvs{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+.hpv{position:relative;height:96px;border-radius:12px;overflow:hidden;background:#555;border:1px solid var(--line)}
+.hpv video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.hpv i{position:absolute;inset:0;display:block}
+.hpv span{position:absolute;left:8px;bottom:6px;font-size:.78rem;font-weight:700}
+.hlb{display:block;font-weight:700;margin-bottom:6px}
+.mdx input[type=range]{width:100%;accent-color:var(--oro)}
+.stp video{width:100%;height:100%;object-fit:cover}
 /* documentos propios (R2 privado) */
 .dc-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:16px;margin-top:6px}
 .dc{display:flex;flex-direction:column;gap:12px;box-shadow:0 10px 26px rgba(0,0,0,.12),0 1px 3px rgba(0,0,0,.12)}
@@ -637,14 +675,22 @@ let actUlt=0;function actMarca(f){const n=Date.now();if(!f&&n-actUlt<15000)retur
 try{S=JSON.parse(localStorage.getItem('faro_adm')||sessionStorage.getItem('faro_adm')||'null')}catch(e){}
 if(S&&Date.now()-actGet()>INACT){S=null;try{localStorage.removeItem('faro_adm');sessionStorage.removeItem('faro_adm')}catch(e){}}
 function saveS(j){S={access:j.access_token,refresh:j.refresh_token,exp:Date.now()+(j.expires_in||3600)*1000};try{stor().setItem('faro_adm',JSON.stringify(S))}catch(e){}actMarca(true)}
-async function refresh(){
-  if(!S)return false;
-  const r=await fetch(SB.url+'/auth/v1/token?grant_type=refresh_token',{method:'POST',headers:{apikey:SB.key,'Content-Type':'application/json'},body:JSON.stringify({refresh_token:S.refresh})});
-  if(!r.ok)return false;saveS(await r.json());return true;
+/* Toda petición tiene tiempo límite: si la red se cae o el equipo se duerme, no deja la pantalla esperando para siempre */
+function fetchT(u,o,ms){const c=new AbortController(),t=setTimeout(()=>c.abort(),ms||30000);return fetch(u,Object.assign({},o,{signal:c.signal})).finally(()=>clearTimeout(t))}
+/* Una sola renovación de sesión a la vez: antes, al vencer el permiso, decenas de peticiones intentaban renovarlo juntas y se pisaban */
+let _refP=null;
+function refresh(){
+  if(_refP)return _refP;
+  _refP=(async()=>{try{
+    if(!S)return false;
+    const r=await fetchT(SB.url+'/auth/v1/token?grant_type=refresh_token',{method:'POST',headers:{apikey:SB.key,'Content-Type':'application/json'},body:JSON.stringify({refresh_token:S.refresh})},20000);
+    if(!r.ok)return false;saveS(await r.json());return true;
+  }catch(e){return false}finally{_refP=null}})();
+  return _refP;
 }
 async function api(path,o){
   o=o||{};if(S&&S.exp-60000<Date.now())await refresh();
-  const go=()=>fetch(SB.url+path,{method:o.method||'GET',headers:Object.assign({apikey:SB.key,Authorization:'Bearer '+(S?S.access:SB.key),'Content-Type':'application/json'},o.headers||{}),body:o.body?JSON.stringify(o.body):undefined});
+  const go=()=>fetchT(SB.url+path,{method:o.method||'GET',headers:Object.assign({apikey:SB.key,Authorization:'Bearer '+(S?S.access:SB.key),'Content-Type':'application/json'},o.headers||{}),body:o.body?JSON.stringify(o.body):undefined});
   let r=await go();
   if(r.status===401&&await refresh())r=await go();
   if(r.status===401){logout();throw new Error('sesion')}
@@ -672,7 +718,7 @@ $('#lgo').addEventListener('click',doLogin);
 ['pointerdown','keydown','touchstart','scroll'].forEach(ev=>addEventListener(ev,()=>{if(S)actMarca()},{passive:true,capture:true}));
 function vigilaInact(){if(S&&Date.now()-actGet()>INACT){logout();const e=$('#lerr');e.hidden=false;e.textContent='Cerramos tu sesión por inactividad. Entra de nuevo.'}}
 ['gesturestart','gesturechange','gestureend'].forEach(g=>document.addEventListener(g,e=>e.preventDefault()));
-document.addEventListener('visibilitychange',()=>{if(!document.hidden)vigilaInact()});setInterval(vigilaInact,60000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden){vigilaInact();if(S&&S.exp-120000<Date.now())refresh().catch(()=>{})}});setInterval(vigilaInact,60000);
 $('#spw').addEventListener('change',e=>{$('#pw').type=e.target.checked?'text':'password'});
 ['em','pw'].forEach(i=>$('#'+i).addEventListener('keydown',e=>{if(e.key==='Enter')doLogin()}));
 
@@ -1536,27 +1582,40 @@ function renderChat(box,k){
 const INST=[['canto','Canto'],['acustica','Guitarra acústica'],['clasica','Guitarra clásica'],['electrica','Guitarra eléctrica'],['bajo','Bajo'],['bateria','Batería'],['piano','Piano'],['produccion','Producción musical']];
 const NIV=[['principiante','Principiante'],['intermedio','Intermedio'],['ninos','Niños'],['jovenes','Jóvenes'],['adultos','Adultos']];
 const rng=(p,n)=>Array.from({length:n},(_,i)=>p+(i+1));
-const SITIO=[
- {g:'Contacto y redes',items:[
-  {k:'wa',l:'WhatsApp (número con código de país, solo dígitos)',t:'text',ph:'50252695592'},
-  {k:'ig.studios',l:'Instagram de Studios (usuario)',t:'text',ph:'@faro_studios'},
-  {k:'ig.academy',l:'Instagram de Academy (usuario)',t:'text',ph:'@farostudios_academy'}]},
- {g:'Textos del sitio',items:[
+/* ---------- ARCHIVOS Y WEB · tres grupos (Landing, Academy Música, Academy Inglés) con sus secciones ---------- */
+const SIT_CATS=[['landing','Landing page','globe'],['musica','Academy · Música','music'],['ingles','Academy · Inglés','cap']];
+const TX=(k,l,ph,t)=>({k,l,t:t||'text',ph});
+const RECS=[...rng('r',6).map(x=>({id:x,n:'Recurso '+x.slice(1)})),...rng('s',4).map(x=>({id:x,n:'Guía rápida '+x.slice(1)}))];
+const SERV=[['sv1','Eventos sociales','camera','#8B1A2B','Fotografía y video para bodas, XV años, graduaciones y celebraciones.'],['sv2','Corporativo','film','#3A3A3A','Video para empresas, marcas, restaurantes y más. Producciones para radio, televisión y redes sociales.'],['sv3','Audio','music','#B8A06A','Sonido para eventos, capacitación para iglesias y producción de álbumes musicales.'],['sv4','Academia','cap','#F5F2EE','Academia de música e idiomas.']];
+const EQ_DEF={david:['David','Fundador · Dirección'],equipo2:['Nombre','Rol en el equipo']};
+const CAT_PAGS=['Portada','Quiénes somos','Eventos sociales','Corporativo','Audio y música','Formación','Cómo trabajamos','Contraportada'];
+const CAT_DEF=[['Faro Studios','Catálogo de servicios'],['Quiénes somos','Productora audiovisual en Guatemala de alta calidad. Foto, video, audio y formación con excelencia y visión.'],['Eventos sociales','Fotografía y video para bodas, XV años, graduaciones y celebraciones. Cobertura completa y entrega cuidada.'],['Corporativo','Video para empresas, marcas y restaurantes. Producciones para radio, televisión y redes sociales.'],['Audio y música','Sonido en vivo, grabación, mezcla y producción de álbumes. Capacitación de audio para iglesias.'],['Formación','Recursos y capacitación para iglesias y centros de formación. Faro Academy: música e inglés.'],['Cómo trabajamos','1. Conversamos tu idea. 2. Cotizamos. 3. Producimos. 4. Entregamos y te acompañamos.'],['Conózcanos sin costo','Cotiza o agenda desde farostudios.net']];
+function eqLista(){let l=[];try{l=JSON.parse(sitioVal('equipo')||'[]')}catch(e){}if(!Array.isArray(l))l=[];l=l.filter(x=>/^[a-z0-9]+$/.test(String(x)));return l.length?l:['david','equipo2']}
+const eqKeys=()=>eqLista().flatMap(id=>['img.'+id,'vid.'+id,'tm.'+id+'.n','tm.'+id+'.r','tm.'+id+'.d']);
+const MUS_PDF=['Canto','Guitarra acústica','Guitarra clásica','Guitarra eléctrica','Bajo','Batería','Piano','Producción musical'];
+const SECC=[
+ {id:'hero',c:'landing',t:'Portada · video',i:'film',keys:()=>['vid.hero'],r:rHero},
+ {id:'contacto',c:'landing',t:'Contacto y redes',i:'mail',items:[TX('wa','WhatsApp (número con código de país, solo dígitos)','50252695592'),TX('ig.studios','Instagram de Studios (usuario)','@faro_studios'),TX('ig.academy','Instagram de Academy (usuario)','@farostudios_academy')]},
+ {id:'textos',c:'landing',t:'Textos',i:'edit',items:[
   {k:'txt.who1',l:'Quiénes somos · párrafo 1',t:'area'},{k:'txt.who2',l:'Quiénes somos · párrafo 2',t:'area'},
+  {k:'txt.lead.presentacion',l:'Conoce lo que hacemos · frase debajo del título',t:'area'},{k:'txt.lead.servicios',l:'Servicios · frase debajo del título',t:'area'},
   {k:'txt.lead.portafolio',l:'Portafolio · frase debajo del título',t:'area'},{k:'txt.lead.catalogo',l:'Catálogo · frase debajo del título',t:'area'},
   {k:'txt.lead.recursos',l:'Recursos gratis · frase debajo del título',t:'area'},{k:'txt.lead.faq',l:'Preguntas frecuentes · frase debajo del título',t:'area'}]},
- {g:'Fotos de Studios',dest:'landing/fotos-studios',items:[{k:'img.david',l:'Foto de David (Quiénes somos)',t:'img'},{k:'img.equipo2',l:'Foto de la segunda persona del equipo',t:'img'},{k:'vid.david',l:'Video de saludo de David (se reproduce al pasar el cursor)',t:'vid'},{k:'vid.equipo2',l:'Video de saludo de la segunda persona',t:'vid'},
-  ...rng('t',3).map(x=>({k:'img.'+x,l:'Foto del testimonio '+x.slice(1),t:'img'}))]},
- {g:'Portafolio · 14 tablones',dest:'landing/portafolio',items:rng('w',14).map(x=>({k:'img.'+x,l:'Tablón '+x.slice(1),t:'img'}))},
- {g:'Producciones musicales · portadas y audios',dest:'landing/producciones-musicales',items:rng('alb',8).flatMap(x=>{const n=x.slice(3);return[{k:'img.'+x,l:'Portada del disco '+n,t:'img'},{k:'audio.'+x,l:'Audio del disco '+n+' (MP3)',t:'audio'},{k:'at.'+n,l:'Disco '+n+' · título',t:'text',ph:'Sencillo 01'},{k:'aa.'+n,l:'Disco '+n+' · artista',t:'text',ph:'Nombre del artista'},{k:'ay.'+n,l:'Disco '+n+' · año',t:'text',ph:'2025'},{k:'as.'+n,l:'Disco '+n+' · artistas similares',t:'text',ph:'Ej. Alex Campos, Miel San Marcos'}]})},
- {g:'Recursos gratis (PDF)',dest:'landing/recursos-gratis',items:[...rng('r',6).flatMap(x=>[{k:'pdf.'+x,l:'Recurso '+x.slice(1)+' (PDF)',t:'pdf'},{k:'rt.'+x,l:'Recurso '+x.slice(1)+' · título',t:'text'},{k:'rd.'+x,l:'Recurso '+x.slice(1)+' · descripción',t:'area'}]),...rng('s',4).flatMap(x=>[{k:'pdf.'+x,l:'Guía rápida '+x.slice(1)+' (PDF)',t:'pdf'},{k:'rt.'+x,l:'Guía rápida '+x.slice(1)+' · título',t:'text'},{k:'rd.'+x,l:'Guía rápida '+x.slice(1)+' · descripción',t:'area'}])]},
- {g:'Reseñas de clientes',items:rng('',6).flatMap(n=>[{k:'rv.'+n+'.q',l:'Reseña '+n+' · opinión',t:'area'},{k:'rv.'+n+'.n',l:'Reseña '+n+' · nombre del cliente',t:'text'},{k:'rv.'+n+'.r',l:'Reseña '+n+' · empresa o evento',t:'text'},{k:'img.t'+n,l:'Reseña '+n+' · foto del cliente',t:'img'}])},
- {g:'Academy · descargas (PDF)',dest:'landing/academy-descargas',items:[...['Canto', 'Guitarra acústica', 'Guitarra clásica', 'Guitarra eléctrica', 'Bajo', 'Batería', 'Piano', 'Producción musical'].map((n,i)=>({k:'pdf.plm'+(i+1),l:'Música · Plan de '+n+' (PDF)',t:'pdf'})),{k:'pdf.frm1',l:'Música · Material gratis: 3 acordes (PDF)',t:'pdf'},{k:'pdf.ple1',l:'Inglés · Plan principiante A (PDF)',t:'pdf'},{k:'pdf.ple2',l:'Inglés · Plan intermedio B (PDF)',t:'pdf'},{k:'pdf.fre1',l:'Inglés · Material gratis: frases para presentarte (PDF)',t:'pdf'}]},
- {g:'Catálogo en libro',dest:'landing/catalogo',items:[{k:'catalogoPdf',l:'Catálogo completo (PDF). Se muestra como libro, sin descarga.',t:'pdf'}]},
- {g:'Academy · fotos',dest:'landing/academy-fotos',items:[{k:'img.music-t1',l:'Foto testimonio Música',t:'img'},{k:'img.english-t1',l:'Foto testimonio Inglés',t:'img'},
-  ...INST.map(i=>({k:'img.music-'+i[0],l:'Foto de '+i[1],t:'img'})),...NIV.map(i=>({k:'img.english-'+i[0],l:'Foto de Inglés · '+i[1],t:'img'}))]},
- {g:'Academy · canciones de Spotify por instrumento',items:INST.map(i=>({k:'songs.'+i[0],l:i[1]+' · enlace insertar de Spotify',t:'text',ph:'https://open.spotify.com/embed/track/…'}))}
+ {id:'equipo',c:'landing',t:'Quiénes somos · fichas',i:'users',keys:eqKeys,r:rEquipo},
+ {id:'servicios',c:'landing',t:'Servicios',i:'camera',keys:()=>SERV.flatMap(s=>['vid.'+s[0],'img.'+s[0],'sv.'+s[0]+'.t','sv.'+s[0]+'.d']),r:rServicios},
+ {id:'portafolio',c:'landing',t:'Portafolio',i:'image',dest:'landing/portafolio',lead:'Foto de cada tablón. Los videos se suben abajo y se reproducen solos, diluidos por el color del tablón.',items:rng('w',14).map(x=>({k:'img.'+x,l:'Tablón '+x.slice(1),t:'img'})),after:renderPortafolioMgr},
+ {id:'discos',c:'landing',t:'Discos',i:'music',keys:()=>rng('',8).flatMap(n=>['img.alb'+n,'audio.alb'+n,'at.'+n,'aa.'+n,'ay.'+n,'ag.'+n,'as.'+n]),r:rDiscos},
+ {id:'catalogo',c:'landing',t:'Catálogo',i:'book',keys:()=>['catalogoPdf',...CAT_PAGS.flatMap((_,i)=>['cat.'+i+'.h','cat.'+i+'.p'])],r:rCatalogo},
+ {id:'recursos',c:'landing',t:'Recursos gratis',i:'pdf',keys:()=>RECS.flatMap(r=>['pdf.'+r.id,'rt.'+r.id,'rd.'+r.id]),r:rRecursos},
+ {id:'resenas',c:'landing',t:'Reseñas',i:'star',keys:()=>rng('',6).flatMap(n=>['rv.'+n+'.q','rv.'+n+'.n','rv.'+n+'.r','img.t'+n]),r:rResenas},
+ {id:'pagos',c:'landing',t:'Logos de pago',i:'card',dest:'landing/logos',lead:'Los logos que van junto a las preguntas frecuentes. Si dejas uno vacío, la página muestra el cuadro de ejemplo.',items:[{k:'img.logo-visa',l:'Logo Visa',t:'img'},{k:'img.logo-mc',l:'Logo Mastercard',t:'img'},{k:'img.logo-bi',l:'Logo Banco Industrial',t:'img'}]},
+ {id:'m-fotos',c:'musica',t:'Fotos',i:'camera',dest:'landing/academy-fotos',items:[{k:'img.music-t1',l:'Foto testimonio Música',t:'img'},...INST.map(i=>({k:'img.music-'+i[0],l:'Foto de '+i[1],t:'img'}))]},
+ {id:'m-pdf',c:'musica',t:'Descargas (PDF)',i:'pdf',dest:'landing/academy-descargas',items:[...MUS_PDF.map((n,i)=>({k:'pdf.plm'+(i+1),l:'Plan de '+n+' (PDF)',t:'pdf'})),{k:'pdf.frm1',l:'Material gratis: 3 acordes (PDF)',t:'pdf'}]},
+ {id:'m-spotify',c:'musica',t:'Spotify',i:'link',items:INST.map(i=>TX('songs.'+i[0],i[1]+' · enlace insertar de Spotify','https://open.spotify.com/embed/track/…'))},
+ {id:'e-fotos',c:'ingles',t:'Fotos',i:'camera',dest:'landing/academy-fotos',items:[{k:'img.english-t1',l:'Foto testimonio Inglés',t:'img'},...NIV.map(i=>({k:'img.english-'+i[0],l:'Foto de Inglés · '+i[1],t:'img'}))]},
+ {id:'e-pdf',c:'ingles',t:'Descargas (PDF)',i:'pdf',dest:'landing/academy-descargas',items:[{k:'pdf.ple1',l:'Plan principiante A (PDF)',t:'pdf'},{k:'pdf.ple2',l:'Plan intermedio B (PDF)',t:'pdf'},{k:'pdf.fre1',l:'Material gratis: frases para presentarte (PDF)',t:'pdf'}]}
 ];
+const secKeys=s=>s.keys?s.keys():(s.items||[]).map(x=>x.k);
 /* ---------- PORTAFOLIO: elegir qué se muestra, categorías y fotos/videos extra ---------- */
 const PF_BASE=[['Boda','eventos'],['Marca','corporativo'],['XV años','eventos'],['Auditorio','audio'],['Álbum','audio'],['Restaurante','corporativo'],['Podcast','audio'],['Bautizo','eventos'],['Graduación','eventos'],['Coro','audio'],['Redes','corporativo'],['Retratos','eventos'],['Conferencia','corporativo'],['Spot','corporativo']];
 const PF_CATS0=[{id:'eventos',n:'Eventos',s:''},{id:'corporativo',n:'Corporativo',s:''},{id:'audio',n:'Audio',s:''}];
@@ -1582,7 +1641,7 @@ function renderPortafolioMgr(box){
   });
   cc.append(el('div',{class:'acts'},el('button',{class:'btn btn-gold btn-sm',type:'button',onclick:()=>{P.cats.push({id:'cat-'+Date.now().toString(36),n:'',s:''});renderSitio()}},icoEl('plus'),' Agregar categoría')));
   /* tablones de ejemplo */
-  const bc=el('div',{class:'card sgp'},el('h2',{},'Tablones: mostrar u ocultar'),el('p',{class:'muted'},'Quita la marca para ocultar un tablón en la página. La foto de cada uno se sube arriba, en «Portafolio · 14 tablones». Aquí también puedes ponerle nombre, categoría y un video que se reproduce al pasar el cursor.'));
+  const bc=el('div',{class:'card sgp'},el('h2',{},'Tablones: mostrar u ocultar'),el('p',{class:'muted'},'Quita la marca para ocultar un tablón en la página. La foto de cada uno se sube arriba. Aquí también puedes ponerle nombre, categoría y un video que se reproduce solo, diluido por el color del tablón.'));
   PF_BASE.forEach((b,i)=>{
     const id='w'+(i+1),o=P.over[id]=P.over[id]||{};
     const ck=el('input',{type:'checkbox'});ck.checked=!P.off.includes(id);ck.addEventListener('change',()=>{P.off=P.off.filter(x=>x!==id);if(!ck.checked)P.off.push(id)});
@@ -1647,7 +1706,7 @@ function webPintar(){
         el('button',{class:'btn btn-gold btn-sm',type:'button',onclick:async()=>{const r=await api('/rest/v1/sugerencias_web?id=eq.'+s.id,{method:'PATCH',headers:{Prefer:'return=minimal'},body:{leida:!s.leida}});if(!r.ok){toast(await errText(r));return}await webCarga()}},icoEl('check'),s.leida?' Marcar como nueva':' Marcar como leída'),
         el('button',{class:'btn btn-red btn-sm',type:'button','aria-label':'Eliminar',onclick:async()=>{if(!confirm('¿Eliminar este mensaje?'))return;const r=await api('/rest/v1/sugerencias_web?id=eq.'+s.id,{method:'DELETE',headers:{Prefer:'return=minimal'}});if(!r.ok){toast(await errText(r));return}await webCarga()}},icoEl('trash')))));
   });
-  const nombres={};((typeof SITIO!=='undefined'&&SITIO.find(g=>g.g.startsWith('Recursos'))||{items:[]}).items.forEach(i=>{nombres[i.k.replace('pdf.','')]=i.l.replace(' (PDF)','')}));
+  const nombres={};RECS.forEach(r=>{nombres[r.id]=r.n});
   const c2=el('div',{class:'card',style:'margin-top:14px'},el('h2',{},'Comentarios en los recursos'),el('p',{class:'muted'},'Lo que la comunidad escribe en cada guía. Oculta lo que no deba verse.'));
   if(!WEB.com.length)c2.append(el('p',{class:'muted'},'Todavía no hay comentarios.'));
   WEB.com.forEach(m=>c2.append(el('div',{class:'item'},el('b',{},m.nombre+' · '+(nombres[m.recurso]||m.recurso)+(m.visible?'':' · oculto')),el('small',{},new Date(m.creado).toLocaleString('es-GT',{timeZone:'America/Guatemala'})),el('p',{},m.texto),
@@ -1657,26 +1716,153 @@ function webPintar(){
 }
 
 function sitioVal(k){return AC.cfg[k]||''}
-let SIT_SEL=0;
-const SITIO_META={'Contacto y redes':['Contacto y redes','mail'],'Textos del sitio':['Textos','edit'],'Fotos de Studios':['Fotos Studios','camera'],'Portafolio · 14 tablones':['Portafolio','image'],'Producciones musicales · portadas y audios':['Producciones','music'],'Recursos gratis (PDF)':['Recursos gratis','pdf'],'Reseñas de clientes':['Reseñas','edit'],'Academy · descargas (PDF)':['Descargas Academy','pdf'],'Catálogo en libro':['Catálogo','book'],'Academy · fotos':['Fotos Academy','cap'],'Academy · canciones de Spotify por instrumento':['Spotify','link']};
+const SIT={cat:'landing',sec:{},sel:{}};
 const sitCambios=()=>$$('.sit-txt').some(i=>i.value.trim()!==(i.dataset.orig||''));
-function renderSitio(){
-  const box=$('#sit-body');if(!box)return;box.textContent='';
-  $('#sit-warn').hidden=AC.ok;
-  const sec0=SITIO[SIT_SEL]||SITIO[0];
-  const grid=el('div',{class:'sg'});
-  SITIO.forEach((sec,idx)=>{const [t,i]=SITIO_META[sec.g]||[sec.g,'file'],n=sec.items.filter(x=>sitioVal(x.k)).length,tot=sec.items.length;
-    grid.append(el('button',{type:'button',class:'sgc','aria-pressed':String(sec===sec0),onclick:()=>{if(sec===sec0)return;if(sitCambios()&&!confirm('Tienes textos sin guardar en esta sección. ¿Descartarlos?'))return;SIT_SEL=idx;renderSitio()}},
-      el('span',{class:'gi'},icoEl(i)),el('b',{},t),el('small',{},n+' de '+tot+' llenos'),el('span',{class:'sgbar'},el('i',{style:'width:'+Math.round(100*n/tot)+'%'})))) });
-  box.append(grid);
-  const card=el('div',{class:'card sgp'},el('h2',{},sec0.g));
-  const tiles=el('div',{class:'sgt'}),fields=el('div',{class:'sgf'});
-  sec0.items.forEach(it=>(['img','audio','pdf','vid'].includes(it.t)?tiles:fields).append(sitioRow(it,sec0.dest)));
-  if(tiles.children.length)card.append(tiles);
-  if(fields.children.length)card.append(fields);
-  box.append(card);
-  if(sec0.g.startsWith('Portafolio'))renderPortafolioMgr(box);
+const vidEl=u=>{const v=document.createElement('video');v.muted=true;v.loop=true;v.autoplay=true;v.playsInline=true;v.setAttribute('playsinline','');v.preload='metadata';v.src=u;const p=v.play&&v.play();if(p&&p.catch)p.catch(()=>{});return v};
+/* fichas compactas: una por elemento; al tocar una se abre su editor abajo */
+function mdChips(items,sel,onSel,add){
+  const g=el('div',{class:'mdg'});
+  items.forEach((it,i)=>g.append(el('button',{type:'button',class:'mdc'+(it.on?' on':''),'aria-pressed':String(i===sel),title:it.l,onclick:()=>onSel(i)},
+    el('span',{class:'mdt'},it.img?el('img',{src:it.img,alt:'',loading:'lazy',decoding:'async'}):icoEl(it.i||'image')),
+    el('b',{},it.l),it.s?el('small',{},it.s):null,it.on?el('i',{class:'mdk','aria-hidden':'true'},'✓'):null)));
+  if(add)g.append(el('button',{type:'button',class:'mdc mda',onclick:add.fn},el('span',{class:'mdt'},icoEl('plus')),el('b',{},add.l)));
+  return g;
 }
+function campoTxt(it,ins){
+  const v=sitioVal(it.k),inp=it.t==='area'?el('textarea',{rows:'3',maxlength:'700'}):el('input',{type:'text',maxlength:'400',placeholder:it.ph||''});
+  inp.value=v;inp.dataset.k=it.k;inp.dataset.orig=v;inp.className='sit-txt';if(ins)ins.push(inp);
+  return el('div',{class:'field sf',title:it.k},el('label',{},it.l),inp);
+}
+/* editor de una ficha: archivos a la izquierda, textos a la derecha y un solo botón Guardar */
+function detalle(o){
+  const box=el('div',{class:'mdd'}),ins=[];
+  box.append(el('h3',{},o.titulo));
+  if(o.nota)box.append(el('p',{class:'muted'},o.nota));
+  const cols=el('div',{class:'mdcols'});
+  if(o.previa)cols.append(o.previa);
+  if((o.archivos||[]).length)cols.append(el('div',{class:'sgt mdf'},o.archivos.map(a=>sitioRow(a,o.dest))));
+  if((o.textos||[]).length)cols.append(el('div',{class:'sgf mdx'},o.textos.map(t=>campoTxt(t,ins))));
+  box.append(cols);
+  const acts=el('div',{class:'acts',style:'margin-top:12px'});
+  if(ins.length)acts.append(el('button',{class:'btn btn-gold',type:'button',onclick:()=>sitioTxt(ins)},icoEl('check'),' Guardar textos'));
+  (o.extra||[]).forEach(x=>acts.append(x));
+  if(acts.children.length)box.append(acts);
+  return box;
+}
+function selDe(id,n){return Math.max(0,Math.min(n-1,SIT.sel[id]||0))}
+
+/* --- Portada: video en bucle detrás del color --- */
+function rHero(card){
+  const v=sitioVal('vid.hero'),op0=Math.min(98,Math.max(35,parseInt(sitioVal('hero.cortina'))||82));
+  card.append(el('p',{class:'muted'},'Un video corto que se repite solo detrás de la portada. Si no subes ninguno, la portada se queda en su color sólido. El color de la portada (que cambia solo en modo oscuro) va encima como una «cortina» semitransparente: con la barra decides cuánto video se deja ver.'));
+  const cols=el('div',{class:'mdcols'});
+  cols.append(el('div',{class:'sgt mdf'},sitioRow({k:'vid.hero',l:'Video de portada (MP4 corto y liviano, sin sonido)',t:'vid'},'landing/hero')));
+  const lb=el('b',{},op0+'%'),rg=el('input',{type:'range',min:'35',max:'98',step:'1',value:String(op0),'aria-label':'Opacidad de la cortina'});
+  const mk=(cls,col,tx)=>{const d=el('div',{class:'hpv'});if(v)d.append(vidEl(v));d.append(el('i',{class:cls,style:'background:'+col+';opacity:'+(op0/100)}),el('span',{style:'color:'+tx},cls==='lt'?'Modo claro':'Modo oscuro'));return d};
+  const pl=mk('lt','#F5F2EE','#252528'),pd=mk('dk','#1D1D20','#F2EEE8');
+  rg.addEventListener('input',()=>{lb.textContent=rg.value+'%';$$('.hpv i',cols).forEach(i=>i.style.opacity=rg.value/100)});
+  cols.append(el('div',{class:'mdx'},el('label',{class:'hlb'},'Opacidad de la cortina de color: ',lb),rg,el('p',{class:'muted'},'Más alto = el color tapa más y el video se ve tenue. Más bajo = se ve más el video.'),el('div',{class:'hpvs'},pl,pd),
+    el('div',{class:'acts',style:'margin-top:10px'},el('button',{class:'btn btn-gold',type:'button',onclick:async()=>{try{await sitioSet('hero.cortina',String(rg.value));toast('Cortina guardada');await loadAc()}catch(e){toast(e.message||'No se pudo guardar')}}},icoEl('check'),' Guardar cortina'))));
+  card.append(cols);
+}
+
+/* --- Quiénes somos: fichas del equipo --- */
+function rEquipo(card){
+  const l=eqLista(),sel=selDe('equipo',l.length),id=l[sel];
+  card.append(el('p',{class:'muted'},'Cada ficha es una persona en «Quiénes somos». Toca una para editar su nombre, rol y función, y subir su foto y su video de saludo (se reproduce al pasar el cursor). Usa «Agregar ficha» para sumar más gente.'));
+  const guardarLista=async nl=>{try{await sitioSet('equipo',JSON.stringify(nl));await loadAc()}catch(e){toast(e.message||'No se pudo guardar')}};
+  card.append(mdChips(l.map(x=>({l:sitioVal('tm.'+x+'.n')||(EQ_DEF[x]||['Nueva ficha'])[0],s:sitioVal('tm.'+x+'.r')||(EQ_DEF[x]||['','Rol'])[1],img:sitioVal('img.'+x),on:!!sitioVal('img.'+x),i:'user'})),sel,i=>{SIT.sel.equipo=i;renderSitio()},
+    {l:'Agregar ficha',fn:()=>{const nid='m'+Date.now().toString(36);SIT.sel.equipo=l.length;guardarLista(l.concat(nid))}}));
+  const mv=(d)=>async()=>{const j=sel+d;if(j<0||j>=l.length)return;const nl=l.slice();[nl[sel],nl[j]]=[nl[j],nl[sel]];SIT.sel.equipo=j;await guardarLista(nl)};
+  const mvBtn=(tx,off,fn)=>{const b=el('button',{class:'btn btn-ghost btn-sm',type:'button',onclick:fn},tx);b.disabled=off;return b};
+  const d=EQ_DEF[id]||['Nombre','Rol en el equipo'];
+  card.append(detalle({titulo:'Ficha '+(sel+1)+' de '+l.length,dest:'landing/equipo',
+    archivos:[{k:'img.'+id,l:'Foto',t:'img'},{k:'vid.'+id,l:'Video de saludo',t:'vid'}],
+    textos:[TX('tm.'+id+'.n','Nombre',d[0]),TX('tm.'+id+'.r','Rol',d[1]),TX('tm.'+id+'.d','Función o descripción corta (opcional)','Ej. Dirección, foto y audio','area')],
+    extra:[mvBtn('◀ Mover antes',sel===0,mv(-1)),mvBtn('Mover después ▶',sel===l.length-1,mv(1)),
+      el('button',{class:'btn btn-red btn-sm',type:'button',onclick:async()=>{if(l.length<2){toast('Debe quedar al menos una ficha');return}if(!confirm('¿Quitar esta ficha y su foto, video y textos?'))return;
+        try{for(const k of ['img.'+id,'vid.'+id,'tm.'+id+'.n','tm.'+id+'.r','tm.'+id+'.d'])if(sitioVal(k))await api('/rest/v1/sitio_config?clave=eq.'+encodeURIComponent(k),{method:'DELETE',headers:{Prefer:'return=minimal'}});
+          SIT.sel.equipo=Math.max(0,sel-1);await guardarLista(l.filter(x=>x!==id));toast('Ficha quitada')}catch(e){toast(e.message||'No se pudo quitar')}}},icoEl('trash'),' Quitar ficha')]}));
+}
+
+/* --- Servicios: foto o video en bucle diluido por el color de cada panel --- */
+function rServicios(card){
+  const sel=selDe('servicios',SERV.length),s=SERV[sel],id=s[0];
+  card.append(el('p',{class:'muted'},'Cada panel de «Servicios» puede llevar un video corto en bucle (o una foto). En la página se ve diluido por el color del panel, así el texto se lee bien. Si no subes nada, queda el color sólido.'));
+  card.append(mdChips(SERV.map(x=>({l:sitioVal('sv.'+x[0]+'.t')||x[1],s:sitioVal('vid.'+x[0])?'Con video':sitioVal('img.'+x[0])?'Con foto':'Color sólido',on:!!(sitioVal('vid.'+x[0])||sitioVal('img.'+x[0])),i:x[2]})),sel,i=>{SIT.sel.servicios=i;renderSitio()}));
+  const vv=sitioVal('vid.'+id),im=sitioVal('img.'+id),pv=el('div',{class:'svp',style:'background:'+s[3]},el('span',{class:'svm'},vv?vidEl(vv):im?el('img',{src:im,alt:'',loading:'lazy',decoding:'async'}):null),el('b',{style:'color:'+(sel>=2?'#252528':'#F5F2EE')},sitioVal('sv.'+id+'.t')||s[1]));
+  card.append(detalle({titulo:s[1],dest:'landing/servicios',previa:el('div',{class:'mdp'},pv,el('small',{class:'muted'},'Vista previa de cómo se diluye con el color')),
+    archivos:[{k:'vid.'+id,l:'Video corto en bucle (MP4)',t:'vid'},{k:'img.'+id,l:'Foto (si no hay video)',t:'img'}],
+    textos:[TX('sv.'+id+'.t','Título del panel',s[1]),TX('sv.'+id+'.d','Texto del panel',s[4],'area')]}));
+}
+
+/* --- Discos: portada, audio y metadatos en un mismo lugar --- */
+function rDiscos(card){
+  const sel=selDe('discos',8),n=sel+1;
+  card.append(el('p',{class:'muted'},'Toca un disco para cargar su portada, su audio (MP3) y sus datos: título, artista, año, género y artistas similares. Todo queda junto en el mismo lugar.'));
+  card.append(mdChips(rng('',8).map(x=>({l:sitioVal('at.'+x)||'Disco '+x,s:sitioVal('aa.'+x)||(sitioVal('audio.alb'+x)?'Con audio':'Vacío'),img:sitioVal('img.alb'+x),on:!!(sitioVal('img.alb'+x)||sitioVal('audio.alb'+x)),i:'music'})),sel,i=>{SIT.sel.discos=i;renderSitio()}));
+  card.append(detalle({titulo:'Disco '+n,dest:'landing/producciones-musicales',
+    archivos:[{k:'img.alb'+n,l:'Portada',t:'img'},{k:'audio.alb'+n,l:'Audio (MP3)',t:'audio'}],
+    textos:[TX('at.'+n,'Título','Sencillo 01'),TX('aa.'+n,'Artista','Nombre del artista'),TX('ay.'+n,'Año','2026'),TX('ag.'+n,'Género','Ej. Pop cristiano'),TX('as.'+n,'Artistas similares','Ej. Alex Campos, Miel San Marcos')]}));
+}
+
+/* --- Catálogo: PDF + textos de las páginas --- */
+function rCatalogo(card){
+  card.append(el('p',{class:'muted'},'Sube el PDF y el libro usa sus páginas. Mientras no haya PDF, el libro muestra las páginas de texto de abajo, que puedes editar.'));
+  const ins=[];
+  const cols=el('div',{class:'mdcols'});
+  cols.append(el('div',{class:'sgt mdf'},sitioRow({k:'catalogoPdf',l:'Catálogo completo (PDF). Se muestra como libro, sin descarga.',t:'pdf'},'landing/catalogo')),
+    el('div',{class:'sgf mdx'},campoTxt({k:'txt.lead.catalogo',l:'Frase debajo del título «Nuestro catálogo»',t:'area'},ins),el('div',{class:'acts'},el('button',{class:'btn btn-gold btn-sm',type:'button',onclick:()=>sitioTxt(ins)},icoEl('check'),' Guardar frase'))));
+  card.append(cols);
+  const sel=selDe('catalogo',CAT_PAGS.length),k=sel;
+  card.append(el('h3',{class:'mdh'},'Páginas de texto del libro'));
+  card.append(mdChips(CAT_PAGS.map((p,i)=>({l:p,s:sitioVal('cat.'+i+'.h')||CAT_DEF[i][0],on:!!(sitioVal('cat.'+i+'.h')||sitioVal('cat.'+i+'.p')),i:'book'})),sel,i=>{SIT.sel.catalogo=i;renderSitio()}));
+  card.append(detalle({titulo:CAT_PAGS[k],textos:[TX('cat.'+k+'.h','Título de la página',CAT_DEF[k][0]),TX('cat.'+k+'.p',k===0||k===7?'Subtítulo':'Texto',CAT_DEF[k][1],'area')]}));
+}
+
+/* --- Recursos gratis: abrir uno y cargar todo en el mismo lugar --- */
+function rRecursos(card){
+  const sel=selDe('recursos',RECS.length),r=RECS[sel];
+  card.append(el('p',{class:'muted'},'Toca un recurso para subir su PDF y escribir su título y descripción en el mismo lugar.'));
+  card.append(mdChips(RECS.map(x=>({l:sitioVal('rt.'+x.id)||x.n,s:sitioVal('pdf.'+x.id)?'PDF cargado':'Vacío',on:!!sitioVal('pdf.'+x.id),i:'pdf'})),sel,i=>{SIT.sel.recursos=i;renderSitio()}));
+  card.append(detalle({titulo:r.n,dest:'landing/recursos-gratis',archivos:[{k:'pdf.'+r.id,l:'Documento (PDF)',t:'pdf'}],textos:[TX('rt.'+r.id,'Título','Ej. Guía de sonido para iglesias'),TX('rd.'+r.id,'Descripción','Una frase que explique qué trae este recurso','area')]}));
+}
+
+/* --- Reseñas: una ficha por cliente --- */
+function rResenas(card){
+  const sel=selDe('resenas',6),n=sel+1;
+  card.append(el('p',{class:'muted'},'Toca una reseña para cargar la foto del cliente, su opinión, su nombre y su empresa o evento.'));
+  card.append(mdChips(rng('',6).map(x=>({l:sitioVal('rv.'+x+'.n')||'Reseña '+x,s:sitioVal('rv.'+x+'.r')||(sitioVal('rv.'+x+'.q')?'Con opinión':'Vacía'),img:sitioVal('img.t'+x),on:!!sitioVal('rv.'+x+'.q'),i:'user'})),sel,i=>{SIT.sel.resenas=i;renderSitio()}));
+  card.append(detalle({titulo:'Reseña '+n,dest:'landing/resenas',archivos:[{k:'img.t'+n,l:'Foto del cliente',t:'img'}],
+    textos:[TX('rv.'+n+'.q','Opinión','Lo que dijo el cliente','area'),TX('rv.'+n+'.n','Nombre del cliente','Nombre'),TX('rv.'+n+'.r','Empresa o evento','Ej. Boda de Ana y Luis')]}));
+}
+
+function renderSitio(){
+  const box=$('#sit-body');if(!box)return;
+  const keep={};$$('.sit-txt',box).forEach(i=>{if(i.value!==(i.dataset.orig||''))keep[i.dataset.k]=i.value});
+  box.textContent='';$('#sit-warn').hidden=AC.ok;
+  const tabs=el('div',{class:'sct',role:'tablist'});
+  SIT_CATS.forEach(([id,t,ic])=>{const ks=SECC.filter(s=>s.c===id).flatMap(secKeys),n=ks.filter(k=>sitioVal(k)).length;
+    tabs.append(el('button',{type:'button',role:'tab',class:'sctb','aria-selected':String(id===SIT.cat),onclick:()=>{if(id===SIT.cat)return;if(sitCambios()&&!confirm('Tienes textos sin guardar en esta sección. ¿Descartarlos?'))return;SIT.cat=id;renderSitio()}},
+      el('span',{class:'gi'},icoEl(ic)),el('span',{class:'sctt'},el('b',{},t),el('small',{},n+' de '+ks.length+' llenos'))))});
+  box.append(tabs);
+  const lista=SECC.filter(s=>s.c===SIT.cat),cur=lista.find(s=>s.id===SIT.sec[SIT.cat])||lista[0];
+  const grid=el('div',{class:'sg'});
+  lista.forEach(sec=>{const ks=secKeys(sec),n=ks.filter(k=>sitioVal(k)).length,tot=ks.length;
+    grid.append(el('button',{type:'button',class:'sgc','aria-pressed':String(sec===cur),onclick:()=>{if(sec===cur)return;if(sitCambios()&&!confirm('Tienes textos sin guardar en esta sección. ¿Descartarlos?'))return;SIT.sec[SIT.cat]=sec.id;renderSitio()}},
+      el('span',{class:'gi'},icoEl(sec.i)),el('b',{},sec.t),el('small',{},n+' de '+tot+' llenos'),el('span',{class:'sgbar'},el('i',{style:'width:'+Math.round(100*n/Math.max(1,tot))+'%'}))))});
+  box.append(grid);
+  const card=el('div',{class:'card sgp'},el('h2',{},cur.t));
+  if(cur.lead)card.append(el('p',{class:'muted'},cur.lead));
+  if(cur.items){const tiles=el('div',{class:'sgt'}),fields=el('div',{class:'sgf'});
+    cur.items.forEach(it=>(['img','audio','pdf','vid'].includes(it.t)?tiles:fields).append(sitioRow(it,cur.dest)));
+    if(tiles.children.length)card.append(tiles);if(fields.children.length)card.append(fields)}
+  if(cur.r)cur.r(card,cur);
+  box.append(card);
+  if(cur.after)cur.after(box);
+  $$('.sit-txt',box).forEach(i=>{if(Object.prototype.hasOwnProperty.call(keep,i.dataset.k))i.value=keep[i.dataset.k]});
+}
+function vidThumb(u){const v=document.createElement('video');v.muted=true;v.preload='metadata';v.playsInline=true;v.setAttribute('playsinline','');v.src=u+'#t=0.1';return v}
 function sitioRow(it,dest){
   const v=sitioVal(it.k);
   if(['img','audio','pdf','vid'].includes(it.t)){
@@ -1686,10 +1872,10 @@ function sitioRow(it,dest){
         if(FILES&&dest){u=await matSubirPublico(it,dest,f)}   /* R2: carpeta pública del landing */
         else{const p=await upTo('sitio',it.k.replace(/[^\w]+/g,'_')+'/'+Date.now()+'-'+safeName(f.name),f,25);u=SB.url+'/storage/v1/object/public/sitio/'+p}
         await sitioSet(it.k,u);toast('Guardado');await loadAc()}catch(e){toast(e.message||'No se pudo subir')}});
-    const prev=el('div',{class:'stp'},v&&it.t==='img'?el('img',{src:v,alt:''}):icoEl(it.t==='img'?'image':it.t==='audio'?'music':it.t==='vid'?'camera':'pdf'));
+    const prev=el('div',{class:'stp'},v&&it.t==='img'?el('img',{src:v,alt:'',loading:'lazy',decoding:'async'}):v&&it.t==='vid'?vidThumb(v):icoEl(it.t==='img'?'image':it.t==='audio'?'music':it.t==='vid'?'camera':'pdf'));
     if(v&&it.t!=='img'){prev.style.cursor='pointer';prev.addEventListener('click',()=>window.open(v,'_blank','noopener'))}
     return el('div',{class:'st'+(v?' on':''),title:it.k},prev,el('b',{},it.l),
-      el('span',{class:'stg'},v?'✓ Cargado':'Vacío · muestra el ejemplo'),
+      el('span',{class:'stg'},v?'✓ Cargado':'Vacío · muestra el ejemplo'),it.t==='audio'&&v?el('audio',{controls:'',src:v,preload:'none',style:'width:100%;height:30px'}):null,
       el('div',{class:'acts'},el('button',{class:'btn btn-gold btn-sm',type:'button',onclick:()=>fi.click()},icoEl('upload'),v?' Cambiar':' Subir'),
         v?el('button',{class:'btn btn-red btn-sm',type:'button','aria-label':'Quitar (vuelve al ejemplo)',title:'Quitar (vuelve al ejemplo)',onclick:()=>sitioDel(it.k)},icoEl('trash')):null),fi);
   }
@@ -1767,6 +1953,7 @@ async function matSubirKey(file,bucket,key,onProg){
 }
 /* Archivos del landing: van a la carpeta pública y el enlace queda guardado en Sitio web */
 async function matSubirPublico(it,dest,f){
+  await matArbol();if(!matDest(dest))dest='landing/fotos-studios';  /* carpeta nueva aún no publicada en el servicio: usa la general */
   const r=await matSubir(f,dest,'',null,it.k.replace(/[^\w]+/g,'-')+'-'+Date.now()+'-'+f.name);
   return FILES+'/pub/'+matKey(r.key);
 }
@@ -2541,7 +2728,7 @@ function relojPintar(){
   const c=$('#clock');if(c){c.innerHTML='<div class="ck-t"><span>'+hora+'</span>'+(PREF.seg?'<small class="ck-s">:'+ss+'</small>':'')+(ap?'<small class="ck-a">'+ap+'</small>':'')+'</div><div class="ck-d">'+esc(fecha)+'</div>'}
   const h=$('#hclock');if(h)h.textContent=hora+(ap?' '+ap:'');
 }
-relojPintar();setInterval(relojPintar,1000);
+relojPintar();setInterval(()=>{if(!document.hidden)relojPintar()},1000);
 
 /* ---- avisos ---- */
 const NSEEN=(()=>{try{return JSON.parse(localStorage.getItem('faro_nseen')||'{}')}catch(e){return{}}})();
@@ -2597,11 +2784,16 @@ function avisosPintar(){
 
 /* ---- actualización automática ---- */
 let ULTIMA=Date.now();
+let REFBUSY=false;
 async function refrescar(manual){
   if(!S||$('#v-app').hidden)return;
+  if(REFBUSY&&!manual)return;
   const ed=document.activeElement&&/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName);
   if(!manual&&(document.hidden||ed||AC.edit))return;
-  try{await loadAll();ULTIMA=Date.now();avisosPintar();if(manual)toast('Datos actualizados')}catch(e){}
+  const st=$('#t-sit');if(!manual&&st&&!st.hidden)return;  /* en Archivos y web no se repinta solo: se perdían textos a medio escribir y se recargaban todas las miniaturas */
+  REFBUSY=true;
+  try{await Promise.race([loadAll(),new Promise((_,no)=>setTimeout(()=>no(new Error('tiempo')),60000))]);ULTIMA=Date.now();avisosPintar();if(manual)toast('Datos actualizados')}catch(e){}
+  finally{REFBUSY=false}
 }
 setInterval(()=>{if(PREF.auto&&Date.now()-ULTIMA>=PREF.min*60000)refrescar(false)},30000);
 setInterval(()=>{try{avisosPintar()}catch(e){}},60000);

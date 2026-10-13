@@ -80,7 +80,7 @@ let n = 0; const ok = (m) => console.log('  ✓ ' + m, ++n && '');
 // utilidades
 assert.equal(slug('Maxi Despensa — Mamá Lucha'), 'maxi-despensa-mama-lucha'); ok('slug quita tildes y símbolos');
 assert.equal(nombreArchivo('Aftermovie Final (v2).mp4'), 'Aftermovie-Final-(v2).mp4'); ok('nombreArchivo limpia espacios');
-assert.equal(DESTINOS.length, 4 + 2 * 7 + 5 + 3 + 6); ok('árbol: ' + DESTINOS.length + ' carpetas base');
+assert.equal(DESTINOS.length, 4 + 2 * 7 + 5 + 3 + 12); ok('árbol: ' + DESTINOS.length + ' carpetas base');
 
 // CORS
 let r = await q('/api/arbol', { method: 'OPTIONS', headers: { Origin: ORI } });

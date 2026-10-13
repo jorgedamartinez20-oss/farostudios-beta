@@ -25,7 +25,7 @@ faro-privado/
     └─ sat/<año>/archivo                                 (por año)
 
 faro-publico/
-└─ landing/  fotos-studios · portafolio · producciones-musicales · recursos-gratis · catalogo · academy-fotos
+└─ landing/  fotos-studios · portafolio · producciones-musicales · recursos-gratis · catalogo · academy-fotos · academy-descargas · hero · servicios · equipo · resenas · logos
 ```
 
 Las carpetas por persona (`<agencia>`, `<alumno>`…) se crean cuando se da de alta a esa persona o al subirle el primer archivo.

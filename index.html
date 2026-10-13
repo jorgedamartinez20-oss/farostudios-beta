@@ -1814,6 +1814,27 @@ html[data-page="academy"] .hero2,html[data-page="music"] .hero2,html[data-page="
 .amp3 .vinyl{border:0!important;padding:0}.amp3 .vinyl .label{border:0}
 .amp3 .vinyl .label{box-shadow:none!important}
 </style>
+<style id="v13">
+/* ===== v13: video de portada, servicios con medios, portafolio en bucle, fichas del equipo, logos de pago ===== */
+.hero-bgv{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;opacity:0;transition:opacity 1.4s ease;pointer-events:none}
+.hero-bgv.on{opacity:1}
+.hero-veil{position:absolute;inset:0;z-index:1;background-color:var(--bg);opacity:var(--cortina,.82);pointer-events:none;transition:opacity .6s}
+.hero.has-bgv::before{z-index:2}
+.hero.has-bgv .hint{z-index:3}
+@media (prefers-reduced-motion:reduce){.hero-bgv{transition:none}}
+.pn-media{position:absolute;inset:0;z-index:0;background:center/cover no-repeat;opacity:var(--mo,.42);pointer-events:none;transition:opacity .6s}
+.pn-media video{width:100%;height:100%;object-fit:cover;display:block}
+.panel .in{z-index:1}
+.panel.has-media{--mo:.42}.pn3.has-media{--mo:.5}.pn4.has-media{--mo:.3}
+.pn1.has-media .in,.pn2.has-media .in{text-shadow:0 1px 14px rgba(0,0,0,.4)}
+.plank .ph-img.has{opacity:.58}
+.plank:hover .ph-img.has{opacity:1}
+.pf-v{opacity:.58}
+.plank:hover .pf-v,.plank.play .pf-v{opacity:1}
+.pf-play{display:none}
+.ph-in .cap2 em{display:block;font-style:normal;font-size:.74rem;opacity:.82;margin-top:5px;line-height:1.3}
+.logo-slot.has{border-color:transparent;background:transparent;padding:4px}
+</style>
 </head>
 <body>
 
@@ -1910,7 +1931,7 @@ html[data-page="academy"] .hero2,html[data-page="music"] .hero2,html[data-page="
   <section class="sec pal-studios wm fl" id="presentacion">
     <i class="orb o1"></i><i class="orb o3"></i>
     <div class="wrap">
-      <div class="sec-head"><div class="rule"></div><h2>Conoce lo que hacemos</h2><p class="lead">Un minuto para ver cómo trabajamos en cada evento, producción y sesión.</p></div>
+      <div class="sec-head"><div class="rule"></div><h2>Conoce lo que hacemos</h2><p class="lead" data-cfg="lead.presentacion">Un minuto para ver cómo trabajamos en cada evento, producción y sesión.</p></div>
       <div class="film" id="film" role="button" tabindex="0" aria-label="Reproducir video de presentación">
         <div><div class="play"><svg class="ico-f"><use href="#i-play"/></svg></div><span class="t">Aquí irá tu video de presentación</span></div>
       </div>
@@ -1932,7 +1953,7 @@ html[data-page="academy"] .hero2,html[data-page="music"] .hero2,html[data-page="
 
   <section class="sec pal-studios" id="servicios" style="padding-top:0">
     <div class="wrap">
-      <div class="sec-head"><div class="rule"></div><h2 data-type="Servicios">Servicios</h2><p class="lead">Toca cada área para ver qué hacemos en ella.</p></div>
+      <div class="sec-head"><div class="rule"></div><h2 data-type="Servicios">Servicios</h2><p class="lead" data-cfg="lead.servicios">Toca cada área para ver qué hacemos en ella.</p></div>
       <div class="panels" id="panels">
         <button class="panel pn1" aria-expanded="true"><div class="in"><svg class="ico"><use href="#i-cam"/></svg><h3>Eventos sociales</h3><p>Fotografía y video para bodas, XV años, graduaciones y celebraciones.</p></div></button>
         <button class="panel pn2" aria-expanded="false"><div class="in"><svg class="ico"><use href="#i-vid"/></svg><h3>Corporativo</h3><p>Video para empresas, marcas, restaurantes y más. Producciones para radio, televisión y redes sociales.</p></div></button>
@@ -2890,6 +2911,7 @@ const ALB=[
     if(e.key==='ArrowRight')go(1);if(e.key==='ArrowLeft')go(-1);
   });
   build(P.slice());
+  window.catRefresh=function(){if(SITE.catalogoPdf)return;const X=SITE.x||{};if(!P.some((pg,i)=>X['cat.'+i+'.h']||X['cat.'+i+'.p']))return;build(P.map((pg,i)=>Object.assign({},pg,{h:X['cat.'+i+'.h']||pg.h,p:X['cat.'+i+'.p']||pg.p})))};
   window.loadCatalog=function(){
     if(!SITE.catalogoPdf||window.__catDone)return;window.__catDone=1;
     const s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
@@ -3600,8 +3622,7 @@ window.rebuildPortfolio=function(){
     $('#lb-title').textContent=w.n;$('#lb-text').textContent=w.t||'';$('#dlg-lb').showModal()};
   const addV=(b,u)=>{const v=document.createElement('video');v.className='pf-v';v.muted=true;v.loop=true;v.playsInline=true;v.preload='none';v.setAttribute('playsinline','');
     b.appendChild(v);const pl=document.createElement('span');pl.className='pf-play';pl.textContent='▶';b.appendChild(pl);
-    b.addEventListener('pointerenter',e=>{if(e.pointerType==='mouse'){if(!v.src)v.src=u;v.play().catch(()=>{})}});
-    b.addEventListener('pointerleave',()=>{v.pause()});};
+    v.preload='metadata';v.src=u;window.autoV&&window.autoV(v);};
   const mk=(w,id,base,n)=>{
     const b=document.createElement('button');b.type='button';b.dataset.c=w.c;
     const vu=base?SITE.vid[id]:(w.type==='vid'?w.src:''),iu=base?imgOf(id):(w.type==='vid'?(w.poster||''):w.src);
@@ -3895,7 +3916,7 @@ window.rebuildPortfolio&&window.rebuildPortfolio();
   window.v12Config=function(){_v&&_v();
     const X=SITE.x||{};
     ALB.forEach((a,i)=>{const n=i+1,t=X['at.'+n],ar=X['aa.'+n],y=X['ay.'+n],s=X['as.'+n];
-      if(t)a[0]=t;if(ar||y)a[1]=[ar||a[1].split(' · ')[0],y].filter(Boolean).join(' · ');if(s)a[3]=s});
+      if(t)a[0]=t;const g=X['ag.'+n];if(ar||y||g)a[1]=[ar||a[1].split(' · ')[0],y,g].filter(Boolean).join(' · ');if(s)a[3]=s});
     $$('#covers .cv').forEach((b,i)=>{const bb=$('b',b),sm=$('small',b);if(bb&&ALB[i])bb.textContent=ALB[i][0];if(sm&&ALB[i])sm.textContent=ALB[i][1]});
     const it=[];for(let n=1;n<=6;n++){const q=X['rv.'+n+'.q'];if(q)it.push({k:'t'+n,q:escH(q),n:escH(X['rv.'+n+'.n']||'Cliente'),r:escH(X['rv.'+n+'.r']||'')})}
     const h=$('#testi-s');if(it.length&&h)mountTesti(h,it,'tu cliente');
@@ -3941,6 +3962,61 @@ window.rebuildPortfolio&&window.rebuildPortfolio();
 })();
 </script>
 <script>
+/* ===== v13: lo que se carga en el Workspace (Archivos y web) ===== */
+(function(){
+  const rd=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const e2=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  /* los videos en bucle solo corren mientras se ven (ahorra batería y datos) */
+  const IOV=('IntersectionObserver' in window)?new IntersectionObserver(es=>es.forEach(en=>{const v=en.target;if(en.isIntersecting){const p=v.play();if(p&&p.catch)p.catch(()=>{})}else v.pause()}),{threshold:.15}):null;
+  window.autoV=function(v){v.muted=true;v.loop=true;v.playsInline=true;if(rd)return;if(IOV)IOV.observe(v);else{const p=v.play();if(p&&p.catch)p.catch(()=>{})}};
+
+  /* Quiénes somos: fichas del equipo */
+  const EQ_DEF={david:['David','Fundador · Dirección','Aquí va la foto de David'],equipo2:['Nombre','Rol en el equipo','Aquí va la foto de tu pareja']};
+  function buildTeam(){
+    const host=document.querySelector('.who-ph');if(!host)return;
+    const X=SITE.x||{};let ids=Array.isArray(SITE.team)?SITE.team.filter(x=>/^[a-z0-9]+$/.test(String(x))):[];if(!ids.length)ids=['david','equipo2'];
+    const sig=JSON.stringify([ids,ids.map(i=>[X['tm.'+i+'.n'],X['tm.'+i+'.r'],X['tm.'+i+'.d']])]);if(host.dataset.sig===sig)return;host.dataset.sig=sig;
+    host.innerHTML=ids.map(id=>{const d=EQ_DEF[id]||['Nombre','Rol en el equipo','Aquí va la foto'];const n=X['tm.'+id+'.n']||d[0],r=X['tm.'+id+'.r']||d[1],f=X['tm.'+id+'.d'];
+      return `<div class="ph" data-vid="${id}"><span class="ph-hint"><i>👋</i> Saluda</span><div class="ph-in" data-img="${id}"><svg class="ico"><use href="#i-cam"/></svg><small>${e2(EQ_DEF[id]?d[2]:'Aquí va la foto de '+n)}</small><div class="cap2"><b>${e2(n)}</b><span>${e2(r)}</span>${f?'<em>'+e2(f)+'</em>':''}</div></div></div>`}).join('');
+    fillSlots(host);
+  }
+  /* Servicios: foto o video en bucle, diluido por el color de cada panel */
+  function buildServ(){
+    const X=SITE.x||{};
+    document.querySelectorAll('#panels .panel').forEach((p,i)=>{const id='sv'+(i+1);
+      const t=X['sv.'+id+'.t'],d=X['sv.'+id+'.d'],h=p.querySelector('h3'),pp=p.querySelector('p');if(t&&h)h.textContent=t;if(d&&pp)pp.textContent=d;
+      const v=SITE.vid[id],im=imgOf(id);let m=p.querySelector('.pn-media');
+      if(!v&&!im){if(m)m.remove();p.classList.remove('has-media');return}
+      const key=(v||'')+'|'+(im||'');if(m&&m.dataset.k===key)return;
+      if(!m){m=document.createElement('div');m.className='pn-media';m.setAttribute('aria-hidden','true');p.insertBefore(m,p.firstChild)}
+      m.dataset.k=key;m.innerHTML='';m.style.backgroundImage='';
+      if(v){const e=document.createElement('video');e.preload='metadata';if(im)e.poster=im;e.src=v;m.appendChild(e);window.autoV(e)}else m.style.backgroundImage='url("'+im+'")';
+      p.classList.add('has-media');
+    });
+  }
+  /* Portada: video detrás del color (la cortina) */
+  function buildHero(){
+    const s=document.getElementById('inicio');if(!s)return;
+    const u=SITE.vid.hero;let w=s.querySelector('.hero-bgv'),vl=s.querySelector('.hero-veil');
+    if(!u){if(w)w.remove();if(vl)vl.remove();s.classList.remove('has-bgv');s.style.removeProperty('--cortina');return}
+    const c=SITE.cortina>=35&&SITE.cortina<=98?SITE.cortina:82;s.style.setProperty('--cortina',(c/100).toFixed(2));
+    if(w&&w.dataset.u===u)return;
+    if(w)w.remove();
+    w=document.createElement('video');w.className='hero-bgv';w.dataset.u=u;w.preload='auto';w.setAttribute('aria-hidden','true');w.addEventListener('loadeddata',()=>w.classList.add('on'));w.src=u;
+    if(!vl){vl=document.createElement('div');vl.className='hero-veil';vl.setAttribute('aria-hidden','true');s.insertBefore(vl,s.firstChild)}
+    s.insertBefore(w,vl);s.classList.add('has-bgv');window.autoV(w);
+  }
+  /* Logos de pago */
+  function buildLogos(){
+    [['visa','logo-visa','Visa'],['mastercard','logo-mc','Mastercard'],['banco-industrial','logo-bi','Banco Industrial']].forEach(([slot,k,alt])=>{
+      const u=imgOf(k),n=document.querySelector('.logo-slot[data-slot="'+slot+'"]');if(!n||!u||n.dataset.u===u)return;n.dataset.u=u;n.innerHTML='';
+      const im=document.createElement('img');im.src=u;im.alt='Logo '+alt;im.loading='lazy';n.appendChild(im);n.classList.add('has')});
+  }
+  const _v=window.v12Config;
+  window.v12Config=function(){buildTeam();buildServ();buildHero();buildLogos();_v&&_v();window.catRefresh&&window.catRefresh()};
+})();
+</script>
+<script>
 /* ===== Configuración remota: lo que cargas en Admin > Sitio web (fotos, audios, PDFs, textos, contacto) ===== */
 (function(){
   const U='https://keivqvsgdfhthouzlqxo.supabase.co',K='sb_publishable_5nj3M7rjQs3phGU6u2uNqw_3tjTL6PE';
@@ -3956,9 +4032,11 @@ window.rebuildPortfolio&&window.rebuildPortfolio();
       else if(k.startsWith('pdf.'))SITE.pdf[k.slice(4)]=v;
       else if(k.startsWith('vid.'))SITE.vid[k.slice(4)]=v;
       else if(k==='portafolio'){try{SITE.pf=JSON.parse(v)}catch(_){}}
+      else if(k==='equipo'){try{SITE.team=JSON.parse(v)}catch(_){}}
+      else if(k==='hero.cortina'){SITE.cortina=parseFloat(v)}
       else if(k==='catalogoPdf')SITE.catalogoPdf=v;
       else if(k.startsWith('songs.')){SITE.songs=SITE.songs||{};SITE.songs[k.slice(6)]={spotify:v}}
-      else if(/^(rt|rd|at|aa|ay|as|rv)\./.test(k)){SITE.x=SITE.x||{};SITE.x[k]=v}
+      else if(/^(rt|rd|at|aa|ay|ag|as|rv|tm|sv|cat)\./.test(k)){SITE.x=SITE.x||{};SITE.x[k]=v}
       else if(k.startsWith('txt.'))$$('[data-cfg="'+k.slice(4)+'"]').forEach(n=>{n.textContent=v});
     });
     if(WA!==oldWA)$$('a[href^="'+oldWA+'"]').forEach(a=>{a.href=WA+a.getAttribute('href').slice(oldWA.length)});
