@@ -510,6 +510,16 @@ header.top{filter:invert(1) hue-rotate(180deg)}header.top img,header.top .iso{fi
 .confeti{position:fixed;inset:0;pointer-events:none;z-index:90;overflow:hidden}.confeti i{position:absolute;top:-14px;width:10px;height:16px;border-radius:3px;animation:cae linear forwards}
 @keyframes cae{to{transform:translateY(105vh) rotate(720deg);opacity:.9}}
 @media (prefers-reduced-motion:reduce){.fog{animation:none}.confeti{display:none}}
+
+.bib-drop.over{background:rgba(63,167,163,.3);transform:scale(1.01)}.bib-bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:14px 0}.bib-bar input{font:inherit;padding:7px 10px;border-radius:10px;border:1px solid #0003;background:rgba(255,255,255,.7)}
+.bib-g{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}.bib-c{text-align:left;cursor:grab}.tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.sw{cursor:pointer}.sw input{position:absolute;opacity:0}.sw i{display:block;width:26px;height:26px;border-radius:50%;border:3px solid transparent;box-shadow:0 0 0 1px #0004}.sw input:checked+i{border-color:var(--pizarra)}.sw input:focus-visible+i{outline:2px solid var(--b)}
+body.arrastrando #nav button[data-p="d-subir"],#nav button.drop-hot{outline:3px dashed var(--y);outline-offset:2px}
+.plan-bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px}.plan-bar select{font:inherit;padding:8px;border-radius:10px}
+.pcvw{overflow:auto;border-radius:18px;border:2px dashed #0003;background:rgba(255,255,255,.35);height:min(70vh,720px)}.pcv{position:relative;width:1700px;height:1100px;background-image:radial-gradient(#0002 1px,transparent 1.5px);background-size:28px 28px}
+.pn{position:absolute;width:210px;border-radius:6px;box-shadow:0 8px 14px #0003,0 2px 0 #0002;display:grid;color:#252528}.pn.mov{box-shadow:0 18px 26px #0004;z-index:5}.pn-h{display:flex;justify-content:space-between;align-items:center;padding:4px 8px;font-size:.75em;font-weight:700;cursor:grab;touch-action:none;background:#0001}.pn-h button{border:0;background:none;font-size:1.2em;cursor:pointer}
+.pn textarea{border:0;background:transparent;font:inherit;padding:8px;resize:vertical;min-height:90px;color:inherit}.pn a,.pn>.btn{padding:10px;word-break:break-all;color:inherit}
+.swr{display:flex;gap:6px;flex-wrap:wrap;align-items:center}.bib-act{margin-top:10px}.bib-act .btn{padding:6px 12px;font-size:.85em}.bib-c .it small{display:block}.plan-bar>*{margin:0}
 </style>
 <script>if(navigator.standalone||(window.matchMedia&&matchMedia("(display-mode:standalone)").matches))document.documentElement.classList.add("is-app")</script>
 </head>
@@ -757,7 +767,7 @@ async function cargarCliente(id){
 const NAV={
   alumno:[['inicio','home','Inicio'],['camino','path','Camino'],['tablero','board','Tablero'],['proyectos','image','Proyectos'],['avance','chart','Avance'],['material','folder','Material'],['clases','cal','Clases'],['logros','trophy','Logros'],['chat','chat','Chat']],
   encargado:[['resumen','home','Resumen'],['avance','chart','Avance'],['finanzas','card','Finanzas'],['material','folder','Material'],['clases','cal','Clases'],['chat','chat','Chat']],
-  docente:[['d-inicio','home','Inicio'],['d-subir','up','Subir material'],['d-archivos','folder','Mis archivos'],['d-alumnos','users','Alumnos']],
+  docente:[['d-inicio','home','Inicio'],['d-subir','up','Subir material'],['d-archivos','folder','Mis archivos'],['d-plan','board','Planificaciones'],['d-alumnos','users','Alumnos']],
   cliente:[['c-inicio','home','Inicio'],['c-galeria','image','Galería'],['c-docs','file','Documentos'],['c-buzon','chat','Buzón']]};
 /* El menú del alumno suma "Herramientas" solo si su perfil tiene un instrumento con herramientas. */
 function navDe(){
@@ -795,6 +805,8 @@ function renderSide(){
   mas.classList.remove('on');
   mas.innerHTML='<div class="bk"></div><div class="sh">'+extra.map(n=>'<button type="button" data-p="'+n[0]+'"'+(cur(n)?' aria-current="page"':'')+'>'+ic(n[1])+'<span>'+n[2]+'</span></button>').join('')+'</div>';
   $$('#nav button[data-p]').forEach(b=>b.onclick=()=>go(b.dataset.p));
+  $$('#nav button[data-p="d-subir"], #mas button[data-p="d-subir"]').forEach(b=>{b.addEventListener('dragover',e=>{e.preventDefault();b.classList.add('drop-hot')});b.addEventListener('dragleave',()=>b.classList.remove('drop-hot'));
+    b.addEventListener('drop',e=>{e.preventDefault();b.classList.remove('drop-hot');const t=e.dataTransfer.getData('text/plain')||'';if(t.startsWith('faro-bib:')){S.doc.bibSel=t.slice(9);document.body.classList.remove('arrastrando');go('d-subir')}})});
   $$('#mas button').forEach(b=>b.onclick=()=>go(b.dataset.p));
   mas.querySelector('.bk').onclick=()=>{mas.classList.remove('on');const m=$('#nav-mas');m&&m.setAttribute('aria-expanded','false')};
   const nm=$('#nav-mas');if(nm)nm.onclick=()=>{const on=mas.classList.toggle('on');nm.setAttribute('aria-expanded',String(on))};
@@ -1139,16 +1151,23 @@ P['d-subir']=()=>{const d=S.doc;
   +'<label>Área<select id="d-area"><option value="">Sin área</option><option value="musica">Música</option><option value="ingles">Inglés</option></select></label>'
   +'<label>Número de clase<input id="d-num" type="number" min="1" max="999" inputmode="numeric" placeholder="Ej.: 3 (opcional; ordena el material para el alumno)" autocomplete="off"></label>'
   +'<label>Título<input id="d-tit" maxlength="120" placeholder="Ej.: Guía de escalas mayores" autocomplete="off"></label>'
-  +'<label class="drop" style="margin:0">'+ic('up')+'<span class="sub" id="d-fm">Toca aquí para elegir el archivo (PDF, audio, video, imagen)</span><input type="file" id="d-file" accept=".pdf,.mp3,.m4a,.wav,.mp4,.mov,.png,.jpg,.jpeg"></label>'
+  +'<div id="d-bib"></div>'
+  +'<label class="drop" style="margin:0" id="d-drop">'+ic('up')+'<span class="sub" id="d-fm">Toca aquí para elegir el archivo (PDF, audio, video, imagen)</span><input type="file" id="d-file" accept=".pdf,.mp3,.m4a,.wav,.mp4,.mov,.png,.jpg,.jpeg"></label>'
   +'<label>…o pega un enlace<input id="d-url" type="url" placeholder="https://… (YouTube, Drive, etc.)" autocomplete="off"></label>'
   +'<p id="d-err" class="sub" role="alert" style="color:var(--borgona);min-height:1.2em"></p>'
   +'<button class="btn y" type="submit" id="d-go">'+ic('up')+'Subir</button></form></div></section>'};
 P['d-subir'].bind=()=>{const f=$('#d-file');
+  const bs=()=>S.doc.bibSel&&(S.doc.bib||[]).find(x=>x.id===S.doc.bibSel);
+  const pintaBib=()=>{const x=bs(),h=$('#d-bib');if(!h)return;if(!x){h.innerHTML='';return}h.innerHTML='<div class="card" style="border-left:8px solid '+(x.color||'#9A9A9A')+'">'+ic(tipoIc(x.tipo))+' Compartiendo desde tu biblioteca: <b>'+esc(x.nombre)+'</b> <button class="btn ghost" type="button" id="d-bib-x">Quitar</button></div>';if(!$('#d-tit').value)$('#d-tit').value=x.nombre;$('#d-bib-x').onclick=()=>{S.doc.bibSel=null;pintaBib()}};
+  pintaBib();
+  const dz=$('#d-drop');['dragenter','dragover'].forEach(ev=>dz.addEventListener(ev,e=>e.preventDefault()));
+  dz.addEventListener('drop',e=>{e.preventDefault();const t=e.dataTransfer.getData('text/plain')||'';if(t.startsWith('faro-bib:')){S.doc.bibSel=t.slice(9);pintaBib();return}
+    if(e.dataTransfer.files&&e.dataTransfer.files[0]){try{const dt=new DataTransfer();dt.items.add(e.dataTransfer.files[0]);f.files=dt.files;f.onchange()}catch(er){}}});
   f.onchange=()=>{$('#d-fm').textContent=f.files[0]?f.files[0].name:'Toca aquí para elegir el archivo (PDF, audio, video, imagen)';if(f.files[0]&&!$('#d-tit').value)$('#d-tit').value=f.files[0].name.replace(/\.[^.]+$/,'')};
   $('#df').onsubmit=async e=>{e.preventDefault();const err=$('#d-err');err.textContent='';
     const file=f.files[0],url=$('#d-url').value.trim(),tit=$('#d-tit').value.trim(),para=$('#d-para').value,cat=$('#d-cat').value,area=$('#d-area').value,num=Math.floor(+$('#d-num').value)||null;
     if(!tit){err.textContent='Ponle un título al material.';return}
-    if(!file&&!/^https?:\/\//i.test(url)){err.textContent='Elige un archivo o pega un enlace que empiece con https://';return}
+    if(!file&&!bs()&&!/^https?:\/\//i.test(url)){err.textContent='Elige un archivo, uno de tu biblioteca o pega un enlace que empiece con https://';return}
     if(file&&file.size>25*1024*1024){err.textContent='El archivo pesa más de 25 MB.';return}
     const b=$('#d-go');b.disabled=true;b.lastChild.textContent='Subiendo…';
     try{let ruta,tipo;
@@ -1158,17 +1177,23 @@ P['d-subir'].bind=()=>{const f=$('#d-file');
         if(!base)throw new Error('carpeta');
         ruta=base+Date.now()+'-'+nomR2(file.name);
         await rSubir(ruta,file,file.type||'application/octet-stream')}
+      else if(bs()){ruta=bs().ruta;tipo=bs().tipo||'otro'}
       else{ruta=url;tipo='enlace'}
       const base0={estudiante_id:para||null,area:area||null,categoria:cat,titulo:tit,tipo,ruta,subido_por:'academy'};
       let x=await api('/rest/v1/ac_materiales',{method:'POST',body:Object.assign({},base0,num?{num_clase:num}:{}),headers:{Prefer:'return=representation'}});
       /* si la columna num_clase aún no existe en la base (sql/portal-etapa1.sql), se guarda el número en el título */
       if(!x.ok&&num)x=await api('/rest/v1/ac_materiales',{method:'POST',body:Object.assign({},base0,{titulo:'Clase '+num+' · '+tit}),headers:{Prefer:'return=representation'}});
-      if(!x.ok)throw 0;const j=await x.json();S.doc.mats.unshift(j[0]);S.doc.para=para;
+      if(!x.ok)throw 0;const j=await x.json();S.doc.mats.unshift(j[0]);S.doc.para=para;S.doc.bibSel=null;
       aviso('¡Listo! El material ya está disponible para '+(para?nombreAl(para):'todos tus alumnos')+'.');go('d-archivos')}
     catch(er){err.textContent='No se pudo subir. Revisa tu conexión e intenta de nuevo.';b.disabled=false;b.lastChild.textContent='Subir'}}};
-P['d-archivos']=()=>{const d=S.doc,mias=d.mats.filter(m=>m.subido_uid===d.uid&&m.subido_por==='academy');
-  return '<section class="page"><div class="ph"><h1>Mis archivos</h1><p>Lo que has subido. Tus alumnos lo ven en su sección de material.</p></div><div class="card">'+(mias.length?'<div class="ls">'+mias.map(m=>'<div class="it">'+ic(tipoIc(m.tipo))+'<div>'+esc(m.titulo)+'<small>'+(m.num_clase?'Clase '+m.num_clase+' · ':'')+esc(nombreAl(m.estudiante_id))+' · '+esc((CATS.find(c=>c[0]===m.categoria)||[,'Material'])[1])+' · '+esc(corta(m.creado))+'</small></div>'+(m.ruta?'<button class="btn ghost" type="button" data-open="'+esc(m.ruta)+'">'+ic('down')+'Abrir</button>':'')+'<button class="btn ghost" type="button" data-del="'+m.id+'" aria-label="Quitar">Quitar</button></div>').join('')+'</div>':vacio('Todavía no has subido nada. Usa “Subir material”.'))+'</div></section>'};
-P['d-archivos'].bind=()=>{
+P['d-archivos']=()=>{const d=S.doc,tab=d.atab||'bib';
+  return '<section class="page"><div class="ph"><h1>Mis archivos</h1><p>Tu biblioteca privada y lo que ya compartiste con tus alumnos.</p></div><div class="ptabs" role="tablist">'+[['bib','Mi biblioteca'],['comp','Compartido con alumnos']].map(t=>'<button type="button" role="tab" data-at="'+t[0]+'" aria-pressed="'+(tab===t[0])+'">'+t[1]+'</button>').join('')+'</div><div id="ar-body"></div></section>'};
+P['d-archivos'].bind=()=>{const d=S.doc,tab=d.atab||'bib';$$('[data-at]').forEach(b=>b.onclick=()=>{d.atab=b.dataset.at;render()});
+  if(tab==='bib'){bibMontar($('#ar-body'));return}
+  $('#ar-body').innerHTML=archivosComp();archivosCompBind()};
+function archivosComp(){const d=S.doc,mias=d.mats.filter(m=>m.subido_uid===d.uid&&m.subido_por==='academy');
+  return '<div class="card">'+(mias.length?'<div class="ls">'+mias.map(m=>'<div class="it">'+ic(tipoIc(m.tipo))+'<div>'+esc(m.titulo)+'<small>'+(m.num_clase?'Clase '+m.num_clase+' · ':'')+esc(nombreAl(m.estudiante_id))+' · '+esc((CATS.find(c=>c[0]===m.categoria)||[,'Material'])[1])+' · '+esc(corta(m.creado))+'</small></div>'+(m.ruta?'<button class="btn ghost" type="button" data-open="'+esc(m.ruta)+'">'+ic('down')+'Abrir</button>':'')+'<button class="btn ghost" type="button" data-del="'+m.id+'" aria-label="Quitar">Quitar</button></div>').join('')+'</div>':vacio('Todavía no has subido nada. Usa “Subir material”.'))+'</div>'}
+function archivosCompBind(){
   $$('[data-open]').forEach(b=>b.onclick=()=>abrir('academy',b.dataset.open));
   $$('[data-del]').forEach(b=>b.onclick=async()=>{if(!confirm('¿Quitar este material? Tus alumnos ya no lo verán.'))return;
     try{const m=S.doc.mats.find(x=>x.id===b.dataset.del);
@@ -1187,7 +1212,7 @@ P['d-alumnos'].bind=()=>{$$('[data-para]').forEach(b=>b.onclick=()=>{S.doc.para=
 /* ---------- docente: perfil de cada alumno (resumen, prácticas y material) ---------- */
 P['d-alumno']=()=>{const d=S.doc,a=d.alumnos.find(x=>x.id===d.sel);
   if(!a)return '<section class="page"><div class="card">'+vacio('No encontramos a ese estudiante.')+'<button class="btn" type="button" onclick="go(\'d-alumnos\')">Volver a mis alumnos</button></div></section>';
-  const tab=d.ptab||'resumen',T=[['resumen','Resumen'],['programa','Programa'],['proyectos','Proyectos'],['practicas','Prácticas'],['material','Material']];
+  const tab=d.ptab||'resumen',T=[['resumen','Resumen'],['programa','Programa'],['proyectos','Proyectos'],['plan','Planificación'],['practicas','Prácticas'],['material','Material']];
   return '<section class="page"><div class="card" style="text-align:left"><div class="perfil-al">'+avAl(a.id,92)+'<div><h1>'+esc(a.nombre)+'</h1><p class="sub">'+(a.area==='ingles'?'Inglés':'Música')+(a.detalle?' · '+esc(a.detalle):'')+'</p></div><button class="btn ghost" type="button" style="margin-left:auto" onclick="go(\'d-alumnos\')">← Mis alumnos</button></div>'
    +'<div class="ptabs" role="tablist" aria-label="Perfil del estudiante">'+T.map(t=>'<button type="button" role="tab" data-pt="'+t[0]+'" aria-pressed="'+(tab===t[0])+'">'+t[1]+'</button>').join('')+'</div><div id="pa-body"></div></div></section>'};
 P['d-alumno'].bind=()=>{const d=S.doc,id=d.sel,body=$('#pa-body'),a=d.alumnos.find(x=>x.id===id);if(!body||!a)return;
@@ -1196,6 +1221,9 @@ P['d-alumno'].bind=()=>{const d=S.doc,id=d.sel,body=$('#pa-body'),a=d.alumnos.fi
   if(tab==='programa'){
     body.innerHTML='<p class="sub" style="margin-bottom:12px">Programa las clases de '+nom+': día, hora y enlace si es en línea. Al terminarla, márcala <b>finalizada</b>: queda su asistencia y gana XP.</p><div id="pg-root"><p class="sub">Cargando…</p></div>';
     programaMontar($('#pg-root'),id,a.nombre);return}
+  if(tab==='plan'){
+    body.innerHTML='<p class="sub" style="margin-bottom:12px">Moodboard de planificación para '+nom+'. Solo tú lo ves.</p><div id="pl-root"><p class="sub">Cargando…</p></div>';
+    planMontar($('#pl-root'),id,a.nombre);return}
   if(tab==='proyectos'){
     body.innerHTML='<p class="sub" style="margin-bottom:12px">Pon una tarea por clase. '+nom+' entrega foto, video, audio o documento y tú la evalúas con XP y una insignia.</p><div id="py-root"><p class="sub">Cargando…</p></div>';
     proyMontar($('#py-root'),'docente',id,a.carpeta,a.nombre);return}
@@ -1305,6 +1333,106 @@ async function programaMontar(root,est,nombre){
       const r=await api('/rest/v1/rpc/ac_actualizar_clase',{method:'POST',body:{p_id:c.id,p_fecha:c.fecha,p_hora:c.hora,p_titulo:c.titulo,p_modalidad:c.modalidad,p_enlace:c.enlace||null,p_estado:c.estado==='cancelada'?'programada':'cancelada'}}).catch(()=>null);
       if(r&&r.ok)await recargar();else{aviso('No se pudo cambiar');b.disabled=false}})};
   pintar()}
+/* ---------- XP por entrar y merma por inactividad (alumno) ---------- */
+function tarjetaFlota(titulo,html,ms){
+  const el=document.createElement('div');el.className='bien';el.setAttribute('role','status');
+  el.innerHTML='<h3>'+esc(titulo)+'</h3>'+html+'<button class="btn y" type="button">Entendido</button>';
+  document.body.append(el);requestAnimationFrame(()=>el.classList.add('on'));
+  const cerrar=()=>{el.classList.remove('on');setTimeout(()=>el.remove(),500)};el.querySelector('button').onclick=cerrar;setTimeout(cerrar,ms||15000)}
+async function actividadAlumno(){
+  try{const r=await api('/rest/v1/rpc/ac_registrar_actividad',{method:'POST',body:{}});if(!r.ok)return;const j=await r.json();
+    if(!j||!j.alumno)return;const k=K();if(k&&typeof j.xp==='number')k.xp=j.xp;
+    if(j.merma>0)setTimeout(()=>tarjetaFlota('Te extrañamos','<p>Pasaste '+j.dias+' días sin entrar y perdiste <b>'+j.merma+' XP</b>. ¡Recupéralos hoy! Entrando cada día ganas XP.</p><cite>Aviso: pasados 3 días sin entrar se resta XP; tu nivel no baja.</cite>'),700);
+    else if(j.bono>0)setTimeout(()=>tarjetaFlota('¡Qué bueno verte!','<p><b>+'+j.bono+' XP</b> por entrar hoy.'+(j.dias>=2?' Llevabas '+j.dias+' días sin entrar: pasados 3 se resta XP, ¡mantén tu racha!':'')+'</p>',9000),700)}catch(e){}}
+
+/* ---------- Mis archivos: biblioteca privada del docente ---------- */
+const BIB_COL=['#F4D35E','#EE964B','#F95738','#7BB662','#4EA5D9','#B388EB','#9A9A9A'];
+const tipoDe=n=>{const e=String(n).split('.').pop().toLowerCase();return e==='pdf'?'pdf':['mp3','m4a','wav'].includes(e)?'audio':['mp4','mov','webm'].includes(e)?'video':['png','jpg','jpeg','webp','gif'].includes(e)?'imagen':'otro'};
+async function bibCargar(){const d=S.doc;d.bib=await rows('ac_biblioteca','order=creado.desc&limit=1000');return d.bib}
+async function bibMontar(root){
+  const d=S.doc;if(!d.bib)await bibCargar();
+  d.bcar=d.bcar||'Todas';d.bq=d.bq||'';let edit=null;
+  const carpetas=()=>[...new Set(d.bib.map(x=>x.carpeta).concat(d.bextra||[]))].sort((a,b)=>a.localeCompare(b,'es'));
+  const pintar=()=>{
+    const cs=carpetas(),q=d.bq.trim().toLowerCase();
+    const lista=d.bib.filter(x=>(d.bcar==='Todas'||x.carpeta===d.bcar)&&(!q||(x.nombre+' '+x.tags.join(' ')).toLowerCase().includes(q)));
+    root.innerHTML='<p class="sub" style="margin-bottom:12px">Tu biblioteca es <b>privada</b>: tus alumnos no ven estas carpetas ni estos archivos. Arrastra archivos aquí para guardarlos, y arrastra una tarjeta hasta «Subir material» (menú) para compartirla.</p>'
+     +'<label class="drop bib-drop" id="bib-drop">'+ic('up')+'<span class="sub">Suelta aquí tus archivos o toca para elegirlos (máx. 25 MB c/u)</span><input type="file" id="bib-file" multiple></label>'
+     +'<div class="bib-bar"><div class="ptabs" style="margin:0">'+['Todas'].concat(cs).map(c=>'<button type="button" data-bc="'+esc(c)+'" aria-pressed="'+(d.bcar===c)+'">'+esc(c)+'</button>').join('')+'</div>'
+     +'<form id="bib-nc" class="swr"><input id="bib-nc-i" maxlength="60" placeholder="Nueva carpeta" aria-label="Nueva carpeta"><button class="btn ghost" type="submit">Crear</button></form>'
+     +'<input type="search" id="bib-q" placeholder="Buscar por nombre o etiqueta" value="'+esc(d.bq)+'"></div>'
+     +(lista.length?'<div class="bib-g">'+lista.map(x=>x.id===edit?bibEditar(x,cs):bibCard(x)).join('')+'</div>':'<div class="card">'+vacio(d.bib.length?'Nada coincide con tu búsqueda.':'Tu biblioteca está vacía. Suelta tus primeros archivos arriba.')+'</div>');
+    enlazar()};
+  const bibCard=x=>'<article class="card bib-c" draggable="true" data-bid="'+x.id+'" style="border-left:8px solid '+(x.color||'#9A9A9A')+'"><div class="it" style="padding:0">'+ic(tipoIc(x.tipo))+'<div><b>'+esc(x.nombre)+'</b><small>'+esc(x.carpeta)+' · '+esc(corta(x.creado))+'</small></div></div>'
+     +(x.tags.length?'<div class="tags">'+x.tags.map(t=>'<span class="pill mute">#'+esc(t)+'</span>').join('')+'</div>':'')
+     +'<div class="swr bib-act"><button class="btn ghost" type="button" data-bab="'+x.id+'">Abrir</button><button class="btn ghost" type="button" data-bed="'+x.id+'">Editar</button><button class="btn y" type="button" data-bsh="'+x.id+'">Compartir</button><button class="btn ghost" type="button" data-bdel="'+x.id+'" aria-label="Quitar">Quitar</button></div></article>';
+  const bibEditar=(x,cs)=>'<form class="card bib-c" data-bsave="'+x.id+'" style="border-left:8px solid '+(x.color||'#9A9A9A')+';display:grid;gap:8px"><label>Nombre<input name="n" maxlength="160" value="'+esc(x.nombre)+'" required></label><label>Carpeta<input name="c" list="bib-cs" maxlength="60" value="'+esc(x.carpeta)+'" required></label><datalist id="bib-cs">'+cs.map(c=>'<option value="'+esc(c)+'">').join('')+'</datalist><label>Etiquetas (separadas por coma)<input name="t" value="'+esc(x.tags.join(', '))+'"></label><div class="swr" role="radiogroup" aria-label="Color">'+BIB_COL.map(c=>'<label class="sw"><input type="radio" name="col" value="'+c+'"'+((x.color||'#9A9A9A')===c?' checked':'')+'><i style="background:'+c+'"></i></label>').join('')+'</div><div class="swr"><button class="btn y" type="submit">Guardar</button><button class="btn ghost" type="button" data-bcan>Cancelar</button></div></form>';
+  const subir=async files=>{
+    const base=d.perfil.carpeta;if(!base){aviso('Tu carpeta aún no está lista. Escríbenos por WhatsApp.');return}
+    let n=0;for(const fl of files){
+      if(fl.size>25*1024*1024){aviso(fl.name+' pesa más de 25 MB');continue}
+      if(/\.(html?|svg|js|exe|bat|sh|php)$/i.test(fl.name)){aviso('No se puede subir '+fl.name);continue}
+      try{const ruta=base+Date.now()+'-'+nomR2(fl.name);await rSubir(ruta,fl,fl.type||'application/octet-stream');
+        const r=await api('/rest/v1/ac_biblioteca',{method:'POST',headers:{Prefer:'return=representation'},body:{docente_id:d.perfil.id,carpeta:d.bcar==='Todas'?'General':d.bcar,nombre:fl.name.replace(/\.[^.]+$/,'').slice(0,160),ruta,tipo:tipoDe(fl.name)}});
+        if(!r.ok)throw 0;d.bib.unshift((await r.json())[0]);n++}catch(e){aviso('No se pudo guardar '+fl.name+'. ¿Corriste el SQL de la etapa 2C?')}}
+    if(n){aviso(n+' archivo'+(n>1?'s':'')+' guardado'+(n>1?'s':''));pintar()}};
+  const enlazar=()=>{
+    const dz=$('#bib-drop',root),fi=$('#bib-file',root);
+    fi.onchange=()=>subir([...fi.files]);
+    ['dragenter','dragover'].forEach(ev=>dz.addEventListener(ev,e=>{if([...(e.dataTransfer.types||[])].includes('Files')){e.preventDefault();dz.classList.add('over')}}));
+    ['dragleave','drop'].forEach(ev=>dz.addEventListener(ev,()=>dz.classList.remove('over')));
+    dz.addEventListener('drop',e=>{if(e.dataTransfer.files&&e.dataTransfer.files.length){e.preventDefault();subir([...e.dataTransfer.files])}});
+    $$('[data-bc]',root).forEach(b=>b.onclick=()=>{d.bcar=b.dataset.bc;pintar()});
+    $('#bib-nc',root).onsubmit=e=>{e.preventDefault();const v=$('#bib-nc-i',root).value.trim().slice(0,60);if(!v)return;(d.bextra=d.bextra||[]).push(v);d.bcar=v;pintar()};
+    const q=$('#bib-q',root);q.oninput=()=>{d.bq=q.value;const p=q.selectionStart;pintar();const n=$('#bib-q',root);n.focus();n.setSelectionRange(p,p)};
+    $$('[data-bab]',root).forEach(b=>b.onclick=()=>{const x=d.bib.find(y=>y.id===b.dataset.bab);x&&abrir('academy',x.ruta)});
+    $$('[data-bed]',root).forEach(b=>b.onclick=()=>{edit=b.dataset.bed;pintar()});
+    $$('[data-bcan]',root).forEach(b=>b.onclick=()=>{edit=null;pintar()});
+    $$('[data-bsh]',root).forEach(b=>b.onclick=()=>{d.bibSel=b.dataset.bsh;go('d-subir')});
+    $$('.bib-c[draggable]',root).forEach(c=>c.addEventListener('dragstart',e=>{e.dataTransfer.setData('text/plain','faro-bib:'+c.dataset.bid);e.dataTransfer.effectAllowed='copy';document.body.classList.add('arrastrando')}));
+    $$('.bib-c[draggable]',root).forEach(c=>c.addEventListener('dragend',()=>document.body.classList.remove('arrastrando')));
+    $$('[data-bdel]',root).forEach(b=>b.onclick=async()=>{const x=d.bib.find(y=>y.id===b.dataset.bdel);if(!x||!confirm('¿Quitar «'+x.nombre+'» de tu biblioteca?'))return;
+      const r=await api('/rest/v1/ac_biblioteca?id=eq.'+x.id,{method:'DELETE',headers:{Prefer:'return=minimal'}}).catch(()=>null);
+      if(r&&r.ok){if(esR2(x.ruta)&&!d.mats.some(m=>m.ruta===x.ruta))rBorrar(x.ruta);d.bib=d.bib.filter(y=>y.id!==x.id);pintar()}else aviso('No se pudo quitar')});
+    $$('[data-bsave]',root).forEach(f=>f.onsubmit=async e=>{e.preventDefault();
+      const body={nombre:f.n.value.trim().slice(0,160),carpeta:f.c.value.trim().slice(0,60)||'General',tags:f.t.value.split(',').map(t=>t.trim().replace(/^#/,'').slice(0,30)).filter(Boolean).slice(0,12),color:(f.querySelector('[name=col]:checked')||{}).value||null};
+      const r=await api('/rest/v1/ac_biblioteca?id=eq.'+f.dataset.bsave,{method:'PATCH',headers:{Prefer:'return=representation'},body}).catch(()=>null);
+      if(r&&r.ok){const j=await r.json();const i=d.bib.findIndex(y=>y.id===f.dataset.bsave);if(i>-1&&j[0])d.bib[i]=j[0];edit=null;pintar()}else aviso('No se pudo guardar')})};
+  pintar()}
+
+/* ---------- Planificaciones: moodboard por estudiante (notas, enlaces y archivos de la biblioteca sobre un lienzo) ---------- */
+async function planMontar(root,est,nombre){
+  const d=S.doc;if(!d.bib)await bibCargar();
+  let N=await rows('ac_plan_notas','estudiante_id=eq.'+est+'&order=creado.asc'),col=BIB_COL[0];
+  const card=n=>'<div class="pn" data-nid="'+n.id+'" style="left:'+n.x+'px;top:'+n.y+'px;background:'+n.color+'"><div class="pn-h" title="Arrastra para mover"><span>'+(n.tipo==='nota'?'Nota':n.tipo==='enlace'?'Enlace':'Archivo')+'</span><button type="button" data-pdel="'+n.id+'" aria-label="Quitar">×</button></div>'
+    +(n.tipo==='nota'?'<textarea data-ptx="'+n.id+'" rows="4" maxlength="1000" placeholder="Escribe tu idea…">'+esc(n.texto||'')+'</textarea>'
+      :n.tipo==='enlace'?'<a href="'+esc(n.url)+'" target="_blank" rel="noopener noreferrer">'+esc(n.texto||n.url)+'</a>'
+      :'<button class="btn ghost" type="button" data-pab="'+esc(n.ruta)+'">'+ic('file')+esc(n.texto||'Archivo')+'</button>')+'</div>';
+  const pintar=()=>{
+    root.innerHTML='<div class="plan-bar"><div class="swr" role="radiogroup" aria-label="Color de la nota">'+BIB_COL.slice(0,6).map(c=>'<label class="sw"><input type="radio" name="pc" value="'+c+'"'+(col===c?' checked':'')+'><i style="background:'+c+'"></i></label>').join('')+'</div>'
+     +'<button class="btn y" type="button" id="pl-n">+ Nota</button><button class="btn ghost" type="button" id="pl-l">+ Enlace</button>'
+     +'<select id="pl-f" aria-label="Agregar archivo de mi biblioteca"><option value="">+ Archivo de mi biblioteca…</option>'+d.bib.map(x=>'<option value="'+x.id+'">'+esc(x.carpeta)+' / '+esc(x.nombre)+'</option>').join('')+'</select></div>'
+     +'<div class="pcvw"><div class="pcv" id="pcv">'+(N.length?N.map(card).join(''):'<p class="sub" style="padding:20px">Lienzo en blanco: agrega notas, enlaces y archivos para planear las clases de '+esc(nombre)+'. Solo tú lo ves.</p>')+'</div></div>';
+    enlazar()};
+  const crear=async b=>{const r=await api('/rest/v1/ac_plan_notas',{method:'POST',headers:{Prefer:'return=representation'},body:Object.assign({estudiante_id:est,color:col,x:24+(N.length%6)*40,y:24+(N.length%6)*34},b)}).catch(()=>null);
+    if(r&&r.ok){N.push((await r.json())[0]);pintar()}else aviso('No se pudo agregar. ¿Corriste el SQL de la etapa 2C?')};
+  const enlazar=()=>{
+    $$('[name=pc]',root).forEach(r=>r.onchange=()=>{col=r.value});
+    $('#pl-n',root).onclick=()=>crear({tipo:'nota',texto:''});
+    $('#pl-l',root).onclick=()=>{const u=(prompt('Pega el enlace (https://…)')||'').trim();if(!/^https?:\/\//i.test(u))return u&&aviso('El enlace debe empezar con https://');crear({tipo:'enlace',url:u.slice(0,500),texto:u.replace(/^https?:\/\//i,'').slice(0,60)})};
+    $('#pl-f',root).onchange=e=>{const x=d.bib.find(y=>y.id===e.target.value);if(x)crear({tipo:'archivo',ruta:x.ruta,texto:x.nombre.slice(0,60)})};
+    $$('[data-pdel]',root).forEach(b=>b.onclick=async()=>{const r=await api('/rest/v1/ac_plan_notas?id=eq.'+b.dataset.pdel,{method:'DELETE',headers:{Prefer:'return=minimal'}}).catch(()=>null);if(r&&r.ok){N=N.filter(n=>n.id!==b.dataset.pdel);pintar()}else aviso('No se pudo quitar')});
+    $$('[data-pab]',root).forEach(b=>b.onclick=()=>abrir('academy',b.dataset.pab));
+    $$('[data-ptx]',root).forEach(t=>t.onblur=()=>{const n=N.find(x=>x.id===t.dataset.ptx);if(!n||n.texto===t.value)return;n.texto=t.value;api('/rest/v1/ac_plan_notas?id=eq.'+n.id,{method:'PATCH',headers:{Prefer:'return=minimal'},body:{texto:t.value}}).catch(()=>{})});
+    $$('.pn',root).forEach(el=>{const h=el.querySelector('.pn-h');
+      h.onpointerdown=e=>{if(e.target.closest('button'))return;e.preventDefault();const n=N.find(x=>x.id===el.dataset.nid),sx=e.clientX,sy=e.clientY,ox=n.x,oy=n.y;h.setPointerCapture(e.pointerId);el.classList.add('mov');
+        h.onpointermove=ev=>{n.x=Math.max(0,Math.min(1400,ox+ev.clientX-sx));n.y=Math.max(0,Math.min(900,oy+ev.clientY-sy));el.style.left=n.x+'px';el.style.top=n.y+'px'};
+        h.onpointerup=h.onpointercancel=()=>{h.onpointermove=h.onpointerup=h.onpointercancel=null;el.classList.remove('mov');api('/rest/v1/ac_plan_notas?id=eq.'+n.id,{method:'PATCH',headers:{Prefer:'return=minimal'},body:{x:Math.round(n.x),y:Math.round(n.y)}}).catch(()=>{})}}})};
+  pintar()}
+P['d-plan']=()=>{const d=S.doc;if(!d.alumnos.length)return '<section class="page"><div class="ph"><h1>Planificaciones</h1><p>Un lienzo por estudiante para planear sus clases.</p></div><div class="card">'+vacio('Cuando tengas estudiantes asignados podrás planear aquí.')+'</div></section>';
+  if(!d.plSel||!d.alumnos.some(a=>a.id===d.plSel))d.plSel=d.alumnos[0].id;
+  return '<section class="page"><div class="ph"><h1>Planificaciones</h1><p>Un lienzo estilo moodboard por estudiante: notas, enlaces y archivos para planear sus clases. Solo tú lo ves.</p></div><div class="alus" style="margin-bottom:14px">'+d.alumnos.map(a=>'<button type="button" class="alu" data-pls="'+a.id+'" aria-pressed="'+(a.id===d.plSel)+'">'+avAl(a.id,40)+'<span>'+esc(a.apodo||String(a.nombre).split(' ')[0])+'</span></button>').join('')+'</div><div id="pl-root"><p class="sub">Cargando…</p></div></section>'};
+P['d-plan'].bind=()=>{const d=S.doc;$$('[data-pls]').forEach(b=>b.onclick=()=>{d.plSel=b.dataset.pls;render()});const a=d.alumnos.find(x=>x.id===d.plSel);if(a&&$('#pl-root'))planMontar($('#pl-root'),a.id,a.apodo||a.nombre)};
 /* ---------- docente: evalúa prácticas grabadas ---------- */
 /* mini grabadora para la respuesta en audio del docente */
 function miniRec(host){
@@ -1422,7 +1550,7 @@ async function iniciar(esperado){
     if(esperado&&ROL_TAB[p.rol]!==esperado){const t=ROL_TAB[p.rol];salir(true);S.tab=t;loginUI('Ese usuario es de '+ROL_NOM[p.rol].toUpperCase()+'. Te pasamos a la pestaña «'+ROL_NOM[p.rol]+'»: escribe tu usuario y contraseña ahí.');return}
     if((p.rol==='alumno'&&!p.alumno)||(p.rol==='docente'&&!p.docente)){salir(true);loginUI('Tu acceso todavía no tiene un espacio asignado ('+ROL_NOM[p.rol].toLowerCase()+'). Escríbenos por WhatsApp para vincularlo.');return}
     S.perfil=p;S.rol=p.rol;if(SES){SES.rol=p.rol;saveSes()}
-    if(p.rol==='alumno'){S.kid=p.alumno.id;S.kids=[p.alumno];S.D[S.kid]=await cargarAlumno(S.kid);S.page='inicio'}
+    if(p.rol==='alumno'){S.kid=p.alumno.id;S.kids=[p.alumno];S.D[S.kid]=await cargarAlumno(S.kid);S.page='inicio';actividadAlumno()}
     else if(p.rol==='encargado'){S.kids=p.hijos||[];if(!S.kids.length){salir(true);loginUI('Todavía no hay estudiantes vinculados a tu acceso. Escríbenos por WhatsApp.');return}
       S.kid=S.kids[0].id;S.D[S.kid]=await cargarAlumno(S.kid);S.page='resumen'}
     else if(p.rol==='docente'){await Promise.race([cargaVers(),new Promise(r=>setTimeout(r,2500))]);try{sessionStorage.removeItem('faro_frase')}catch(e){}S.doc=await cargarDocente(p);S.page='d-inicio';setTimeout(bienvenida,600)}
