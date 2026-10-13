@@ -6,7 +6,31 @@
 -- 1) Número de clase en el material (para que el alumno lo vea en orden de carga).
 alter table public.ac_materiales add column if not exists num_clase int;
 
--- 2) El docente ve el avatar que eligió cada uno de SUS alumnos asignados (y nada más del perfil).
+-- 2) Perfil (avatar y color). Si ya corriste perfil-avatar-tema.sql esto no cambia nada; si no, lo crea.
+create table if not exists public.perfiles_ws (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  avatar smallint,                       -- 0 a 12 = avatar elegido; -1 = personaje gris; vacío = todavía no eligió
+  tema text,                             -- clave del color/tema elegido (ver perfil.js)
+  actualizado timestamptz not null default now()
+);
+alter table public.perfiles_ws enable row level security;
+
+-- cada persona lee y cambia solo su propia fila
+drop policy if exists "mi perfil" on public.perfiles_ws;
+create policy "mi perfil" on public.perfiles_ws
+  for all to authenticated
+  using (user_id = auth.uid())
+  with check (user_id = auth.uid());
+
+-- el director puede ver todos (para mostrar avatares del equipo más adelante)
+drop policy if exists "director ve perfiles" on public.perfiles_ws;
+create policy "director ve perfiles" on public.perfiles_ws
+  for select to authenticated using (public.es_admin());
+
+revoke all on public.perfiles_ws from anon;
+grant select, insert, update on public.perfiles_ws to authenticated;
+
+-- 3) El docente ve el avatar que eligió cada uno de SUS alumnos asignados (y nada más del perfil).
 create or replace function public.ac_docente_avatares()
 returns jsonb language sql stable security definer set search_path to 'public' as $$
   select case when public.ac_es_docente() then coalesce((
