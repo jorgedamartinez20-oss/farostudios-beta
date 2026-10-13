@@ -1834,6 +1834,17 @@ html[data-page="academy"] .hero2,html[data-page="music"] .hero2,html[data-page="
 .pf-play{display:none}
 .ph-in .cap2 em{display:block;font-style:normal;font-size:.74rem;opacity:.82;margin-top:5px;line-height:1.3}
 .logo-slot.has{border-color:transparent;background:transparent;padding:4px}
+/* medios de pago y seguridad: panel gris/marfil tenue (sigue el modo claro/oscuro) y logos en fichas marfil homogéneas */
+.pay-slots{display:grid;grid-template-columns:auto 1fr;gap:26px 48px;align-items:start;margin-top:34px;padding:26px 28px;border:1px solid var(--line);border-radius:18px;background:color-mix(in srgb,var(--ink) 6%,transparent)}
+.pay-slots .ps-grp h3{margin:0 0 14px}
+.ps-pagos{display:flex;flex-wrap:wrap;gap:22px 28px}
+.pay-slots .ps-row{gap:14px}
+.pay-slots .logo-slot,.pay-slots .logo-slot.wide{width:156px;height:84px;padding:12px;border-radius:14px;border:1px solid rgba(37,37,40,.14);background:rgba(245,242,238,.95);color:#585754;box-shadow:0 2px 8px rgba(0,0,0,.12)}
+.pay-slots .logo-slot.has{padding:12px;border-color:rgba(37,37,40,.14);background:rgba(245,242,238,.95)}
+.pay-slots .logo-slot img{width:100%;height:100%;object-fit:contain}
+.pay-slots .sec-chips{gap:14px}
+.pay-slots .sec-chip{min-height:84px;flex:1 1 210px;max-width:260px;background:color-mix(in srgb,var(--ink) 7%,transparent)}
+@media(max-width:900px){.pay-slots{grid-template-columns:1fr;padding:22px 18px}.pay-slots .logo-slot,.pay-slots .logo-slot.wide{width:calc(50% - 7px);min-width:130px}}
 </style>
 </head>
 <body>
@@ -2051,14 +2062,16 @@ html[data-page="academy"] .hero2,html[data-page="music"] .hero2,html[data-page="
       <div class="sug-box"><svg class="ico"><use href="#i-chat"/></svg><div><b>¿Encontraste un error?</b><span>Indícanos y lo revisamos. Tu mensaje llega directo al equipo.</span></div><button type="button" class="btn btn-solid" data-open-sug>Abrir buzón de sugerencias</button></div>
       <div class="pay-note"><svg class="ico"><use href="#i-card"/></svg><span>Aceptamos pago con tarjeta de crédito y cuotas con VisaLink. Consulta recargos y disponibilidad.</span></div>
       <div class="pay-slots" id="pay-slots" aria-label="Medios de pago y seguridad">
+        <div class="ps-pagos">
         <div class="ps-grp"><h3>Tarjetas</h3><div class="ps-row">
           <div class="logo-slot" data-slot="visa"><span>Logo Visa</span></div>
           <div class="logo-slot" data-slot="mastercard"><span>Logo Mastercard</span></div></div></div>
+        <div class="ps-grp"><h3>Transferencia bancaria</h3><div class="ps-row">
+          <div class="logo-slot" data-slot="banco-industrial"><span>Logo Banco Industrial</span></div></div></div>
+        </div>
         <div class="ps-grp"><h3>Seguridad en línea</h3><div class="ps-row">
           <div class="logo-slot wide" data-slot="certificado-1"><span>Certificado de seguridad</span></div>
           <div class="logo-slot wide" data-slot="certificado-2"><span>Certificado de autenticidad</span></div></div></div>
-        <div class="ps-grp"><h3>Transferencia bancaria</h3><div class="ps-row">
-          <div class="logo-slot wide" data-slot="banco-industrial"><span>Logo Banco Industrial</span></div></div></div>
       </div>
     </div>
   </section>
