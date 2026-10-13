@@ -712,7 +712,10 @@ const FRASES=[
 ['Nuevas son cada mañana; grande es tu fidelidad.','Lamentaciones 3:23'],
 ['Los que esperan a Jehová tendrán nuevas fuerzas; levantarán alas como las águilas; correrán, y no se cansarán.','Isaías 40:31']];
 /* una frase por día (la misma para todos los docentes ese día) */
-function fraseHoy(){const d=new Date(),n=Math.floor((Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())-Date.UTC(d.getFullYear(),0,0))/864e5);return FRASES[n%FRASES.length]}
+let POOL=FRASES;
+function cargaVers(){return fetch('versiculos.json',{cache:'force-cache'}).then(r=>r.ok?r.json():null).then(j=>{if(Array.isArray(j)&&j.length>20)POOL=j}).catch(()=>{})}
+function fraseNueva(){let a=POOL[Math.floor(Math.random()*POOL.length)];try{const p=JSON.parse(sessionStorage.getItem('faro_frase')||'null');if(p&&POOL.length>1)for(let i=0;i<8&&a[1]===p[1];i++)a=POOL[Math.floor(Math.random()*POOL.length)];sessionStorage.setItem('faro_frase',JSON.stringify(a))}catch(e){}return a}
+function fraseHoy(){try{const p=JSON.parse(sessionStorage.getItem('faro_frase')||'null');if(p&&p[0]&&p[1])return p}catch(e){}return fraseNueva()}
 function tituloPestana(){document.title=(S.rol==='docente'||(!S.rol&&S.tab==='do'))?'Área docente · Faro Studios':'Mi espacio · Faro Studios'}
 function relojPintar(){const h=$('#rl-h');if(!h){return}const d=new Date();h.textContent=d.toLocaleTimeString('es-GT',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});const f=$('#rl-f');if(f){const t=d.toLocaleDateString('es-GT',{weekday:'long',day:'numeric',month:'long',year:'numeric'});f.textContent=t.charAt(0).toUpperCase()+t.slice(1)}}
 function relojIniciar(){relojPintar();if(!S.clk)S.clk=setInterval(relojPintar,1000)}
@@ -722,10 +725,11 @@ function bienvenida(){
   const f=fraseHoy(),k='faro_bien_'+new Date().toDateString();try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1')}catch(e){}
   const nom=String((S.doc&&S.doc.perfil&&S.doc.perfil.nombre)||'').split(' ')[0];
   const el=document.createElement('div');el.className='bien';el.setAttribute('role','status');
-  el.innerHTML='<h3>¡Bienvenido'+(nom?', '+esc(nom):'')+'!</h3><p>«'+esc(f[0])+'»</p><cite>'+esc(f[1])+'</cite><button class="btn y" type="button">Gracias, ¡a trabajar!</button>';
+  el.innerHTML='<h3>¡Bienvenido'+(nom?', '+esc(nom):'')+'!</h3><p>«'+esc(f[0])+'»</p><cite>'+esc(f[1])+'</cite><button class="btn y" type="button">Gracias, ¡a trabajar!</button> <button class="btn otro" type="button" style="background:none;border:0;text-decoration:underline;cursor:pointer">Otro versículo</button>';
+  el.querySelector('.otro').onclick=()=>{const n=fraseNueva();el.querySelector('p').textContent='«'+n[0]+'»';el.querySelector('cite').textContent=n[1];renderSide()};
   document.body.append(el);requestAnimationFrame(()=>el.classList.add('on'));
   const cerrar=()=>{el.classList.remove('on');setTimeout(()=>el.remove(),500)};
-  el.querySelector('button').onclick=cerrar;setTimeout(cerrar,20000);
+  el.querySelector('.btn.y').onclick=cerrar;setTimeout(cerrar,30000);
 }
 async function cargarCliente(id){
   const [k,d,m]=await Promise.all([rows('cl_clientes','id=eq.'+id+'&select=*'),rows('cl_documentos','cliente_id=eq.'+id+'&order=creado.desc'),rows('cl_mensajes','cliente_id=eq.'+id+'&order=creado.asc&limit=200')]);
@@ -1297,13 +1301,13 @@ async function iniciar(esperado){
     if(p.rol==='alumno'){S.kid=p.alumno.id;S.kids=[p.alumno];S.D[S.kid]=await cargarAlumno(S.kid);S.page='inicio'}
     else if(p.rol==='encargado'){S.kids=p.hijos||[];if(!S.kids.length){salir(true);loginUI('Todavía no hay estudiantes vinculados a tu acceso. Escríbenos por WhatsApp.');return}
       S.kid=S.kids[0].id;S.D[S.kid]=await cargarAlumno(S.kid);S.page='resumen'}
-    else if(p.rol==='docente'){S.doc=await cargarDocente(p);S.page='d-inicio';setTimeout(bienvenida,600)}
+    else if(p.rol==='docente'){await Promise.race([cargaVers(),new Promise(r=>setTimeout(r,2500))]);try{sessionStorage.removeItem('faro_frase')}catch(e){}S.doc=await cargarDocente(p);S.page='d-inicio';setTimeout(bienvenida,600)}
     else{S.cli=await cargarCliente(p.cliente.id);S.page='c-inicio'}
     try{FaroPerfil.entrar()}catch(e){}
     render()}
   catch(e){if(e.message!=='sesion'){salir(true);loginUI('No pudimos entrar ahora. Intenta de nuevo en un momento.')}}
 }
-function salir(silencio){try{FaroPerfil.salir()}catch(e){}window.FaroTools&&FaroTools.stop();pracStop();plStop();relojParar();idleCerrar();{const b=document.querySelector('.bien');b&&b.remove()}SES=null;try{sessionStorage.removeItem('faro_portal');localStorage.removeItem('faro_portal')}catch(e){}S.rol=null;S.D={};S.cli=null;S.doc=null;S.perfil=null;if(!silencio){render()}}
+function salir(silencio){try{sessionStorage.removeItem('faro_frase')}catch(e){}try{FaroPerfil.salir()}catch(e){}window.FaroTools&&FaroTools.stop();pracStop();plStop();relojParar();idleCerrar();{const b=document.querySelector('.bien');b&&b.remove()}SES=null;try{sessionStorage.removeItem('faro_portal');localStorage.removeItem('faro_portal')}catch(e){}S.rol=null;S.D={};S.cli=null;S.doc=null;S.perfil=null;if(!silencio){render()}}
 $('#out').onclick=()=>salir();
 ['gesturestart','gesturechange','gestureend'].forEach(g=>document.addEventListener(g,e=>e.preventDefault()));
 ['pointerdown','pointermove','keydown','touchstart','scroll','wheel','input'].forEach(ev=>addEventListener(ev,()=>{if(SES&&!IDLE_EL)actMarca()},{passive:true,capture:true}));
