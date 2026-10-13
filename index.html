@@ -335,6 +335,9 @@ section[id]{scroll-margin-top:84px}
 .foot-c{display:grid;gap:6px;text-align:center;max-width:46ch}
 .foot-pay{color:rgba(245,242,238,.7);font-size:.85rem}
 .foot-r{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.foot .made{flex:1 1 100%;text-align:center;padding-top:22px;margin-top:4px;border-top:1px solid rgba(245,242,238,.14);font-size:.8rem;line-height:1.55;color:rgba(245,242,238,.72)}
+.foot .made b{color:var(--oro);font-weight:700}
+.foot .made small{display:block;margin-top:4px;font-size:.74rem;letter-spacing:.02em;color:rgba(245,242,238,.55)}
 .foot-r[hidden]{display:none}
 .foot{justify-content:center;text-align:center;padding:26px clamp(20px,5vw,72px)}
 .foot-c{width:100%;max-width:none;justify-items:center;text-align:center}
@@ -2284,6 +2287,7 @@ html[data-page="academy"] .hero2,html[data-page="music"] .hero2,html[data-page="
 <footer class="foot" id="foot">
   <div class="foot-c"><span>© 2026 Faro Studios. Todos los derechos reservados.</span><button type="button" class="foot-sug" data-open-sug>¿Encontraste un error? Cuéntanos</button></div>
   <div class="foot-r" hidden><a class="ig" id="ig" href="#" target="_blank" rel="noopener"><svg class="ico"><use href="#i-ig"/></svg><span id="ig-t">Instagram</span></a><button id="foot-sw" class="to-academy">Ir a Academy</button></div>
+  <div class="made">Desarrollado a la medida por <b>Faro Studios</b>, sin plantillas ni constructores como Wix o WordPress.<br><small>Tecnología: HTML, CSS y JavaScript propios · Supabase (base de datos y sesiones) · Cloudflare Workers y R2 (archivos) · GitHub Pages (publicación)</small></div>
 </footer>
 
 <div class="wa-wrap" id="wa-wrap">
