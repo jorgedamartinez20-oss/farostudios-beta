@@ -1603,7 +1603,7 @@ const SECC=[
   {k:'txt.lead.recursos',l:'Recursos gratis · frase debajo del título',t:'area'},{k:'txt.lead.faq',l:'Preguntas frecuentes · frase debajo del título',t:'area'}]},
  {id:'equipo',c:'landing',t:'Quiénes somos · fichas',i:'users',keys:eqKeys,r:rEquipo},
  {id:'servicios',c:'landing',t:'Servicios',i:'camera',keys:()=>SERV.flatMap(s=>['vid.'+s[0],'img.'+s[0],'sv.'+s[0]+'.t','sv.'+s[0]+'.d']),r:rServicios},
- {id:'portafolio',c:'landing',t:'Portafolio',i:'image',dest:'landing/portafolio',lead:'Foto de cada tablón. Los videos se suben abajo y se reproducen solos, diluidos por el color del tablón.',items:rng('w',14).map(x=>({k:'img.'+x,l:'Tablón '+x.slice(1),t:'img'})),after:renderPortafolioMgr},
+ {id:'portafolio',c:'landing',t:'Portafolio',i:'image',dest:'landing/portafolio',lead:'Cada tablón en un solo espacio: foto, nombre, categoría y video (que se reproduce solo, diluido por el color del tablón). Quita la marca para ocultarlo en la página. Los nombres y categorías se publican con «Guardar portafolio».',keys:()=>rng('w',14).flatMap(x=>['img.'+x,'vid.'+x]),r:rPfTablones,after:renderPortafolioMgr},
  {id:'discos',c:'landing',t:'Discos',i:'music',keys:()=>rng('',8).flatMap(n=>['img.alb'+n,'audio.alb'+n,'at.'+n,'aa.'+n,'ay.'+n,'ag.'+n,'as.'+n]),r:rDiscos},
  {id:'catalogo',c:'landing',t:'Catálogo',i:'book',keys:()=>['catalogoPdf',...CAT_PAGS.flatMap((_,i)=>['cat.'+i+'.h','cat.'+i+'.p'])],r:rCatalogo},
  {id:'recursos',c:'landing',t:'Recursos gratis',i:'pdf',keys:()=>RECS.flatMap(r=>['pdf.'+r.id,'rt.'+r.id,'rd.'+r.id]),r:rRecursos},
@@ -1628,6 +1628,33 @@ async function pfSubir(key,f){
   const p=await upTo('sitio',key.replace(/[^\w]+/g,'_')+'/'+Date.now()+'-'+safeName(f.name),f,25);return SB.url+'/storage/v1/object/public/sitio/'+p;
 }
 function pfSelCat(cur,onch){const s=el('select',{onchange:e=>onch(e.target.value)},PFM.cats.map(c=>el('option',{value:c.id},c.n||c.id)));s.value=PFM.cats.some(c=>c.id===cur)?cur:(PFM.cats[0]||{}).id;return s}
+async function pfGuardar(){
+  const P=PFM;if(!P)return;
+      try{
+        P.cats.forEach(c=>{if(!c.n||!c.n.trim())return;if(!c.id||/^cat-/.test(c.id))c.id=pfSlug(c.n)});
+        const used=new Set();P.cats=P.cats.filter(c=>c.n&&c.n.trim()).map(c=>{let id=c.id,k=2;while(used.has(id))id=c.id+'-'+k++;used.add(id);return{id,n:c.n.trim(),s:(c.s||'').trim()}});
+        if(!P.cats.length)P.cats=PF_CATS0.map(c=>({...c}));
+        const over={};Object.keys(P.over).forEach(k=>{const o=P.over[k],r={};if(o.n&&o.n.trim())r.n=o.n.trim();if(o.c)r.c=o.c;if(Object.keys(r).length)over[k]=r});
+        const out={cats:P.cats,off:P.off,over,extra:P.extra.filter(x=>x.src).map(x=>({id:x.id,n:(x.n||'').trim()||'Trabajo',c:x.c,type:x.type,src:x.src,on:x.on!==false}))};
+        await sitioSet('portafolio',JSON.stringify(out));PFM=null;toast('Portafolio guardado');await loadAc();
+      }catch(e){toast(e.message||'No se pudo guardar')}
+}
+function rPfTablones(card){
+  if(!PFM)PFM=pfLeer();
+  const P=PFM,g=el('div',{class:'sgt',style:'grid-template-columns:repeat(auto-fill,minmax(min(230px,100%),1fr))'});
+  PF_BASE.forEach((b,i)=>{
+    const id='w'+(i+1),o=P.over[id]=P.over[id]||{};
+    const t=sitioRow({k:'img.'+id,l:'Tablón '+(i+1),t:'img'},'landing/portafolio');
+    const ck=el('input',{type:'checkbox'});ck.checked=!P.off.includes(id);ck.addEventListener('change',()=>{P.off=P.off.filter(x=>x!==id);if(!ck.checked)P.off.push(id)});
+    const nm=el('input',{type:'text',maxlength:'30',placeholder:b[0],'aria-label':'Nombre del tablón '+(i+1)});nm.value=o.n||'';nm.addEventListener('input',()=>{o.n=nm.value});
+    const vk='vid.'+id,vv=sitioVal(vk),fi=el('input',{type:'file',accept:'video/*',style:'display:none'});
+    fi.addEventListener('change',async()=>{const f=fi.files[0];if(!f)return;try{toast('Subiendo video…');const u=await pfSubir(vk,f);await sitioSet(vk,u);toast('Video guardado');await loadAc()}catch(e){toast(e.message||'No se pudo subir')}});
+    t.append(el('label',{style:'display:flex;gap:6px;align-items:center;margin-top:8px'},ck,'Mostrar en la página'),nm,pfSelCat(o.c||b[1],v=>{o.c=v}),
+      el('div',{class:'acts',style:'margin-top:6px'},el('button',{class:'btn btn-gold btn-sm',type:'button',onclick:()=>fi.click()},icoEl('upload'),vv?' Cambiar video':' Video'),vv?el('button',{class:'btn btn-red btn-sm',type:'button','aria-label':'Quitar video',onclick:()=>sitioDel(vk)},icoEl('trash')):null),
+      el('small',{class:'muted'},vv?'✓ Video cargado (se reproduce solo)':'Sin video'),fi);
+    g.append(t)});
+  card.append(g,el('div',{class:'acts',style:'margin-top:12px'},el('button',{class:'btn btn-gold',type:'button',onclick:pfGuardar},icoEl('check'),' Guardar portafolio')));
+}
 function renderPortafolioMgr(box){
   if(!PFM)PFM=pfLeer();
   const P=PFM;
@@ -1640,19 +1667,6 @@ function renderPortafolioMgr(box){
       el('button',{class:'btn btn-red btn-sm',type:'button','aria-label':'Quitar categoría',onclick:()=>{if(P.cats.length<2){toast('Debe quedar al menos una categoría');return}if(!confirm('¿Quitar la categoría «'+(c.n||c.id)+'»? Sus trabajos seguirán visibles en «Todo».'))return;P.cats.splice(i,1);renderSitio()}},icoEl('trash'))));
   });
   cc.append(el('div',{class:'acts'},el('button',{class:'btn btn-gold btn-sm',type:'button',onclick:()=>{P.cats.push({id:'cat-'+Date.now().toString(36),n:'',s:''});renderSitio()}},icoEl('plus'),' Agregar categoría')));
-  /* tablones de ejemplo */
-  const bc=el('div',{class:'card sgp'},el('h2',{},'Tablones: mostrar u ocultar'),el('p',{class:'muted'},'Quita la marca para ocultar un tablón en la página. La foto de cada uno se sube arriba. Aquí también puedes ponerle nombre, categoría y un video que se reproduce solo, diluido por el color del tablón.'));
-  PF_BASE.forEach((b,i)=>{
-    const id='w'+(i+1),o=P.over[id]=P.over[id]||{};
-    const ck=el('input',{type:'checkbox'});ck.checked=!P.off.includes(id);ck.addEventListener('change',()=>{P.off=P.off.filter(x=>x!==id);if(!ck.checked)P.off.push(id)});
-    const nm=el('input',{type:'text',maxlength:'30',placeholder:b[0]});nm.value=o.n||'';nm.addEventListener('input',()=>{o.n=nm.value});
-    const vk='vid.'+id,vv=sitioVal(vk),fi=el('input',{type:'file',accept:'video/*',style:'display:none'});
-    fi.addEventListener('change',async()=>{const f=fi.files[0];if(!f)return;try{toast('Subiendo video…');const u=await pfSubir(vk,f);await sitioSet(vk,u);toast('Video guardado');await loadAc()}catch(e){toast(e.message||'No se pudo subir')}});
-    bc.append(el('div',{class:'field sf',style:'display:grid;grid-template-columns:auto 1fr 1fr 1fr auto;gap:8px;align-items:center'},
-      el('label',{style:'display:flex;gap:6px;align-items:center'},ck,'Tablón '+(i+1)),nm,pfSelCat(o.c||b[1],v=>{o.c=v}),
-      el('span',{class:'muted'},vv?'✓ Video cargado':'Sin video'),
-      el('div',{class:'acts'},el('button',{class:'btn btn-gold btn-sm',type:'button',onclick:()=>fi.click()},icoEl('upload'),vv?' Cambiar video':' Video'),vv?el('button',{class:'btn btn-red btn-sm',type:'button','aria-label':'Quitar video',onclick:()=>sitioDel(vk)},icoEl('trash')):null),fi));
-  });
   /* extras */
   const xc=el('div',{class:'card sgp'},el('h2',{},'Fotos y videos nuevos'),el('p',{class:'muted'},'Agrega más trabajos sin pedir código: sube una foto o un video, ponle nombre y categoría.'));
   P.extra.forEach((x,i)=>{
@@ -1666,16 +1680,8 @@ function renderPortafolioMgr(box){
   });
   xc.append(el('div',{class:'acts'},el('button',{class:'btn btn-gold btn-sm',type:'button',onclick:()=>{P.extra.push({id:'x'+Date.now().toString(36),n:'',c:(P.cats[0]||{}).id,type:'img',src:'',on:true});renderSitio()}},icoEl('plus'),' Agregar foto o video')));
   const sv=el('div',{class:'card sgp',style:'display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap'},el('p',{class:'muted'},'Los cambios de esta sección se publican al guardar.'),
-    el('button',{class:'btn btn-gold',type:'button',onclick:async()=>{
-      try{
-        P.cats.forEach(c=>{if(!c.n||!c.n.trim())return;if(!c.id||/^cat-/.test(c.id))c.id=pfSlug(c.n)});
-        const used=new Set();P.cats=P.cats.filter(c=>c.n&&c.n.trim()).map(c=>{let id=c.id,k=2;while(used.has(id))id=c.id+'-'+k++;used.add(id);return{id,n:c.n.trim(),s:(c.s||'').trim()}});
-        if(!P.cats.length)P.cats=PF_CATS0.map(c=>({...c}));
-        const over={};Object.keys(P.over).forEach(k=>{const o=P.over[k],r={};if(o.n&&o.n.trim())r.n=o.n.trim();if(o.c)r.c=o.c;if(Object.keys(r).length)over[k]=r});
-        const out={cats:P.cats,off:P.off,over,extra:P.extra.filter(x=>x.src).map(x=>({id:x.id,n:(x.n||'').trim()||'Trabajo',c:x.c,type:x.type,src:x.src,on:x.on!==false}))};
-        await sitioSet('portafolio',JSON.stringify(out));PFM=null;toast('Portafolio guardado');await loadAc();
-      }catch(e){toast(e.message||'No se pudo guardar')}}},icoEl('check'),' Guardar portafolio'));
-  box.append(cc,bc,xc,sv);
+    el('button',{class:'btn btn-gold',type:'button',onclick:pfGuardar},icoEl('check'),' Guardar portafolio'));
+  box.append(cc,xc,sv);
 }
 
 /* ---------- SUGERENCIAS Y COMENTARIOS DE LA WEB ---------- */
