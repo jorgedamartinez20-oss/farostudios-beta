@@ -520,6 +520,12 @@ body.arrastrando #nav button[data-p="d-subir"],#nav button.drop-hot{outline:3px 
 .pn{position:absolute;width:210px;border-radius:6px;box-shadow:0 8px 14px #0003,0 2px 0 #0002;display:grid;color:#252528}.pn.mov{box-shadow:0 18px 26px #0004;z-index:5}.pn-h{display:flex;justify-content:space-between;align-items:center;padding:4px 8px;font-size:.75em;font-weight:700;cursor:grab;touch-action:none;background:#0001}.pn-h button{border:0;background:none;font-size:1.2em;cursor:pointer}
 .pn textarea{border:0;background:transparent;font:inherit;padding:8px;resize:vertical;min-height:90px;color:inherit}.pn a,.pn>.btn{padding:10px;word-break:break-all;color:inherit}
 .swr{display:flex;gap:6px;flex-wrap:wrap;align-items:center}.bib-act{margin-top:10px}.bib-act .btn{padding:6px 12px;font-size:.85em}.bib-c .it small{display:block}.plan-bar>*{margin:0}
+
+#bell{position:relative;padding:8px 12px;margin-left:0}#bell .ico{width:1.3em;height:1.3em}#bell-n{position:absolute;top:-6px;right:-6px;min-width:20px;height:20px;border-radius:10px;background:var(--y,#E3B23C);color:#252528;font:700 .72rem/20px var(--body);text-align:center;padding:0 4px}
+#bellp{position:fixed;top:72px;right:16px;z-index:95;width:min(360px,calc(100vw - 32px));max-height:70vh;overflow:auto;background:var(--card,#fff);border-radius:20px;box-shadow:0 14px 40px rgba(0,0,0,.35);padding:14px;display:grid;gap:8px;text-align:left}
+#bellp button{display:flex;gap:10px;align-items:center;text-align:left;background:var(--paper,#f3efe4);border:0;border-radius:14px;padding:10px 12px;font:inherit;color:inherit;cursor:pointer}#bellp button:hover{background:rgba(0,0,0,.08)}
+#visor{position:fixed;inset:0;z-index:120;background:rgba(20,20,22,.96);display:grid;grid-template-rows:auto 1fr;color:#fff}.vs-h{display:flex;gap:12px;align-items:center;padding:12px 16px}.vs-h b{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.vs-b{display:grid;place-items:center;padding:0 12px 16px;min-height:0}.vs-b iframe,.vs-b video{width:100%;height:100%;border:0;border-radius:12px;background:#000}.vs-b img{max-width:100%;max-height:100%;object-fit:contain}.vs-b audio{width:min(100%,560px)}.vs-b .sub{color:#fff}
 </style>
 <script>if(navigator.standalone||(window.matchMedia&&matchMedia("(display-mode:standalone)").matches))document.documentElement.classList.add("is-app")</script>
 </head>
@@ -556,11 +562,12 @@ body.arrastrando #nav button[data-p="d-subir"],#nav button.drop-hot{outline:3px 
 <symbol id="i-video" viewBox="0 0 24 24"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 11l5-3v8l-5-3"/></symbol>
 <symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-8 8"/></symbol>
 <symbol id="i-camera" viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></symbol>
+<symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 17v-6a6 6 0 0112 0v6l2 2H4z"/><path d="M10 21h4"/></symbol>
 <symbol id="i-bulb" viewBox="0 0 24 24"><path d="M9 18h6M10 21h4M12 3a6 6 0 00-4 10.5c.7.7 1 1.5 1 2.5h6c0-1 .3-1.8 1-2.5A6 6 0 0012 3z"/></symbol>
 </defs></svg>
 <header class="top">
   <div class="brand"><span class="iso" aria-hidden="true"></span><div><b id="brand-b">FARO ACADEMY</b><small id="brand-s">Tu espacio de aprendizaje</small></div></div>
-  <div style="margin-left:auto;display:flex;gap:10px"><a class="out" id="back" href="index.html?p=academy" style="text-decoration:none">Regresar a Academy</a><button type="button" class="out" id="out" hidden style="margin-left:0">Salir</button></div>
+  <div style="margin-left:auto;display:flex;gap:10px"><a class="out" id="back" href="index.html?p=academy" style="text-decoration:none">Regresar a Academy</a><button type="button" class="out bell" id="bell" hidden aria-haspopup="true" aria-expanded="false" aria-label="Notificaciones"><svg class="ico" aria-hidden="true"><use href="#i-bell"/></svg><span id="bell-n" hidden></span></button><button type="button" class="out" id="out" hidden style="margin-left:0">Salir</button></div>
 </header>
 
 <div class="app" style="display:none">
@@ -630,8 +637,9 @@ async function rBorrar(key){try{const r=await rapi('/p/borrar?key='+encodeURICom
 /* nombre de archivo permitido en R2 (igual que el servicio) */
 function nomR2(n){let x=String(n||'archivo').normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/\s+/g,'-').replace(/[^A-Za-z0-9._()\-]+/g,'').replace(/-{2,}/g,'-').replace(/^[.\-]+/,'');
   if(x.length>120){const i=x.lastIndexOf('.'),e=i>0&&x.length-i<=10?x.slice(i):'';x=x.slice(0,120-e.length)+e}return x||'archivo'}
-async function abrir(bucket,ruta){
+async function abrir(bucket,ruta,o){
   if(!ruta)return;
+  if((S.rol==='alumno'||S.rol==='encargado')&&!(o&&o.descarga))return visor(ruta,o&&o.titulo);
   if(/^https?:/i.test(ruta)){window.open(ruta,'_blank','noopener');return}
   const w=window.open('','_blank');
   const u=esR2(ruta)?await rEnlace(ruta):null;
@@ -767,8 +775,8 @@ async function cargarCliente(id){
 /* ---------- navegación ---------- */
 const NAV={
   alumno:[['inicio','home','Inicio'],['camino','path','Camino'],['xp','bolt','Aumentar XP'],['tablero','board','Tablero'],['proyectos','image','Proyectos'],['avance','chart','Avance'],['material','folder','Material'],['clases','cal','Clases'],['logros','trophy','Logros'],['chat','chat','Chat']],
-  encargado:[['resumen','home','Resumen'],['avance','chart','Avance'],['finanzas','card','Finanzas'],['material','folder','Material'],['clases','cal','Clases'],['chat','chat','Chat']],
-  docente:[['d-inicio','home','Inicio'],['d-subir','up','Subir material'],['d-archivos','folder','Mis archivos'],['d-plan','board','Planificaciones'],['d-alumnos','users','Alumnos']],
+  encargado:[['resumen','home','Resumen'],['avance','chart','Avance'],['familia','trophy','Logros y estudio'],['finanzas','card','Finanzas'],['material','folder','Material'],['clases','cal','Clases'],['chat','chat','Chat']],
+  docente:[['d-inicio','home','Inicio'],['d-subir','up','Subir material'],['d-archivos','folder','Mis archivos'],['d-plan','board','Planificaciones'],['d-alumnos','users','Alumnos'],['d-sug','bulb','Sugerencias']],
   cliente:[['c-inicio','home','Inicio'],['c-galeria','image','Galería'],['c-docs','file','Documentos'],['c-buzon','chat','Buzón']]};
 /* El menú del alumno suma "Herramientas" solo si su perfil tiene un instrumento con herramientas. */
 function navDe(){
@@ -987,11 +995,11 @@ P.avance=()=>{const k=K(),pa=S.rol==='encargado';
 
 /* orden para el alumno: primero por número de clase y, dentro de cada clase, en el orden en que se cargó (el material sin número va al final) */
 const ordenMat=(a,b)=>((a.num_clase||1e9)-(b.num_clase||1e9))||String(a.creado||'').localeCompare(String(b.creado||''));
-function matCard(m){return '<div class="card mat">'+(m.num_clase?'<span class="pill warn">Clase '+m.num_clase+'</span>':'')+'<div class="ic '+(m.tipo==='pdf'||m.tipo==='otro'||m.tipo==='imagen'||m.tipo==='enlace'?'pdf':m.tipo)+'">'+ic(tipoIc(m.tipo))+'</div><h3 style="font-size:1.5rem">'+esc(m.titulo)+'</h3><span class="sub">'+tipoNom(m.tipo)+(m.categoria&&m.categoria!=='material'&&m.categoria!=='otro'?' · '+esc({hoja:'Hoja de trabajo',ejercicio:'Ejercicio',sesion:'Sesión'}[m.categoria]||''):'')+'</span>'+(m.ruta?(m.tipo==='audio'?'<button class="btn" type="button" data-aud="'+esc(m.ruta)+'">'+ic('play')+'Escuchar</button>':'<button class="btn ghost" type="button" data-open="'+esc(m.ruta)+'">'+ic(m.tipo==='enlace'?'bolt':'down')+(m.tipo==='enlace'?'Abrir':'Descargar')+'</button>'):'')+'</div>'}
+function matCard(m){return '<div class="card mat">'+(m.num_clase?'<span class="pill warn">Clase '+m.num_clase+'</span>':'')+'<div class="ic '+(m.tipo==='pdf'||m.tipo==='otro'||m.tipo==='imagen'||m.tipo==='enlace'?'pdf':m.tipo)+'">'+ic(tipoIc(m.tipo))+'</div><h3 style="font-size:1.5rem">'+esc(m.titulo)+'</h3><span class="sub">'+tipoNom(m.tipo)+(m.categoria&&m.categoria!=='material'&&m.categoria!=='otro'?' · '+esc({hoja:'Hoja de trabajo',ejercicio:'Ejercicio',sesion:'Sesión'}[m.categoria]||''):'')+'</span>'+(m.ruta?(m.tipo==='audio'?'<button class="btn" type="button" data-aud="'+esc(m.ruta)+'">'+ic('play')+'Escuchar</button>':'<button class="btn ghost" type="button" data-open="'+esc(m.ruta)+'">'+ic(m.tipo==='enlace'?'bolt':'down')+(m.tipo==='enlace'?'Abrir':'Ver')+'</button>'):'')+'</div>'}
 P.material=()=>{const k=K(),pa=S.rol==='encargado';
   const deFaro=k.mats.filter(m=>m.subido_por!=='alumno').sort(ordenMat),mias=k.mats.filter(m=>m.subido_por==='alumno');
   if(pa)return '<section class="page"><div class="ph"><h1>Material y diplomas</h1><p>Todo lo que Faro Academy comparte con '+esc(k.corto)+', listo para descargar.</p></div>'+kidsSwitch()
-    +'<div class="card"><h2>Diplomas y constancias</h2>'+(k.diplomas.length?'<div class="ls" style="margin-top:10px">'+k.diplomas.map(d=>'<div class="it">'+ic('trophy')+'<div>'+esc(d.titulo)+'<small>'+esc(d.nivel||'')+' · '+esc(corta(d.fecha))+'</small></div>'+(d.ruta?'<button class="btn ghost" type="button" data-open="'+esc(d.ruta)+'">'+ic('down')+'Descargar</button>':'')+'</div>').join('')+'</div>':vacio('Se habilita al completar el nivel.'))+'</div>'
+    +'<div class="card"><h2>Diplomas y constancias</h2>'+(k.diplomas.length?'<div class="ls" style="margin-top:10px">'+k.diplomas.map(d=>'<div class="it">'+ic('trophy')+'<div>'+esc(d.titulo)+'<small>'+esc(d.nivel||'')+' · '+esc(corta(d.fecha))+'</small></div>'+(d.ruta?'<button class="btn ghost" type="button" data-open="'+esc(d.ruta)+'">'+ic('down')+'Ver</button>':'')+'</div>').join('')+'</div>':vacio('Se habilita al completar el nivel.'))+'</div>'
     +'<div class="card" style="margin-top:22px"><h2>Material de clase</h2>'+(deFaro.length?'<div class="ls" style="margin-top:10px">'+deFaro.map(m=>'<div class="it">'+ic(tipoIc(m.tipo))+'<div>'+esc(m.titulo)+'<small>'+tipoNom(m.tipo)+'</small></div>'+(m.ruta?'<button class="btn ghost" type="button" data-open="'+esc(m.ruta)+'">'+ic('down')+'Abrir</button>':'')+'</div>').join('')+'</div>':vacio('Todavía no hay material compartido.'))+'</div>'
     +'<div class="card" style="margin-top:22px"><h2>Lo que sube el alumno</h2>'+(mias.length?'<div class="ls" style="margin-top:10px">'+mias.map(m=>'<div class="it">'+ic('up')+'<div>'+esc(m.titulo)+'<small>Subido por '+esc(k.corto)+' · '+esc(corta(m.creado))+'</small></div>'+(m.ruta?'<button class="btn ghost" type="button" data-open="'+esc(m.ruta)+'">'+ic('down')+'Abrir</button>':'')+'</div>').join('')+'</div>':vacio('Las grabaciones y tareas que '+esc(k.corto)+' sube aparecen aquí.'))+'</div></section>';
   return '<section class="page"><div class="ph"><h1>Mi material</h1><p>Guías, audios y videos de tu profe. Y aquí también subes tus grabaciones.</p></div>'
@@ -1030,21 +1038,22 @@ P.clases=()=>{const k=K(),hoy=new Date(),y=hoy.getFullYear(),m=hoy.getMonth();
   return '<section class="page"><div class="ph"><h1>Clases</h1><p>Programa y asistencia'+(S.rol==='encargado'?' de '+esc(k.corto):'')+'.</p></div>'+kidsSwitch()+'<div class="grid g2"><div class="card"><h2 style="text-transform:capitalize">'+MESES[m]+' '+y+'</h2><div class="cal" style="margin-top:14px">'+dias.map(d=>'<b>'+d+'</b>').join('')+Array.from({length:42},(_,i)=>{const d=i-primero+1,ok=d>=1&&d<=tot;return '<i class="'+(ok?(mapa[d]||''):'')+'" style="'+(ok?'':'visibility:hidden')+'">'+(ok?d:'')+'</i>'}).join('')+'</div><div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-top:16px;font-size:var(--tm)"><span><i class="pill ok">&nbsp;</i> Dada</span><span><i class="pill no">&nbsp;</i> Cancelada</span><span><i class="pill mute" style="outline:2px dashed var(--borgona)">&nbsp;</i> Próxima</span></div></div>'
   +'<div class="card"><h2>Programa</h2>'+(lista.length?'<div class="ls" style="margin-top:12px">'+lista.slice(0,12).map(c=>'<div class="it">'+ic('cal')+'<div>'+esc(c.titulo)+'<small>'+esc(fecha(c.fecha))+(c.hora?' · '+esc(hora(c.hora)):'')+(c.nota?' · '+esc(c.nota):'')+'</small>'+claseEnlace(c)+'</div><span style="margin-left:auto">'+pill(c.estado)+'</span></div>').join('')+'</div>':vacio('Aún no hay clases en el programa.'))+'</div></div></section>'};
 
-P.logros=()=>{const k=K();
+P.logros=()=>{const k=K(),oc=k.logros.filter(b=>String(b.clave||'').startsWith('oculta-')).length,faltan=Math.max(0,OCULTAS-oc);
   return '<section class="page"><div class="ph"><h1>Mis logros</h1><p>Insignias que ganas por practicar, y tu meta grande: el diploma del nivel.</p></div><div class="card"><h2>Insignias</h2>'+(k.logros.length?'<div class="grid g4" style="margin-top:18px">'+k.logros.map((b,i)=>'<div class="badge"><div class="bd on" style="background:var('+COLORES[i%5]+')">'+ic(ICONO[b.icono]||'star')+'</div><span>'+esc(b.titulo)+'</span></div>').join('')+'</div>':vacio('Tu primera insignia está en camino. ¡Sigue practicando!'))+'</div>'
-  +'<div class="card" style="margin-top:22px"><h2>Tu diploma</h2>'+(k.diplomas.length?k.diplomas.map(d=>'<div class="diploma" style="margin-top:14px"><span class="iso"></span><h3>'+esc(d.titulo)+'</h3><span class="sub">Otorgado a</span><p style="font-size:var(--t1)">'+esc(k.nombre)+'</p><span class="sub">Faro Academy · '+esc(corta(d.fecha))+'</span></div>'+(d.ruta?'<button class="btn y" type="button" data-open="'+esc(d.ruta)+'" style="margin-top:16px">'+ic('down')+'Descargar diploma</button>':'')).join(''):'<div class="diploma lock" style="margin-top:14px"><span class="iso"></span><h3>Diploma de '+esc(k.area)+'</h3><span class="sub">Otorgado a</span><p style="font-size:var(--t1)">'+esc(k.nombre)+'</p><span class="sub">Faro Academy</span></div><button class="btn ghost" type="button" disabled style="margin-top:16px">'+ic('lock')+'Se desbloquea al terminar el nivel</button>')+'</div></section>'};
+  +'<div class="card" style="margin-top:22px"><h2>Insignias ocultas</h2><p class="sub">Hay '+OCULTAS+' insignias secretas. No te diremos cómo ganarlas: se desbloquean solas cuando las mereces. Llevas '+oc+' de '+OCULTAS+'.</p>'+(faltan?'<div class="grid g4" style="margin-top:14px">'+Array.from({length:faltan},()=>'<div class="badge"><div class="bd" style="background:#B9B5AC">'+ic('lock')+'</div><span>???</span></div>').join('')+'</div>':'')+'</div>'
+  +'<div class="card" style="margin-top:22px"><h2>Tu diploma</h2>'+(k.diplomas.length?k.diplomas.map(d=>'<div class="diploma" style="margin-top:14px"><span class="iso"></span><h3>'+esc(d.titulo)+'</h3><span class="sub">Otorgado a</span><p style="font-size:var(--t1)">'+esc(k.nombre)+'</p><span class="sub">Faro Academy · '+esc(corta(d.fecha))+'</span></div>'+(d.ruta?'<button class="btn y" type="button" data-open="'+esc(d.ruta)+'" style="margin-top:16px">'+ic('play')+'Ver diploma</button>':'')).join(''):'<div class="diploma lock" style="margin-top:14px"><span class="iso"></span><h3>Diploma de '+esc(k.area)+'</h3><span class="sub">Otorgado a</span><p style="font-size:var(--t1)">'+esc(k.nombre)+'</p><span class="sub">Faro Academy</span></div><button class="btn ghost" type="button" disabled style="margin-top:16px">'+ic('lock')+'Se desbloquea al terminar el nivel</button>')+'</div></section>'};
 P.logros.bind=()=>$$('[data-open]').forEach(b=>b.onclick=()=>abrir('academy',b.dataset.open));
 
 /* ---------- chat ---------- */
 function msgsDe(){
   if(S.rol==='cliente')return S.cli.msgs.map(m=>({out:m.de==='cliente',t:m.texto,w:m.creado}));
   const k=K(),canal=S.rol==='alumno'?'alumno':'encargado';
-  return k.chat.filter(m=>m.canal===canal).map(m=>({out:m.de===canal,t:m.texto,w:m.creado}))}
+  return k.chat.filter(m=>m.canal===canal).map(m=>({out:m.de===canal,d:m.de,t:m.texto,w:m.creado}))}
 const cuando=w=>{const d=new Date(w);return d.toLocaleDateString('es-GT',{day:'numeric',month:'short'})+' · '+d.toLocaleTimeString('es-GT',{hour:'2-digit',minute:'2-digit'})};
-function msgsHTML(){return msgsDe().map(x=>'<div class="m '+(x.out?'out':'in')+'"><small>'+(x.out?'Tú':(S.rol==='cliente'?'Faro Studios':'Faro Academy'))+' · '+esc(cuando(x.w))+'</small>'+esc(x.t)+'</div>').join('')||'<p class="sub" style="text-align:center;margin:auto">Escribe tu primer mensaje. Te respondemos aquí mismo.</p>'}
+function msgsHTML(){return msgsDe().map(x=>'<div class="m '+(x.out?'out':'in')+'"><small>'+(x.out?'Tú':(S.rol==='cliente'?'Faro Studios':x.d==='docente'?'Docente':'Faro Academy'))+' · '+esc(cuando(x.w))+'</small>'+esc(x.t)+'</div>').join('')||'<p class="sub" style="text-align:center;margin:auto">Escribe tu primer mensaje. Te respondemos aquí mismo.</p>'}
 function chatHTML(){const sug=S.rol==='cliente'?['¿Cuándo llegan mis fotos?','Quiero pedir un ajuste','Quiero dejar un comentario']:S.rol==='alumno'?['Tengo una duda de la tarea','No puedo subir mi audio','¿Qué practico hoy?']:['Quiero cambiar el horario','Duda con una factura','¿Cómo va mi hijo/a?'];
   return '<div class="sug">'+sug.map(s=>'<button class="chip" type="button" data-sug>'+s+'</button>').join('')+'</div><div class="chat"><div class="msgs" id="msgs">'+msgsHTML()+'</div><div class="send"><input id="ci" placeholder="Escribe tu mensaje…" maxlength="500" aria-label="Mensaje"><button class="btn" type="button" id="cs" aria-label="Enviar">'+ic('send')+'</button></div></div>'}
-P.chat=()=>'<section class="page"><div class="ph"><h1>'+(S.rol==='alumno'?'Dudas y chat':'Chat con Faro Academy')+'</h1><p>'+(S.rol==='alumno'?'Pregúntale a tu profe lo que no entendiste. Te responde en horario de clases.':'Escriba aquí sus consultas sobre horarios, facturas o el avance de su hijo/a.')+'</p></div>'+kidsSwitch()+chatHTML()+'</section>';
+P.chat=()=>'<section class="page"><div class="ph"><h1>'+(S.rol==='alumno'?'Dudas y chat':'Chat con el docente y Faro Academy')+'</h1><p>'+(S.rol==='alumno'?'Pregúntale a tu profe lo que no entendiste. Te responde en horario de clases.':'Escriba aquí sus consultas sobre horarios, facturas o el avance de su hijo/a.')+'</p></div>'+kidsSwitch()+chatHTML()+'</section>';
 async function enviarMsg(t){
   t=t.trim();if(!t)return;
   try{let r;
@@ -1077,7 +1086,7 @@ P.finanzas=()=>{const k=K();
   +'<div class="grid g2"><div class="card"><h2>Saldo pendiente</h2><div class="money" style="margin:12px 0">'+Q(k.saldo)+'</div>'+(k.saldo?'<span class="pill warn">'+(prox?'Vence el '+esc(fecha(prox.vence,{day:'numeric',month:'long'})):'Pendiente de pago')+'</span>':'<span class="pill ok">Todo al día</span>')+'</div>'
   +'<div class="pay"><b style="font:400 var(--t1)/1 var(--display);letter-spacing:.05em">Paga con tarjeta o en cuotas</b><span>Con VisaLink puedes pagar con tarjeta de crédito y en cuotas.</span><a class="btn wa" target="_blank" rel="noopener" href="'+WA+'?text=Hola%2C%20quiero%20consultar%20recargos%20y%20disponibilidad%20de%20cuotas">Consultar recargos y disponibilidad</a><small>Depósito o transferencia: te enviamos los datos por WhatsApp.</small></div></div>'
   +'<div class="card" style="margin-top:22px"><h2>Facturas</h2>'+(k.fac.length?'<table class="tbl"><thead><tr><th>Concepto</th><th>Monto</th><th class="hm">Fecha</th><th>Estado</th><th></th></tr></thead><tbody>'+k.fac.map(f=>'<tr><td>'+esc(f.concepto)+'</td><td>'+Q(f.monto)+'</td><td class="hm">'+esc(corta(f.emision))+'</td><td><span class="pill '+(f.estado==='pagada'?'ok':f.estado==='anulada'?'mute':'warn')+'">'+(f.estado==='pagada'?'Pagada':f.estado==='anulada'?'Anulada':'Pendiente')+'</span></td><td>'+(f.ruta?'<button class="btn ghost" type="button" style="padding:8px 14px" data-open="'+esc(f.ruta)+'" aria-label="Descargar PDF">'+ic('down')+'</button>':'')+'</td></tr>').join('')+'</tbody></table>':vacio('Todavía no hay facturas registradas.'))+'</div></section>'};
-P.finanzas.bind=()=>$$('[data-open]').forEach(b=>b.onclick=()=>abrir('academy',b.dataset.open));
+P.finanzas.bind=()=>$$('[data-open]').forEach(b=>b.onclick=()=>abrir('academy',b.dataset.open,{descarga:true}));
 
 /* ---------- cliente de Studios ---------- */
 P['c-inicio']=()=>{const c=S.cli.k,d=S.cli.docs,nu=S.cli.msgs.filter(m=>m.de==='faro').length;
@@ -1213,7 +1222,7 @@ P['d-alumnos'].bind=()=>{$$('[data-para]').forEach(b=>b.onclick=()=>{S.doc.para=
 /* ---------- docente: perfil de cada alumno (resumen, prácticas y material) ---------- */
 P['d-alumno']=()=>{const d=S.doc,a=d.alumnos.find(x=>x.id===d.sel);
   if(!a)return '<section class="page"><div class="card">'+vacio('No encontramos a ese estudiante.')+'<button class="btn" type="button" onclick="go(\'d-alumnos\')">Volver a mis alumnos</button></div></section>';
-  const tab=d.ptab||'resumen',T=[['resumen','Resumen'],['programa','Programa'],['proyectos','Proyectos'],['plan','Planificación'],['practicas','Prácticas'],['material','Material']];
+  const tab=d.ptab||'resumen',T=[['resumen','Resumen'],['programa','Programa'],['proyectos','Proyectos'],['plan','Planificación'],['chat','Chat'],['practicas','Prácticas'],['material','Material']];
   return '<section class="page"><div class="card" style="text-align:left"><div class="perfil-al">'+avAl(a.id,92)+'<div><h1>'+esc(a.nombre)+'</h1><p class="sub">'+(a.area==='ingles'?'Inglés':'Música')+(a.detalle?' · '+esc(a.detalle):'')+'</p></div><button class="btn ghost" type="button" style="margin-left:auto" onclick="go(\'d-alumnos\')">← Mis alumnos</button></div>'
    +'<div class="ptabs" role="tablist" aria-label="Perfil del estudiante">'+T.map(t=>'<button type="button" role="tab" data-pt="'+t[0]+'" aria-pressed="'+(tab===t[0])+'">'+t[1]+'</button>').join('')+'</div><div id="pa-body"></div></div></section>'};
 P['d-alumno'].bind=()=>{const d=S.doc,id=d.sel,body=$('#pa-body'),a=d.alumnos.find(x=>x.id===id);if(!body||!a)return;
@@ -1222,6 +1231,9 @@ P['d-alumno'].bind=()=>{const d=S.doc,id=d.sel,body=$('#pa-body'),a=d.alumnos.fi
   if(tab==='programa'){
     body.innerHTML='<p class="sub" style="margin-bottom:12px">Programa las clases de '+nom+': día, hora y enlace si es en línea. Al terminarla, márcala <b>finalizada</b>: queda su asistencia y gana XP.</p><div id="pg-root"><p class="sub">Cargando…</p></div>';
     programaMontar($('#pg-root'),id,a.nombre);return}
+  if(tab==='chat'){
+    body.innerHTML='<p class="sub" style="margin-bottom:12px">Conversa con '+nom+' y con su familia. Ellos ven tus mensajes en su chat del portal.</p><div id="cd-root"><p class="sub">Cargando…</p></div>';
+    chatDocMontar($('#cd-root'),id,a.apodo||String(a.nombre).split(' ')[0]);return}
   if(tab==='plan'){
     body.innerHTML='<p class="sub" style="margin-bottom:12px">Moodboard de planificación para '+nom+'. Solo tú lo ves.</p><div id="pl-root"><p class="sub">Cargando…</p></div>';
     planMontar($('#pl-root'),id,a.nombre);return}
@@ -1336,6 +1348,7 @@ async function programaMontar(root,est,nombre){
   pintar()}
 /* ---------- XP por entrar y merma por inactividad (alumno) ---------- */
 function tarjetaFlota(titulo,html,ms){
+  document.querySelectorAll('.bien').forEach(x=>x.remove());
   const el=document.createElement('div');el.className='bien';el.setAttribute('role','status');
   el.innerHTML='<h3>'+esc(titulo)+'</h3>'+html+'<button class="btn y" type="button">Entendido</button>';
   document.body.append(el);requestAnimationFrame(()=>el.classList.add('on'));
@@ -1437,7 +1450,7 @@ P['d-plan'].bind=()=>{const d=S.doc;$$('[data-pls]').forEach(b=>b.onclick=()=>{d
 /* ---------- XP de juegos, afinador y metrónomo (los topes los pone la base de datos) ---------- */
 async function ganarXP(fuente,xp,puntaje){
   try{const r=await api('/rest/v1/rpc/ac_ganar_xp',{method:'POST',body:{p_fuente:fuente,p_xp:Math.max(0,Math.floor(xp)),p_puntaje:puntaje==null?null:Math.floor(puntaje)}});
-    if(!r.ok)return{dado:0,error:true};const j=await r.json();const k=K();if(k&&typeof j.xp==='number'){k.xp=j.xp;try{renderSide()}catch(e){}}return j}catch(e){return{dado:0,error:true}}}
+    if(!r.ok)return{dado:0,error:true};const j=await r.json();const k=K();if(k&&typeof j.xp==='number'){k.xp=j.xp;try{renderSide()}catch(e){}}if(j.dado>0)revisarInsignias();return j}catch(e){return{dado:0,error:true}}}
 function usoHerramienta(tool,seg){
   if(S.rol!=='alumno'||seg<30)return;
   const xp=tool==='metronomo'?Math.min(5,Math.floor(seg/60)):Math.min(3,1+Math.floor(seg/120));
@@ -1446,6 +1459,125 @@ P.xp=()=>'<section class="page"><div id="jg-root"><p class="sub">Cargando juegos
 P.xp.bind=()=>{const k=K(),r=$('#jg-root');if(!r)return;
   if(!window.FaroJuegos){r.innerHTML='<div class="card"><p class="sub">No se pudieron cargar los juegos. Recarga la página.</p></div>';return}
   FaroJuegos.mount(r,{instr:k.instr||[],area:k.areaId==='ingles'?'ingles':'musica',nivel:lvl(k.xp||0).n,onXP:ganarXP})};
+/* ---------- Visor dentro del portal: el estudiante y su familia ven, escuchan y leen sin descargar ---------- */
+function visorTipo(r){const u=String(r||''),l=u.toLowerCase().split('?')[0];
+  if(/youtu\.be\/|youtube\.com\//i.test(u))return 'yt';if(/vimeo\.com\//i.test(u))return 'vimeo';if(/drive\.google\.com\/file\//i.test(u))return 'drive';
+  if(/\.pdf$/.test(l))return 'pdf';if(/\.(mp4|mov|webm|m4v)$/.test(l))return 'video';if(/\.(mp3|m4a|wav|ogg|aac)$/.test(l))return 'audio';if(/\.(png|jpe?g|gif|webp)$/.test(l))return 'img';return 'otro'}
+async function visor(ruta,titulo){
+  const previo=$('#visor');if(previo)previo.remove();
+  const t=visorTipo(ruta),ext=/^https?:/i.test(ruta);
+  const el=document.createElement('div');el.id='visor';el.setAttribute('role','dialog');el.setAttribute('aria-modal','true');el.setAttribute('aria-label',titulo||'Vista del archivo');
+  el.innerHTML='<div class="vs-h"><b>'+esc(titulo||'Vista del archivo')+'</b><button type="button" class="btn ghost" id="vs-x">Cerrar</button></div><div class="vs-b"><p class="sub">Cargando…</p></div>';
+  document.body.append(el);const cuerpo=el.querySelector('.vs-b');
+  const cerrar=()=>{el.remove();document.removeEventListener('keydown',esc_)};const esc_=e=>{if(e.key==='Escape')cerrar()};
+  document.addEventListener('keydown',esc_);el.querySelector('#vs-x').onclick=cerrar;el.querySelector('#vs-x').focus();
+  window.__faroOcupado=Date.now()+10*60*1000;   // ver un archivo cuenta como actividad
+  let u=ruta;if(!ext){u=await urlFirmada('academy',ruta);if(!u){cuerpo.innerHTML='<p class="sub">No se pudo abrir el archivo. Intenta de nuevo.</p>';return}}
+  const s=esc(u);
+  if(t==='yt'){const m=/(?:youtu\.be\/|v=|embed\/|shorts\/)([\w-]{11})/.exec(u);cuerpo.innerHTML=m?'<iframe src="https://www.youtube-nocookie.com/embed/'+m[1]+'?rel=0" title="Video" allow="encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe>':'<p class="sub">No se pudo abrir ese video.</p>';return}
+  if(t==='vimeo'){const m=/vimeo\.com\/(?:video\/)?(\d+)/.exec(u);cuerpo.innerHTML=m?'<iframe src="https://player.vimeo.com/video/'+m[1]+'" title="Video" allowfullscreen></iframe>':'<p class="sub">No se pudo abrir ese video.</p>';return}
+  if(t==='drive'){cuerpo.innerHTML='<iframe src="'+esc(u.replace(/\/(view|edit)[^]*$/,'/preview'))+'" title="Documento"></iframe>';return}
+  if(t==='pdf'){cuerpo.innerHTML='<iframe src="'+s+'#toolbar=0&navpanes=0" title="Documento PDF"></iframe>';return}
+  if(t==='video'){cuerpo.innerHTML='<video src="'+s+'" controls autoplay playsinline controlsList="nodownload noremoteplayback" disablePictureInPicture></video>';cuerpo.oncontextmenu=e=>e.preventDefault();return}
+  if(t==='audio'){cuerpo.innerHTML='<audio src="'+s+'" controls autoplay controlsList="nodownload"></audio>';return}
+  if(t==='img'){cuerpo.innerHTML='<img src="'+s+'" alt="'+esc(titulo||'Imagen')+'" draggable="false">';cuerpo.oncontextmenu=e=>e.preventDefault();return}
+  cuerpo.innerHTML=ext?'<p class="sub">Este enlace es de otra página y no se puede mostrar aquí.</p><a class="btn y" href="'+s+'" target="_blank" rel="noopener noreferrer">Abrir el enlace</a>':'<p class="sub">Este tipo de archivo no se puede ver dentro del portal. Pídele a tu docente que lo comparta como PDF, audio o video.</p>'}
+
+/* ---------- Chat del docente con el estudiante y con su familia ---------- */
+async function chatDocMontar(root,est,nom){
+  const d=S.doc;let canal=d.ccanal||'alumno',M=await rows('ac_mensajes','estudiante_id=eq.'+est+'&order=creado.asc&limit=300');
+  const quien=m=>m.de==='docente'?'Tú':m.de==='alumno'?nom:m.de==='encargado'?'Familia':'Faro Academy';
+  const lista=()=>M.filter(m=>m.canal===canal);
+  const pintaMsgs=()=>{const b=$('#cd-msgs',root);if(!b)return;b.innerHTML=lista().map(m=>'<div class="m '+(m.de==='docente'?'out':'in')+'"><small>'+esc(quien(m))+' · '+esc(cuando(m.creado))+'</small>'+esc(m.texto)+'</div>').join('')||'<p class="sub" style="text-align:center;margin:auto">Todavía no hay mensajes aquí.</p>';b.scrollTop=b.scrollHeight};
+  const pintar=()=>{
+    root.innerHTML='<div class="ptabs" style="margin-top:0">'+[['alumno','Con '+esc(nom)],['encargado','Con su familia']].map(c=>'<button type="button" data-cc="'+c[0]+'" aria-pressed="'+(canal===c[0])+'">'+c[1]+'</button>').join('')+'</div>'
+     +'<div class="chat"><div class="msgs" id="cd-msgs"></div><form class="send" id="cd-f"><input id="cd-i" placeholder="Escribe tu mensaje…" maxlength="500" aria-label="Mensaje" autocomplete="off"><button class="btn" type="submit" aria-label="Enviar">'+ic('send')+'</button></form></div>';
+    $$('[data-cc]',root).forEach(b=>b.onclick=()=>{canal=d.ccanal=b.dataset.cc;pintar()});
+    $('#cd-f',root).onsubmit=async e=>{e.preventDefault();const i=$('#cd-i',root),t=i.value.trim();if(!t)return;i.disabled=true;
+      const r=await api('/rest/v1/ac_mensajes',{method:'POST',headers:{Prefer:'return=representation'},body:{estudiante_id:est,canal,de:'docente',texto:t,leido_admin:true}}).catch(()=>null);
+      i.disabled=false;if(r&&r.ok){M.push((await r.json())[0]);i.value='';pintaMsgs();i.focus()}else aviso('No se pudo enviar. ¿Corriste el SQL de la etapa 2E?')};
+    pintaMsgs()};
+  pintar();
+  const t=setInterval(async()=>{if(!document.body.contains(root)){clearInterval(t);return}const n=await rows('ac_mensajes','estudiante_id=eq.'+est+'&order=creado.asc&limit=300');if(n.length!==M.length){M=n;pintaMsgs()}},20000)}
+
+/* ---------- Campana de notificaciones ---------- */
+async function campanaDatos(){
+  const vs=await rows('ac_visto','clave=eq.campana&select=visto'),visto=vs[0]?vs[0].visto:new Date(Date.now()-3*864e5).toISOString(),q=encodeURIComponent(visto),it=[];
+  const hoy=hoyISO();
+  if(S.rol==='docente'){
+    const d=S.doc,nom=id=>{const a=d.alumnos.find(x=>x.id===id);return a?(a.apodo||String(a.nombre).split(' ')[0]):'un estudiante'};
+    const [ms,py,pr]=await Promise.all([rows('ac_mensajes','creado=gt.'+q+'&de=in.(alumno,encargado)&order=creado.desc&limit=60&select=estudiante_id,de'),rows('ac_proyectos','estado=eq.entregado&select=estudiante_id,titulo'),rows('ac_practicas','estado=eq.pendiente&select=estudiante_id')]);
+    const g={};ms.forEach(m=>{g[m.estudiante_id]=(g[m.estudiante_id]||0)+1});Object.keys(g).forEach(id=>it.push({ic:'chat',t:g[id]+(g[id]>1?' mensajes nuevos':' mensaje nuevo')+' de '+nom(id),go:()=>verAlumno(id,'chat')}));
+    py.forEach(p=>it.push({ic:'image',t:'Proyecto por evaluar: «'+p.titulo+'» ('+nom(p.estudiante_id)+')',go:()=>verAlumno(p.estudiante_id,'proyectos')}));
+    const gp={};pr.forEach(p=>{gp[p.estudiante_id]=(gp[p.estudiante_id]||0)+1});Object.keys(gp).forEach(id=>it.push({ic:'mic',t:gp[id]+(gp[id]>1?' prácticas':' práctica')+' por escuchar de '+nom(id),go:()=>verAlumno(id,'practicas')}));
+    (d.cl||[]).filter(c=>c.fecha===hoy&&(c.estado==='programada'||c.estado==='reprogramada')).forEach(c=>it.push({ic:'cal',t:'Hoy: '+c.titulo+' con '+nom(c.estudiante_id),go:()=>verAlumno(c.estudiante_id,'programa')}))}
+  else if(S.rol==='alumno'||S.rol==='encargado'){
+    const canal=S.rol==='alumno'?'alumno':'encargado',k=K();
+    const ms=await rows('ac_mensajes','estudiante_id=eq.'+S.kid+'&canal=eq.'+canal+'&de=neq.'+canal+'&creado=gt.'+q+'&select=de&limit=50');
+    if(ms.length)it.push({ic:'chat',t:ms.length+(ms.length>1?' mensajes nuevos':' mensaje nuevo')+' de tu docente / Faro Academy',go:()=>go('chat')});
+    if(S.rol==='alumno'){const ev=await rows('ac_proyectos','estudiante_id=eq.'+S.kid+'&estado=eq.evaluado&evaluado_en=gt.'+q+'&select=titulo,xp');
+      ev.forEach(p=>it.push({ic:'star',t:'Evaluaron tu proyecto «'+p.titulo+'»: +'+p.xp+' XP',go:()=>go('proyectos')}))}
+    (k.clases||[]).filter(c=>c.fecha===hoy&&(c.estado==='programada'||c.estado==='reprogramada')).forEach(c=>it.push({ic:'cal',t:'Hoy hay clase'+(c.hora?' a las '+hora(c.hora):'')+': '+c.titulo,go:()=>go('clases')}))}
+  return it}
+async function campanaPintar(abrir){
+  const b=$('#bell');if(!b||!S.rol||S.rol==='cliente')return;
+  let it=[];try{it=await campanaDatos()}catch(e){}
+  S.bellItems=it;const n=$('#bell-n');n.textContent=it.length>9?'9+':String(it.length);n.hidden=!it.length;
+  b.setAttribute('aria-label',it.length?'Notificaciones: '+it.length:'Notificaciones');
+  if(abrir)campanaPanel()}
+function campanaPanel(){
+  let p=$('#bellp');if(p){p.remove();$('#bell').setAttribute('aria-expanded','false');return}
+  p=document.createElement('div');p.id='bellp';const it=S.bellItems||[];
+  p.innerHTML='<b>Notificaciones</b>'+(it.length?it.map((x,i)=>'<button type="button" data-bi="'+i+'">'+ic(x.ic)+'<span>'+esc(x.t)+'</span></button>').join(''):'<p class="sub" style="margin:8px 0">Todo al día. ¡Buen trabajo!</p>');
+  document.body.append(p);$('#bell').setAttribute('aria-expanded','true');
+  $$('[data-bi]',p).forEach(b=>b.onclick=()=>{const x=it[+b.dataset.bi];p.remove();$('#bell').setAttribute('aria-expanded','false');x&&x.go()});
+  const fuera=e=>{if(!e.target.closest('#bellp')&&!e.target.closest('#bell')){const q=$('#bellp');q&&q.remove();const bb=$('#bell');bb&&bb.setAttribute('aria-expanded','false');document.removeEventListener('click',fuera,true)}};
+  setTimeout(()=>document.addEventListener('click',fuera,true),0);
+  api('/rest/v1/ac_visto?on_conflict=user_id,clave',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:{clave:'campana',visto:new Date().toISOString()}}).catch(()=>{})}
+function campanaIniciar(){const b=$('#bell');if(!b)return;b.hidden=!S.rol||S.rol==='cliente';if(b.hidden)return;b.onclick=()=>campanaPanel();clearInterval(S.bellT);setTimeout(()=>campanaPintar(false),1500);S.bellT=setInterval(()=>campanaPintar(false),90000)}
+function campanaParar(){clearInterval(S.bellT);S.bellT=0;const b=$('#bell');if(b)b.hidden=true;const p=$('#bellp');p&&p.remove()}
+
+/* ---------- Buzón de sugerencias ---------- */
+P['d-sug']=()=>'<section class="page"><div class="ph"><h1>Sugerencias</h1><p>¿Una idea para mejorar el portal o algo que no funciona? Cuéntanos: lo lee el equipo de Faro.</p></div><div class="card"><form id="sg-f" style="display:grid;gap:14px;max-width:620px;margin:0 auto;text-align:left"><label>Tipo<select id="sg-t"><option value="idea">Una idea</option><option value="problema">Algo no funciona</option><option value="otro">Otra cosa</option></select></label><label>Tu mensaje<textarea id="sg-m" rows="5" maxlength="1500" placeholder="Escribe con confianza…" required></textarea></label><p id="sg-e" class="sub" role="alert" style="min-height:1.2em"></p><button class="btn y" type="submit">'+ic('send')+'Enviar sugerencia</button></form></div><div class="card" style="margin-top:18px"><h2>Tus sugerencias</h2><div id="sg-l"><p class="sub">Cargando…</p></div></div></section>';
+P['d-sug'].bind=()=>{
+  const pintaL=async()=>{const L=await rows('ac_sugerencias','order=creado.desc&limit=30'),el=$('#sg-l');if(!el)return;el.innerHTML=L.length?'<div class="ls">'+L.map(s=>'<div class="it">'+ic('bulb')+'<div>'+esc(s.mensaje.length>140?s.mensaje.slice(0,140)+'…':s.mensaje)+'<small>'+esc({idea:'Idea',problema:'Algo no funciona',otro:'Otra cosa'}[s.tipo]||'')+' · '+esc(corta(s.creado))+'</small></div><span class="pill '+(s.leida?'ok':'mute')+'" style="margin-left:auto">'+(s.leida?'Leída':'Enviada')+'</span></div>').join('')+'</div>':vacio('Aún no has enviado ninguna.')};
+  $('#sg-f').onsubmit=async e=>{e.preventDefault();const m=$('#sg-m').value.trim(),b=e.target.querySelector('button');if(m.length<3){$('#sg-e').textContent='Escribe un poco más.';return}
+    b.disabled=true;$('#sg-e').textContent='';
+    const r=await api('/rest/v1/ac_sugerencias',{method:'POST',headers:{Prefer:'return=minimal'},body:{rol:S.rol,nombre:String((S.doc&&S.doc.perfil&&S.doc.perfil.nombre)||'').slice(0,80),tipo:$('#sg-t').value,mensaje:m}}).catch(()=>null);
+    b.disabled=false;if(r&&r.ok){$('#sg-m').value='';aviso('¡Gracias! Recibimos tu sugerencia.');pintaL()}else $('#sg-e').textContent='No se pudo enviar. ¿Corriste el SQL de la etapa 2E?'};
+  pintaL()};
+
+/* ---------- Insignias ocultas ---------- */
+const OCULTAS=8;
+async function revisarInsignias(){
+  try{const r=await api('/rest/v1/rpc/ac_revisar_insignias',{method:'POST',body:{}});if(!r.ok)return;const n=await r.json();
+    if(Array.isArray(n)&&n.length){const k=K();k.logros=await rows('ac_logros','estudiante_id=eq.'+k.id+'&order=fecha.desc');
+      tarjetaFlota('¡Insignia oculta desbloqueada!','<p>'+n.map(x=>'<b>'+esc(x.titulo)+'</b>').join(', ')+'</p><cite>Míralas en «Logros».</cite>',12000)}}catch(e){}}
+
+/* ---------- Vista de la familia: logros, diplomas, juegos y horas de estudio ---------- */
+const JUEGO_NOM={'ing-traductor':'Traductor escrito','ing-escucha':'Traductor auditivo','ing-completar':'Completa la frase','ing-pronunciar':'Lee y pronuncia','ing-escribir':'Escribe sobre tu día','mus-acordes':'Identifica el acorde','mus-compas':'Identifica el compás','mus-ritmo':'Patrón rítmico','mus-mayormenor':'Mayor o menor','mus-notas':'Identifica la nota'};
+const fmtMin=s=>s>=3600?(s/3600).toFixed(1).replace('.0','')+' h':Math.round(s/60)+' min';
+P.familia=()=>{const k=K(),L=lvl(k.xp),oc=k.logros.filter(b=>String(b.clave||'').startsWith('oculta-')).length;
+  return '<section class="page"><div class="ph"><h1>Logros y estudio</h1><p>Cómo avanza '+esc(k.corto)+': insignias, diplomas, juegos y horas de práctica.</p></div>'+kidsSwitch()
+   +'<div class="grid g4"><div class="tile y">'+ic('bolt')+'<b>'+k.xp+'</b><span>XP en total</span></div><div class="tile c">'+ic('flame')+'<b>'+k.racha+'</b><span>días de racha</span></div><div class="tile t">'+ic('star')+'<b>'+L.n+'</b><span>nivel</span></div><div class="tile g">'+ic('trophy')+'<b>'+k.logros.length+'</b><span>insignias</span></div></div>'
+   +'<div class="card" style="margin-top:18px"><h2>Insignias y medallas</h2>'+(k.logros.length?'<div class="grid g4" style="margin-top:14px">'+k.logros.map((b,i)=>'<div class="badge"><div class="bd on" style="background:var('+COLORES[i%5]+')">'+ic(ICONO[b.icono]||'star')+'</div><span>'+esc(b.titulo)+'</span></div>').join('')+'</div>':vacio('Todavía no hay insignias. ¡Llegarán pronto!'))+(oc?'<p class="sub" style="margin-top:10px">Incluye '+oc+' insignia'+(oc>1?'s ocultas':' oculta')+' descubierta'+(oc>1?'s':'')+'.</p>':'')+'</div>'
+   +'<div class="card" style="margin-top:18px"><h2>Diplomas y constancias</h2>'+(k.diplomas.length?'<div class="ls" style="margin-top:10px">'+k.diplomas.map(d=>'<div class="it">'+ic('trophy')+'<div>'+esc(d.titulo)+'<small>'+esc(corta(d.fecha))+'</small></div>'+(d.ruta?'<button class="btn ghost" type="button" data-open="'+esc(d.ruta)+'">Ver</button>':'')+'</div>').join('')+'</div>':vacio('Aún no hay diplomas.'))+'</div>'
+   +'<div class="card" style="margin-top:18px"><h2>Horas de estudio</h2><div id="fa-horas"><p class="sub">Cargando…</p></div></div>'
+   +'<div class="card" style="margin-top:18px"><h2>Juegos y práctica (últimos 30 días)</h2><div id="fa-juegos"><p class="sub">Cargando…</p></div></div></section>'};
+P.familia.bind=async()=>{
+  $$('[data-open]').forEach(b=>b.onclick=()=>abrir('academy',b.dataset.open));
+  const k=K(),id=S.kid,d30=new Date(Date.now()-30*864e5).toISOString().slice(0,10);
+  const [lg,pr]=await Promise.all([rows('ac_xp_log','estudiante_id=eq.'+id+'&fecha=gte.'+d30+'&order=fecha.desc&limit=600'),rows('ac_practicas','estudiante_id=eq.'+id+'&creado=gte.'+new Date(Date.now()-30*864e5).toISOString()+'&select=creado,duracion_seg&limit=600')]);
+  if(S.kid!==id)return;
+  /* segundos de estudio por día: prácticas grabadas + tiempo con afinador y metrónomo */
+  const porDia={},dia=f=>String(f).slice(0,10);
+  pr.forEach(p=>{const f=new Date(p.creado);const x=f.getFullYear()+'-'+String(f.getMonth()+1).padStart(2,'0')+'-'+String(f.getDate()).padStart(2,'0');porDia[x]=(porDia[x]||0)+(p.duracion_seg||0)});
+  lg.filter(l=>l.fuente==='afinador'||l.fuente==='metronomo').forEach(l=>{const x=dia(l.fecha);porDia[x]=(porDia[x]||0)+(l.puntaje||0)});
+  const dias=[];for(let i=6;i>=0;i--){const f=new Date(Date.now()-i*864e5),x=f.getFullYear()+'-'+String(f.getMonth()+1).padStart(2,'0')+'-'+String(f.getDate()).padStart(2,'0');dias.push([x,porDia[x]||0,f.toLocaleDateString('es-GT',{weekday:'short'})])}
+  const max=Math.max(600,...dias.map(x=>x[1])),tot7=dias.reduce((a,x)=>a+x[1],0),tot30=Object.values(porDia).reduce((a,x)=>a+x,0);
+  const h=$('#fa-horas');if(h)h.innerHTML='<div style="display:flex;gap:8px;align-items:flex-end;height:120px;margin:12px 0 6px">'+dias.map(x=>'<div style="flex:1;display:grid;gap:4px;justify-items:center;align-content:end;height:100%"><i style="display:block;width:100%;max-width:44px;border-radius:8px 8px 0 0;background:var(--y);height:'+Math.max(4,Math.round(x[1]/max*100))+'%" title="'+fmtMin(x[1])+'"></i><small>'+esc(x[2])+'</small></div>').join('')+'</div><p class="sub">Esta semana: <b>'+fmtMin(tot7)+'</b> · Últimos 30 días: <b>'+fmtMin(tot30)+'</b> (prácticas grabadas, afinador y metrónomo).</p>';
+  const g={};lg.filter(l=>JUEGO_NOM[l.fuente]).forEach(l=>{const o=g[l.fuente]||(g[l.fuente]={n:0,xp:0});o.n++;o.xp+=l.xp});
+  const j=$('#fa-juegos');if(j)j.innerHTML=Object.keys(g).length?'<div class="ls">'+Object.keys(g).map(f=>'<div class="it">'+ic('bolt')+'<div>'+esc(JUEGO_NOM[f])+'<small>'+g[f].n+' partida'+(g[f].n>1?'s':'')+'</small></div><span class="pill ok" style="margin-left:auto">+'+g[f].xp+' XP</span></div>').join('')+'</div>':vacio('Todavía no ha jugado en «Aumentar XP».')};
 /* ---------- docente: evalúa prácticas grabadas ---------- */
 /* mini grabadora para la respuesta en audio del docente */
 function miniRec(host){
@@ -1563,16 +1695,17 @@ async function iniciar(esperado){
     if(esperado&&ROL_TAB[p.rol]!==esperado){const t=ROL_TAB[p.rol];salir(true);S.tab=t;loginUI('Ese usuario es de '+ROL_NOM[p.rol].toUpperCase()+'. Te pasamos a la pestaña «'+ROL_NOM[p.rol]+'»: escribe tu usuario y contraseña ahí.');return}
     if((p.rol==='alumno'&&!p.alumno)||(p.rol==='docente'&&!p.docente)){salir(true);loginUI('Tu acceso todavía no tiene un espacio asignado ('+ROL_NOM[p.rol].toLowerCase()+'). Escríbenos por WhatsApp para vincularlo.');return}
     S.perfil=p;S.rol=p.rol;if(SES){SES.rol=p.rol;saveSes()}
-    if(p.rol==='alumno'){S.kid=p.alumno.id;S.kids=[p.alumno];S.D[S.kid]=await cargarAlumno(S.kid);S.page='inicio';actividadAlumno()}
+    if(p.rol==='alumno'){S.kid=p.alumno.id;S.kids=[p.alumno];S.D[S.kid]=await cargarAlumno(S.kid);S.page='inicio';actividadAlumno().then(()=>setTimeout(revisarInsignias,2500))}
     else if(p.rol==='encargado'){S.kids=p.hijos||[];if(!S.kids.length){salir(true);loginUI('Todavía no hay estudiantes vinculados a tu acceso. Escríbenos por WhatsApp.');return}
       S.kid=S.kids[0].id;S.D[S.kid]=await cargarAlumno(S.kid);S.page='resumen'}
     else if(p.rol==='docente'){await Promise.race([cargaVers(),new Promise(r=>setTimeout(r,2500))]);try{sessionStorage.removeItem('faro_frase')}catch(e){}S.doc=await cargarDocente(p);S.page='d-inicio';setTimeout(bienvenida,600)}
     else{S.cli=await cargarCliente(p.cliente.id);S.page='c-inicio'}
     try{FaroPerfil.entrar()}catch(e){}
+    campanaIniciar();
     render()}
   catch(e){if(e.message!=='sesion'){salir(true);loginUI('No pudimos entrar ahora. Intenta de nuevo en un momento.')}}
 }
-function salir(silencio){try{sessionStorage.removeItem('faro_frase')}catch(e){}window.FaroJuegos&&FaroJuegos.stop();try{FaroPerfil.salir()}catch(e){}window.FaroTools&&FaroTools.stop();pracStop();plStop();relojParar();idleCerrar();{const b=document.querySelector('.bien');b&&b.remove()}SES=null;try{sessionStorage.removeItem('faro_portal');localStorage.removeItem('faro_portal')}catch(e){}S.rol=null;S.D={};S.cli=null;S.doc=null;S.perfil=null;if(!silencio){render()}}
+function salir(silencio){try{sessionStorage.removeItem('faro_frase')}catch(e){}window.FaroJuegos&&FaroJuegos.stop();campanaParar();try{FaroPerfil.salir()}catch(e){}window.FaroTools&&FaroTools.stop();pracStop();plStop();relojParar();idleCerrar();{const b=document.querySelector('.bien');b&&b.remove()}SES=null;try{sessionStorage.removeItem('faro_portal');localStorage.removeItem('faro_portal')}catch(e){}S.rol=null;S.D={};S.cli=null;S.doc=null;S.perfil=null;if(!silencio){render()}}
 $('#out').onclick=()=>salir();
 ['gesturestart','gesturechange','gestureend'].forEach(g=>document.addEventListener(g,e=>e.preventDefault()));
 ['pointerdown','pointermove','keydown','touchstart','scroll','wheel','input'].forEach(ev=>addEventListener(ev,()=>{if(SES&&!IDLE_EL)actMarca()},{passive:true,capture:true}));
