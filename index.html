@@ -3642,19 +3642,26 @@ window.rebuildPortfolio=function(){
   const addV=(b,u)=>{const v=document.createElement('video');v.className='pf-v';v.muted=true;v.loop=true;v.playsInline=true;v.preload='none';v.setAttribute('playsinline','');
     b.appendChild(v);const pl=document.createElement('span');pl.className='pf-play';pl.textContent='▶';b.appendChild(pl);
     v.preload='metadata';v.src=u;window.autoV&&window.autoV(v);};
-  const mk=(w,id,base,n)=>{
+  /* cada casilla ocupa, en el orden elegido, un lugar del mosaico (WORKS[k].g); las que sobran se acomodan solas al final */
+  const mk=(w,id,base,n,slot)=>{
     const b=document.createElement('button');b.type='button';b.dataset.c=w.c;
     const vu=base?SITE.vid[id]:(w.type==='vid'?w.src:''),iu=base?imgOf(id):(w.type==='vid'?(w.poster||''):w.src);
-    if(base){b.className='plank ph'+w.w+' tilt';b.style.cssText=`--c:${w.g[0]};--r:${w.g[1]};--w:${w.g[2]};--h:${w.g[3]}`;
-      b.innerHTML=`<div class="ph-img" data-img="${id}"></div><svg class="ico cam"><use href="#i-cam"/></svg><div class="cap"><b>${escH(w.n)}</b>${escH(w.c[0].toUpperCase()+w.c.slice(1))}</div>`}
-    else{b.className='plank auto tilt ph'+((n%6)+1);
-      b.innerHTML=`<div class="ph-img${iu?' has':''}" ${iu?`style="background-image:url('${escH(iu)}')"`:''}></div><svg class="ico cam"><use href="#i-${vu?'vid':'cam'}"/></svg><div class="cap"><b>${escH(w.n)}</b>${escH((cats.find(c=>c.id===w.c)||{n:w.c}).n)}</div>`}
+    if(slot){b.className='plank ph'+slot.w+' tilt';b.style.cssText=`--c:${slot.g[0]};--r:${slot.g[1]};--w:${slot.g[2]};--h:${slot.g[3]}`}
+    else b.className='plank auto tilt ph'+((n%6)+1);
+    const cn=base?w.c[0].toUpperCase()+w.c.slice(1):(cats.find(c=>c.id===w.c)||{n:w.c}).n;
+    const im=base?`<div class="ph-img" data-img="${id}"></div>`:`<div class="ph-img${iu?' has':''}" ${iu?`style="background-image:url('${escH(iu)}')"`:''}></div>`;
+    b.innerHTML=`${im}<svg class="ico cam"><use href="#i-${(!base&&vu)?'vid':'cam'}"/></svg><div class="cap"><b>${escH(w.n)}</b>${escH(cn)}</div>`;
     if(vu)addV(b,vu);
     b.addEventListener('click',()=>openLb(w,vu||(base?imgOf(id):iu),!!vu));
     gal.appendChild(b);
   };
-  WORKS.forEach((w,i)=>{const id='w'+(i+1);if(off.has(id))return;mk(Object.assign({},w,over[id]||{}),id,true,i)});
-  (pf.extra||[]).forEach((x,n)=>{if(x.on===false||!x.src)return;mk(x,x.id||('x'+n),false,n)});
+  const all=WORKS.map((w,i)=>({id:'w'+(i+1),base:true,w,i})).concat((pf.extra||[]).map((x,n)=>({id:x.id||('x'+n),base:false,x,n})));
+  const ord=(Array.isArray(pf.order)?pf.order:[]).filter((id,k,ar)=>all.some(a=>a.id===id)&&ar.indexOf(id)===k);
+  all.forEach(a=>{if(!ord.includes(a.id))ord.push(a.id)});
+  let ex=0;
+  ord.forEach((id,k)=>{const a=all.find(z=>z.id===id),slot=k<WORKS.length?WORKS[k]:null;
+    if(a.base){if(off.has(id))return;mk(Object.assign({},a.w,over[id]||{}),id,true,a.i,slot)}
+    else{if(a.x.on===false||!a.x.src)return;mk(a.x,id,false,ex++,slot)}});
   fillSlots(gal);
   $$('#filters .chip').forEach(c=>c.addEventListener('click',()=>{
     $$('#filters .chip').forEach(o=>o.setAttribute('aria-pressed',o===c));
