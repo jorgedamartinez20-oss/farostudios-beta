@@ -312,6 +312,12 @@ button,.btn,.chip,.nav,.tab,.stab,.seg{-webkit-user-select:none;user-select:none
 .encf{position:relative;touch-action:none;cursor:crosshair;border-radius:6px;overflow:hidden;border:1px solid var(--line)}.encf img{display:block;width:100%;height:auto}
 .encd{position:absolute;width:16px;height:16px;margin:-8px 0 0 -8px;border-radius:50%;border:2px solid #fff;background:rgba(184,160,106,.9);box-shadow:0 0 0 2px rgba(0,0,0,.5);pointer-events:none}
 .encc{width:100%;border-radius:6px;background-size:cover;background-repeat:no-repeat;border:1px solid var(--line)}
+.subs{position:fixed;right:16px;bottom:84px;z-index:9000;display:grid;gap:8px;width:min(320px,calc(100vw - 32px));pointer-events:none}
+.sub{pointer-events:auto;background:var(--card,#2a2a2d);color:var(--ink,#f2eee8);border:1px solid var(--line,rgba(255,255,255,.2));border-radius:12px;padding:10px 12px;box-shadow:0 10px 28px rgba(0,0,0,.4);font-size:.82rem}
+.subt{display:flex;gap:8px;align-items:center}.subt span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}.subt b{font-variant-numeric:tabular-nums}
+.subx{background:none;border:0;color:inherit;font-size:1.1rem;line-height:1;cursor:pointer;padding:0 2px}
+.subb{height:6px;border-radius:99px;background:rgba(127,127,127,.28);overflow:hidden;margin:7px 0 5px}.subb i{display:block;height:100%;width:0;background:var(--gold,#B8A06A);transition:width .2s}
+.sub small{color:var(--muted,#b9b4aa)}.sub.ok .subb i{background:#3c9d5f}.sub.ok small{color:#4fb877}.sub.err{border-color:#c0392b}.sub.err .subb i{background:#c0392b;width:100%}.sub.err small,.sub.err .subt b{color:#e8695c}
 .pvw{margin:4px 0 18px}.pvg{display:grid;grid-template-columns:repeat(8,1fr);grid-auto-rows:38px;gap:5px;margin-top:8px;max-width:760px}
 .pvx{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));grid-auto-rows:60px;gap:5px;margin-top:6px;max-width:760px}
 .pvc{position:relative;overflow:hidden;border-radius:6px;background:linear-gradient(150deg,#4a3a31,#2c231f);border:1px solid var(--line);cursor:grab;display:flex;align-items:flex-end}
@@ -1133,12 +1139,29 @@ async function acRevisar(r){
     toast('Revisada: +'+r.xp+' XP para '+acN('est',r.estudiante_id));await loadAc()}catch(e){toast(e.message||'No se pudo')}
 }
 function safeName(n){return String(n).normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^\w.\-]+/g,'_')}
+/* panel de subidas: porcentaje de cada archivo, y aviso claro si algo falla */
+function subidaNueva(nombre,total){
+  let box=document.getElementById('subidas');if(!box){box=el('div',{id:'subidas',class:'subs',role:'status','aria-live':'polite'});document.body.append(box)}
+  const bar=el('i'),pc=el('b',{},'0%'),st=el('small',{},'Subiendo…');
+  const x=el('button',{type:'button',class:'subx','aria-label':'Cerrar',onclick:()=>row.remove()},'×');x.hidden=true;
+  const row=el('div',{class:'sub'},el('div',{class:'subt'},el('span',{title:nombre},nombre),pc,x),el('div',{class:'subb'},bar),st);
+  box.prepend(row);
+  return{prog(l){const p=Math.min(100,Math.round(100*l/Math.max(1,total)));bar.style.width=p+'%';pc.textContent=p+'%';st.textContent=p>=100?'Guardando…':'Subiendo…'},
+    ok(){bar.style.width='100%';pc.textContent='100%';row.classList.add('ok');st.textContent='✓ Listo';x.hidden=false;setTimeout(()=>row.remove(),4500)},
+    fail(m){row.classList.add('err');pc.textContent='Error';st.textContent='✗ '+m+' · Vuelve a intentarlo';x.hidden=false}};
+}
 async function upTo(bucket,path,file,maxMB){
-  if(file.size>maxMB*1024*1024)throw new Error('El archivo pasa de '+maxMB+' MB');
-  if(S&&S.exp-60000<Date.now())await refresh();
-  const r=await fetch(SB.url+'/storage/v1/object/'+bucket+'/'+path,{method:'POST',headers:{apikey:SB.key,Authorization:'Bearer '+S.access,'Content-Type':file.type||'application/octet-stream','x-upsert':'true'},body:file});
-  if(!r.ok)throw new Error('No se pudo subir el archivo ('+r.status+'). ¿Corriste portal-faro.sql?');
-  return path;
+  const T=subidaNueva(file.name||path.split('/').pop(),file.size);
+  try{
+    if(file.size>maxMB*1024*1024)throw new Error('El archivo pasa de '+maxMB+' MB');
+    if(S&&S.exp-60000<Date.now())await refresh();
+    await new Promise((res,rej)=>{const x=new XMLHttpRequest();x.open('POST',SB.url+'/storage/v1/object/'+bucket+'/'+path);
+      x.setRequestHeader('apikey',SB.key);x.setRequestHeader('Authorization','Bearer '+S.access);x.setRequestHeader('Content-Type',file.type||'application/octet-stream');x.setRequestHeader('x-upsert','true');
+      x.upload.onprogress=e=>{if(e.lengthComputable)T.prog(e.loaded)};
+      x.onload=()=>(x.status>=200&&x.status<300)?res():rej(new Error('No se pudo subir el archivo ('+x.status+'). ¿Corriste portal-faro.sql?'));
+      x.onerror=()=>rej(new Error('Sin conexión con el servidor'));x.send(file)});
+    T.ok();return path;
+  }catch(e){T.fail(e.message||'No se pudo subir');throw e}
 }
 async function acAbrir(ruta,bucket){
   if(/^https?:/i.test(ruta)){window.open(ruta,'_blank','noopener');return}
@@ -2014,6 +2037,10 @@ async function matSubir(file,destId,ent,onProg,nombre){
   return matSubirKey(file,d.bucket,carpeta+nm,onProg);
 }
 async function matSubirKey(file,bucket,key,onProg){
+  const T=subidaNueva((file.name||key.split('/').pop()),file.size);
+  try{const r=await matSubirKey0(file,bucket,key,l=>{T.prog(l);if(onProg)onProg(l)});T.ok();return r}catch(e){T.fail(e.message||'No se pudo subir');throw e}
+}
+async function matSubirKey0(file,bucket,key,onProg){
   const q='bucket='+bucket+'&key='+encodeURIComponent(key),tipo=file.type||'application/octet-stream';
   if(file.size<=MAT.umbral){await xhrPut('/api/subir?'+q,{'Content-Type':tipo},file,onProg);return{key,bucket}}
   const{uploadId}=await fjson('/api/multipart/inicio?'+q+'&tipo='+encodeURIComponent(tipo),{method:'POST'});
