@@ -1851,6 +1851,11 @@ html[data-page="academy"] .hero2,html[data-page="music"] .hero2,html[data-page="
 .pay-slots .sec-chips{gap:14px}
 .pay-slots .sec-chip{min-height:100px;flex:1 1 210px;max-width:260px;background:color-mix(in srgb,var(--ink) 7%,transparent)}
 @media(max-width:900px){.pay-slots{grid-template-columns:1fr;padding:22px 18px}.pay-slots .logo-slot,.pay-slots .logo-slot.wide{width:calc(50% - 7px);min-width:130px;height:92px}}
+/* reproductor flotante: tamaño contenido y fluido (vertical u horizontal), sin desbordar */
+#dlg-lb{--lbmh:min(62vh,520px);max-height:94vh;overflow:auto}
+#dlg-lb.isv{max-width:min(540px,92vw)}
+#dlg-lb.isv .lb-img{aspect-ratio:auto;padding:0;display:block;background:#000;border:0;line-height:0;text-align:center;overflow:hidden}
+#dlg-lb.isv .lb-img video{display:block;width:100%;height:auto;max-height:var(--lbmh);aspect-ratio:16/9;margin:0 auto;object-fit:contain;background:#000;border-radius:4px;contain:layout paint}
 </style>
 </head>
 <body>
@@ -3634,11 +3639,13 @@ window.rebuildPortfolio=function(){
   let sub=$('#pf-sub');if(!sub){sub=document.createElement('p');sub.id='pf-sub';sub.className='pf-sub';fl.after(sub)}
   fl.innerHTML='<button class="chip" aria-pressed="true" data-f="todo">Todo</button>'+cats.map(c=>`<button class="chip" aria-pressed="false" data-f="${escH(c.id)}">${escH(c.n)}</button>`).join('');
   sub.textContent='';gal.innerHTML='';gal.classList.remove('f');
-  const openLb=(w,u,isVid)=>{const l=$('#lb-img');l.innerHTML='';l.style.backgroundImage='';
-    if(isVid&&u){const v=document.createElement('video');v.src=u;v.controls=true;v.autoplay=true;v.playsInline=true;l.appendChild(v)}
+  const openLb=(w,u,isVid,poster)=>{const l=$('#lb-img'),dg=$('#dlg-lb');l.innerHTML='';l.style.backgroundImage='';dg.classList.toggle('isv',!!(isVid&&u));
+    if(isVid&&u){const v=document.createElement('video');v.controls=true;v.autoplay=true;v.playsInline=true;v.setAttribute('playsinline','');v.preload='auto';v.setAttribute('controlslist','nodownload');if(poster)v.poster=poster;
+      v.addEventListener('loadedmetadata',()=>{if(v.videoWidth&&v.videoHeight){v.style.aspectRatio=v.videoWidth+'/'+v.videoHeight;v.style.width='min(100%,calc(var(--lbmh) * '+(v.videoWidth/v.videoHeight).toFixed(4)+'))'}});
+      v.src=u;l.appendChild(v);const pr=v.play();if(pr&&pr.catch)pr.catch(()=>{})}
     else if(u)l.style.backgroundImage='url("'+u+'")';
     else l.textContent='Aquí va tu foto, con su calidad original';
-    $('#lb-title').textContent=w.n;$('#lb-text').textContent=w.t||'';$('#dlg-lb').showModal()};
+    $('#lb-title').textContent=w.n;$('#lb-text').textContent=w.t||'';dg.showModal()};
   const addV=(b,u)=>{const v=document.createElement('video');v.className='pf-v';v.muted=true;v.loop=true;v.playsInline=true;v.preload='none';v.setAttribute('playsinline','');
     b.appendChild(v);const pl=document.createElement('span');pl.className='pf-play';pl.textContent='▶';b.appendChild(pl);
     v.preload='metadata';v.src=u;window.autoV&&window.autoV(v);};
@@ -3655,7 +3662,7 @@ window.rebuildPortfolio=function(){
     if(pos){const pi=b.querySelector('.ph-img');if(pi)pi.style.backgroundPosition=pos}
     if(vu)addV(b,vu);
     if(pos){const pv=b.querySelector('.pf-v');if(pv)pv.style.objectPosition=pos}
-    b.addEventListener('click',()=>openLb(w,vu||(base?imgOf(id):iu),!!vu));
+    b.addEventListener('click',()=>openLb(w,vu||(base?imgOf(id):iu),!!vu,vu?iu:''));
     gal.appendChild(b);
   };
   const all=WORKS.map((w,i)=>({id:'w'+(i+1),base:true,w,i})).concat((pf.extra||[]).map((x,n)=>({id:x.id||('x'+n),base:false,x,n})));

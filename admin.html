@@ -311,7 +311,7 @@ button,.btn,.chip,.nav,.tab,.stab,.seg{-webkit-user-select:none;user-select:none
 .enc{margin-top:8px}.enc summary{cursor:pointer;font-size:.8rem;font-weight:700}.encw{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0;align-items:start}
 .encf{position:relative;touch-action:none;cursor:crosshair;border-radius:6px;overflow:hidden;border:1px solid var(--line)}.encf img{display:block;width:100%;height:auto}
 .encd{position:absolute;width:16px;height:16px;margin:-8px 0 0 -8px;border-radius:50%;border:2px solid #fff;background:rgba(184,160,106,.9);box-shadow:0 0 0 2px rgba(0,0,0,.5);pointer-events:none}
-.encc{width:100%;border-radius:6px;background-size:cover;background-repeat:no-repeat;border:1px solid var(--line)}
+.encf video{display:block;width:100%;height:auto}.encc{display:block;width:100%;object-fit:cover;border-radius:6px;background-size:cover;background-repeat:no-repeat;border:1px solid var(--line)}
 .subs{position:fixed;right:16px;bottom:84px;z-index:9000;display:grid;gap:8px;width:min(320px,calc(100vw - 32px));pointer-events:none}
 .sub{pointer-events:auto;background:var(--card,#2a2a2d);color:var(--ink,#f2eee8);border:1px solid var(--line,rgba(255,255,255,.2));border-radius:12px;padding:10px 12px;box-shadow:0 10px 28px rgba(0,0,0,.4);font-size:.82rem}
 .subt{display:flex;gap:8px;align-items:center}.subt span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}.subt b{font-variant-numeric:tabular-nums}
@@ -1680,42 +1680,49 @@ async function pfGuardar(){
 function pfOrden(P){const ids=PF_BASE.map((_,i)=>'w'+(i+1)).concat(P.extra.map(x=>x.id));
   const o=(P.order||[]).filter((id,k,ar)=>ids.includes(id)&&ar.indexOf(id)===k);ids.forEach(id=>{if(!o.includes(id))o.push(id)});P.order=o;return o}
 /* encuadre: toca la parte de la foto que debe quedar a la vista cuando la casilla la recorta */
-function pfEncuadre(url,get,set,k){
+function pfEncuadre(url,get,set,k,esV){
   const g=PF_GEO[k],asp=g?(g[2]*170)/(g[3]*96):1.5;
   const cur=()=>{const m=/^(\d+(?:\.\d+)?)% (\d+(?:\.\d+)?)%$/.exec(get()||'');return m?[+m[1],+m[2]]:[50,50]};
-  const full=el('div',{class:'encf'},el('img',{src:url,alt:'',draggable:'false'}));
+  const mkv=cls=>{const v=document.createElement('video');v.className=cls||'';v.muted=true;v.playsInline=true;v.preload='metadata';v.setAttribute('playsinline','');v.src=url+'#t=0.1';return v};
+  const full=el('div',{class:'encf'},esV?mkv():el('img',{src:url,alt:'',draggable:'false'}));
   const dot=el('i',{class:'encd'});full.append(dot);
-  const crop=el('div',{class:'encc',style:'aspect-ratio:'+asp.toFixed(3)+';background-image:url("'+url+'")'});
-  const paint=()=>{const[x,y]=cur();dot.style.left=x+'%';dot.style.top=y+'%';crop.style.backgroundPosition=x+'% '+y+'%'};
+  const crop=esV?mkv('encc'):el('div',{class:'encc',style:'background-image:url("'+url+'")'});crop.style.aspectRatio=asp.toFixed(3);
+  const paint=()=>{const[x,y]=cur();dot.style.left=x+'%';dot.style.top=y+'%';crop.style.backgroundPosition=x+'% '+y+'%';crop.style.objectPosition=x+'% '+y+'%'};
   const pon=e=>{const r=full.getBoundingClientRect();const x=Math.max(0,Math.min(100,(e.clientX-r.left)/r.width*100)),y=Math.max(0,Math.min(100,(e.clientY-r.top)/r.height*100));set(Math.round(x)+'% '+Math.round(y)+'%');paint()};
   let dn=false;full.addEventListener('pointerdown',e=>{dn=true;full.setPointerCapture(e.pointerId);pon(e)});full.addEventListener('pointermove',e=>{if(dn)pon(e)});full.addEventListener('pointerup',()=>{dn=false});
   paint();
   const rs=el('button',{class:'btn btn-ghost btn-sm',type:'button',onclick:()=>{set('');paint()}},'Centrar');
-  return el('details',{class:'enc'},el('summary',{},'Encuadre de la foto'),el('small',{class:'muted'},'Toca la parte de la foto que quieres que siempre se vea. A la derecha, cómo queda en la casilla.'),el('div',{class:'encw'},full,crop),rs)}
+  return el('details',{class:'enc'},el('summary',{},esV?'Encuadre del video':'Encuadre de la foto'),el('small',{class:'muted'},'Toca la parte '+(esV?'del video':'de la foto')+' que quieres que siempre se vea. A la derecha, cómo queda en la casilla.'),el('div',{class:'encw'},full,crop),rs)}
 function pfVista(P,ord){
   const nom=id=>{const bi=/^w\d+$/.test(id)?+id.slice(1)-1:-1;if(bi>=0)return(P.over[id]&&P.over[id].n)||PF_BASE[bi][0];const x=P.extra.find(z=>z.id===id);return(x&&x.n)||'Nueva'};
   const med=id=>{const bi=/^w\d+$/.test(id)?+id.slice(1)-1:-1;if(bi>=0)return{u:sitioVal('img.'+id),v:false,p:(P.over[id]||{}).p};const x=P.extra.find(z=>z.id===id);return x?{u:x.src,v:x.type==='vid',p:x.p}:{}};
   const oculto=id=>/^w\d+$/.test(id)?P.off.includes(id):(P.extra.find(z=>z.id===id)||{}).on===false;
   let from=-1;
-  const cell=(id,k,geo)=>{const m=med(id),c=el('div',{class:'pvc'+(oculto(id)?' off':''),draggable:'true',title:'Arrastra para cambiar de lugar · clic para ir a su casilla'},
-      m.u&&!m.v?el('img',{src:m.u,alt:'',loading:'lazy',draggable:'false',style:'object-position:'+(m.p||'50% 50%')}):m.u&&m.v?vidThumb(m.u):null,el('i',{},String(k+1)),el('span',{},nom(id)));
+  const cell=(id,k,geo)=>{const m=med(id),c=el('div',{class:'pvc'+(oculto(id)?' off':''),'data-id':id,draggable:'true',title:'Arrastra para cambiar de lugar · clic para ir a su casilla'},
+      m.u&&!m.v?el('img',{src:m.u,alt:'',loading:'lazy',draggable:'false',style:'object-position:'+(m.p||'50% 50%')}):m.u&&m.v?(()=>{const v=vidThumb(m.u);v.style.objectPosition=m.p||'50% 50%';return v})():null,el('i',{},String(k+1)),el('span',{},nom(id)));
     if(geo)c.style.cssText='grid-column:'+geo[0]+' / span '+geo[2]+';grid-row:'+geo[1]+' / span '+geo[3];
     c.addEventListener('dragstart',e=>{from=k;c.classList.add('drag');try{e.dataTransfer.setData('text/plain',String(k));e.dataTransfer.effectAllowed='move'}catch(_){}});
     c.addEventListener('dragend',()=>{c.classList.remove('drag');$$('.pvc.over').forEach(x=>x.classList.remove('over'))});
     c.addEventListener('dragover',e=>{if(from<0)return;e.preventDefault();c.classList.add('over')});
     c.addEventListener('dragleave',()=>c.classList.remove('over'));
-    c.addEventListener('drop',e=>{if(from<0)return;e.preventDefault();const f=from;from=-1;if(f===k)return;[ord[f],ord[k]]=[ord[k],ord[f]];renderSitio()});
+    c.addEventListener('drop',e=>{if(from<0)return;e.preventDefault();const f=from;from=-1;if(f===k)return;pfCapturar();const[m]=ord.splice(f,1);ord.splice(k,0,m);renderSitio()});
     c.addEventListener('click',()=>{const t=$$('#sit-body .sgt .st')[k];if(t){t.scrollIntoView({behavior:'smooth',block:'center'});t.classList.add('pulse');setTimeout(()=>t.classList.remove('pulse'),1200)}});
     return c};
   const mosaico=el('div',{class:'pvg'});ord.slice(0,PF_GEO.length).forEach((id,k)=>mosaico.append(cell(id,k,PF_GEO[k])));
   const wrap=el('div',{class:'pvw'},el('b',{class:'hlb'},'Vista previa del mosaico · arrastra una casilla sobre otra para intercambiarlas'),mosaico);
   if(ord.length>PF_GEO.length){const ex=el('div',{class:'pvx'});ord.slice(PF_GEO.length).forEach((id,j)=>ex.append(cell(id,PF_GEO.length+j,null)));wrap.append(el('small',{class:'muted'},'Después del mosaico (se acomodan solas)'),ex)}
   return wrap}
+let PF_FLIP=null;
+function pfCapturar(){PF_FLIP={};$$('#sit-body .pvc').forEach(c=>{PF_FLIP[c.dataset.id]=c.getBoundingClientRect()})}
+function pfFlip(root){const o=PF_FLIP;PF_FLIP=null;if(!o||matchMedia('(prefers-reduced-motion:reduce)').matches)return;
+  const cs=[...root.querySelectorAll('.pvc')];cs.forEach(c=>{const a=o[c.dataset.id],b=c.getBoundingClientRect();if(!a||!b.width)return;const dx=a.left-b.left,dy=a.top-b.top,sx=a.width/b.width,sy=a.height/b.height;if(Math.abs(dx)<1&&Math.abs(dy)<1&&Math.abs(sx-1)<.01&&Math.abs(sy-1)<.01)return;
+    c.style.transformOrigin='0 0';c.style.transition='none';c.style.transform='translate('+dx+'px,'+dy+'px) scale('+sx+','+sy+')';c.style.zIndex='2'});
+  void root.offsetWidth;cs.forEach(c=>{if(!c.style.transform)return;c.style.transition='transform .38s cubic-bezier(.2,.8,.2,1)';c.style.transform='';setTimeout(()=>{c.style.transition='';c.style.zIndex=''},420)})}
 function rPfTablones(card){
   if(!PFM)PFM=pfLeer();
   const P=PFM,ord=pfOrden(P),g=el('div',{class:'sgt',style:'grid-template-columns:repeat(auto-fill,minmax(min(230px,100%),1fr))'});
-  card.append(pfVista(P,ord));
-  const mv=(k,d)=>{const j=k+d;if(j<0||j>=ord.length)return;[ord[k],ord[j]]=[ord[j],ord[k]];renderSitio()};
+  const vw=pfVista(P,ord);card.append(vw);queueMicrotask(()=>pfFlip(vw));
+  const mv=(k,d)=>{const j=k+d;if(j<0||j>=ord.length)return;pfCapturar();const[m]=ord.splice(k,1);ord.splice(j,0,m);renderSitio()};
   const bar=k=>{const b=(tx,d,lb)=>{const x=el('button',{class:'btn btn-ghost btn-sm',type:'button','aria-label':lb,title:lb,onclick:()=>mv(k,d)},tx);x.disabled=k+d<0||k+d>=ord.length;return x};
     return el('div',{class:'pfmv'},el('b',{},'Casilla '+(k+1)),el('span',{},b('◀',-1,'Mover antes'),b('▶',1,'Mover después')))};
   ord.forEach((id,k)=>{
@@ -1729,7 +1736,7 @@ function rPfTablones(card){
       fi.addEventListener('change',async()=>{const f=fi.files[0];if(!f)return;try{toast('Subiendo video…');const u=await pfSubir(vk,f);await sitioSet(vk,u);toast('Video guardado');await loadAc()}catch(e){toast(e.message||'No se pudo subir')}});
       soltar(t,fi);
       const iu0=sitioVal('img.'+id);
-      t.append(el('label',{style:'display:flex;gap:6px;align-items:center;margin-top:8px'},ck,'Mostrar en la página'),nm,pfSelCat(o.c||b[1],v=>{o.c=v}),iu0?pfEncuadre(iu0,()=>o.p,v=>{o.p=v},k):'',
+      t.append(el('label',{style:'display:flex;gap:6px;align-items:center;margin-top:8px'},ck,'Mostrar en la página'),nm,pfSelCat(o.c||b[1],v=>{o.c=v}),iu0?pfEncuadre(iu0,()=>o.p,v=>{o.p=v},k):(vv?pfEncuadre(vv,()=>o.p,v=>{o.p=v},k,true):''),
         el('div',{class:'acts',style:'margin-top:6px'},el('button',{class:'btn btn-gold btn-sm',type:'button',onclick:()=>fi.click()},icoEl('upload'),vv?' Cambiar video':' Video'),vv?el('button',{class:'btn btn-red btn-sm',type:'button','aria-label':'Quitar video',onclick:()=>sitioDel(vk)},icoEl('trash')):null),
         el('small',{class:'muted'},vv?'✓ Video cargado (se reproduce solo)':'Sin video'),fi);
     }else{
@@ -1741,7 +1748,7 @@ function rPfTablones(card){
       const nm=el('input',{type:'text',maxlength:'30',placeholder:'Nombre','aria-label':'Nombre de la casilla '+(k+1)});nm.value=x.n||'';nm.addEventListener('input',()=>{x.n=nm.value});
       t=el('div',{class:'st'+(x.src?' on':'')},prev,el('b',{},'Casilla nueva'),el('span',{class:'stg'},x.src?(x.type==='vid'?'✓ Video cargado (se reproduce solo)':'✓ Foto cargada'):'Vacío · sube una foto o un video'),
         el('div',{class:'acts'},el('button',{class:'btn btn-gold btn-sm',type:'button',onclick:()=>fi.click()},icoEl('upload'),x.src?' Cambiar':' Subir')),
-        el('label',{style:'display:flex;gap:6px;align-items:center;margin-top:8px'},ck,'Mostrar en la página'),nm,pfSelCat(x.c,v=>{x.c=v}),(x.src&&x.type!=='vid')?pfEncuadre(x.src,()=>x.p,v=>{x.p=v},k):null,
+        el('label',{style:'display:flex;gap:6px;align-items:center;margin-top:8px'},ck,'Mostrar en la página'),nm,pfSelCat(x.c,v=>{x.c=v}),x.src?pfEncuadre(x.src,()=>x.p,v=>{x.p=v},k,x.type==='vid'):'',
         el('div',{class:'acts',style:'margin-top:6px'},el('button',{class:'btn btn-red btn-sm',type:'button',onclick:()=>{if(!confirm('¿Quitar esta casilla?'))return;P.extra=P.extra.filter(z=>z!==x);P.order=ord.filter(z=>z!==id);renderSitio()}},icoEl('trash'),' Quitar casilla')),fi);
       soltar(t,fi);
     }
