@@ -493,6 +493,14 @@ html{background:#151517;filter:invert(.92) hue-rotate(180deg)}
 img,video,canvas,picture,iframe,.iso,#wafab svg,[style*="background-image"]{filter:invert(1) hue-rotate(180deg)}
 header.top{filter:invert(1) hue-rotate(180deg)}header.top img,header.top .iso{filter:none}
 }
+
+.proy{text-align:left;margin-top:14px}.proy-h{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.proy-h h3{margin:0}.proy-c{margin:10px 0}
+.pwall{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin:12px 0}.pm{margin:0;background:rgba(0,0,0,.06);border-radius:14px;padding:8px;overflow:hidden}
+.pm img,.pm video,.pm iframe{width:100%;border-radius:10px;display:block;max-height:340px;object-fit:contain;background:#0002;border:0}.pm iframe{height:300px}.pm audio{width:100%}.pm figcaption{font-size:.85em;margin-top:6px}
+.proy-ev{display:flex;gap:14px;align-items:center;background:rgba(255,255,255,.35);border-radius:14px;padding:10px 14px;margin-top:6px}
+.proy-up,.proy-f{display:grid;gap:8px;margin-top:10px}.proy-up input,.proy-f input,.proy-f textarea,.proy-f select,#py-form input,#py-form textarea{width:100%;font:inherit;padding:8px 10px;border-radius:10px;border:1px solid #0003;background:rgba(255,255,255,.7)}
+.proy-f .row,#py-form .row{display:flex;gap:10px;flex-wrap:wrap}.proy-f label,#py-form label{display:grid;gap:4px;flex:1;min-width:130px;font-size:.9em}.chk{display:flex!important;align-items:center;gap:6px;flex:0!important}.chk input{width:auto!important}
+.proy-new summary{cursor:pointer;font-weight:700}#py-form{display:grid;gap:10px;margin-top:12px}
 </style>
 <script>if(navigator.standalone||(window.matchMedia&&matchMedia("(display-mode:standalone)").matches))document.documentElement.classList.add("is-app")</script>
 </head>
@@ -738,7 +746,7 @@ async function cargarCliente(id){
 
 /* ---------- navegación ---------- */
 const NAV={
-  alumno:[['inicio','home','Inicio'],['camino','path','Camino'],['tablero','board','Tablero'],['avance','chart','Avance'],['material','folder','Material'],['clases','cal','Clases'],['logros','trophy','Logros'],['chat','chat','Chat']],
+  alumno:[['inicio','home','Inicio'],['camino','path','Camino'],['tablero','board','Tablero'],['proyectos','image','Proyectos'],['avance','chart','Avance'],['material','folder','Material'],['clases','cal','Clases'],['logros','trophy','Logros'],['chat','chat','Chat']],
   encargado:[['resumen','home','Resumen'],['avance','chart','Avance'],['finanzas','card','Finanzas'],['material','folder','Material'],['clases','cal','Clases'],['chat','chat','Chat']],
   docente:[['d-inicio','home','Inicio'],['d-subir','up','Subir material'],['d-archivos','folder','Mis archivos'],['d-alumnos','users','Alumnos']],
   cliente:[['c-inicio','home','Inicio'],['c-galeria','image','Galería'],['c-docs','file','Documentos'],['c-buzon','chat','Buzón']]};
@@ -1159,12 +1167,15 @@ P['d-alumnos'].bind=()=>{$$('[data-para]').forEach(b=>b.onclick=()=>{S.doc.para=
 /* ---------- docente: perfil de cada alumno (resumen, prácticas y material) ---------- */
 P['d-alumno']=()=>{const d=S.doc,a=d.alumnos.find(x=>x.id===d.sel);
   if(!a)return '<section class="page"><div class="card">'+vacio('No encontramos a ese estudiante.')+'<button class="btn" type="button" onclick="go(\'d-alumnos\')">Volver a mis alumnos</button></div></section>';
-  const tab=d.ptab||'resumen',T=[['resumen','Resumen'],['practicas','Prácticas'],['material','Material']];
+  const tab=d.ptab||'resumen',T=[['resumen','Resumen'],['proyectos','Proyectos'],['practicas','Prácticas'],['material','Material']];
   return '<section class="page"><div class="card" style="text-align:left"><div class="perfil-al">'+avAl(a.id,92)+'<div><h1>'+esc(a.nombre)+'</h1><p class="sub">'+(a.area==='ingles'?'Inglés':'Música')+(a.detalle?' · '+esc(a.detalle):'')+'</p></div><button class="btn ghost" type="button" style="margin-left:auto" onclick="go(\'d-alumnos\')">← Mis alumnos</button></div>'
    +'<div class="ptabs" role="tablist" aria-label="Perfil del estudiante">'+T.map(t=>'<button type="button" role="tab" data-pt="'+t[0]+'" aria-pressed="'+(tab===t[0])+'">'+t[1]+'</button>').join('')+'</div><div id="pa-body"></div></div></section>'};
 P['d-alumno'].bind=()=>{const d=S.doc,id=d.sel,body=$('#pa-body'),a=d.alumnos.find(x=>x.id===id);if(!body||!a)return;
   $$('[data-pt]').forEach(b=>b.onclick=()=>{d.ptab=b.dataset.pt;render()});
   const tab=d.ptab||'resumen',nom=esc(a.apodo||String(a.nombre).split(' ')[0]);
+  if(tab==='proyectos'){
+    body.innerHTML='<p class="sub" style="margin-bottom:12px">Pon una tarea por clase. '+nom+' entrega foto, video, audio o documento y tú la evalúas con XP y una insignia.</p><div id="py-root"><p class="sub">Cargando…</p></div>';
+    proyMontar($('#py-root'),'docente',id,a.carpeta,a.nombre);return}
   if(tab==='practicas'){
     body.innerHTML='<p class="sub" style="margin-bottom:12px">Escucha lo que graba '+nom+', ponle nota de 1 a 10 y XP, y respóndele con tu propia grabación.</p><div id="dp-root"><p class="sub">Cargando…</p></div>';
     montarPrac($('#dp-root'),id);return}
@@ -1181,6 +1192,72 @@ P['d-alumno'].bind=()=>{const d=S.doc,id=d.sel,body=$('#pa-body'),a=d.alumnos.fi
     +'<div class="card" style="margin-top:18px"><h2>Próxima clase</h2>'+(pr?'<p>'+esc(fecha(pr.fecha))+(pr.hora?' · '+esc(hora(pr.hora)):'')+'</p><span class="pill warn">'+esc(pr.titulo)+'</span>':vacio('Todavía no hay una clase programada.'))+'</div>';
 };
 
+/* ---------- Proyectos por clase (estilo Padlet): el docente pone la consigna, el alumno entrega, el docente evalúa ---------- */
+const PY_TIPOS={foto:['Foto','image','image/*'],video:['Video','video','video/*'],audio:['Audio','mic','audio/*'],documento:['Documento','file','.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt']};
+const PY_INS=[['estrella','Estrella'],['trofeo','Trofeo'],['fuego','Fuego'],['nota','Nota musical'],['libro','Libro'],['microfono','Micrófono'],['corazon','Corazón'],['rayo','Rayo']];
+async function proyCargar(id){
+  const [p,e]=await Promise.all([rows('ac_proyectos','estudiante_id=eq.'+id+'&order=num_clase.asc.nullslast,creado.asc'),rows('ac_proyecto_entregas','estudiante_id=eq.'+id+'&order=creado.asc')]);
+  return{p,e}}
+function proyMedia(e){return '<figure class="pm" data-k="'+esc(e.ruta)+'" data-t="'+esc(e.tipo)+'"><span class="sub">Cargando…</span>'+(e.nota?'<figcaption>'+esc(e.nota)+'</figcaption>':'')+'</figure>'}
+async function proyMediaMontar(root){
+  for(const f of $$('.pm[data-k]:not([data-ok])',root)){
+    f.dataset.ok='1';const u=await urlFirmada('academy',f.dataset.k),t=f.dataset.t,cap=f.querySelector('figcaption'),cp=cap?cap.outerHTML:'';
+    if(!u){f.innerHTML='<span class="sub">No se pudo cargar este archivo.</span>'+cp;continue}
+    const s=esc(u);
+    f.innerHTML=(t==='foto'?'<img src="'+s+'" alt="Entrega del estudiante" loading="lazy" draggable="false">'
+      :t==='video'?'<video src="'+s+'" controls playsinline controlsList="nodownload noremoteplayback" disablePictureInPicture preload="metadata"></video>'
+      :t==='audio'?'<audio src="'+s+'" controls controlsList="nodownload" preload="metadata"></audio>'
+      :/\.pdf$/i.test(f.dataset.k)?'<iframe src="'+s+'" title="Documento" loading="lazy"></iframe>'
+      :'<button class="btn ghost" type="button" data-pyabrir="'+esc(f.dataset.k)+'">'+ic('file')+'Abrir documento</button>')+cp;
+    f.oncontextmenu=ev=>ev.preventDefault();
+    const b=f.querySelector('[data-pyabrir]');if(b)b.onclick=()=>abrir('academy',b.dataset.pyabrir)}}
+function proyHTML(p,ents,modo){
+  const mine=ents.filter(e=>e.proyecto_id===p.id),ev=p.estado==='evaluado';
+  const pill=ev?'<span class="pill ok">Evaluado · +'+p.xp+' XP</span>':p.estado==='entregado'?'<span class="pill warn">'+(modo==='docente'?'Por evaluar':'Entregado')+'</span>':'<span class="pill mute">Pendiente</span>';
+  let h='<article class="card proy" data-pid="'+p.id+'"><div class="proy-h">'+(p.num_clase?'<span class="pill warn">Clase '+p.num_clase+'</span>':'')+'<h3>'+esc(p.titulo)+'</h3><span style="margin-left:auto">'+pill+'</span></div>'
+   +(p.consigna?'<p class="proy-c">'+esc(p.consigna).replace(/\n/g,'<br>')+'</p>':'')
+   +'<small class="sub">Pide: '+p.tipos.map(t=>PY_TIPOS[t][0]).join(' · ')+(p.vence?' · Para el '+esc(corta(p.vence)):'')+' · Hasta '+p.xp_max+' XP</small>'
+   +'<div class="pwall">'+(mine.length?mine.map(proyMedia).join(''):'<p class="sub">'+(modo==='docente'?'Aún no ha entregado nada.':'Todavía no has entregado nada. ¡Anímate!')+'</p>')+'</div>';
+  if(ev)h+='<div class="proy-ev">'+(p.insignia_titulo?'<div class="badge"><div class="bd on">'+ic(ICONO[p.insignia_icono]||'star')+'</div><span>'+esc(p.insignia_titulo)+'</span></div>':'')+'<div>'+(p.comentario?'<p>«'+esc(p.comentario)+'»</p>':'')+'<small class="sub">'+esc(p.evaluado_por||'')+'</small></div></div>';
+  if(modo==='alumno'&&!ev)h+='<div class="proy-up"><b>Agregar a mi proyecto:</b> '+p.tipos.map(t=>'<button class="btn ghost" type="button" data-pyup="'+t+'">'+ic(PY_TIPOS[t][1])+PY_TIPOS[t][0]+'</button>').join(' ')+'<input type="text" class="py-nota" maxlength="300" placeholder="Nota para tu docente (opcional)"></div>';
+  if(modo==='docente'){
+    if(mine.length)h+='<form class="proy-f" data-pyev="'+p.id+'"><b>'+(ev?'Cambiar evaluación':'Evaluar')+'</b><div class="row"><label>XP (0–'+p.xp_max+')<input type="number" name="xp" min="0" max="'+p.xp_max+'" value="'+(ev?p.xp:Math.min(10,p.xp_max))+'"></label><label>Insignia (opcional)<input type="text" name="ins" maxlength="60" placeholder="Ej. Ritmo seguro" value="'+esc(p.insignia_titulo||'')+'"></label><label>Ícono<select name="ico">'+PY_INS.map(i=>'<option value="'+i[0]+'"'+(p.insignia_icono===i[0]?' selected':'')+'>'+i[1]+'</option>').join('')+'</select></label></div><label>Comentario<textarea name="com" rows="2" maxlength="500" placeholder="Qué estuvo bien y qué mejorar">'+esc(p.comentario||'')+'</textarea></label><button class="btn y" type="submit">'+(ev?'Guardar cambios':'Enviar evaluación')+'</button></form>';
+    if(!ev)h+='<button class="btn ghost" type="button" data-pydel="'+p.id+'" style="margin-top:8px">Eliminar proyecto</button>'}
+  return h+'</article>'}
+/* modo 'alumno' | 'docente'; est = id del estudiante; carpeta = carpeta R2 del alumno */
+async function proyMontar(root,modo,est,carpeta,nombre){
+  const D=await proyCargar(est);
+  const pintar=()=>{
+    let h='';
+    if(modo==='docente')h+='<details class="card proy-new"'+(D.p.length?'':' open')+'><summary>'+ic('up')+' Nuevo proyecto de clase</summary><form id="py-form"><div class="row"><label>N.º de clase<input type="number" name="num" min="1" max="500" required></label><label style="flex:2">Título<input type="text" name="tit" maxlength="120" required placeholder="Ej. Mi primer ritmo en 4/4"></label></div><label>Consigna (qué debe hacer)<textarea name="con" rows="3" maxlength="2000" placeholder="Explica la tarea con claridad"></textarea></label><fieldset class="row"><legend>Qué puede entregar</legend>'+Object.keys(PY_TIPOS).map(t=>'<label class="chk"><input type="checkbox" name="tipo" value="'+t+'" checked> '+PY_TIPOS[t][0]+'</label>').join('')+'</fieldset><div class="row"><label>Fecha límite (opcional)<input type="date" name="vence"></label><label>XP máximo<input type="number" name="xpm" min="0" max="100" value="30"></label></div><button class="btn y" type="submit">Crear proyecto</button></form></details>';
+    h+=D.p.length?D.p.map(p=>proyHTML(p,D.e,modo)).join(''):'<div class="card">'+vacio(modo==='docente'?'Aún no hay proyectos para '+esc(nombre)+'. Crea el primero arriba.':'Tu docente aún no ha puesto proyectos. Cuando lo haga, aparecerán aquí.')+'</div>';
+    root.innerHTML=h;proyMediaMontar(root);enlazar()};
+  const recargar=async()=>{const n=await proyCargar(est);D.p=n.p;D.e=n.e;pintar()};
+  const enlazar=()=>{
+    const f=$('#py-form',root);
+    if(f)f.onsubmit=async ev=>{ev.preventDefault();const b=f.querySelector('button[type=submit]');b.disabled=true;
+      const tipos=[...f.querySelectorAll('[name=tipo]:checked')].map(x=>x.value);if(!tipos.length){aviso('Elige al menos un tipo de entrega');b.disabled=false;return}
+      const r=await api('/rest/v1/rpc/ac_crear_proyecto',{method:'POST',body:{p_est:est,p_num:+f.num.value||null,p_titulo:f.tit.value.trim(),p_consigna:f.con.value.trim()||null,p_tipos:tipos,p_vence:f.vence.value||null,p_xp_max:+f.xpm.value}}).catch(()=>null);
+      if(r&&r.ok){aviso('Proyecto creado');await recargar()}else{aviso('No se pudo crear. ¿Ya corriste el SQL de la etapa 2A?');b.disabled=false}};
+    $$('[data-pyev]',root).forEach(fm=>fm.onsubmit=async ev=>{ev.preventDefault();const b=fm.querySelector('button[type=submit]');b.disabled=true;
+      const r=await api('/rest/v1/rpc/ac_evaluar_proyecto',{method:'POST',body:{p_id:fm.dataset.pyev,p_xp:+fm.xp.value||0,p_comentario:fm.com.value.trim()||null,p_ins_titulo:fm.ins.value.trim()||null,p_ins_icono:fm.ico.value}}).catch(()=>null);
+      if(r&&r.ok){aviso('Evaluación enviada');await recargar()}else{aviso('No se pudo evaluar');b.disabled=false}});
+    $$('[data-pydel]',root).forEach(b=>b.onclick=async()=>{if(!confirm('¿Eliminar este proyecto?'))return;const r=await api('/rest/v1/rpc/ac_borrar_proyecto',{method:'POST',body:{p_id:b.dataset.pydel}}).catch(()=>null);if(r&&r.ok){await recargar()}else aviso('No se pudo eliminar')});
+    $$('[data-pyup]',root).forEach(b=>b.onclick=()=>{
+      const card=b.closest('.proy'),pid=card.dataset.pid,t=b.dataset.pyup,inp=document.createElement('input');inp.type='file';inp.accept=PY_TIPOS[t][2];
+      inp.onchange=async()=>{const fl=inp.files&&inp.files[0];if(!fl)return;
+        if(fl.size>40*1024*1024){aviso('El archivo pesa más de 40 MB');return}
+        if(/\.(html?|svg|js|exe|bat|sh|php)$/i.test(fl.name)){aviso('Ese tipo de archivo no se puede subir');return}
+        b.disabled=true;const old=b.innerHTML;b.textContent='Subiendo…';
+        try{const key=carpeta+'mis-archivos/proy-'+pid.slice(0,8)+'-'+Date.now()+'-'+nomR2(fl.name);
+          await rSubir(key,fl,fl.type||'application/octet-stream');
+          const r=await api('/rest/v1/rpc/ac_entregar_proyecto',{method:'POST',body:{p_proy:pid,p_tipo:t,p_ruta:key,p_nombre:fl.name,p_nota:(card.querySelector('.py-nota').value.trim()||null)}});
+          if(!r.ok)throw 0;aviso('¡Entregado!');await recargar()}
+        catch(e){aviso('No se pudo subir. Intenta de nuevo');b.disabled=false;b.innerHTML=old}};
+      inp.click()})};
+  pintar()}
+P.proyectos=()=>'<section class="page"><div class="ph"><h1>Proyectos</h1><p>Cada clase tiene un proyecto. Súbelo aquí, tu docente lo evalúa y ganas XP e insignias.</p></div><div id="py-root"><p class="sub">Cargando…</p></div></section>';
+P.proyectos.bind=()=>{const k=K(),r=$('#py-root');if(r)proyMontar(r,'alumno',k.id,k.carpeta,k.corto)};
 /* ---------- docente: evalúa prácticas grabadas ---------- */
 /* mini grabadora para la respuesta en audio del docente */
 function miniRec(host){
