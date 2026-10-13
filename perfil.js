@@ -140,6 +140,9 @@ html[data-fcolor] header.top .brand small{color:#4A4D50!important}
 html[data-fcolor] header.top .out{color:#2F3A40!important;border-color:rgba(47,58,64,.35)!important}
 html[data-fcolor] .nav button[aria-current="page"]{background:var(--fnav)!important;border-color:transparent!important;color:#2F3A40!important;box-shadow:0 4px 0 color-mix(in srgb,var(--fnav) 70%,#000)!important}
 html[data-fcolor] .me{border-color:var(--fnav)!important}
+/* el color elegido también tiñe el fondo de la página (la textura de papel queda encima) */
+html[data-fcolor] body::after{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;background:var(--fnav);opacity:.42;mix-blend-mode:multiply}
+html[data-fcolor] .reloj{background:color-mix(in srgb,var(--fnav) 55%,#252528)}
 /* Workspace: reglas comunes a todas las paletas */
 html[data-paleta] .top{background:var(--ftop)!important;color:var(--ftopfg)!important;box-shadow:inset 0 -1px 0 rgba(0,0,0,.12),0 14px 30px -14px rgba(0,0,0,.35)!important}
 html[data-paleta] .top .t b{border-left-color:var(--oro)!important}
