@@ -779,9 +779,12 @@ const NAV={
   docente:[['d-inicio','home','Inicio'],['d-subir','up','Subir material'],['d-archivos','folder','Mis archivos'],['d-plan','board','Planificaciones'],['d-alumnos','users','Alumnos'],['d-sug','bulb','Sugerencias']],
   cliente:[['c-inicio','home','Inicio'],['c-galeria','image','Galería'],['c-docs','file','Documentos'],['c-buzon','chat','Buzón']]};
 /* El menú del alumno suma "Herramientas" solo si su perfil tiene un instrumento con herramientas. */
+/* Interruptores de funciones: para mostrar «Aumentar XP» de nuevo, cambiar juegos:false por juegos:true (el código de los juegos sigue en juegos.js). */
+const FLAGS={juegos:false};
+const visibles=l=>l.filter(x=>x[0]!=='xp'||FLAGS.juegos);
 function navDe(){
-  if(S.rol!=='alumno'||!herrDe(K()).length)return NAV[S.rol];
-  const n=NAV.alumno.slice(),i=n.findIndex(x=>x[0]==='chat');n.splice(i<0?n.length:i,0,['herramientas','note','Práctica']);return n}
+  if(S.rol!=='alumno'||!herrDe(K()).length)return visibles(NAV[S.rol]);
+  const n=visibles(NAV.alumno),i=n.findIndex(x=>x[0]==='chat');n.splice(i<0?n.length:i,0,['herramientas','note','Práctica']);return n}
 function go(p){S.page=p;render();window.scrollTo(0,0)}
 window.go=go;
 
