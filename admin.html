@@ -1594,7 +1594,7 @@ function eqLista(){let l=[];try{l=JSON.parse(sitioVal('equipo')||'[]')}catch(e){
 const eqKeys=()=>eqLista().flatMap(id=>['img.'+id,'vid.'+id,'tm.'+id+'.n','tm.'+id+'.r','tm.'+id+'.d']);
 const MUS_PDF=['Canto','Guitarra acústica','Guitarra clásica','Guitarra eléctrica','Bajo','Batería','Piano','Producción musical'];
 const SECC=[
- {id:'hero',c:'landing',t:'Portada · video',i:'film',keys:()=>['vid.hero'],r:rHero},
+ {id:'hero',c:'landing',t:'Portada · video o foto',i:'film',keys:()=>['vid.hero','img.hero'],r:rHero},
  {id:'contacto',c:'landing',t:'Contacto y redes',i:'mail',items:[TX('wa','WhatsApp (número con código de país, solo dígitos)','50252695592'),TX('ig.studios','Instagram de Studios (usuario)','@faro_studios'),TX('ig.academy','Instagram de Academy (usuario)','@farostudios_academy')]},
  {id:'textos',c:'landing',t:'Textos',i:'edit',items:[
   {k:'txt.who1',l:'Quiénes somos · párrafo 1',t:'area'},{k:'txt.who2',l:'Quiénes somos · párrafo 2',t:'area'},
@@ -1753,12 +1753,12 @@ function selDe(id,n){return Math.max(0,Math.min(n-1,SIT.sel[id]||0))}
 
 /* --- Portada: video en bucle detrás del color --- */
 function rHero(card){
-  const v=sitioVal('vid.hero'),op0=Math.min(98,Math.max(35,parseInt(sitioVal('hero.cortina'))||82));
-  card.append(el('p',{class:'muted'},'Un video corto que se repite solo detrás de la portada. Si no subes ninguno, la portada se queda en su color sólido. El color de la portada (que cambia solo en modo oscuro) va encima como una «cortina» semitransparente: con la barra decides cuánto video se deja ver.'));
+  const v=sitioVal('vid.hero'),ph=sitioVal('img.hero'),op0=Math.min(98,Math.max(35,parseInt(sitioVal('hero.cortina'))||82));
+  card.append(el('p',{class:'muted'},'Un video corto (que se repite solo) o una foto detrás de la portada. Si subes los dos, se usa el video. Si no subes ninguno, la portada se queda en su color sólido. El color de la portada (que cambia solo en modo oscuro) va encima como una «cortina» semitransparente: con la barra decides cuánto video se deja ver.'));
   const cols=el('div',{class:'mdcols'});
-  cols.append(el('div',{class:'sgt mdf'},sitioRow({k:'vid.hero',l:'Video de portada (MP4 corto y liviano, sin sonido)',t:'vid'},'landing/hero')));
+  cols.append(el('div',{class:'sgt mdf'},sitioRow({k:'vid.hero',l:'Video de portada (MP4 corto y liviano, sin sonido)',t:'vid'},'landing/hero'),sitioRow({k:'img.hero',l:'O foto de portada (se usa si no hay video)',t:'img'},'landing/hero')));
   const lb=el('b',{},op0+'%'),rg=el('input',{type:'range',min:'35',max:'98',step:'1',value:String(op0),'aria-label':'Opacidad de la cortina'});
-  const mk=(cls,col,tx)=>{const d=el('div',{class:'hpv'});if(v)d.append(vidEl(v));d.append(el('i',{class:cls,style:'background:'+col+';opacity:'+(op0/100)}),el('span',{style:'color:'+tx},cls==='lt'?'Modo claro':'Modo oscuro'));return d};
+  const mk=(cls,col,tx)=>{const d=el('div',{class:'hpv'});if(v)d.append(vidEl(v));else if(ph)d.append(el('img',{src:ph,alt:'',style:'position:absolute;inset:0;width:100%;height:100%;object-fit:cover'}));d.append(el('i',{class:cls,style:'background:'+col+';opacity:'+(op0/100)}),el('span',{style:'color:'+tx},cls==='lt'?'Modo claro':'Modo oscuro'));return d};
   const pl=mk('lt','#F5F2EE','#252528'),pd=mk('dk','#1D1D20','#F2EEE8');
   rg.addEventListener('input',()=>{lb.textContent=rg.value+'%';$$('.hpv i',cols).forEach(i=>i.style.opacity=rg.value/100)});
   cols.append(el('div',{class:'mdx'},el('label',{class:'hlb'},'Opacidad de la cortina de color: ',lb),rg,el('p',{class:'muted'},'Más alto = el color tapa más y el video se ve tenue. Más bajo = se ve más el video.'),el('div',{class:'hpvs'},pl,pd),

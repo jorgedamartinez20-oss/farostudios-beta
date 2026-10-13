@@ -3997,14 +3997,16 @@ window.rebuildPortfolio&&window.rebuildPortfolio();
   /* Portada: video detrás del color (la cortina) */
   function buildHero(){
     const s=document.getElementById('inicio');if(!s)return;
-    const u=SITE.vid.hero;let w=s.querySelector('.hero-bgv'),vl=s.querySelector('.hero-veil');
+    const vu=SITE.vid.hero,pu=imgOf('hero'),u=vu||pu;let w=s.querySelector('.hero-bgv'),vl=s.querySelector('.hero-veil');
     if(!u){if(w)w.remove();if(vl)vl.remove();s.classList.remove('has-bgv');s.style.removeProperty('--cortina');return}
     const c=SITE.cortina>=35&&SITE.cortina<=98?SITE.cortina:82;s.style.setProperty('--cortina',(c/100).toFixed(2));
     if(w&&w.dataset.u===u)return;
     if(w)w.remove();
-    w=document.createElement('video');w.className='hero-bgv';w.dataset.u=u;w.preload='auto';w.setAttribute('aria-hidden','true');w.addEventListener('loadeddata',()=>w.classList.add('on'));w.src=u;
+    if(vu){w=document.createElement('video');w.preload='auto';w.addEventListener('loadeddata',()=>w.classList.add('on'));}
+    else{w=document.createElement('img');w.alt='';w.decoding='async';w.addEventListener('load',()=>w.classList.add('on'));}
+    w.className='hero-bgv';w.dataset.u=u;w.setAttribute('aria-hidden','true');w.src=u;
     if(!vl){vl=document.createElement('div');vl.className='hero-veil';vl.setAttribute('aria-hidden','true');s.insertBefore(vl,s.firstChild)}
-    s.insertBefore(w,vl);s.classList.add('has-bgv');window.autoV(w);
+    s.insertBefore(w,vl);s.classList.add('has-bgv');if(vu)window.autoV(w);
   }
   /* Logos de pago */
   function buildLogos(){
