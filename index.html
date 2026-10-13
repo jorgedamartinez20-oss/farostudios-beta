@@ -3651,7 +3651,10 @@ window.rebuildPortfolio=function(){
     const cn=base?w.c[0].toUpperCase()+w.c.slice(1):(cats.find(c=>c.id===w.c)||{n:w.c}).n;
     const im=base?`<div class="ph-img" data-img="${id}"></div>`:`<div class="ph-img${iu?' has':''}" ${iu?`style="background-image:url('${escH(iu)}')"`:''}></div>`;
     b.innerHTML=`${im}<svg class="ico cam"><use href="#i-${(!base&&vu)?'vid':'cam'}"/></svg><div class="cap"><b>${escH(w.n)}</b>${escH(cn)}</div>`;
+    const pos=/^\d{1,3}(\.\d+)?% \d{1,3}(\.\d+)?%$/.test(w.p||'')?w.p:'';
+    if(pos){const pi=b.querySelector('.ph-img');if(pi)pi.style.backgroundPosition=pos}
     if(vu)addV(b,vu);
+    if(pos){const pv=b.querySelector('.pf-v');if(pv)pv.style.objectPosition=pos}
     b.addEventListener('click',()=>openLb(w,vu||(base?imgOf(id):iu),!!vu));
     gal.appendChild(b);
   };
