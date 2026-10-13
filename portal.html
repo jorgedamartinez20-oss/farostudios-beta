@@ -418,7 +418,7 @@ button,.btn,.chip,.nav,.tab,.stab,.seg{-webkit-user-select:none;user-select:none
 .page{animation:in .22s ease-out}
 /* pie de página */
 .pie{position:relative;z-index:1;text-align:center;padding:4px 16px calc(26px + env(safe-area-inset-bottom));font:400 .85rem/1.3 var(--body);letter-spacing:.06em;color:var(--muted)}
-@media (max-width:760px){.pie{padding-bottom:calc(96px + env(safe-area-inset-bottom))}}
+@media (max-width:960px){.pie{padding-bottom:calc(96px + env(safe-area-inset-bottom))}}
 /* el faro: la luz vive DENTRO del círculo y gira centrada en él, sin chocar con la caja */
 .mascot::before{content:"";position:absolute;left:-50%;top:-50%;width:200%;height:200%;border-radius:50%;background:conic-gradient(from 0deg,transparent 0 292deg,rgba(224,182,62,.10) 306deg,rgba(224,182,62,.60) 346deg,transparent 360deg);animation:spin 6s linear infinite;pointer-events:none}
 .mascot::after{content:"";position:absolute;inset:0;border-radius:50%;pointer-events:none;box-shadow:inset 0 0 0 3px rgba(224,182,62,.38),inset 0 0 26px rgba(0,0,0,.55)}
@@ -574,6 +574,7 @@ body.arrastrando #nav button[data-p="d-subir"],#nav button.drop-hot{outline:3px 
 <footer class="pie">2026 · Desarrollado por Faro Studios</footer>
 <div class="sheet" id="sheet" role="dialog" aria-live="polite"></div>
 <script src="herramientas.js"></script>
+<script src="juegos.js"></script>
 <script src="perfil.js"></script>
 <script>
 /* ============ PORTAL FARO · conectado a Supabase ============ */
@@ -765,7 +766,7 @@ async function cargarCliente(id){
 
 /* ---------- navegación ---------- */
 const NAV={
-  alumno:[['inicio','home','Inicio'],['camino','path','Camino'],['tablero','board','Tablero'],['proyectos','image','Proyectos'],['avance','chart','Avance'],['material','folder','Material'],['clases','cal','Clases'],['logros','trophy','Logros'],['chat','chat','Chat']],
+  alumno:[['inicio','home','Inicio'],['camino','path','Camino'],['xp','bolt','Aumentar XP'],['tablero','board','Tablero'],['proyectos','image','Proyectos'],['avance','chart','Avance'],['material','folder','Material'],['clases','cal','Clases'],['logros','trophy','Logros'],['chat','chat','Chat']],
   encargado:[['resumen','home','Resumen'],['avance','chart','Avance'],['finanzas','card','Finanzas'],['material','folder','Material'],['clases','cal','Clases'],['chat','chat','Chat']],
   docente:[['d-inicio','home','Inicio'],['d-subir','up','Subir material'],['d-archivos','folder','Mis archivos'],['d-plan','board','Planificaciones'],['d-alumnos','users','Alumnos']],
   cliente:[['c-inicio','home','Inicio'],['c-galeria','image','Galería'],['c-docs','file','Documentos'],['c-buzon','chat','Buzón']]};
@@ -953,7 +954,7 @@ async function pracMontar(root){
 }
 
 P.herramientas=()=>'<section class="page" id="herr-root"></section><section class="page" id="prac-root" style="margin-top:22px"></section>';
-P.herramientas.bind=()=>{const t=herrDe(K());if(window.FaroTools)FaroTools.mount($('#herr-root'),{tools:t});else $('#herr-root').innerHTML='<div class="card"><p class="sub">No se pudieron cargar las herramientas. Recarga la página.</p></div>';pracMontar($('#prac-root'))};
+P.herramientas.bind=()=>{const t=herrDe(K());if(window.FaroTools)FaroTools.mount($('#herr-root'),{tools:t,onUse:usoHerramienta});else $('#herr-root').innerHTML='<div class="card"><p class="sub">No se pudieron cargar las herramientas. Recarga la página.</p></div>';pracMontar($('#prac-root'))};
 
 const COLS=[['pendiente','Por hacer','c1'],['en_curso','En curso','c2'],['hecha','Entregadas','c3']];
 P.tablero=()=>{const k=K();return '<section class="page"><div class="ph"><h1>Mi tablero</h1><p>Mueve cada tarea hacia la derecha cuando avances. Tu profe la revisa y te da tus XP.</p></div><div class="kan">'
@@ -1433,6 +1434,18 @@ P['d-plan']=()=>{const d=S.doc;if(!d.alumnos.length)return '<section class="page
   if(!d.plSel||!d.alumnos.some(a=>a.id===d.plSel))d.plSel=d.alumnos[0].id;
   return '<section class="page"><div class="ph"><h1>Planificaciones</h1><p>Un lienzo estilo moodboard por estudiante: notas, enlaces y archivos para planear sus clases. Solo tú lo ves.</p></div><div class="alus" style="margin-bottom:14px">'+d.alumnos.map(a=>'<button type="button" class="alu" data-pls="'+a.id+'" aria-pressed="'+(a.id===d.plSel)+'">'+avAl(a.id,40)+'<span>'+esc(a.apodo||String(a.nombre).split(' ')[0])+'</span></button>').join('')+'</div><div id="pl-root"><p class="sub">Cargando…</p></div></section>'};
 P['d-plan'].bind=()=>{const d=S.doc;$$('[data-pls]').forEach(b=>b.onclick=()=>{d.plSel=b.dataset.pls;render()});const a=d.alumnos.find(x=>x.id===d.plSel);if(a&&$('#pl-root'))planMontar($('#pl-root'),a.id,a.apodo||a.nombre)};
+/* ---------- XP de juegos, afinador y metrónomo (los topes los pone la base de datos) ---------- */
+async function ganarXP(fuente,xp,puntaje){
+  try{const r=await api('/rest/v1/rpc/ac_ganar_xp',{method:'POST',body:{p_fuente:fuente,p_xp:Math.max(0,Math.floor(xp)),p_puntaje:puntaje==null?null:Math.floor(puntaje)}});
+    if(!r.ok)return{dado:0,error:true};const j=await r.json();const k=K();if(k&&typeof j.xp==='number'){k.xp=j.xp;try{renderSide()}catch(e){}}return j}catch(e){return{dado:0,error:true}}}
+function usoHerramienta(tool,seg){
+  if(S.rol!=='alumno'||seg<30)return;
+  const xp=tool==='metronomo'?Math.min(5,Math.floor(seg/60)):Math.min(3,1+Math.floor(seg/120));
+  if(xp<1)return;ganarXP(tool==='afinadorbajo'?'afinador':tool,xp,Math.round(seg)).then(r=>{if(r&&r.dado>0)aviso('+'+r.dado+' XP por practicar con el '+(tool==='metronomo'?'metrónomo':'afinador'))})}
+P.xp=()=>'<section class="page"><div id="jg-root"><p class="sub">Cargando juegos…</p></div></section>';
+P.xp.bind=()=>{const k=K(),r=$('#jg-root');if(!r)return;
+  if(!window.FaroJuegos){r.innerHTML='<div class="card"><p class="sub">No se pudieron cargar los juegos. Recarga la página.</p></div>';return}
+  FaroJuegos.mount(r,{instr:k.instr||[],area:k.areaId==='ingles'?'ingles':'musica',nivel:lvl(k.xp||0).n,onXP:ganarXP})};
 /* ---------- docente: evalúa prácticas grabadas ---------- */
 /* mini grabadora para la respuesta en audio del docente */
 function miniRec(host){
@@ -1496,7 +1509,7 @@ document.addEventListener('click',async e=>{const kb=e.target.closest('[data-kid
 /* ---------- pintar ---------- */
 function render(){
   if(S.rol)document.documentElement.classList.remove('hand');
-  clearInterval(S.timer);window.FaroTools&&FaroTools.stop();pracStop();plStop();
+  clearInterval(S.timer);window.FaroTools&&FaroTools.stop();window.FaroJuegos&&FaroJuegos.stop();pracStop();plStop();
   { const f=$('#wafab'); if(f&&S.rol)f.hidden=true }
   $('#login').hidden=!!S.rol;$('.app').style.display=S.rol?'':'none';$('#out').hidden=!S.rol;
   if(!S.rol){relojParar();tituloPestana();loginUI();return}
@@ -1559,7 +1572,7 @@ async function iniciar(esperado){
     render()}
   catch(e){if(e.message!=='sesion'){salir(true);loginUI('No pudimos entrar ahora. Intenta de nuevo en un momento.')}}
 }
-function salir(silencio){try{sessionStorage.removeItem('faro_frase')}catch(e){}try{FaroPerfil.salir()}catch(e){}window.FaroTools&&FaroTools.stop();pracStop();plStop();relojParar();idleCerrar();{const b=document.querySelector('.bien');b&&b.remove()}SES=null;try{sessionStorage.removeItem('faro_portal');localStorage.removeItem('faro_portal')}catch(e){}S.rol=null;S.D={};S.cli=null;S.doc=null;S.perfil=null;if(!silencio){render()}}
+function salir(silencio){try{sessionStorage.removeItem('faro_frase')}catch(e){}window.FaroJuegos&&FaroJuegos.stop();try{FaroPerfil.salir()}catch(e){}window.FaroTools&&FaroTools.stop();pracStop();plStop();relojParar();idleCerrar();{const b=document.querySelector('.bien');b&&b.remove()}SES=null;try{sessionStorage.removeItem('faro_portal');localStorage.removeItem('faro_portal')}catch(e){}S.rol=null;S.D={};S.cli=null;S.doc=null;S.perfil=null;if(!silencio){render()}}
 $('#out').onclick=()=>salir();
 ['gesturestart','gesturechange','gestureend'].forEach(g=>document.addEventListener(g,e=>e.preventDefault()));
 ['pointerdown','pointermove','keydown','touchstart','scroll','wheel','input'].forEach(ev=>addEventListener(ev,()=>{if(SES&&!IDLE_EL)actMarca()},{passive:true,capture:true}));

@@ -312,7 +312,7 @@ function mountTuner(box,cfg){
       /* Safari solo procesa el analizador si está conectado a la salida; con volumen 0 no se oye nada */
       try{zg=ac.createGain();zg.gain.value=0;an.connect(zg);zg.connect(ac.destination)}catch(e){}
       st.t0=performance.now();st.quiet=0;
-      st.on=true;st.lastPitch=0;$('#tu-mic').textContent='Detener micrófono';$('#tu-mic').classList.remove('go');$('#tu-mic').classList.add('gh');
+      st.on=true;trk('afinador').on();st.lastPitch=0;$('#tu-mic').textContent='Detener micrófono';$('#tu-mic').classList.remove('go');$('#tu-mic').classList.add('gh');
       setCat('','Toca una cuerda');measure();cancelAnimationFrame(raf);raf=requestAnimationFrame(loop);
     }catch(e){
       const n=e&&e.name;
@@ -322,7 +322,7 @@ function mountTuner(box,cfg){
   function stop(){
     cancelAnimationFrame(raf);raf=0;window.removeEventListener('resize',measure);
     if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}
-    try{src&&src.disconnect()}catch(e){}try{zg&&zg.disconnect()}catch(e){}zg=null;src=null;st.on=false;st.cur=null;st.px=0;
+    try{src&&src.disconnect()}catch(e){}try{zg&&zg.disconnect()}catch(e){}zg=null;src=null;st.on=false;trk('afinador').off();st.cur=null;st.px=0;
     const b=$('#tu-mic');if(b){b.textContent='Activar micrófono';b.classList.add('go');b.classList.remove('gh')}
     const bub=$('#tu-bub');if(bub){bub.style.transform='';bub.textContent=''}
   }
@@ -394,10 +394,10 @@ function mountMetro(box){
   }
   function setPlay(on){const g=$('#mt-go');if(!g)return;g.innerHTML=on?PAUSE:PLAY;g.setAttribute('aria-pressed',String(on));g.setAttribute('aria-label',on?'Detener':'Empezar')}
   function start(){
-    try{const ac=getAC();running=true;k=0;q=[];nextT=ac.currentTime+.08;sched();timer=setInterval(sched,25);cancelAnimationFrame(raf);raf=requestAnimationFrame(flash);setPlay(true);$('#mt-err').textContent=''}
+    try{const ac=getAC();running=true;trk('metronomo').on();k=0;q=[];nextT=ac.currentTime+.08;sched();timer=setInterval(sched,25);cancelAnimationFrame(raf);raf=requestAnimationFrame(flash);setPlay(true);$('#mt-err').textContent=''}
     catch(e){running=false;$('#mt-err').textContent='Este navegador no permite reproducir sonido aquí.'}
   }
-  function stop(){running=false;clearInterval(timer);cancelAnimationFrame(raf);q=[];setPlay(false)}
+  function stop(){running=false;trk('metronomo').off();clearInterval(timer);cancelAnimationFrame(raf);q=[];setPlay(false)}
   $('#mt-go').addEventListener('click',()=>running?stop():start());
   // − y + : un toque cambia 1; mantener presionado repite
   function hold(btn,d){
@@ -492,10 +492,13 @@ const DEF={
   piano:{n:'Piano',sub:'Un teclado para encontrar notas y practicar de oído.',mount:mountPiano},
   metronomo:{n:'Metrónomo',sub:'Elige la velocidad, los tiempos del compás y cuál pulso suena fuerte.',mount:mountMetro}
 };
-let cur=null,lastTool=null;
+let cur=null,lastTool=null,onUse=null;
+/* Tiempo de uso de afinador y metrónomo (para darle XP al estudiante): se avisa con opts.onUse(herramienta, segundos). */
+const TRK={};
+function trk(t){return TRK[t]||(TRK[t]={t0:0,on(){if(!this.t0)this.t0=Date.now()},off(){if(!this.t0)return;const sg=(Date.now()-this.t0)/1000;this.t0=0;try{onUse&&onUse(t,sg)}catch(e){}}})}
 function stop(){if(cur&&cur.stop){try{cur.stop()}catch(e){}}cur=null}
 function mount(rootEl,opts){
-  injectCSS();stop();
+  injectCSS();stop();onUse=(opts&&opts.onUse)||null;
   const tools=(opts&&opts.tools||[]).filter(t=>DEF[t]);
   if(!tools.length){rootEl.innerHTML='<div class="ft-wrap"><div class="ft-card"><p class="ft-sub">Todavía no tienes herramientas activas. Tu profe las activa según tu instrumento.</p></div></div>';return}
   let tool=tools.includes(opts.tool)?opts.tool:tools.includes(lastTool)?lastTool:tools[0];
