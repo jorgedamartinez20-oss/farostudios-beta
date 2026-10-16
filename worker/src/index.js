@@ -398,12 +398,42 @@ export default {
       if (!p || !B[p.b]) return err(request, env, 'El enlace no es válido o ya venció', 403);
       if (await enPapelera(env, p.b, p.k)) return err(request, env, 'No existe ese archivo', 404);
       const descargar = url.searchParams.get('inline') !== '1';
-      if (!p.a && request.method === 'GET') { // el administrador viendo una vista previa no cuenta
+      if (!p.a && !p.n && request.method === 'GET') { // vistas previas del admin y miniaturas del cliente no cuentan
         const rango = request.headers.get('Range');
         const primera = !rango || /^bytes=0-/.test(rango); // el video pide muchos trozos: cuenta solo el primero
         if (primera && p.b === 'privado') { const t = contar(env, p.k, descargar ? 'd' : 'v'); if (ctx && ctx.waitUntil) ctx.waitUntil(t); else await t; }
       }
       return entregar(request, env, B[p.b], p.k, { descargar });
+    }
+
+    // Clientes de Entregas: piden enlaces de SUS archivos. Supabase decide qué ven (RLS) con la sesión del cliente.
+    if (ruta === '/api/mi/enlaces' && request.method === 'POST') {
+      const m = /^Bearer\s+(.+)$/i.exec(request.headers.get('Authorization') || '');
+      if (!m) return err(request, env, 'Necesitas entrar', 401);
+      if (!env.FIRMA_SECRETO) return err(request, env, 'Falta configurar FIRMA_SECRETO en el servicio (ver LEEME)', 500);
+      const b = await request.json().catch(() => ({}));
+      const ids = (Array.isArray(b.ids) ? b.ids : []).filter((x) => /^[0-9a-f-]{36}$/i.test(String(x))).slice(0, 80);
+      if (!ids.length) return json(request, env, { enlaces: {} });
+      let r;
+      try {
+        r = await fetch(`${env.SUPABASE_URL}/rest/v1/en_archivos?id=in.(${ids.join(',')})&select=id,key,nombre,tipo,estado,proyecto:en_proyectos(estado,cuenta:en_cuentas(tipo))`, { headers: { apikey: env.SUPABASE_KEY, Authorization: `Bearer ${m[1]}` } });
+      } catch (e) { return err(request, env, 'No se pudo consultar', 502); }
+      if (r.status === 401 || r.status === 403) return err(request, env, 'Tu sesión venció. Vuelve a entrar.', 401);
+      if (!r.ok) return err(request, env, 'No se pudo consultar', 502);
+      const filas = await r.json().catch(() => []);
+      const seg = Math.min(Math.max(Number(b.seg) || 7200, 300), TTL_ENLACE_MAX);
+      const e = Math.floor(Date.now() / 1000) + seg;
+      const enlaces = {};
+      for (const f of filas) {
+        if (!f.key || f.key.includes('..') || f.key.endsWith('/.keep') || !f.key.startsWith('faro-studios/')) continue;
+        const td = await firmar(env, { b: 'privado', k: f.key, e });
+        const tv = await firmar(env, { b: 'privado', k: f.key, e, ...(f.tipo === 'imagen' ? { n: 1 } : {}) });
+        // Descargar: galerías siempre; revisión (empresa/agencia) solo lo aprobado
+        const py = f.proyecto || {};
+        const puede = (py.cuenta && py.cuenta.tipo === 'galeria') || f.estado === 'aprobado' || py.estado === 'aprobado' || py.estado === 'entregado';
+        enlaces[f.id] = { nombre: f.nombre, puede, urlVer: `${url.origin}/api/bajar?inline=1&t=${tv}`, ...(puede ? { url: `${url.origin}/api/bajar?t=${td}` } : {}) };
+      }
+      return json(request, env, { enlaces, vence_en: seg });
     }
 
     // Todo lo demás es solo para el administrador

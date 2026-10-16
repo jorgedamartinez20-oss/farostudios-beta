@@ -47,7 +47,15 @@ const TOKEN_AAL1 = jwtFalso('aal1'), TOKEN_AAL2 = jwtFalso('aal2');
 // Reglas de archivo_permiso simuladas: ana (alumna) lee/sube práctica propia; prof (docente) lee práctica y escribe respuestas; nadie más borra
 const REGLAS = { 'alu-token': { leer: (k) => k.includes('ana-1111/'), escribir: (k) => k.includes('ana-1111/practicas/') || k.includes('ana-1111/mis-archivos/'), borrar: () => false },
   'doc-token': { leer: (k) => k.includes('ana-1111/'), escribir: (k) => k.includes('ana-1111/respuestas/') || k.includes('ana-1111/material/'), borrar: (k) => k.includes('ana-1111/respuestas/') || k.includes('ana-1111/material/') } };
+const ID_OK = '11111111-1111-1111-1111-111111111111', ID_IMG = '22222222-2222-2222-2222-222222222222';
 globalThis.fetch = async (u, init) => {
+  if (String(u).includes('/rest/v1/en_archivos')) { // RLS simulado: solo el cliente ve sus archivos
+    const t = (init.headers.Authorization || '').replace('Bearer ', '');
+    if (t !== 'cli-token') return new Response(t === 'malo' ? '{}' : '[]', { status: t === 'malo' ? 401 : 200 });
+    const ids = decodeURIComponent(String(u)).match(/in\.\(([^)]*)\)/)[1].split(',');
+    const filas = [{ id: ID_OK, key: globalThis.K_PRUEBA, nombre: 'Clip 1', tipo: 'video', estado: 'pendiente', proyecto: { estado: 'en_revision', cuenta: { tipo: 'empresa' } } }, { id: ID_IMG, key: globalThis.K_PRUEBA, nombre: 'Foto', tipo: 'imagen', estado: 'aprobado', proyecto: { estado: 'en_revision', cuenta: { tipo: 'empresa' } } }];
+    return new Response(JSON.stringify(filas.filter((f) => ids.includes(f.id))), { status: 200 });
+  }
   if (String(u).endsWith('/rest/v1/rpc/tiene_permiso')) { // permiso "ver_archivos": solo 'lector-token' lo tiene
     const t = (init.headers.Authorization || '').replace('Bearer ', ''); const b = JSON.parse(init.body);
     if (t !== 'lector-token' && t !== 'otro-token') return new Response('{}', { status: 401 });
@@ -184,6 +192,20 @@ assert.equal(st.archivos[K].d, 3); assert.equal(st.archivos[K].v, 1); ok('cuenta
 assert.equal(st.areas.s.n, 1); assert.ok(st.areas.s.meses[new Date().toISOString().slice(0, 7)]); ok('resumen por área y por mes');
 r = await q('/api/stats'); assert.equal(r.status, 401); ok('stats solo para admin');
 r = await q('/api/lista?bucket=privado&prefix=', { headers: A }); assert.ok(!(await r.json()).carpetas.includes('_stats/')); ok('_stats oculto en la lista');
+
+// clientes de Entregas
+globalThis.K_PRUEBA = K;
+r = await q('/api/mi/enlaces', { method: 'POST', body: JSON.stringify({ ids: [ID_OK] }) }); assert.equal(r.status, 401); ok('cliente sin sesión → 401');
+r = await q('/api/mi/enlaces', { method: 'POST', headers: { Authorization: 'Bearer malo' }, body: JSON.stringify({ ids: [ID_OK] }) }); assert.equal(r.status, 401); ok('sesión inválida → 401');
+r = await q('/api/mi/enlaces', { method: 'POST', headers: { Authorization: 'Bearer otro-token' }, body: JSON.stringify({ ids: [ID_OK] }) }); assert.deepEqual((await r.json()).enlaces, {}); ok('un cliente no recibe enlaces de archivos ajenos');
+r = await q('/api/mi/enlaces', { method: 'POST', headers: { Authorization: 'Bearer cli-token' }, body: JSON.stringify({ ids: [ID_OK, ID_IMG, 'no-es-id'] }) });
+const enl = (await r.json()).enlaces; assert.equal(Object.keys(enl).length, 2); ok('el cliente recibe enlaces de sus archivos');
+assert.equal(enl[ID_OK].url, undefined); assert.ok(enl[ID_IMG].url); ok('empresa: solo se descarga lo aprobado');
+const antes = (await (await q('/api/stats', { headers: A })).json()).archivos[K];
+const uf = new URL(enl[ID_IMG].urlVer); r = await q(uf.pathname + uf.search); assert.equal(r.status, 200);
+const despues = (await (await q('/api/stats', { headers: A })).json()).archivos[K]; assert.equal(despues.v, antes.v); ok('las miniaturas de fotos no inflan las estadísticas');
+const uv = new URL(enl[ID_OK].urlVer); await q(uv.pathname + uv.search);
+const d3 = (await (await q('/api/stats', { headers: A })).json()).archivos[K]; assert.equal(d3.v, antes.v + 1); ok('ver un video sí cuenta como reproducción');
 
 // borrar = papelera (se puede restaurar)
 r = await q(`/api/objeto?bucket=privado&key=${encodeURIComponent(K)}`, { method: 'DELETE', headers: A }); assert.equal(r.status, 200); assert.ok(env.PRIVADO.m.has(K)); ok('borrar manda a la papelera (el archivo sigue en R2)');
