@@ -202,7 +202,9 @@ td.n{width:14mm}td.q{width:26mm}td.t{width:34mm;white-space:nowrap}
 .dc-tag{display:inline-block;border-radius:999px;padding:2px 10px;font-size:.78rem;font-weight:700;background:rgba(94,158,107,.2)}
 .dc-tag.an{background:rgba(217,90,106,.25)}
 .dc-acts{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
-.dc-acts .btn{padding:6px 10px}
+.dc-acts .btn,.dc-bar .btn{padding:6px 10px;white-space:nowrap;flex:none;width:auto;max-width:none}
+.dc-ic{white-space:nowrap}
+.dc-top .dc-acts input[type=search]{flex:1 1 220px;min-width:180px}
 .dc-ed{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,.95fr);gap:20px;align-items:start}
 .dc-sec{margin-top:18px;padding-top:14px;border-top:1px solid var(--line)}
 .dc-sec>h3{font:700 .8rem var(--body);letter-spacing:.14em;text-transform:uppercase;color:var(--oro-t);margin-bottom:4px;display:flex;gap:8px;align-items:center}
