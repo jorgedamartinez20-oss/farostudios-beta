@@ -83,7 +83,12 @@ grant execute on function public.doc_siguiente_numero(text) to authenticated;
 alter table public.doc_servicios  enable row level security;
 alter table public.doc_documentos enable row level security;
 alter table public.doc_contadores enable row level security;
-revoke all on public.doc_servicios, public.doc_documentos, public.doc_contadores from anon;
+-- Permisos exactos (en este proyecto las tablas nuevas no traen permisos por defecto para "authenticated"):
+-- primero se quita todo y luego se da solo lo necesario; la política de abajo (RLS) deja pasar únicamente al director.
+revoke all on public.doc_servicios, public.doc_documentos, public.doc_contadores from authenticated, anon;
+grant select, insert, update, delete on public.doc_servicios to authenticated;
+grant select, insert, update on public.doc_documentos to authenticated;   -- sin borrar: se anula
+grant select on public.doc_contadores to authenticated;
 
 drop policy if exists "admin doc_servicios" on public.doc_servicios;
 create policy "admin doc_servicios" on public.doc_servicios for all to authenticated
@@ -116,3 +121,5 @@ from (values
   ('Academia', 'Guitarra eléctrica · ciclo mensual', 'Paquete mensual de 4 clases presenciales de 1 hora con 15 minutos.', 1000, 1)
 ) as v(categoria, nombre, descripcion, precio, orden)
 where not exists (select 1 from public.doc_servicios);
+
+notify pgrst, 'reload schema';
