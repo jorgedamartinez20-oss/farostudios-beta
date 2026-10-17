@@ -29,7 +29,10 @@ create index if not exists contenido_piezas_fecha_idx on public.contenido_piezas
 create index if not exists contenido_piezas_contenido_idx on public.contenido_piezas (contenido_id);
 
 alter table public.contenido_piezas enable row level security;
-revoke all on public.contenido_piezas from anon;
+revoke all on public.contenido_piezas from anon, authenticated;
+grant select, insert, update, delete on public.contenido_piezas to authenticated;   -- esta base no los da por defecto; la política de abajo deja pasar solo al director
 drop policy if exists "admin contenido_piezas" on public.contenido_piezas;
 create policy "admin contenido_piezas" on public.contenido_piezas for all to authenticated
   using (public.es_admin()) with check (public.es_admin());
+
+notify pgrst, 'reload schema';
