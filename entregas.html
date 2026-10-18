@@ -135,6 +135,84 @@ button{font:inherit;color:inherit;cursor:pointer}
   .main{order:1}.notas{position:static;max-height:none;order:3}
   .rv-top{position:static}
 }
+
+/* =====================================================================
+   INTERACTIVIDAD: lo que se puede tocar responde; lo que aparece, entra suave
+   ===================================================================== */
+:root{--ease:cubic-bezier(.22,.8,.3,1);--hov:rgba(184,160,106,.16)}
+input:not([type=checkbox]):not([type=radio]):not([type=file]),select,textarea{transition:border-color .18s,box-shadow .18s}
+input:not([type=checkbox]):not([type=radio]):not([type=file]):hover,select:hover,textarea:hover{border-color:rgba(184,160,106,.9)}
+input:not([type=checkbox]):not([type=radio]):not([type=file]):focus,select:focus,textarea:focus{outline:none;border-color:var(--oro);box-shadow:0 0 0 3px rgba(184,160,106,.3)}
+
+/* botones: se elevan, se iluminan y se hunden al presionar */
+.btn{position:relative;transition:transform .18s var(--ease),box-shadow .18s var(--ease),background-color .18s,border-color .18s,filter .18s}
+.btn:not([disabled]):hover{transform:translateY(-2px);filter:brightness(1.05);box-shadow:0 5px 0 var(--line),0 12px 18px -10px rgba(37,37,40,.4)}
+.btn.p:not([disabled]):hover{box-shadow:0 5px 0 #5e101c,0 12px 18px -10px rgba(139,26,42,.6)}
+.btn.o:not([disabled]):hover{box-shadow:0 5px 0 #8f7a48,0 12px 18px -10px rgba(184,160,106,.7)}
+.btn.ok:not([disabled]):hover{box-shadow:0 5px 0 #2a5738,0 12px 18px -10px rgba(61,122,79,.6)}
+.btn:not([disabled]):active{transform:translateY(2px);filter:none;box-shadow:0 1px 0 var(--line);transition-duration:.06s}
+.btn.p:not([disabled]):active{box-shadow:0 1px 0 #5e101c}.btn.o:not([disabled]):active{box-shadow:0 1px 0 #8f7a48}.btn.ok:not([disabled]):active{box-shadow:0 1px 0 #2a5738}
+.btn .ico{transition:transform .22s var(--ease)}.btn:hover .ico{transform:scale(1.15) rotate(-6deg)}
+.top .btn:not([disabled]):hover{background:rgba(255,255,255,.18);box-shadow:none}
+.lg-wa a{transition:opacity .15s}.lg-wa a:hover{text-decoration:underline;opacity:.85}
+
+/* tarjetas de proyecto: se levantan, resaltan y muestran la flecha para abrir */
+.pc{position:relative;transition:transform .25s var(--ease),box-shadow .25s var(--ease),border-color .25s}
+.pc:hover{border-color:var(--oro);box-shadow:0 2px 0 var(--oro),0 30px 38px -22px rgba(37,37,40,.6)}
+.pc:active{transform:translateY(0) scale(.99);transition-duration:.08s}
+.pc .cv{transition:filter .3s}.pc:hover .cv{filter:brightness(1.12)}
+.pc .cv .ico{transition:transform .3s var(--ease)}.pc:hover .cv .ico{transform:scale(1.2)}
+.pc::after{content:"›";position:absolute;right:16px;bottom:14px;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:var(--borgona);color:var(--marfil);font:400 1.5rem/1 var(--display);padding-bottom:3px;opacity:0;transform:translateX(-8px);transition:opacity .22s,transform .28s var(--ease)}
+.pc:hover::after,.pc:focus-visible::after{opacity:1;transform:none}
+
+/* lista de piezas, chips, notas */
+.it{transition:transform .2s var(--ease),border-color .2s,background-color .2s,box-shadow .2s}
+.it:hover{border-color:var(--oro);background:#fff;transform:translateX(3px);box-shadow:0 8px 16px -12px rgba(37,37,40,.5)}
+.it:active{transform:scale(.985)}
+.it .th{transition:transform .25s var(--ease)}.it:hover .th{transform:scale(1.07)}
+.chip{transition:background-color .18s,color .18s,border-color .18s,transform .15s var(--ease)}
+.chip:hover{border-color:var(--borgona);background:rgba(139,26,42,.06);transform:translateY(-1px)}
+.chip[aria-pressed="true"]:hover{background:var(--pizarra);border-color:var(--pizarra);filter:brightness(1.25)}
+.chip:active{transform:scale(.95)}
+.tm{transition:background-color .18s,border-color .18s,transform .15s}.tm:hover{background:rgba(139,26,42,.08);border-style:solid;transform:translateY(-1px)}.tm:active{transform:scale(.96)}
+.nota{transition:border-color .2s,box-shadow .2s}.nota:hover{box-shadow:0 8px 16px -12px rgba(37,37,40,.4)}
+.nota .t,.nota .x{cursor:pointer;transition:color .15s,opacity .15s}.nota .t:hover{opacity:.7}.nota .x:hover{color:var(--borgona)}
+.main .media{transition:box-shadow .3s}
+
+.rip-host{position:relative;overflow:hidden}
+.rip{position:absolute;border-radius:50%;pointer-events:none;background:currentColor;opacity:.22;transform:scale(0);animation:ripple .6s var(--ease) forwards}
+@keyframes ripple{to{transform:scale(1);opacity:0}}
+@media (hover:none),(pointer:coarse){.btn:hover,.chip:hover,.tm:hover,.it:hover,.pc:hover{transform:none}.pc::after{display:none}.btn:hover .ico,.pc:hover .cv .ico,.it:hover .th{transform:none}}
+
+/* ---------------- animaciones de entrada ---------------- */
+@media (prefers-reduced-motion:no-preference){
+  @keyframes ent{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+  @keyframes entd{from{opacity:0;transform:translateY(-100%)}to{opacity:1;transform:none}}
+  @keyframes pop{from{opacity:0;transform:translateY(12px) scale(.96)}to{opacity:1;transform:none}}
+  @keyframes fade{from{opacity:0}to{opacity:1}}
+  @keyframes toastin{from{opacity:0;transform:translate(-50%,16px)}to{opacity:1;transform:translateX(-50%)}}
+  @keyframes toastout{to{opacity:0;transform:translate(-50%,10px)}}
+  @keyframes estp{0%{box-shadow:0 0 0 0 rgba(183,121,31,.55)}100%{box-shadow:0 0 0 7px rgba(183,121,31,0)}}
+
+  .lg-card{animation:pop .5s var(--ease) backwards}
+  .lg-top .iso{animation:fade .9s ease .15s backwards}
+  .top{animation:entd .45s var(--ease) backwards}
+  .hello{animation:ent .45s var(--ease) .05s backwards}
+  .cards>*{animation:ent .5s var(--ease) backwards}
+  .cards>:nth-child(1){animation-delay:.1s}.cards>:nth-child(2){animation-delay:.16s}.cards>:nth-child(3){animation-delay:.22s}
+  .cards>:nth-child(4){animation-delay:.28s}.cards>:nth-child(5){animation-delay:.34s}.cards>:nth-child(n+6){animation-delay:.4s}
+  .rv-top{animation:entd .4s var(--ease) backwards}
+  .reglas{animation:ent .4s var(--ease) .08s backwards}
+  .rv>.lista{animation:ent .45s var(--ease) .1s backwards}
+  .rv>.main{animation:ent .45s var(--ease) .16s backwards}
+  .rv>.notas{animation:ent .45s var(--ease) .22s backwards}
+  .main .media{animation:fade .35s ease backwards}
+  .vacio{animation:ent .5s var(--ease) backwards}
+  .modal{animation:fade .2s ease backwards}
+  .modal .bx{animation:pop .3s var(--ease) backwards}
+  .toast{animation:toastin .3s var(--ease) backwards,toastout .3s ease 2.65s forwards}
+  .est.rev i{animation:estp 2s ease-out infinite}
+}
 </style>
 <link rel="stylesheet" href="galeria.css">
 </head>
@@ -445,5 +523,19 @@ function previaBoot(){
 })();
 </script>
 <script src="galeria.js"></script>
+<script>
+/* onda al hacer click en botones, tarjetas y filas */
+(function(){
+  if(matchMedia('(prefers-reduced-motion:reduce)').matches)return;
+  document.addEventListener('pointerdown',function(ev){
+    var t=ev.target.closest&&ev.target.closest('.btn,.pc,.it,.chip');
+    if(!t||t.disabled||ev.button>0)return;
+    t.classList.add('rip-host');
+    var r=t.getBoundingClientRect(),d=Math.max(r.width,r.height)*2,s=document.createElement('span');
+    s.className='rip';s.style.cssText='width:'+d+'px;height:'+d+'px;left:'+(ev.clientX-r.left-d/2)+'px;top:'+(ev.clientY-r.top-d/2)+'px';
+    t.appendChild(s);setTimeout(function(){s.remove()},650)
+  },{passive:true});
+})();
+</script>
 </body>
 </html>

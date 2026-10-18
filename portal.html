@@ -527,6 +527,29 @@ body.arrastrando #nav button[data-p="d-subir"],#nav button.drop-hot{outline:3px 
 #bellp button{display:flex;gap:10px;align-items:center;text-align:left;background:var(--paper,#f3efe4);border:0;border-radius:14px;padding:10px 12px;font:inherit;color:inherit;cursor:pointer}#bellp button:hover{background:rgba(0,0,0,.08)}
 #visor{position:fixed;inset:0;z-index:120;background:rgba(20,20,22,.96);display:grid;grid-template-rows:auto 1fr;color:#fff}.vs-h{display:flex;gap:12px;align-items:center;padding:12px 16px}.vs-h b{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .vs-b{display:grid;place-items:center;padding:0 12px 16px;min-height:0}.vs-b iframe,.vs-b video{width:100%;height:100%;border:0;border-radius:12px;background:#000}.vs-b img{max-width:100%;max-height:100%;object-fit:contain}.vs-b audio{width:min(100%,560px)}.vs-b .sub{color:#fff}
+
+/* ---------- retroalimentación al tocar (respeta el modo calmado: sin zoom, solo color, sombra y fundidos) ---------- */
+input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):not([type=color]),select,textarea{transition:border-color .15s,box-shadow .15s,background-color .15s}
+input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):not([type=color]):hover,select:hover,textarea:hover{border-color:rgba(63,167,163,.65)}
+input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):not([type=color]):focus,select:focus,textarea:focus{outline:none;border-color:var(--t);box-shadow:0 0 0 4px rgba(63,167,163,.24)}
+select{cursor:pointer}
+.chip{cursor:pointer;transition:transform .12s,box-shadow .12s,background-color .15s,border-color .15s}
+.chip:hover{border-color:var(--t);transform:translateY(-2px);box-shadow:0 5px 0 var(--line)}
+.chip[aria-pressed="true"]:hover{border-color:var(--pizarra);box-shadow:0 5px 0 #000}
+.chip:active{transform:translateY(2px);box-shadow:0 1px 0 var(--line)}
+.nav button:active{background:rgba(37,37,40,.1)}
+.nav .ico{transition:transform .2s}.nav button:hover .ico{transform:rotate(-6deg)}
+.tile[data-go]:active,.alu[data-alu]:active,.job:active{transform:translateY(1px)}
+.top .out{transition:background-color .15s}.top .out:active{background:rgba(255,255,255,.2)}
+.btn[disabled]{cursor:not-allowed}
+@media (hover:none),(pointer:coarse){.chip:hover{transform:none;box-shadow:0 3px 0 var(--line)}.chip[aria-pressed="true"]:hover{box-shadow:0 3px 0 #000}.nav button:hover .ico{transform:none}}
+/* ventanas y avisos: aparecen con un fundido corto */
+@media (prefers-reduced-motion:no-preference){
+  @keyframes pfade{from{opacity:0}to{opacity:1}}
+  @keyframes psheet{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+  #visor,.idle,#mas .bk{animation:pfade .2s ease-out backwards}
+  #mas .sh,#bellp,.idle>div{animation:psheet .24s cubic-bezier(.2,.8,.2,1) backwards}
+}
 </style>
 <script>if(navigator.standalone||(window.matchMedia&&matchMedia("(display-mode:standalone)").matches))document.documentElement.classList.add("is-app")</script>
 </head>
