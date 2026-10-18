@@ -4098,11 +4098,10 @@ window.rebuildPortfolio&&window.rebuildPortfolio();
       w.className='hero-bgv'+(ps?' on':'');w.dataset.u=u;w.setAttribute('aria-hidden','true');
       if(!(slow&&ps))w.src=u;
     }else{
-      /* foto de portada: primero la liviana, y la original la reemplaza en cuanto llega */
+      /* foto de portada: es solo textura de fondo, así que se usa únicamente la versión comprimida (la original no se descarga) */
       w=document.createElement('img');w.alt='';w.decoding='async';w.addEventListener('load',()=>w.classList.add('on'));
       w.className='hero-bgv';w.dataset.u=u;w.setAttribute('aria-hidden','true');
-      const th=miniOf(u);
-      if(th){w.src=th;const full=new Image();full.onload=()=>{if(w.dataset.u===u)w.src=u};full.src=u}else w.src=u;
+      w.src=miniOf(u)||u;
     }
     if(!vl){vl=document.createElement('div');vl.className='hero-veil';vl.setAttribute('aria-hidden','true');s.insertBefore(vl,s.firstChild)}
     s.insertBefore(w,vl);s.classList.add('has-bgv');if(vu)window.autoV(w);
