@@ -2317,20 +2317,23 @@ function pubMinisPendientes(){
   return [...hall];
 }
 async function pubMinisPreparar(onProg){
-  const lista=pubMinisPendientes(),ok=[];let mal=0;
-  for(let i=0;i<lista.length;i++){
-    const u=lista[i],k=pubKeyDe(u),n=k.split('/').pop();if(onProg)onProg(i+1,lista.length);
+  /* de 3 en 3, y cada copia se anota en cuanto está lista: la página la usa al instante y, si se cierra a medias, no se pierde lo avanzado */
+  const lista=pubMinisPendientes(),cola=[...lista];let hechos=0,mal=0,listos=0;
+  if(onProg)onProg(0,lista.length);
+  const uno=async u=>{
+    const k=pubKeyDe(u),n=k.split('/').pop();
     try{
       let existe=false;try{existe=(await fetch(FILES+'/pub/'+matKey(pubMiniKey(k)),{method:'HEAD'})).ok}catch(e){}
       if(!existe){
         const b=PUB_VID.test(n)?await pubPrimerCuadro(u):await enImgRedim(await (await fetch(u)).blob(),PUB_LADO,.82);
         await matSubirKey0(new File([b],'m.jpg',{type:'image/jpeg'}),'publico',pubMiniKey(k),null);
       }
-      ok.push(u);
+      await pubMinisAdd([u]);listos++;
     }catch(e){mal++}
-  }
-  if(ok.length)await pubMinisAdd(ok);
-  return{hechos:ok.length,fallaron:mal,total:lista.length};
+    hechos++;if(onProg)onProg(hechos,lista.length);
+  };
+  await Promise.all(Array.from({length:Math.min(3,cola.length)},async()=>{while(cola.length)await uno(cola.shift())}));
+  return{hechos:listos,fallaron:mal,total:lista.length};
 }
 function pubMinisCard(){
   const c=el('div',{class:'card sgp'});
@@ -2340,7 +2343,7 @@ function pubMinisCard(){
     if(!n)b.disabled=true;
     b.addEventListener('click',async()=>{
       b.disabled=true;
-      try{const r=await pubMinisPreparar((i,t)=>{b.textContent=' Preparando '+i+' de '+t+'…'});
+      try{const r=await pubMinisPreparar((i,t)=>{b.textContent=' Listos '+i+' de '+t+'…'});
         toast(r.fallaron?'Listo: '+r.hechos+' preparados, '+r.fallaron+' no se pudieron leer (se siguen viendo con el original)':'Listo: '+r.hechos+' preparados. La página ya carga más rápido.')}
       catch(e){toast(e.message||'No se pudo preparar')}
       pintar();
