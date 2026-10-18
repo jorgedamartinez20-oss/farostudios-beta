@@ -1960,7 +1960,7 @@ function renderPortafolioMgr(box){
   cc.append(el('div',{class:'acts'},el('button',{class:'btn btn-gold btn-sm',type:'button',onclick:()=>{P.cats.push({id:'cat-'+Date.now().toString(36),n:'',s:''});renderSitio()}},icoEl('plus'),' Agregar categoría')));
   const sv=el('div',{class:'card sgp',style:'display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap'},el('p',{class:'muted'},'Los cambios de esta sección se publican al guardar.'),
     el('button',{class:'btn btn-gold',type:'button',onclick:pfGuardar},icoEl('check'),' Guardar portafolio'));
-  box.append(cc,sv);
+  box.append(cc,sv,pubMinisCard());
 }
 
 /* ---------- SUGERENCIAS Y COMENTARIOS DE LA WEB ---------- */
@@ -2265,7 +2265,91 @@ async function matSubirKey0(file,bucket,key,onProg){
 async function matSubirPublico(it,dest,f){
   await matArbol();if(!matDest(dest))dest='landing/fotos-studios';  /* carpeta nueva aún no publicada en el servicio: usa la general */
   const r=await matSubir(f,dest,'',null,it.k.replace(/[^\w]+/g,'-')+'-'+Date.now()+'-'+f.name);
-  return FILES+'/pub/'+matKey(r.key);
+  const url=FILES+'/pub/'+matKey(r.key);
+  if(r.bucket==='publico'&&await pubMiniSubir(f,r.key))await pubMinisAdd([url]);
+  return url;
+}
+
+/* ---------- versiones livianas del landing ----------
+   Para cada foto o video se guarda, junto al original, una copia chica «_mini-nombre.jpg» (foto reducida o primer cuadro del video).
+   La página la usa en las casillas y como póster mientras el original (que NO se toca ni se comprime) se carga al verlo en grande.
+   La lista de originales que ya tienen copia se guarda en Sitio web con la clave «minis». */
+const PUB_IMG=/\.(jpe?g|png|webp|avif)$/i,PUB_VID=/\.(mp4|m4v|mov|webm)$/i,PUB_LADO=1200;
+const pubMiniKey=key=>{const i=key.lastIndexOf('/');return key.slice(0,i+1)+'_mini-'+key.slice(i+1).replace(/\.[^.]+$/,'')+'.jpg'};
+const pubKeyDe=u=>{const b=FILES+'/pub/';return typeof u==='string'&&u.startsWith(b)?decodeURIComponent(u.slice(b.length).split('?')[0].split('#')[0]):''};
+/* primer cuadro de un video (archivo local o enlace); devuelve una foto JPG reducida */
+function pubPrimerCuadro(src){
+  return new Promise((ok,no)=>{
+    const remoto=typeof src==='string',url=remoto?src:URL.createObjectURL(src),v=document.createElement('video');
+    v.muted=true;v.playsInline=true;v.preload='metadata';if(remoto)v.crossOrigin='anonymous';
+    const fin=()=>{clearTimeout(t);if(!remoto)URL.revokeObjectURL(url);v.removeAttribute('src');v.load()};
+    const t=setTimeout(()=>{fin();no(new Error('Se tardó demasiado leyendo el video'))},60000);
+    v.addEventListener('error',()=>{fin();no(new Error('No se pudo leer el video'))});
+    v.addEventListener('loadedmetadata',()=>{try{v.currentTime=Math.min(1,Math.max(.05,(v.duration||1)*.1))}catch(e){}});
+    v.addEventListener('seeked',async()=>{try{if(!v.videoWidth)throw new Error('Video sin imagen');const b=await enImgRedim(v,PUB_LADO,.82);fin();ok(b)}catch(e){fin();no(e)}},{once:true});
+    v.src=url;
+  });
+}
+/* crea y sube la copia liviana de un archivo recién subido; si algo falla, no pasa nada: la página usa el original */
+async function pubMiniSubir(f,key){
+  try{
+    const esV=PUB_VID.test(f.name||'')||/^video\//.test(f.type||''),esI=PUB_IMG.test(f.name||'')||/^image\/(jpeg|png|webp|avif)$/.test(f.type||'');
+    if(!esV&&!esI)return false;
+    const b=esV?await pubPrimerCuadro(f):await enImgRedim(f,PUB_LADO,.82);
+    await matSubirKey0(new File([b],'m.jpg',{type:'image/jpeg'}),'publico',pubMiniKey(key),null);
+    return true;
+  }catch(e){return false}
+}
+/* anota en «minis» los originales que ya tienen copia (en fila, para que dos subidas seguidas no se pisen) */
+let PUB_COLA=Promise.resolve();
+const pubMinisAdd=urls=>PUB_COLA=PUB_COLA.then(async()=>{
+  let cur=[];try{cur=JSON.parse(sitioVal('minis')||'[]')||[]}catch(e){}
+  const s=new Set(cur),antes=s.size;urls.forEach(u=>s.add(u));if(s.size===antes)return;
+  const v=JSON.stringify([...s]);await sitioSet('minis',v);AC.cfg.minis=v;
+}).catch(()=>{});
+/* fotos y videos del landing que todavía no tienen copia liviana */
+function pubMinisPendientes(){
+  const base=FILES+'/pub/',hechos=new Set();try{(JSON.parse(sitioVal('minis')||'[]')||[]).forEach(u=>hechos.add(u))}catch(e){}
+  const hall=new Set();
+  Object.values(AC.cfg||{}).forEach(v=>{if(typeof v!=='string')return;(v.match(/https?:\/\/[^\s"'\\]+\/pub\/landing\/[^\s"'\\]+/g)||[]).forEach(u=>{
+    if(!u.startsWith(base)||hechos.has(u))return;const k=pubKeyDe(u),n=k.split('/').pop();
+    if(!k||n.startsWith('_mini-')||/^landing\/logos\//.test(k)||!(PUB_IMG.test(n)||PUB_VID.test(n)))return;hall.add(u)})});
+  return [...hall];
+}
+async function pubMinisPreparar(onProg){
+  const lista=pubMinisPendientes(),ok=[];let mal=0;
+  for(let i=0;i<lista.length;i++){
+    const u=lista[i],k=pubKeyDe(u),n=k.split('/').pop();if(onProg)onProg(i+1,lista.length);
+    try{
+      let existe=false;try{existe=(await fetch(FILES+'/pub/'+matKey(pubMiniKey(k)),{method:'HEAD'})).ok}catch(e){}
+      if(!existe){
+        const b=PUB_VID.test(n)?await pubPrimerCuadro(u):await enImgRedim(await (await fetch(u)).blob(),PUB_LADO,.82);
+        await matSubirKey0(new File([b],'m.jpg',{type:'image/jpeg'}),'publico',pubMiniKey(k),null);
+      }
+      ok.push(u);
+    }catch(e){mal++}
+  }
+  if(ok.length)await pubMinisAdd(ok);
+  return{hechos:ok.length,fallaron:mal,total:lista.length};
+}
+function pubMinisCard(){
+  const c=el('div',{class:'card sgp'});
+  const pintar=()=>{
+    const n=pubMinisPendientes().length;c.textContent='';
+    const b=el('button',{class:'btn btn-gold',type:'button'},icoEl('check'),n?' Preparar versiones livianas ('+n+')':' Todo preparado');
+    if(!n)b.disabled=true;
+    b.addEventListener('click',async()=>{
+      b.disabled=true;
+      try{const r=await pubMinisPreparar((i,t)=>{b.textContent=' Preparando '+i+' de '+t+'…'});
+        toast(r.fallaron?'Listo: '+r.hechos+' preparados, '+r.fallaron+' no se pudieron leer (se siguen viendo con el original)':'Listo: '+r.hechos+' preparados. La página ya carga más rápido.')}
+      catch(e){toast(e.message||'No se pudo preparar')}
+      pintar();
+    });
+    c.append(el('h2',{},'Velocidad de carga del landing'),
+      el('p',{class:'muted'},'Para que la página abra rápido, cada foto y video del landing tiene una copia chica que se muestra primero; la original (con su calidad completa, sin comprimir) se abre al verla en grande. Los archivos nuevos la crean solos al subirlos. Aquí se preparan los que ya estaban subidos.'),
+      el('div',{class:'acts'},b));
+  };
+  pintar();return c;
 }
 const MAT_VER={img:/\.(jpe?g|png|gif|webp|avif|svg)$/i,vid:/\.(mp4|m4v|mov|webm)$/i,aud:/\.(mp3|m4a|wav|ogg|aac|flac)$/i,pdf:/\.pdf$/i};
 async function matVer(bucket,key){
