@@ -80,7 +80,7 @@ Rutas del administrador: `/api/papelera`, `/api/restaurar`, `/api/purgar`, `/api
 
 
 ## Respaldo diario (00:00 hora de Guatemala)
-- Se guarda en R2 (bucket privado) en `_respaldos/AAAA-MM-DD/`: `codigo.zip`, `datos/<tabla>.json`, `esquema-api.json`, `archivos-privado.json`, `archivos-publico.json`, `descargas.json`, `resumen.json`. Se conservan los últimos 30 días y, para siempre, el del día 1 de cada mes.
+- Se guarda en R2 (bucket privado) en `_respaldos/AAAA-MM-DD/`: `codigo.zip`, `datos/<tabla>.json`, `esquema.sql` (estructura completa), `auth.json` (usuarios), `COMO-RESTAURAR.txt`, `esquema-api.json`, `archivos-privado.json`, `archivos-publico.json`, `descargas.json`, `resumen.json`. Se conservan los últimos 30 días y, para siempre, el del día 1 de cada mes.
 - Los archivos de R2 (fotos, videos) no se duplican: se guarda la lista completa con nombre, peso y fecha.
 - Hay que crear en Cloudflare (Settings → Triggers → Cron): `0 6 * * *`, `3 6 * * *`, `6 6 * * *`, `9 6 * * *`, `12 6 * * *` (UTC; 06:00 UTC = 00:00 Guatemala).
 - Secreto `SUPABASE_SERVICE_KEY` (service_role). Sin él se guarda el código y la lista de archivos, y el resumen avisa.
@@ -91,3 +91,5 @@ Rutas del administrador: `/api/papelera`, `/api/restaurar`, `/api/purgar`, `/api
 - `GET /api/almacenamiento` calcula cuánto ocupa todo R2 (por tipo, por área y por persona/cliente/agencia) y qué se puede limpiar. Guarda el resultado 5 min (`?fresco=1` recalcula).
 - `POST /api/limpiar` con `{"que":"papelera"}` o `{"que":"huerfanas"}` borra solo la papelera o las copias livianas sin foto original.
 - En Workspace: aviso al 80 % y al pasar 10 GB en todas las secciones, y autorización antes de subir si se pasaría del límite gratis.
+- `esquema.sql` y `auth.json` salen de dos funciones SQL que se crean una vez con `sql/respaldo-esquema.sql` (Supabase → SQL Editor). Solo la llave `service_role` puede llamarlas. Si faltan, el respaldo avisa y guarda lo demás.
+- No incluye: el contenido de las fotos/videos de R2, ni los secretos (SUPABASE_SERVICE_KEY, FIRMA_SECRETO, push_secret) ni los ajustes de Supabase Auth.

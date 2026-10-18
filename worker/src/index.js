@@ -399,7 +399,10 @@ async function portal(request, env, ctx, ruta, url) {
    Cada día guarda en el bucket privado, carpeta "_respaldos/AAAA-MM-DD/":
    · codigo.zip            todo el código del repositorio de GitHub
    · datos/<tabla>.json    todas las tablas de Supabase (formularios, registros, landing, entregas…)
-   · esquema-api.json      estructura de las tablas
+   · esquema.sql           estructura COMPLETA (tablas, llaves, índices, funciones, triggers, RLS, permisos, buckets, tareas programadas)
+   · auth.json             usuarios (con contraseña y MFA) para restaurarlos tal cual
+   · COMO-RESTAURAR.txt    guía para volver a cargar el respaldo
+   · esquema-api.json      estructura de las tablas (vista API)
    · archivos-privado.json / archivos-publico.json   lista de todos los archivos de R2 (nombre, peso, fecha)
    · descargas.json        contador de descargas
    · resumen.json          qué se guardó y si hubo avisos
@@ -408,6 +411,24 @@ const RESP = '_respaldos/';
 const RESP_DIAS = 30;
 const RESP_LLAMADAS = 35;
 const RESP_FASES = ['esquema', 'datos', 'codigo', 'archivos', 'cierre'];
+const guiaRestaurar = (fecha) => `CÓMO RESTAURAR ESTE RESPALDO (Faro Studios)
+Es la foto de la base de datos y del código a la medianoche (00:00, hora de Guatemala) del ${fecha}.
+
+Lo más fácil: dile a Claude «restaura desde el respaldo del ${fecha}» y adjunta este ZIP.
+
+A mano:
+1. esquema.sql   → Supabase → SQL Editor → pegar completo → Run. Crea tablas, columnas, llaves, índices, funciones,
+                   triggers, reglas de seguridad (RLS), permisos, buckets y tareas programadas. Se puede correr sobre
+                   una base vacía o sobre la actual (no duplica nada).
+2. auth.json     → usuarios con su contraseña y MFA. Se cargan con SQL (Claude lo hace por ti).
+3. datos/        → un archivo JSON por tabla (las tablas grandes vienen en .p1, .p2…). Se cargan con SQL (Claude lo hace por ti).
+4. codigo.zip    → todo el repositorio: la web, el Worker, las funciones de Supabase y los SQL.
+5. Lo que NO está en este respaldo:
+   · Las fotos, videos y archivos de R2: archivos-privado.json y archivos-publico.json son solo la LISTA (nombre, peso, fecha).
+   · Los secretos: SUPABASE_SERVICE_KEY, FIRMA_SECRETO, GITHUB_TOKEN (Cloudflare) y push_secret (Supabase Vault).
+     Guárdalos en tu gestor de contraseñas. Si se pierde FIRMA_SECRETO, los enlaces ya enviados dejan de abrir.
+   · Ajustes de Supabase Auth (MFA obligatorio, correos, URLs permitidas) y los secretos de las funciones de Supabase.
+`;
 const hoyGT = () => new Date(Date.now() - 6 * 3600e3).toISOString().slice(0, 10);
 async function rLeer(env, k) { const o = await env.PRIVADO.get(k); if (!o) return null; try { return JSON.parse(await new Response(o.body).text()); } catch (e) { return null; } }
 const rGuardar = (env, k, v, tipo = 'application/json') => env.PRIVADO.put(k, typeof v === 'string' || v instanceof ArrayBuffer ? v : JSON.stringify(v), { httpMetadata: { contentType: tipo } });
@@ -435,6 +456,18 @@ export async function respaldoPaso(env, { fecha = hoyGT(), nuevo = false } = {})
         else {
           const api = await r.json();
           await rGuardar(env, base + 'esquema-api.json', api);
+          // Estructura completa (esquema.sql) y usuarios (auth.json): funciones SQL de sql/respaldo-esquema.sql
+          const rpc = (nombre) => red(`${env.SUPABASE_URL}/rest/v1/rpc/${nombre}`, { method: 'POST', headers: { ...cab, 'Content-Type': 'application/json' }, body: '{}' });
+          try {
+            const e1 = await rpc('faro_respaldo_esquema');
+            if (e1.ok) { const sql = String(await e1.json()); await rGuardar(env, base + 'esquema.sql', sql, 'text/plain; charset=utf-8'); st.estructura = sql.length; }
+            else st.avisos.push(e1.status === 404 ? 'Falta ejecutar sql/respaldo-esquema.sql en Supabase: la estructura completa y los usuarios no se respaldaron.' : 'Estructura completa: error ' + e1.status);
+            if (e1.ok) {
+              const e2 = await rpc('faro_respaldo_auth');
+              if (e2.ok) { const au = await e2.json(); await rGuardar(env, base + 'auth.json', au); st.usuarios = (au.usuarios || []).length; }
+              else st.avisos.push('Usuarios: error ' + e2.status);
+            }
+          } catch (e) { st.avisos.push('Estructura y usuarios: ' + (e.message || e)); }
           st.tablas = Object.keys(api.paths || {}).filter((p) => p !== '/' && !p.startsWith('/rpc/')).map((p) => p.slice(1));
           st.fase = 'datos';
         }
@@ -481,8 +514,10 @@ export async function respaldoPaso(env, { fecha = hoyGT(), nuevo = false } = {})
       const resumen = {
         fecha, inicio: st.inicio, fin: new Date().toISOString(), estado: st.avisos.length ? 'parcial' : 'completo',
         tablas: Object.keys(st.filas).length, filas: Object.values(st.filas).reduce((s, x) => s + x, 0), codigoBytes: st.codigoBytes || 0,
+        estructura: !!st.estructura, usuarios: st.usuarios || 0,
         manifiesto: st.manifiesto, avisos: st.avisos, bytes: archivos.reduce((s, x) => s + x.size, 0), archivos,
       };
+      await rGuardar(env, base + 'COMO-RESTAURAR.txt', guiaRestaurar(fecha), 'text/plain; charset=utf-8');
       await rGuardar(env, base + 'resumen.json', resumen);
       await rGuardar(env, RESP + 'ultimo.json', { fecha, estado: resumen.estado, fin: resumen.fin });
       // conserva los últimos RESP_DIAS respaldos y, para siempre, el del día 1 de cada mes

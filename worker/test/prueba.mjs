@@ -296,6 +296,8 @@ r = await q('/api/lista?bucket=privado&prefix=' + encodeURIComponent('faro-studi
   globalThis.fetch = async (u, init = {}) => {
     llam++; const x = String(u);
     if (x.endsWith('/rest/v1/')) return new Response(JSON.stringify({ paths: { '/': {}, '/clientes': {}, '/grande': {}, '/rpc/algo': {} } }), { status: 200 });
+    if (x.includes('/rest/v1/rpc/faro_respaldo_esquema')) return globalThis.__sinRpc ? new Response('{}', { status: 404 }) : new Response(JSON.stringify('create table if not exists public.clientes (id int);\n'), { status: 200 });
+    if (x.includes('/rest/v1/rpc/faro_respaldo_auth')) return new Response(JSON.stringify({ usuarios: [{ id: 'u1' }, { id: 'u2' }], identidades: [], mfa_factores: [] }), { status: 200 });
     if (x.includes('/rest/v1/clientes')) return new Response(JSON.stringify([{ id: 1, nombre: 'Ana' }]), { status: 200 });
     if (x.includes('/rest/v1/grande')) { const rg = init.headers.Range; return new Response(JSON.stringify(rg.startsWith('0-') ? filasGrande : [{ id: 1000 }]), { status: 206 }); }
     if (x.includes('api.github.com')) return new Response(new Uint8Array([80, 75, 3, 4]), { status: 200 });
@@ -306,8 +308,9 @@ r = await q('/api/lista?bucket=privado&prefix=' + encodeURIComponent('faro-studi
   const st = await respaldoPaso(envR, { fecha: '2026-10-18' });
   assert.equal(st.fase, 'listo'); assert.equal(st.avisos.length, 0);
   const B = '_respaldos/2026-10-18/';
-  for (const k of ['codigo.zip', 'datos/clientes.json', 'datos/grande.json', 'datos/grande.p1.json', 'esquema-api.json', 'archivos-privado.json', 'archivos-publico.json', 'resumen.json']) assert.ok(envR.PRIVADO.m.has(B + k), k);
+  for (const k of ['esquema.sql', 'auth.json', 'COMO-RESTAURAR.txt', 'codigo.zip', 'datos/clientes.json', 'datos/grande.json', 'datos/grande.p1.json', 'esquema-api.json', 'archivos-privado.json', 'archivos-publico.json', 'resumen.json']) assert.ok(envR.PRIVADO.m.has(B + k), k);
   const res = JSON.parse(new TextDecoder().decode(envR.PRIVADO.m.get(B + 'resumen.json').bytes));
+  assert.equal(res.estructura, true); assert.equal(res.usuarios, 2); ok('el respaldo incluye la estructura completa (esquema.sql), los usuarios y la guía para restaurar');
   assert.equal(res.estado, 'completo'); assert.equal(res.tablas, 2); assert.equal(res.filas, 1002); assert.equal(res.manifiesto.privado.n >= 1, true);
   assert.ok(envR.PRIVADO.m.has('_respaldos/ultimo.json')); ok('respaldo diario completo: tablas, código y listas de archivos');
   assert.ok(!JSON.parse(new TextDecoder().decode(envR.PRIVADO.m.get(B + 'archivos-privado.json').bytes)).archivos.some((a) => a[0].startsWith('_respaldos/'))); ok('el respaldo no se respalda a sí mismo');
@@ -316,6 +319,10 @@ r = await q('/api/lista?bucket=privado&prefix=' + encodeURIComponent('faro-studi
   const envS = { ...envR, PRIVADO: new R2Falso(), SUPABASE_SERVICE_KEY: undefined };
   const s2 = await respaldoPaso(envS, { fecha: '2026-10-19' });
   assert.equal(s2.fase, 'listo'); assert.ok(s2.avisos[0].includes('SUPABASE_SERVICE_KEY')); assert.ok(envS.PRIVADO.m.has('_respaldos/2026-10-19/codigo.zip')); ok('sin SUPABASE_SERVICE_KEY: avisa y guarda lo demás');
+  // si falta la función SQL en Supabase: avisa claro y guarda lo demás
+  globalThis.__sinRpc = true; const envQ = { ...envR, PRIVADO: new R2Falso() };
+  const sq = await respaldoPaso(envQ, { fecha: '2026-10-21' }); globalThis.__sinRpc = false;
+  assert.equal(sq.fase, 'listo'); assert.ok(sq.avisos.some((a) => a.includes('respaldo-esquema.sql'))); assert.ok(!envQ.PRIVADO.m.has('_respaldos/2026-10-21/esquema.sql')); assert.ok(envQ.PRIVADO.m.has('_respaldos/2026-10-21/datos/clientes.json')); ok('sin la función SQL: avisa qué falta y guarda el resto');
   // se conservan solo 30 días
   for (let d = 1; d <= 32; d++) await envS.PRIVADO.put('_respaldos/2025-01-' + String(d).padStart(2, '0') + '/resumen.json', '{}');
   await respaldoPaso(envS, { fecha: '2026-10-20' });

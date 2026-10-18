@@ -4338,7 +4338,7 @@ async function respInit(card){
       const cod=enBtn('Código','dl',async()=>{try{const url=await matEnlace('privado','_respaldos/'+r.fecha+'/codigo.zip',false,1);const a=document.createElement('a');a.href=url;a.download='codigo-'+r.fecha+'.zip';document.body.append(a);a.click();a.remove()}catch(e){toast('Este respaldo no tiene código')}});
       lista.append(el('div',{class:'prow',style:'cursor:default;flex-wrap:wrap'},el('b',{style:'font-weight:700;min-width:96px'},new Date(r.fecha+'T12:00:00').toLocaleDateString('es-GT',{day:'numeric',month:'short',year:'numeric'})),
         el('span',{class:'tag '+(r.estado==='completo'?'confirmada':'pendiente')},r.estado==='completo'?'Completo':'Con avisos'),
-        el('small',{class:'muted',style:'flex:1;min-width:180px'},r.tablas+' tablas · '+r.filas.toLocaleString('es-GT')+' registros · '+RS_MB(r.bytes)+(r.avisos&&r.avisos.length?' · '+r.avisos[0]:'')),cod,dz));
+        el('small',{class:'muted',style:'flex:1;min-width:180px'},r.tablas+' tablas · '+r.filas.toLocaleString('es-GT')+' registros · '+RS_MB(r.bytes)+(r.estructura?' · estructura y '+r.usuarios+' usuarios':'')+(r.avisos&&r.avisos.length?' · '+r.avisos[0]:'')),cod,dz));
     });
     if(d.items.length)box.append(lista);
   };
