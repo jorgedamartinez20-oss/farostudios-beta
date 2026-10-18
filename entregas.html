@@ -227,6 +227,7 @@ const SBU='https://keivqvsgdfhthouzlqxo.supabase.co',SBK='sb_publishable_5nj3M7r
 const FILES='https://faro-archivos.jorgedamartinez20.workers.dev';
 const WA='https://wa.me/50252695592';
 const DOM='@entregas.farostudios.net';
+const authEmail=u=>{u=String(u||'').trim().toLowerCase();return (u.includes('@')?u.replace('@','_at_').replace(/[^a-z0-9._+-]/g,'_'):u.replace(/\s+/g,''))+DOM};
 const $=(s,r)=>(r||document).querySelector(s);
 const APP=$('#app');
 
@@ -296,14 +297,14 @@ function descargar(id){const l=ST.links[id];if(!l||!l.url){toast('Podrás descar
 /* ---------- entrada ---------- */
 function pantallaLogin(msg){
   APP.innerHTML='<div class="lg"><div class="lg-card"><div class="lg-top"><span class="iso"></span><h1>ENTREGAS</h1><p>Faro Studios</p></div>'
-   +'<form class="lg-body" id="lf" autocomplete="on"><label>Usuario<input id="lu" autocomplete="username" autocapitalize="none" required></label>'
+   +'<form class="lg-body" id="lf" autocomplete="on"><label>Correo<input id="lu" type="email" autocomplete="username" autocapitalize="none" placeholder="tucorreo@ejemplo.com" required></label>'
    +'<label>Contraseña<input id="lp" type="password" autocomplete="current-password" required></label>'
    +'<p class="err" id="le" role="alert">'+esc(msg||'')+'</p><button class="btn p" type="submit" id="lb">Entrar</button>'
    +'<p class="lg-wa">¿No tienes acceso? <a href="'+WA+'" target="_blank" rel="noopener">Escríbenos por WhatsApp</a></p></form></div></div>';
   $('#lf').onsubmit=async e=>{e.preventDefault();const b=$('#lb');b.disabled=true;b.textContent='Entrando…';
-    const u=$('#lu').value.trim().toLowerCase().replace(/\s+/g,''),p=$('#lp').value;
-    let s=await signIn(u+DOM,p);if(!s&&normClave(p)!==p)s=await signIn(u+DOM,normClave(p));
-    if(!s){pantallaLogin(/confirm/i.test(LASTERR)?'Tu acceso aún no está activado. Escríbenos por WhatsApp.':'Usuario o contraseña incorrectos. Revisa los datos que te enviamos.');return}
+    const u=$('#lu').value.trim().toLowerCase(),p=$('#lp').value;
+    let s=await signIn(authEmail(u),p);if(!s&&normClave(p)!==p)s=await signIn(authEmail(u),normClave(p));
+    if(!s){pantallaLogin(/confirm/i.test(LASTERR)?'Tu acceso aún no está activado. Escríbenos por WhatsApp.':'Correo o contraseña incorrectos. Revisa los datos que te enviamos.');return}
     await arrancar()};
 }
 async function arrancar(){
@@ -551,10 +552,10 @@ function abrirLB(i){
 (async()=>{
   let h=null;try{h=JSON.parse(sessionStorage.getItem('faro_handoff')||'null');sessionStorage.removeItem('faro_handoff')}catch(e){}
   if(h&&h.t==='en'&&h.u&&h.p){
-    const u=String(h.u).trim().toLowerCase().replace(/\s+/g,''),p=h.p;
-    let s=await signIn(u+DOM,p);if(!s&&normClave(p)!==p)s=await signIn(u+DOM,normClave(p));
+    const u=String(h.u).trim().toLowerCase(),p=h.p;
+    let s=await signIn(authEmail(u),p);if(!s&&normClave(p)!==p)s=await signIn(authEmail(u),normClave(p));
     if(s)return arrancar();
-    return pantallaLogin(/confirm/i.test(LASTERR)?'Tu acceso aún no está activado. Escríbenos por WhatsApp.':'Usuario o contraseña incorrectos. Revisa los datos que te enviamos.');
+    return pantallaLogin(/confirm/i.test(LASTERR)?'Tu acceso aún no está activado. Escríbenos por WhatsApp.':'Correo o contraseña incorrectos. Revisa los datos que te enviamos.');
   }
   if(SES)arrancar();else pantallaLogin('');
 })();

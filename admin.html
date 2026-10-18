@@ -3998,7 +3998,7 @@ async function enPatchCuenta(c,body){
 
 /* ---------- nuevo acceso ---------- */
 function enMensajeAcceso(c,usuario,clave){
-  return 'Hola '+c.nombre.split(' ')[0]+', este es tu acceso a Entregas de Faro Studios, donde verás '+(c.tipo==='galeria'?'y descargarás tus fotos y videos':'tu material, dejarás tus correcciones y descargarás lo aprobado')+':\n\nEnlace: '+enUrl()+'\nUsuario: '+usuario+'\nContraseña: '+clave+'\n\nGuarda estos datos. Faro Studios';
+  return 'Hola '+c.nombre.split(' ')[0]+', este es tu acceso a Entregas de Faro Studios, donde verás '+(c.tipo==='galeria'?'y descargarás tus fotos y videos':'tu material, dejarás tus correcciones y descargarás lo aprobado')+':\n\nEnlace: '+enUrl()+'\nCorreo: '+usuario+'\nContraseña: '+clave+'\n\nGuarda estos datos. Faro Studios';
 }
 const enCuentaDe=r=>EN.cuentas.find(c=>c.cliente_id===r.id);
 const enEstadoCli=r=>{const c=enCuentaDe(r);if(!c)return 'Entregas: sin preparar';const n=EN.proy.filter(p=>p.cuenta_id===c.user_id).length;return 'Entregas: '+EN_TIPOS[c.tipo][0]+' · '+n+' proyecto'+(n===1?'':'s')};
@@ -4021,34 +4021,35 @@ function enNuevaCuenta(cli){
     const chips=el('div',{style:'display:grid;gap:8px'});
     Object.entries(EN_TIPOS).forEach(([k,[n,d]])=>chips.append(el('button',{type:'button',class:'btn '+(tipo===k?'btn-gold':'btn-ghost'),style:'text-align:left;display:block;border-radius:14px',onclick:()=>{tipo=k;guarda();pintar()}},el('b',{style:'display:block'},n),el('small',{style:'font-weight:400;opacity:.85;white-space:normal'},d))));
     const libres=(AC.list.cli||[]).filter(x=>!enCuentaDe(x));
-     const selC=cli?null:el('select',{id:'en-cl',onchange:e=>{const x=libres.find(y=>y.id===e.target.value);ST_N.cli=x||null;if(x){ST_N.n=x.nombre;ST_N.w=x.whatsapp||'';ST_N.u=enSugerir(x.nombre);ST_N.uManual=false;tipo=enTipoSugerido(x)}pintar()}},el('option',{value:''},'Cliente nuevo (escribir los datos)'),...libres.map(x=>el('option',{value:x.id},x.nombre+(x.proyecto?' · '+x.proyecto:''))));
+     const selC=cli?null:el('select',{id:'en-cl',onchange:e=>{const x=libres.find(y=>y.id===e.target.value);ST_N.cli=x||null;if(x){ST_N.n=x.nombre;ST_N.w=x.whatsapp||'';ST_N.u=x.correo||'';tipo=enTipoSugerido(x)}pintar()}},el('option',{value:''},'Cliente nuevo (escribir los datos)'),...libres.map(x=>el('option',{value:x.id},x.nombre+(x.proyecto?' · '+x.proyecto:''))));
      if(selC&&ST_N.cli)selC.value=ST_N.cli.id;
      const nom=el('input',{id:'en-n',placeholder:tipo==='galeria'?'Ej. Ana y Luis':'Ej. Colegio Santa Lucía'}),wa=el('input',{id:'en-w',placeholder:'5555 1234',inputmode:'tel'}),
-      us=el('input',{id:'en-u',autocapitalize:'none',autocomplete:'off',spellcheck:'false'}),cl=el('input',{id:'en-c',autocomplete:'off'});
+      us=el('input',{id:'en-u',type:'email',placeholder:'correo@ejemplo.com',autocapitalize:'none',autocomplete:'off',spellcheck:'false'}),cl=el('input',{id:'en-c',autocomplete:'off'});
     nom.value=ST_N.n||'';wa.value=ST_N.w||'';cl.value=ST_N.c||grp(3);us.value=ST_N.u||'';
-    nom.addEventListener('input',()=>{if(!ST_N.uManual){us.value=enSugerir(nom.value)}guarda()});us.addEventListener('input',()=>{ST_N.uManual=true;guarda()});[wa,cl].forEach(x=>x.addEventListener('input',guarda));
+    [nom,us,wa,cl].forEach(x=>x.addEventListener('input',guarda));
     const err=el('p',{class:'msg',style:'display:none'});
     D.body.append(selC?el('label',{class:'dfl'},'Cliente registrado',selC):el('p',{class:'sub'},'Datos tomados de Clientes: no hay que escribirlos otra vez.'),el('p',{class:'sub'},'¿Qué tipo de cliente es?'),chips,
       el('label',{class:'dfl'},'Nombre',nom),el('label',{class:'dfl'},'WhatsApp (para avisarle)',wa),
-      el('div',{class:'dg2'},el('label',{class:'dfl'},'Usuario',us),el('label',{class:'dfl'},'Contraseña',cl)),err,
+      el('div',{class:'dg2'},el('label',{class:'dfl'},'Usuario (su correo)',us),el('label',{class:'dfl'},'Contraseña',cl)),err,
       el('div',{style:'display:flex;gap:8px;flex-wrap:wrap'},enBtn('Crear acceso','check',async()=>{
         const usuario=us.value.trim().toLowerCase(),clave=cl.value,nombre=nom.value.trim();
         const mal=m=>{err.textContent=m;err.style.display=''};
         if(!nombre)return mal('Escribe el nombre del cliente.');
-        if(!/^[a-z0-9][a-z0-9._-]{2,59}$/.test(usuario))return mal('El usuario solo puede tener letras minúsculas sin acento, números, punto, guion o guion bajo (mínimo 3).');
+        if(!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(usuario))return mal('El usuario es el correo del cliente. Escríbelo completo, por ejemplo nombre@correo.com.');
         if(clave.length<6)return mal('La contraseña necesita al menos 6 caracteres.');
         await enCrearCuenta({tipo,nombre,usuario,clave,whatsapp:wa.value.trim(),cliente:cli||ST_N.cli||null},D);
       },'btn-gold'),enBtn('Sugerir otra contraseña',null,()=>{cl.value=grp(3);guarda()})));
   };
-  const ST_N={};if(cli){ST_N.cli=cli;ST_N.n=cli.nombre;ST_N.w=cli.whatsapp||'';ST_N.u=enSugerir(cli.nombre)}
+  const ST_N={};if(cli){ST_N.cli=cli;ST_N.n=cli.nombre;ST_N.w=cli.whatsapp||'';ST_N.u=cli.correo||''}
   const guarda=()=>{const g=id=>{const e=D.body.querySelector(id);return e?e.value:''};ST_N.n=g('#en-n');ST_N.w=g('#en-w');ST_N.u=g('#en-u');ST_N.c=g('#en-c')};
   pintar();setTimeout(()=>{const n=D.body.querySelector('#en-n');if(n)n.focus()},60);
 }
+const enAuthEmail=u=>{u=String(u||'').trim().toLowerCase();return (u.includes('@')?u.replace('@','_at_').replace(/[^a-z0-9._+-]/g,'_'):u.replace(/\s+/g,''))+EN_DOM};
 const enSugerir=n=>{const b=String(n||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,18);return b?b+'-'+rnd(3).toLowerCase():''};
 async function enCrearCuenta(d,D){
   toast('Creando acceso…');
   try{
-    const email=d.usuario+EN_DOM;
+    const email=enAuthEmail(d.usuario);
     const r=await fetch(SB.url+'/auth/v1/signup',{method:'POST',headers:{apikey:SB.key,'Content-Type':'application/json'},body:JSON.stringify({email,password:d.clave})});
     const j=await r.json().catch(()=>({}));
     if(!r.ok){const t=j.msg||j.error_description||j.message||'';throw new Error(/already|registered|exists/i.test(t)?'Ese usuario ya existe. Elige otro nombre de usuario.':(t||'No se pudo crear el acceso ('+r.status+')'))}
@@ -4070,7 +4071,7 @@ function enCredenciales(c,usuario,clave,D){
   const msg=enMensajeAcceso(c,usuario,clave),tel=telWA(c.whatsapp);
   D.body.append(el('div',{class:'msg',style:'background:rgba(226,190,70,.18);border-color:var(--amar)'},'La contraseña queda guardada solo en este navegador para que puedas volver a verla con "Ver acceso". Si cambias de equipo tendrás que regenerarla.'),
     el('div',{class:'field'},el('span',{class:'lab'},'Enlace'),el('div',{class:'item',style:'word-break:break-all'},enUrl())),
-    el('div',{class:'field'},el('span',{class:'lab'},'Usuario'),el('div',{class:'item',style:'font:700 1.3rem/1.2 monospace;letter-spacing:.05em;word-break:break-all'},usuario)),
+    el('div',{class:'field'},el('span',{class:'lab'},'Usuario (correo)'),el('div',{class:'item',style:'font:700 1.3rem/1.2 monospace;letter-spacing:.05em;word-break:break-all'},usuario)),
     el('div',{class:'field'},el('span',{class:'lab'},'Contraseña'),el('div',{class:'item',style:'font:700 1.3rem/1.2 monospace;letter-spacing:.05em'},clave)),
     el('div',{style:'display:flex;gap:8px;flex-wrap:wrap;margin-top:8px'},enBtn('Copiar mensaje','link',()=>copyTxt(msg),'btn-gold'),
       tel?el('a',{class:'btn btn-ghost btn-sm',target:'_blank',rel:'noopener',href:'https://wa.me/'+tel+'?text='+encodeURIComponent(msg)},'Abrir WhatsApp'):null,
