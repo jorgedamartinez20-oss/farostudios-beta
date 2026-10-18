@@ -104,3 +104,8 @@ do $$ declare f text; begin
     execute format('grant execute on function public.%s to anon, authenticated', f);
   end loop;
 end $$;
+
+-- Permisos de tabla para el administrador (esta base no los da por defecto; las políticas RLS siguen limitando a es_admin()).
+grant select, insert, update, delete on public.sugerencias_web, public.recurso_descargas,
+  public.recurso_votos, public.recurso_comentarios to authenticated;
+notify pgrst, 'reload schema';

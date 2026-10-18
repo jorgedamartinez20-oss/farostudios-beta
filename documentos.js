@@ -37,7 +37,7 @@
     x: '<path d="M6 6l12 12M18 6 6 18"/>', edit: '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>',
     search: '<circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/>', lock: '<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>'
   };
-  const ico = k => '<svg class="dc-i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (IC[k] || IC.file) + '</svg>';
+  const ico = k => '<svg class="fd-i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (IC[k] || IC.file) + '</svg>';
 
   /* ---------- cálculo (la suma se hace sola) ---------- */
   function calc(d) {
@@ -179,55 +179,55 @@ td.n{width:14mm}td.q{width:26mm}td.t{width:34mm;white-space:nowrap}
     kids.flat().forEach(c => { if (c != null && c !== false) e.append(c.nodeType ? c : document.createTextNode(c)); });
     return e;
   }
-  const ic = (k, t) => { const s = h('span', { class: 'dc-ic' }); s.innerHTML = ico(k) + (t ? '<span>' + esc(t) + '</span>' : ''); return s; };
+  const ic = (k, t) => { const s = h('span', { class: 'fd-ic' }); s.innerHTML = ico(k) + (t ? '<span>' + esc(t) + '</span>' : ''); return s; };
   const btn = (k, t, fn, cls) => h('button', { type: 'button', class: 'btn ' + (cls || 'btn-ghost') + ' btn-sm', onclick: fn }, ic(k, t));
 
   function css() {
-    if (document.getElementById('dc-css')) return;
-    const s = h('style', { id: 'dc-css' });
+    if (document.getElementById('fd-css')) return;
+    const s = h('style', { id: 'fd-css' });
     s.textContent = `
-.dc-i{width:18px;height:18px;flex:none}.dc-ic{display:inline-flex;align-items:center;gap:7px}
-.dc-top{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:14px}
-.dc-chips{display:flex;flex-wrap:wrap;gap:8px}
-.dc-chip{border:1.5px solid var(--line);background:transparent;border-radius:999px;padding:7px 14px;font-weight:700;cursor:pointer;display:inline-flex;gap:7px;align-items:center}
-.dc-chip[aria-pressed=true]{background:var(--oro);color:var(--pizarra);border-color:var(--oro)}
-.dc-new{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;margin-bottom:18px}
-.dc-nb{display:flex;align-items:center;gap:12px;text-align:left;padding:16px 18px;border-radius:14px;border:1.5px solid var(--line);background:var(--surface);cursor:pointer;box-shadow:var(--shadow);transition:transform .15s,border-color .15s}
-.dc-nb:hover{transform:translateY(-2px);border-color:var(--oro)}
-.dc-nb .b{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;color:#fff;flex:none}
-.dc-nb b{display:block;font-size:1.02rem}.dc-nb small{color:var(--muted)}
-.dc-row{display:grid;grid-template-columns:44px minmax(0,1.3fr) minmax(0,1.2fr) 120px 110px auto;gap:12px;align-items:center;padding:12px 4px;border-top:1px solid var(--line)}
-.dc-row .b{width:38px;height:38px;border-radius:10px;display:grid;place-items:center;color:#fff}
-.dc-row .nm{font-weight:700}.dc-row .sm{color:var(--muted);font-size:.9rem}
-.dc-tag{display:inline-block;border-radius:999px;padding:2px 10px;font-size:.78rem;font-weight:700;background:rgba(94,158,107,.2)}
-.dc-tag.an{background:rgba(217,90,106,.25)}
-.dc-acts{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
-.dc-acts .btn,.dc-bar .btn{padding:6px 10px;white-space:nowrap;flex:none;width:auto;max-width:none}
-.dc-ic{white-space:nowrap}
-.dc-top .dc-acts input[type=search]{flex:1 1 220px;min-width:180px}
-.dc-ed{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,.95fr);gap:20px;align-items:start}
-.dc-sec{margin-top:18px;padding-top:14px;border-top:1px solid var(--line)}
-.dc-sec>h3{font:700 .8rem var(--body);letter-spacing:.14em;text-transform:uppercase;color:var(--oro-t);margin-bottom:4px;display:flex;gap:8px;align-items:center}
-.dc-g2{display:grid;grid-template-columns:1fr 1fr;gap:12px}.dc-g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
-.dc-g2>*,.dc-g3>*{min-width:0}
-.dc-it{display:grid;grid-template-columns:minmax(0,1fr) 70px 110px 110px 34px;gap:8px;align-items:start;margin-top:10px;padding:10px;border-radius:12px;background:var(--soft)}
-.dc-it .full{grid-column:1/-1}
-.dc-it textarea{min-height:44px;resize:vertical}
-.dc-it .tot{padding:12px 4px;text-align:right;font-weight:700;white-space:nowrap}
-.dc-x{width:34px;height:34px;border-radius:50%;border:1px solid var(--line);background:none;cursor:pointer;display:grid;place-items:center;color:var(--red-t)}
-.dc-sum{margin-top:14px;padding:14px 16px;border-radius:14px;background:var(--soft)}
-.dc-sum div{display:flex;justify-content:space-between;gap:10px;padding:3px 0}
-.dc-sum .big{margin-top:6px;padding-top:8px;border-top:1px solid var(--line);font-size:1.25rem;font-weight:700}
-.dc-pv{position:sticky;top:12px}
-.dc-pvbox{position:relative;width:100%;overflow:hidden;border-radius:10px;border:1px solid var(--line);background:#fff;box-shadow:var(--shadow)}
-.dc-pvbox iframe{position:absolute;left:0;top:0;width:794px;border:0;transform-origin:0 0;background:#fff}
-.dc-bar{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px;align-items:center}
-.dc-lock{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:12px;background:var(--soft);margin-bottom:14px;color:var(--muted);font-size:.92rem}
-.dc-pr{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,2fr) 120px 70px auto;gap:10px;align-items:center;padding:10px 4px;border-top:1px solid var(--line)}
-.dc-ct{font:700 .8rem var(--body);letter-spacing:.14em;text-transform:uppercase;color:var(--oro-t);margin:22px 0 4px}
-@media (max-width:1100px){.dc-ed{grid-template-columns:1fr}.dc-pv{position:static}}
-@media (max-width:760px){.dc-row{grid-template-columns:44px 1fr;}.dc-row>:nth-child(n+3){grid-column:2}.dc-acts{justify-content:flex-start}
-.dc-it{grid-template-columns:1fr 1fr}.dc-it .tot{text-align:left}.dc-g2,.dc-g3{grid-template-columns:1fr}.dc-pr{grid-template-columns:1fr}}`;
+.fd-i{width:18px;height:18px;flex:none}.fd-ic{display:inline-flex;align-items:center;gap:7px}
+.fd-top{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:14px}
+.fd-chips{display:flex;flex-wrap:wrap;gap:8px}
+.fd-chip{border:1.5px solid var(--line);background:transparent;border-radius:999px;padding:7px 14px;font-weight:700;cursor:pointer;display:inline-flex;gap:7px;align-items:center}
+.fd-chip[aria-pressed=true]{background:var(--oro);color:var(--pizarra);border-color:var(--oro)}
+.fd-new{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;margin-bottom:18px}
+.fd-nb{display:flex;align-items:center;gap:12px;text-align:left;padding:16px 18px;border-radius:14px;border:1.5px solid var(--line);background:var(--surface);cursor:pointer;box-shadow:var(--shadow);transition:transform .15s,border-color .15s}
+.fd-nb:hover{transform:translateY(-2px);border-color:var(--oro)}
+.fd-nb .b{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;color:#fff;flex:none}
+.fd-nb b{display:block;font-size:1.02rem}.fd-nb small{color:var(--muted)}
+.fd-row{display:grid;grid-template-columns:44px minmax(0,1.3fr) minmax(0,1.2fr) 120px 110px auto;gap:12px;align-items:center;padding:12px 4px;border-top:1px solid var(--line)}
+.fd-row .b{width:38px;height:38px;border-radius:10px;display:grid;place-items:center;color:#fff}
+.fd-row .nm{font-weight:700}.fd-row .sm{color:var(--muted);font-size:.9rem}
+.fd-tag{display:inline-block;border-radius:999px;padding:2px 10px;font-size:.78rem;font-weight:700;background:rgba(94,158,107,.2)}
+.fd-tag.an{background:rgba(217,90,106,.25)}
+.fd-acts{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.fd-acts .btn,.fd-bar .btn{padding:6px 10px;white-space:nowrap;flex:none;width:auto;max-width:none}
+.fd-ic{white-space:nowrap}
+.fd-top .fd-acts input[type=search]{flex:1 1 220px;min-width:180px}
+.fd-ed{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,.95fr);gap:20px;align-items:start}
+.fd-sec{margin-top:18px;padding-top:14px;border-top:1px solid var(--line)}
+.fd-sec>h3{font:700 .8rem var(--body);letter-spacing:.14em;text-transform:uppercase;color:var(--oro-t);margin-bottom:4px;display:flex;gap:8px;align-items:center}
+.fd-g2{display:grid;grid-template-columns:1fr 1fr;gap:12px}.fd-g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.fd-g2>*,.fd-g3>*{min-width:0}
+.fd-it{display:grid;grid-template-columns:minmax(0,1fr) 70px 110px 110px 34px;gap:8px;align-items:start;margin-top:10px;padding:10px;border-radius:12px;background:var(--soft)}
+.fd-it .full{grid-column:1/-1}
+.fd-it textarea{min-height:44px;resize:vertical}
+.fd-it .tot{padding:12px 4px;text-align:right;font-weight:700;white-space:nowrap}
+.fd-x{width:34px;height:34px;border-radius:50%;border:1px solid var(--line);background:none;cursor:pointer;display:grid;place-items:center;color:var(--red-t)}
+.fd-sum{margin-top:14px;padding:14px 16px;border-radius:14px;background:var(--soft)}
+.fd-sum div{display:flex;justify-content:space-between;gap:10px;padding:3px 0}
+.fd-sum .big{margin-top:6px;padding-top:8px;border-top:1px solid var(--line);font-size:1.25rem;font-weight:700}
+.fd-pv{position:sticky;top:12px}
+.fd-pvbox{position:relative;width:100%;overflow:hidden;border-radius:10px;border:1px solid var(--line);background:#fff;box-shadow:var(--shadow)}
+.fd-pvbox iframe{position:absolute;left:0;top:0;width:794px;border:0;transform-origin:0 0;background:#fff}
+.fd-bar{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px;align-items:center}
+.fd-lock{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:12px;background:var(--soft);margin-bottom:14px;color:var(--muted);font-size:.92rem}
+.fd-pr{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,2fr) 120px 70px auto;gap:10px;align-items:center;padding:10px 4px;border-top:1px solid var(--line)}
+.fd-ct{font:700 .8rem var(--body);letter-spacing:.14em;text-transform:uppercase;color:var(--oro-t);margin:22px 0 4px}
+@media (max-width:1100px){.fd-ed{grid-template-columns:1fr}.fd-pv{position:static}}
+@media (max-width:760px){.fd-row{grid-template-columns:44px 1fr;}.fd-row>:nth-child(n+3){grid-column:2}.fd-acts{justify-content:flex-start}
+.fd-it{grid-template-columns:1fr 1fr}.fd-it .tot{text-align:left}.fd-g2,.fd-g3{grid-template-columns:1fr}.fd-pr{grid-template-columns:1fr}}`;
     document.head.append(s);
   }
 
@@ -295,15 +295,15 @@ td.n{width:14mm}td.q{width:26mm}td.t{width:34mm;white-space:nowrap}
   /* ---------- lista ---------- */
   function vLista() {
     const w = h('div');
-    w.append(h('div', { class: 'dc-new' }, Object.keys(TIPOS).map(k => h('button', { type: 'button', class: 'dc-nb', onclick: () => abrir(nuevo(k)) },
+    w.append(h('div', { class: 'fd-new' }, Object.keys(TIPOS).map(k => h('button', { type: 'button', class: 'fd-nb', onclick: () => abrir(nuevo(k)) },
       h('span', { class: 'b', style: 'background:' + TIPOS[k].c }, (() => { const s = h('span'); s.innerHTML = ico(TIPOS[k].i); return s; })()),
       h('span', {}, h('b', {}, (k === 'recibo' ? 'Nuevo recibo' : k === 'confirmacion' ? 'Nueva confirmación' : 'Nueva cotización')), h('small', {}, 'Con correlativo automático'))))));
-    const top = h('div', { class: 'dc-top' });
-    const chips = h('div', { class: 'dc-chips' }, [['todos', 'Todos']].concat(Object.keys(TIPOS).map(k => [k, TIPOS[k].pl])).map(([k, t]) =>
-      h('button', { type: 'button', class: 'dc-chip', 'aria-pressed': String(S.filtro === k), onclick: () => { S.filtro = k; pintar(); } }, t)));
+    const top = h('div', { class: 'fd-top' });
+    const chips = h('div', { class: 'fd-chips' }, [['todos', 'Todos']].concat(Object.keys(TIPOS).map(k => [k, TIPOS[k].pl])).map(([k, t]) =>
+      h('button', { type: 'button', class: 'fd-chip', 'aria-pressed': String(S.filtro === k), onclick: () => { S.filtro = k; pintar(); } }, t)));
     const q = h('input', { type: 'search', placeholder: 'Buscar cliente o número…', value: S.q, 'aria-label': 'Buscar', style: 'max-width:280px;padding:9px 14px;border-radius:999px;border:1px solid var(--line);background:var(--input)' });
     q.addEventListener('input', () => { S.q = q.value; clearTimeout(q._t); q._t = setTimeout(() => { pintar(); const n = root.querySelector('input[type=search]'); if (n) { n.focus(); n.setSelectionRange(99, 99); } }, 250); });
-    top.append(chips, h('div', { class: 'dc-acts' }, btn('tag', 'Catálogo de precios', () => { S.vista = 'precios'; pintar(); }), q));
+    top.append(chips, h('div', { class: 'fd-acts' }, btn('tag', 'Catálogo de precios', () => { S.vista = 'precios'; pintar(); }), q));
     w.append(top);
     const card = h('div', { class: 'card' });
     const ql = S.q.trim().toLowerCase();
@@ -311,13 +311,13 @@ td.n{width:14mm}td.q{width:26mm}td.t{width:34mm;white-space:nowrap}
     if (!lista.length) card.append(h('p', { class: 'muted' }, S.docs.length ? 'Nada coincide con tu búsqueda.' : 'Todavía no hay documentos. Crea el primero arriba.'));
     lista.forEach(x => {
       const T = TIPOS[x.tipo], b = h('span', { class: 'b', style: 'background:' + T.c }); b.innerHTML = ico(T.i);
-      card.append(h('div', { class: 'dc-row' },
+      card.append(h('div', { class: 'fd-row' },
         b,
         h('div', {}, h('div', { class: 'nm' }, x.numero), h('div', { class: 'sm' }, T.n)),
         h('div', {}, h('div', { class: 'nm' }, x.cliente), h('div', { class: 'sm' }, dmy((x.datos || {}).emision))),
         h('div', { class: 'nm' }, money(+x.total, x.moneda)),
-        h('div', {}, h('span', { class: 'dc-tag' + (x.estado === 'anulado' ? ' an' : '') }, x.estado === 'anulado' ? 'Anulado' : 'Emitido')),
-        h('div', { class: 'dc-acts' },
+        h('div', {}, h('span', { class: 'fd-tag' + (x.estado === 'anulado' ? ' an' : '') }, x.estado === 'anulado' ? 'Anulado' : 'Emitido')),
+        h('div', { class: 'fd-acts' },
           btn('edit', 'Abrir', () => abrir(fila(x))), btn('print', 'PDF', () => imprimir(fila(x))), btn('copy', 'Duplicar', () => abrir(nuevo(x.tipo, fila(x)))),
           x.tipo === 'cotizacion' ? btn('check', 'Confirmar', () => abrir(nuevo('confirmacion', fila(x)))) : null,
           x.tipo !== 'recibo' ? btn('card', 'Recibo', () => abrir(nuevo('recibo', fila(x)))) : null,
@@ -331,11 +331,11 @@ td.n{width:14mm}td.q{width:26mm}td.t{width:34mm;white-space:nowrap}
   function vEditor() {
     const d = S.d, T = TIPOS[d.tipo], rec = d.tipo === 'recibo', q = d.tipo === 'cotizacion', cf = d.tipo === 'confirmacion';
     const w = h('div');
-    w.append(h('div', { class: 'dc-top' },
-      h('div', { class: 'dc-acts' }, btn('back', 'Volver', () => { S.vista = 'lista'; pintar(); }), h('h2', { style: 'margin:0 0 0 8px;font-size:1.7rem' }, T.n)),
+    w.append(h('div', { class: 'fd-top' },
+      h('div', { class: 'fd-acts' }, btn('back', 'Volver', () => { S.vista = 'lista'; pintar(); }), h('h2', { style: 'margin:0 0 0 8px;font-size:1.7rem' }, T.n)),
       h('div', {}, d.numero ? h('b', {}, d.numero) : h('span', { class: 'muted' }, 'El número se asigna al guardar'))));
     if (d.estado === 'anulado') w.append(h('div', { class: 'msg' }, 'Este documento está anulado. Puedes verlo o imprimirlo, pero ya no se edita.'));
-    const ed = h('div', { class: 'dc-ed' }), card = h('div', { class: 'card' }), pv = h('div', { class: 'dc-pv' });
+    const ed = h('div', { class: 'fd-ed' }), card = h('div', { class: 'card' }), pv = h('div', { class: 'fd-pv' });
     const lock = d.estado === 'anulado';
 
     const ins = {};
@@ -344,20 +344,20 @@ td.n{width:14mm}td.q{width:26mm}td.t{width:34mm;white-space:nowrap}
       const inp = o.area ? h('textarea', { rows: o.rows || 3 }) : h('input', { type: o.type || 'text', placeholder: o.ph || '', inputmode: o.im || null, list: o.list || null, step: o.step || null });
       inp.value = d[key] == null ? '' : d[key]; if (lock) inp.disabled = true; ins[key] = inp;
       inp.addEventListener('input', () => { d[key] = inp.value; if (o.on) o.on(inp.value); refrescar(); });
-      inp.id = 'dc-f' + (++uid);
+      inp.id = 'fd-f' + (++uid);
       return h('div', { class: 'field' }, h('label', { for: inp.id }, lab), inp);
     };
-    const sec = (t, i) => h('div', { class: 'dc-sec' }, h('h3', {}, ic(i, t)));
+    const sec = (t, i) => h('div', { class: 'fd-sec' }, h('h3', {}, ic(i, t)));
 
     /* cliente */
-    const dl = h('datalist', { id: 'dc-clientes' });
+    const dl = h('datalist', { id: 'fd-clientes' });
     const vistos = new Map(); S.docs.forEach(x => { const n = (x.cliente || '').trim(); if (n && !vistos.has(n.toLowerCase())) vistos.set(n.toLowerCase(), x.datos || {}); });
     [...vistos.keys()].forEach(k => dl.append(h('option', { value: (S.docs.find(x => (x.cliente || '').trim().toLowerCase() === k) || {}).cliente })));
     const gc = sec('Cliente', 'edit');
     gc.append(dl);
     const alElegir = v => { const p = vistos.get((v || '').trim().toLowerCase()); if (!p) return; let cambio = false; ['tel', 'nit', 'correo', 'direccion'].forEach(k => { if (!d[k] && p[k]) { d[k] = p[k]; if (ins[k]) ins[k].value = p[k]; cambio = true; } }); if (cambio) refrescar(); };
-    gc.append(fld('Nombre del cliente', 'cliente', { list: 'dc-clientes', on: alElegir }));
-    gc.append(h('div', { class: 'dc-g3' }, fld('Teléfono', 'tel', { im: 'tel' }), fld('NIT', 'nit'), fld('Correo', 'correo', { type: 'email' })));
+    gc.append(fld('Nombre del cliente', 'cliente', { list: 'fd-clientes', on: alElegir }));
+    gc.append(h('div', { class: 'fd-g3' }, fld('Teléfono', 'tel', { im: 'tel' }), fld('NIT', 'nit'), fld('Correo', 'correo', { type: 'email' })));
     if (!rec) gc.append(fld('Dirección', 'direccion'));
     card.append(gc);
 
@@ -365,24 +365,24 @@ td.n{width:14mm}td.q{width:26mm}td.t{width:34mm;white-space:nowrap}
     const gd = sec('Datos del documento', 'file');
     const mon = h('select'); [['GTQ', 'Quetzales (Q)'], ['USD', 'Dólares (US$)']].forEach(([v, t]) => { const o = h('option', { value: v }, t); if (d.moneda === v) o.selected = true; mon.append(o); });
     mon.disabled = lock; mon.addEventListener('change', () => { d.moneda = mon.value; formRebuild(); });
-    gd.append(h('div', { class: 'dc-g3' }, fld('Fecha de emisión', 'emision', { type: 'date' }), rec ? h('div') : fld('Vigencia (días)', 'vigencia', { type: 'number', im: 'numeric' }), h('div', { class: 'field' }, h('label', {}, 'Moneda'), mon)));
+    gd.append(h('div', { class: 'fd-g3' }, fld('Fecha de emisión', 'emision', { type: 'date' }), rec ? h('div') : fld('Vigencia (días)', 'vigencia', { type: 'number', im: 'numeric' }), h('div', { class: 'field' }, h('label', {}, 'Moneda'), mon)));
     if (q) gd.append(fld('Servicio (título del documento)', 'servicio', { ph: 'Ej. ACADEMIA | GUITARRA ELÉCTRICA CICLO I' }));
     if (cf) {
-      gd.append(h('div', { class: 'dc-g3' }, fld('Fecha del servicio', 'fecha', { type: 'date' }), fld('Hora de inicio', 'horaIni', { type: 'time' }), fld('Hora de fin', 'horaFin', { type: 'time' })));
+      gd.append(h('div', { class: 'fd-g3' }, fld('Fecha del servicio', 'fecha', { type: 'date' }), fld('Hora de inicio', 'horaIni', { type: 'time' }), fld('Hora de fin', 'horaFin', { type: 'time' })));
       gd.append(fld('Ubicación', 'ubicacion', { area: true, rows: 2 }), fld('Servicio', 'servicio', { ph: 'Ej. 01 | Sesiones y eventos sociales — OVERTURE' }));
     }
-    if (rec) gd.append(h('div', { class: 'dc-g3' }, fld('Fecha de pago', 'fecha', { type: 'date' }), fld('Ubicación', 'ubicacion'), fld('Concepto', 'servicio', { ph: 'Ej. Producciones audiovisuales.' })));
+    if (rec) gd.append(h('div', { class: 'fd-g3' }, fld('Fecha de pago', 'fecha', { type: 'date' }), fld('Ubicación', 'ubicacion'), fld('Concepto', 'servicio', { ph: 'Ej. Producciones audiovisuales.' })));
     card.append(gd);
 
     /* líneas */
     const gl = sec('Detalle', 'tag');
     const lista = h('div'); gl.append(lista);
-    const sumBox = h('div', { class: 'dc-sum' });
+    const sumBox = h('div', { class: 'fd-sum' });
     const pintaItems = () => {
       lista.replaceChildren();
       const cal = calc(d);
       d.items.forEach((it, n) => {
-        const row = h('div', { class: 'dc-it' });
+        const row = h('div', { class: 'fd-it' });
         const ds = h('textarea', { placeholder: 'Descripción', 'aria-label': 'Descripción ' + (n + 1), rows: 2 }); ds.value = it.desc || ''; ds.disabled = lock;
         const qn = h('input', { type: 'text', inputmode: 'decimal', placeholder: rec ? 'N/A' : 'Cant.', 'aria-label': 'Cantidad' }); qn.value = it.cant || ''; qn.disabled = lock;
         const pr = h('input', { type: 'text', inputmode: 'decimal', placeholder: 'Precio', 'aria-label': 'Precio' }); pr.value = it.precio === '' || it.precio == null ? '' : it.precio; pr.disabled = lock;
@@ -390,7 +390,7 @@ td.n{width:14mm}td.q{width:26mm}td.t{width:34mm;white-space:nowrap}
         ds.addEventListener('input', () => { it.desc = ds.value; refrescar(); });
         const rc = () => { it.cant = qn.value; it.precio = pr.value; tot.textContent = money(calc(d).lines[n].tot, d.moneda); refrescar(); };
         qn.addEventListener('input', rc); pr.addEventListener('input', rc);
-        const x = h('button', { type: 'button', class: 'dc-x', title: 'Quitar línea', 'aria-label': 'Quitar línea', disabled: lock, onclick: () => { d.items.splice(n, 1); if (!d.items.length) d.items.push({ desc: '', cant: rec ? '' : '1', precio: '', antes: false }); pintaItems(); refrescar(); } }); x.innerHTML = ico('x');
+        const x = h('button', { type: 'button', class: 'fd-x', title: 'Quitar línea', 'aria-label': 'Quitar línea', disabled: lock, onclick: () => { d.items.splice(n, 1); if (!d.items.length) d.items.push({ desc: '', cant: rec ? '' : '1', precio: '', antes: false }); pintaItems(); refrescar(); } }); x.innerHTML = ico('x');
         row.append(ds, qn, pr, tot, x);
         const cat = S.svs.filter(s => s.activo && s.moneda === d.moneda);
         if (cat.length && !lock) {
@@ -408,7 +408,7 @@ td.n{width:14mm}td.q{width:26mm}td.t{width:34mm;white-space:nowrap}
         lista.append(row);
       });
     };
-    gl.append(h('div', { class: 'dc-acts', style: 'justify-content:flex-start;margin-top:10px' }, btn('plus', 'Agregar línea', () => { d.items.push({ desc: '', cant: rec ? '' : '1', precio: '', antes: false }); pintaItems(); refrescar(); })));
+    gl.append(h('div', { class: 'fd-acts', style: 'justify-content:flex-start;margin-top:10px' }, btn('plus', 'Agregar línea', () => { d.items.push({ desc: '', cant: rec ? '' : '1', precio: '', antes: false }); pintaItems(); refrescar(); })));
     pintaItems();
 
     /* totales */
@@ -424,8 +424,8 @@ td.n{width:14mm}td.q{width:26mm}td.t{width:34mm;white-space:nowrap}
     if (!rec) {
       const tp = h('select'); [['%', 'Descuento en %'], ['Q', 'Descuento en monto']].forEach(([v, t]) => { const o = h('option', { value: v }, t); if (d.descTipo === v) o.selected = true; tp.append(o); });
       tp.disabled = lock; tp.addEventListener('change', () => { d.descTipo = tp.value; refrescar(); });
-      gl.append(h('div', { class: 'dc-g3' }, h('div', { class: 'field' }, h('label', {}, 'Tipo de descuento'), tp), fld('Descuento', 'desc', { im: 'decimal', ph: '0' }), fld('Anticipo (%)', 'anticipoPct', { im: 'decimal', ph: 'Sin anticipo' })));
-      if (q) gl.append(h('div', { class: 'dc-g2' }, fld('Dato informativo (opcional)', 'notaLabel', { ph: 'Ej. Pago por clase' }), fld('Monto del dato', 'notaMonto', { im: 'decimal' })));
+      gl.append(h('div', { class: 'fd-g3' }, h('div', { class: 'field' }, h('label', {}, 'Tipo de descuento'), tp), fld('Descuento', 'desc', { im: 'decimal', ph: '0' }), fld('Anticipo (%)', 'anticipoPct', { im: 'decimal', ph: 'Sin anticipo' })));
+      if (q) gl.append(h('div', { class: 'fd-g2' }, fld('Dato informativo (opcional)', 'notaLabel', { ph: 'Ej. Pago por clase' }), fld('Monto del dato', 'notaMonto', { im: 'decimal' })));
     } else gl.append(fld('Texto de la línea “depositado”', 'depLabel', { ph: 'Ej. Depositado por activación de snacks.' }));
     card.append(gl);
 
@@ -435,14 +435,14 @@ td.n{width:14mm}td.q{width:26mm}td.t{width:34mm;white-space:nowrap}
     if (!rec) gt.append(fld('Forma de pago', 'formaPago', { area: true, rows: 3 }));
     card.append(gt);
 
-    const bar = h('div', { class: 'dc-bar' });
+    const bar = h('div', { class: 'fd-bar' });
     if (!lock) bar.append(btn('check', d.id ? 'Guardar cambios' : 'Guardar', () => guardar(false), 'btn-gold'), btn('print', 'Guardar e imprimir / PDF', () => guardar(true)));
     else bar.append(btn('print', 'Imprimir / PDF', () => imprimir(d), 'btn-gold'));
     if (d.id && !lock) bar.append(btn('print', 'Solo imprimir', () => imprimir(d)));
     card.append(bar);
 
     /* vista previa */
-    const box = h('div', { class: 'dc-pvbox' }), fr = h('iframe', { title: 'Vista previa del documento', scrolling: 'no' });
+    const box = h('div', { class: 'fd-pvbox' }), fr = h('iframe', { title: 'Vista previa del documento', scrolling: 'no' });
     box.append(fr); pv.append(h('div', { class: 'muted', style: 'margin:0 0 8px;font-size:.9rem' }, 'Así se verá al imprimir (A4). Se actualiza mientras escribes.'), box);
     let listo = false;
     const ajusta = () => { const s = box.clientWidth / 794; let ah = 1123; try { ah = Math.max(1123, fr.contentDocument.documentElement.scrollHeight); } catch (e) { /* aún no */ } fr.style.height = ah + 'px'; fr.style.transform = 'scale(' + s + ')'; box.style.height = ah * s + 'px'; };
@@ -464,25 +464,25 @@ td.n{width:14mm}td.q{width:26mm}td.t{width:34mm;white-space:nowrap}
   /* ---------- catálogo de precios ---------- */
   function vPrecios() {
     const w = h('div');
-    w.append(h('div', { class: 'dc-top' }, h('div', { class: 'dc-acts' }, btn('back', 'Volver', () => { S.vista = 'lista'; pintar(); }), h('h2', { style: 'margin:0 0 0 8px;font-size:1.7rem' }, 'Catálogo de precios')),
+    w.append(h('div', { class: 'fd-top' }, h('div', { class: 'fd-acts' }, btn('back', 'Volver', () => { S.vista = 'lista'; pintar(); }), h('h2', { style: 'margin:0 0 0 8px;font-size:1.7rem' }, 'Catálogo de precios')),
       btn('plus', 'Nuevo precio', () => { S.svs.push({ _nuevo: true, categoria: S.svs.length ? S.svs[S.svs.length - 1].categoria : '', nombre: '', descripcion: '', precio: '', moneda: 'GTQ', activo: true, orden: 0 }); pintar(); }, 'btn-gold')));
-    w.append(h('div', { class: 'dc-lock' }, (() => { const s = h('span'); s.innerHTML = ico('lock'); return s; })(),
+    w.append(h('div', { class: 'fd-lock' }, (() => { const s = h('span'); s.innerHTML = ico('lock'); return s; })(),
       h('span', {}, 'Solo tú ves esta lista: está protegida con tu sesión (y tu código del teléfono, si lo activaste) y no se puede leer desde la página pública. Al crear un documento eliges de aquí el servicio y el precio se llena solo.')));
     const card = h('div', { class: 'card' });
     const cats = [...new Set(S.svs.map(s => s.categoria))];
-    const dl = h('datalist', { id: 'dc-cats' }, cats.filter(Boolean).map(c => h('option', { value: c }))); card.append(dl);
+    const dl = h('datalist', { id: 'fd-cats' }, cats.filter(Boolean).map(c => h('option', { value: c }))); card.append(dl);
     if (!S.svs.length) card.append(h('p', { class: 'muted' }, 'Aún no hay precios. Agrega el primero.'));
     S.svs.forEach(s => {
       const f = (k, o) => { const i = h('input', Object.assign({ type: 'text', 'aria-label': k }, o || {})); i.value = s[k] == null ? '' : s[k]; i.addEventListener('input', () => { s[k] = i.value; }); return i; };
       const mn = h('select', { 'aria-label': 'Moneda' }, ['GTQ', 'USD'].map(v => { const o = h('option', { value: v }, v === 'GTQ' ? 'Q' : 'US$'); if (s.moneda === v) o.selected = true; return o; }));
       mn.addEventListener('change', () => { s.moneda = mn.value; });
       const ac = h('input', { type: 'checkbox', 'aria-label': 'Activo' }); ac.checked = s.activo !== false; ac.addEventListener('change', () => { s.activo = ac.checked; });
-      card.append(h('div', { class: 'dc-pr' },
-        h('div', {}, f('categoria', { list: 'dc-cats', placeholder: 'Categoría' }), h('div', { style: 'height:6px' }), f('nombre', { placeholder: 'Nombre del servicio' })),
+      card.append(h('div', { class: 'fd-pr' },
+        h('div', {}, f('categoria', { list: 'fd-cats', placeholder: 'Categoría' }), h('div', { style: 'height:6px' }), f('nombre', { placeholder: 'Nombre del servicio' })),
         h('textarea', { rows: 3, placeholder: 'Descripción que sale en el documento', 'aria-label': 'Descripción', oninput: e => { s.descripcion = e.target.value; } }, s.descripcion || ''),
         h('div', {}, f('precio', { inputmode: 'decimal', placeholder: 'Precio' }), h('div', { style: 'height:6px' }), mn),
         h('label', { style: 'display:flex;gap:6px;align-items:center;font-size:.9rem' }, ac, 'Activo'),
-        h('div', { class: 'dc-acts' }, btn('check', 'Guardar', () => guardaPrecio(s), 'btn-gold'), btn('x', s._nuevo ? 'Quitar' : 'Borrar', () => borraPrecio(s), 'btn-red'))));
+        h('div', { class: 'fd-acts' }, btn('check', 'Guardar', () => guardaPrecio(s), 'btn-gold'), btn('x', s._nuevo ? 'Quitar' : 'Borrar', () => borraPrecio(s), 'btn-red'))));
     });
     w.append(card);
     return w;

@@ -1784,7 +1784,7 @@ function renderPortafolioMgr(box){
 const WEB={sug:[],com:[],ok:true,nuevas:0};
 async function webCarga(){
   try{
-    const r=await api('/rest/v1/sugerencias_web?select=*&order=creado.desc&limit=200');WEB.ok=r.ok;WEB.sug=r.ok?await r.json():[];
+    const r=await api('/rest/v1/sugerencias_web?select=*&order=creado.desc&limit=200');WEB.ok=r.ok;WEB.st=r.status;WEB.sug=r.ok?await r.json():[];
     const c=await api('/rest/v1/recurso_comentarios?select=*&order=creado.desc&limit=200');WEB.com=c.ok?await c.json():[];
   }catch(e){WEB.ok=false}
   WEB.nuevas=WEB.sug.filter(s=>!s.leida).length;
@@ -1795,7 +1795,7 @@ async function webCarga(){
 const WEB_TIPO={error:'🐞 Error',sugerencia:'💡 Idea',comentario:'💬 Comentario'};
 function webPintar(){
   const box=$('#web-body');if(!box)return;box.textContent='';
-  if(!WEB.ok){box.append(el('div',{class:'msg'},'Faltan las tablas de la comunidad web. En Supabase abre SQL Editor, New query, pega sql/comunidad-web.sql y dale Run.'));return}
+  if(!WEB.ok){box.append(el('div',{class:'msg'},WEB.st===401||WEB.st===403?'Tu sesión no tiene permiso para leer las sugerencias de la web (error '+WEB.st+'). En Supabase abre SQL Editor, pega el final de sql/comunidad-web.sql (los “grant”) y dale Run. Si ya lo hiciste, cierra sesión y vuelve a entrar.':'No se pudieron cargar las sugerencias (error '+(WEB.st||'de conexión')+'). Si las tablas no existen, en Supabase abre SQL Editor, pega sql/comunidad-web.sql y dale Run.'));return}
   const c1=el('div',{class:'card'},el('h2',{},'Errores y sugerencias de la web'),el('p',{class:'muted'},'Llegan del buzón de farostudios.net. Sin registro: algunos dejan nombre o contacto.'));
   if(!WEB.sug.length)c1.append(el('p',{class:'muted'},'Todavía no hay mensajes.'));
   WEB.sug.forEach(s=>{
@@ -3935,7 +3935,7 @@ const enArchP=pid=>EN.arch.filter(a=>a.proyecto_id===pid).sort((a,b)=>(a.orden-b
 
 async function enCargar(){
   if(EN.cargando)return;EN.cargando=true;
-  const get=async(t,o)=>{try{const r=await api('/rest/v1/'+t+'?select=*&order='+o+'&limit=5000');if(!r.ok)throw 0;return await r.json()}catch(e){return null}};
+  EN.st=null;const get=async(t,o)=>{try{const r=await api('/rest/v1/'+t+'?select=*&order='+o+'&limit=5000');if(!r.ok){EN.st=EN.st||r.status;throw 0}return await r.json()}catch(e){return null}};
   const [c,p,a,m,f]=await Promise.all([get('en_cuentas','creado.desc'),get('en_proyectos','creado.desc'),get('en_archivos','orden.asc'),get('en_comentarios','creado.asc'),get('en_favoritos','creado.asc')]);
   EN.err=(c===null||p===null);EN.cuentas=c||[];EN.proy=p||[];EN.arch=a||[];EN.com=m||[];EN.favs=f||[];
   EN.cargando=false;EN.cargado=true;enBadge();try{avisosPintar()}catch(e){}
@@ -3964,7 +3964,7 @@ function renderEn(){
   const root=$('#en-body');if(!root)return;root.textContent='';
   root.append(el('div',{class:'dh'},el('div',{},el('h1',{},'Entregas'),el('p',{class:'muted'},'Un solo acceso para tus clientes. Al crearlo eliges si es empresa, agencia o galería.')),
     enBtn('Nuevo acceso','plus',()=>enNuevaCuenta(),'btn-gold')));
-  if(EN.err){root.append(el('div',{class:'msg',style:'margin:12px 0'},'Falta crear las tablas: corre sql/entregas.sql en Supabase (una sola vez) y recarga.'));return}
+  if(EN.err){root.append(el('div',{class:'msg',style:'margin:12px 0'},EN.st===401||EN.st===403?'Tu sesión no tiene permiso para leer las entregas (error '+EN.st+'). En Supabase abre SQL Editor, pega el bloque “grant” de sql/entregas.sql y dale Run; luego cierra sesión y vuelve a entrar.':'No se pudieron cargar las entregas (error '+(EN.st||'de conexión')+'). Si las tablas no existen, corre sql/entregas.sql en Supabase (una sola vez) y recarga.'));return}
   const seg=el('div',{class:'seg',role:'group','aria-label':'Filtrar'});
   [['todos','Todos'],['empresa','Empresas'],['agencia','Agencias'],['galeria','Galerías']].forEach(([k,t])=>seg.append(el('button',{type:'button','aria-pressed':String(EN.filtro===k),onclick:()=>{EN.filtro=k;renderEn()}},t+' '+(k==='todos'?EN.cuentas.length:EN.cuentas.filter(c=>c.tipo===k).length))));
   const P=EN.proy,n=e=>P.filter(p=>p.estado===e).length;

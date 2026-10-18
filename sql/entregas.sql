@@ -174,3 +174,9 @@ begin
   return jsonb_build_object('ronda', p.ronda + 1);
 end $$;
 grant execute on function en_abrir_ronda(uuid) to authenticated;
+
+-- Permisos de tabla (esta base no los da por defecto). Sin esto el admin y los clientes reciben "permission denied"
+-- aunque las políticas RLS estén bien. RLS sigue decidiendo quién ve qué.
+grant select, insert, update, delete on public.en_cuentas, public.en_proyectos, public.en_archivos,
+  public.en_comentarios, public.en_rondas, public.en_favoritos to authenticated;
+notify pgrst, 'reload schema';
