@@ -149,6 +149,8 @@ const DOM='@entregas.farostudios.net';
 const authEmail=u=>{u=String(u||'').trim().toLowerCase();return (u.includes('@')?u.replace('@','_at_').replace(/[^a-z0-9._+-]/g,'_'):u.replace(/\s+/g,''))+DOM};
 const $=(s,r)=>(r||document).querySelector(s);
 const APP=$('#app');
+/* vista previa dentro de Workspace (?previa=ID): la galería real, leída con la sesión de quien administra; nada se guarda */
+const PREVIA=new URLSearchParams(location.search).get('previa')||'';let PSIM=0;
 
 /* ---------- íconos ---------- */
 const P={
@@ -168,8 +170,8 @@ const ic=n=>'<svg class="ico" viewBox="0 0 24 24" aria-hidden="true">'+(P[n]||''
 const toast=t=>{const d=document.createElement('div');d.className='toast';d.textContent=t;document.body.append(d);setTimeout(()=>d.remove(),3000)};
 
 /* ---------- sesión ---------- */
-let SES=null;try{SES=JSON.parse(sessionStorage.getItem('faro_ent')||'null')}catch(e){}
-const saveSes=()=>{try{sessionStorage.setItem('faro_ent',JSON.stringify(SES))}catch(e){}};
+let SES=null;if(!PREVIA)try{SES=JSON.parse(sessionStorage.getItem('faro_ent')||'null')}catch(e){}
+const saveSes=()=>{if(PREVIA)return;try{sessionStorage.setItem('faro_ent',JSON.stringify(SES))}catch(e){}};
 let LASTERR='';
 async function signIn(email,pass){
   try{const r=await fetch(SBU+'/auth/v1/token?grant_type=password',{method:'POST',headers:{apikey:SBK,'Content-Type':'application/json'},body:JSON.stringify({email,password:pass})});
@@ -180,13 +182,16 @@ async function refreshSes(){
   try{const r=await fetch(SBU+'/auth/v1/token?grant_type=refresh_token',{method:'POST',headers:{apikey:SBK,'Content-Type':'application/json'},body:JSON.stringify({refresh_token:SES.refresh})});
     const j=await r.json();if(!r.ok||!j.access_token)return false;
     SES={access:j.access_token,refresh:j.refresh_token||SES.refresh,exp:Date.now()+(j.expires_in||3600)*1000};saveSes();return true}catch(e){return false}}
-function salir(msg){SES=null;try{sessionStorage.removeItem('faro_ent')}catch(e){}ST.links={};document.body.className='dots';document.body.removeAttribute('style');pantallaLogin(typeof msg==='string'?msg:'')}
+function salir(msg){if(PREVIA){toast('Vista previa: aquí el cliente saldría de su galería');return}SES=null;try{sessionStorage.removeItem('faro_ent')}catch(e){}ST.links={};document.body.className='dots';document.body.removeAttribute('style');pantallaLogin(typeof msg==='string'?msg:'')}
 async function api(path,o){
-  o=o||{};if(SES&&SES.exp-60000<Date.now())await refreshSes();
+  o=o||{};
+  /* vista previa: lo que se "guarda" solo vive en pantalla (listas, favoritos, reseñas…); no se escribe nada en Supabase */
+  if(PREVIA&&(o.method||'GET')!=='GET'){const b=o.body||{};return new Response(JSON.stringify([{id:'previa-'+(++PSIM),token:'previa',creado:new Date().toISOString(),...(typeof b==='object'?b:{})}]),{status:201,headers:{'Content-Type':'application/json'}})}
+if(SES&&SES.exp-60000<Date.now())await refreshSes();
   const go=()=>fetch(SBU+path,{method:o.method||'GET',headers:Object.assign({apikey:SBK,Authorization:'Bearer '+(SES?SES.access:SBK),'Content-Type':'application/json'},o.headers||{}),body:o.body?JSON.stringify(o.body):undefined});
   let r=await go();if(r.status===401&&await refreshSes())r=await go();
   if(r.status===401){salir('Tu sesión venció. Vuelve a entrar.');throw new Error('sesion')}return r}
-const rows=async(t,qs)=>{try{const r=await api('/rest/v1/'+t+'?'+qs);return r.ok?await r.json():[]}catch(e){return[]}};
+const rows=async(t,qs)=>{if(PREVIA&&/^(en_listas|en_lista_fotos|en_favoritos|en_comentarios)/.test(t))return[];try{const r=await api('/rest/v1/'+t+'?'+qs);return r.ok?await r.json():[]}catch(e){return[]}};
 const normClave=s=>{const x=String(s||'').toUpperCase().replace(/[^A-Z0-9]/g,'');return x.match(/.{1,4}/g)?x.match(/.{1,4}/g).join('-'):x};
 
 /* ---------- estado ---------- */
@@ -257,7 +262,7 @@ async function abrirProyecto(id,unico){
   const p=ST.proyectos.find(x=>x.id===id);if(!p)return inicio();
   ST.p=p;ST.unico=!!unico;ST.sel=0;ST.borrador={v:'nota'};
   APP.innerHTML='<div class="lg"><p style="position:relative;color:var(--muted)">Abriendo…</p></div>';
-  const [arch,com,favs]=await Promise.all([rows('en_archivos','proyecto_id=eq.'+id+'&select=*&order=orden.asc,creado.asc'),rows('en_comentarios','proyecto_id=eq.'+id+'&order=creado.asc'),rows('en_favoritos','select=archivo_id')]);
+  const [arch,com,favs]=await Promise.all([rows('en_archivos','proyecto_id=eq.'+id+(PREVIA?'&habilitado=eq.true':'')+'&select=*&order=orden.asc,creado.asc'),rows('en_comentarios','proyecto_id=eq.'+id+'&order=creado.asc'),rows('en_favoritos','select=archivo_id')]);
   ST.arch=arch;ST.com=com;ST.favs=new Set(favs.map(f=>f.archivo_id));
   if(ST.perfil.tipo==='galeria')await vistaGaleria();else await vistaRevision();
 }
@@ -395,9 +400,35 @@ function confirmarEnvio(){
   };
 }
 
+/* ---------- vista previa en Workspace ---------- */
+async function previaRepinta(){
+  const abierta=G.abierta,y=scrollY;
+  await vistaGaleria();
+  if(abierta){await gAbrirMuro();window.scrollTo(0,y)}
+}
+function previaBoot(){
+  APP.innerHTML='<div class="lg"><p style="position:relative;color:var(--muted)">Preparando la vista previa…</p></div>';
+  let abierta=false;
+  const recibe=async d=>{
+    if(d.sesion&&d.sesion.access)SES={access:d.sesion.access,refresh:null,exp:d.sesion.exp||Date.now()+3000000};
+    if(!SES)return;
+    if(!abierta){
+      abierta=true;
+      ST.perfil={nombre:'Vista previa',tipo:'galeria'};
+      ST.proyectos=await rows('en_proyectos','id=eq.'+encodeURIComponent(PREVIA)+'&select=*');
+      if(!ST.proyectos.length){abierta=false;APP.innerHTML='<div class="lg"><p style="position:relative;color:var(--muted)">No se pudo abrir esta galería.</p></div>';return}
+      if(d.config)ST.proyectos[0].config=d.config;
+      await abrirProyecto(PREVIA,true);
+    }else if(d.config&&ST.p){ST.p.config=d.config;previaRepinta()}
+  };
+  addEventListener('message',e=>{if(e.origin!==location.origin||e.source!==parent)return;const d=e.data;if(d&&d.t==='faro_previa')recibe(d)});
+  try{parent.postMessage({t:'faro_previa_listo'},location.origin)}catch(e){}
+}
+
 /* ---------- arranque ---------- */
 (async()=>{
   if(document.readyState!=='complete')await new Promise(r=>addEventListener('load',r));
+  if(PREVIA)return previaBoot();
   let h=null;try{h=JSON.parse(sessionStorage.getItem('faro_handoff')||'null');sessionStorage.removeItem('faro_handoff')}catch(e){}
   if(h&&h.t==='en'&&h.u&&h.p){
     const u=String(h.u).trim().toLowerCase(),p=h.p;

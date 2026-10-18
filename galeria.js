@@ -82,7 +82,7 @@ const gX='<button class="x" data-x aria-label="Cerrar">'+ic('x')+'</button>';
 
 /* ================= VISTA PRINCIPAL ================= */
 async function vistaGaleria(){
-  const p=ST.p,cfg=p.config||{};G.cfg=cfg;G.vista=gLS(gKey('faro_vista'))||cfg.vista||'cuadricula';G.filtro=null;G.fin=false;G.promoVisto=false;G.abierta=false;G.carro=[];G.pre=null;G.quiere=false;
+  const p=ST.p,cfg=p.config||{};G.cfg=cfg;G.vista=(PREVIA?null:gLS(gKey('faro_vista')))||cfg.vista||'cuadricula';G.filtro=null;G.fin=false;G.promoVisto=false;G.abierta=false;G.carro=[];G.pre=null;G.quiere=false;
   if(G.au){try{G.au.pause()}catch(e){}G.au=null}
   gAplica(cfg);
   const fotos=ST.arch,portada=fotos.find(a=>a.id===cfg.portada)||fotos.find(a=>a.tipo==='imagen')||fotos[0];
@@ -134,7 +134,7 @@ async function gAbrirMuro(){
     b.disabled=false;b.textContent='Ver galería';
   }
   $('#gmu').scrollIntoView({behavior:'smooth'});
-  if(!gLS(gKey('faro_tut')))setTimeout(()=>gTutorial(true),1100);
+  if(!PREVIA&&!gLS(gKey('faro_tut')))setTimeout(()=>gTutorial(true),1100);
 }
 /* cinta de recomendación: se escribe y se borra en bucle, fija debajo del menú */
 function gRibon(){
@@ -565,7 +565,7 @@ function gAbrirResena(manual){
   };
 }
 function gLlegoAlFinal(){
-  if(G.fin)return;G.fin=true;
+  if(PREVIA||G.fin)return; /* en la vista previa no salen la reseña ni la promoción */G.fin=true;
   if(!gLS(gKey('faro_res'))&&!gSS(gKey('faro_res_no')))setTimeout(()=>gAbrirResena(false),1200);else gProgramaPromo();
 }
 let gTimerPromo=null;

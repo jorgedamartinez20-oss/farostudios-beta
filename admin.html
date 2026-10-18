@@ -109,6 +109,14 @@ button,input,select,textarea{font:inherit;color:inherit}
 .toast.on{opacity:1;transform:translate(-50%,0)}
 .okflot{position:fixed;left:50%;bottom:28px;transform:translateX(-50%);display:flex;gap:8px;align-items:center;background:var(--text);color:var(--bg);padding:10px 18px;border-radius:999px;font-weight:700;z-index:95;pointer-events:none;animation:okfl 2s ease both;box-shadow:0 6px 24px rgba(0,0,0,.25)}
 @keyframes okfl{0%{opacity:0;transform:translate(-50%,10px)}15%{opacity:1;transform:translate(-50%,0)}75%{opacity:1}100%{opacity:0;transform:translate(-50%,-6px)}}
+.enpv{position:fixed;top:76px;right:12px;bottom:12px;width:var(--pvw,450px);z-index:25;display:flex;flex-direction:column;background:var(--nav);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);overflow:hidden}
+.enpv .pvh{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 10px;border-bottom:1px solid var(--line)}
+.enpv .pvh small{flex-basis:100%;order:5;margin-top:-4px}
+.enpv .pvc{position:relative;flex:1;min-height:0;overflow:hidden;background:var(--soft);display:flex;justify-content:center;align-items:flex-start}
+.enpv iframe{border:0;background:#fff;transform-origin:top center;flex:none;box-shadow:0 8px 24px -10px rgba(0,0,0,.5)}
+.enpv .seg button{padding:5px 10px;font-size:.82rem}
+body.pv-on #en-body{margin-right:calc(var(--pvw,450px) + 16px)}
+@media(max-width:1100px){.enpv{left:8px;right:8px;top:70px;width:auto}body.pv-on #en-body{margin-right:0}}
 .eg2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:14px;align-items:start}
 @media(max-width:1100px){.eg2{grid-template-columns:minmax(0,1fr)}}
 .fgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
@@ -4444,7 +4452,7 @@ function almPintarCard(){
 /* ---------- editor dentro de la página principal (no flotante) ---------- */
 function enPagina(titulo){
   const root=$('#en-body');EN.editando=true;root.textContent='';window.scrollTo(0,0);
-  const cerrar=()=>{EN.editando=false;renderEn();window.scrollTo(0,0)};
+  const cerrar=()=>{(EN.alCerrar||[]).splice(0).forEach(f=>{try{f()}catch(e){}});EN.editando=false;renderEn();window.scrollTo(0,0)};
   const h=el('h2',{style:'margin:0;font-weight:400;font-size:1.6rem;flex:1;min-width:0'},titulo);
   root.append(el('div',{style:'display:flex;gap:12px;align-items:center;margin-bottom:14px;flex-wrap:wrap'},el('button',{class:'btn btn-ghost btn-sm',type:'button',onclick:cerrar},'← Volver a Entregas'),h));
   const body=el('div',{});root.append(body);
@@ -4460,6 +4468,51 @@ function enMetaFoto(a,despues){
   D.body.append(el('p',{class:'muted'},a.nombre),...ins.map(x=>x[2]),
     enBtn('Guardar','check',async()=>{const meta={};ins.forEach(([k,i])=>{const v=i.value.trim();if(v)meta[k]=v});
       if(await enPatch('en_archivos','arch',a.id,{meta})){toast('Guardado');D.cerrar();despues&&despues()}},'btn-gold'));
+}
+
+/* ---------- vista previa de la galería: la galería real del cliente, al lado del editor, sin entrar como cliente ---------- */
+function enPrevia(pid){
+  let dock=null,fr=null,modo='tel',cfgFn=null,iv=null,msg=null,pantalla=null;
+  const dim=()=>modo==='tel'?{w:390,ancho:450}:{w:1280,ancho:Math.min(880,Math.round(innerWidth*.52))};
+  const ajusta=()=>{
+    if(!dock)return;const d=dim(),c=dock.querySelector('.pvc');
+    document.body.style.setProperty('--pvw',d.ancho+'px');
+    const W=c.clientWidth||d.ancho-2,H=c.clientHeight||600,k=Math.min(1,W/d.w);
+    fr.style.width=d.w+'px';fr.style.height=Math.round(H/k)+'px';fr.style.transform='scale('+k+')';
+  };
+  const enviar=async()=>{
+    if(!fr||!fr.contentWindow)return;
+    try{if(S&&S.exp-120000<Date.now())await refresh()}catch(e){}
+    let config=null;try{config=cfgFn?cfgFn():null}catch(e){}
+    fr.contentWindow.postMessage({t:'faro_previa',sesion:S?{access:S.access,exp:S.exp}:null,config},location.origin);
+  };
+  const cerrar=()=>{
+    if(msg){removeEventListener('message',msg);msg=null}
+    if(pantalla){removeEventListener('resize',pantalla);pantalla=null}
+    if(iv){clearInterval(iv);iv=null}
+    if(dock){dock.remove();dock=null;fr=null}
+    document.body.classList.remove('pv-on');document.body.style.removeProperty('--pvw');
+  };
+  const recargar=()=>{if(fr){fr.src='entregas.html?previa='+encodeURIComponent(pid)+'&r='+Date.now()}};
+  const abrir=()=>{
+    if(dock)return;
+    fr=el('iframe',{title:'Vista previa de la galería',src:'entregas.html?previa='+encodeURIComponent(pid),allow:'autoplay'});
+    const bt=[['tel','Teléfono'],['pc','Computadora']].map(([k,t])=>el('button',{type:'button',onclick:()=>{modo=k;pinta();ajusta();setTimeout(ajusta,60)}},t));
+    const pinta=()=>bt.forEach((b,i)=>b.setAttribute('aria-pressed',String(['tel','pc'][i]===modo)));pinta();
+    const rec=el('button',{class:'btn btn-ghost btn-sm',type:'button','aria-label':'Recargar la vista previa',title:'Recargar (por si subiste o habilitaste fotos)',onclick:recargar},'↻'),
+          cer=el('button',{class:'btn btn-ghost btn-sm',type:'button','aria-label':'Cerrar la vista previa',onclick:cerrar},'✕');
+    dock=el('aside',{class:'enpv','aria-label':'Vista previa de la galería'},
+      el('div',{class:'pvh'},el('b',{},'Vista previa'),el('div',{class:'seg',role:'group','aria-label':'Dispositivo'},...bt),el('span',{style:'flex:1'}),rec,cer,
+        el('small',{class:'muted'},'Es la galería real, como la ve tu cliente. Se actualiza mientras diseñas; aquí no se guarda nada (listas, corazones, reseñas).')),
+      el('div',{class:'pvc'},fr));
+    document.body.append(dock);document.body.classList.add('pv-on');
+    msg=e=>{if(fr&&e.source===fr.contentWindow&&e.origin===location.origin&&e.data&&e.data.t==='faro_previa_listo')enviar()};addEventListener('message',msg);
+    pantalla=()=>ajusta();addEventListener('resize',pantalla);
+    iv=setInterval(()=>{if(!document.getElementById('en-body')||!EN.editando){cerrar();return}enviar()},600000);
+    (EN.alCerrar=EN.alCerrar||[]).push(cerrar);
+    ajusta();setTimeout(ajusta,80);
+  };
+  return{abrir,cerrar,enviar,recargar,abierta:()=>!!dock,alternar:()=>dock?cerrar():abrir(),usa:f=>{cfgFn=f}};
 }
 
 /* ---------- editor del proyecto ---------- */
@@ -4517,6 +4570,7 @@ function enEditor(pid){
   const p0=EN.proy.find(x=>x.id===pid);if(!p0)return;
   const c=enCuenta(p0.cuenta_id),gal=c.tipo==='galeria';
   const D=enPagina(p0.titulo);
+  const pv=gal?enPrevia(pid):null;
   const imgs={};let subiendo='';
   const cargarImg=async a=>{if(!a||imgs[a.id])return;try{imgs[a.id]=await matEnlace('privado',a.key,true,1);pintar()}catch(e){}};
   const pintar=()=>{
@@ -4527,6 +4581,7 @@ function enEditor(pid){
     const top=el('div',{style:'display:flex;gap:8px;align-items:center;flex-wrap:wrap'},el('span',{class:'tag'},EN_TIPOS[c.tipo][0]+' · '+c.nombre));
     if(gal){
       top.append(el('span',{class:'tag '+(p.visible?'confirmada':'')},p.visible?'Publicada':'Oculta'));
+      top.append(enBtn('Vista previa','image',()=>{pv.alternar();pintar()},pv.abierta()?'btn-gold':'btn-ghost'));
       if(!p.visible)top.append(enBtn('Publicar galería','send',async()=>{if(!A.some(a=>a.habilitado)){toast('Sube y habilita al menos una foto');return}if(await enPatch('en_proyectos','proy',pid,{visible:true,estado:'entregado'})){renderEn();pintar();enAvisoPrompt(c,EN.proy.find(x=>x.id===pid),'galeria')}},'btn-gold'));
       else top.append(enBtn('Avisar de nuevo','send',()=>enAvisoPrompt(c,p,'galeria')),enBtn('Ocultar','lock',async()=>{if(await enPatch('en_proyectos','proy',pid,{visible:false})){renderEn();pintar()}}));
     }else{
@@ -4578,6 +4633,9 @@ function enEditor(pid){
       musSels.forEach((x,n)=>{if(musIni[n])x.append(el('option',{value:musIni[n]},musIni[n].split('/').pop()));x.value=musIni[n]||''});
       fjson('/api/lista?bucket=privado&prefix='+encodeURIComponent('faro-studios/musica-galerias/')).then(r=>{const aud=(r.archivos||[]).filter(o=>MAT_VER.aud.test(o.key));musSels.forEach((x,n)=>{aud.filter(o=>o.key!==musIni[n]).forEach(o=>x.append(el('option',{value:o.key},o.key.split('/').pop())));x.value=musIni[n]||''})}).catch(()=>{});
       pinVis();pinFu();pinFo();pinPal();
+      const armaCfg=()=>{
+        const config={...(p.config||{}),paleta:cur.paleta,fuente:cur.fuente,vista:cur.vista,foco:cur.foco,meta:cur.meta!==false,portada:sel.value||null,titulo:val('eg-t').trim()||null,subtitulo:val('eg-s').trim()||null,fecha:val('eg-f')||null,mensaje:val('eg-m').trim()||null,musicas:[...new Set(musSels.map(x=>x.value).filter(Boolean))],musica:null};
+        delete config.estilo;return config};
       const dis=sec('Diseño de la galería',el('p',{class:'muted',style:'margin:0;font-size:.88rem'},'Los colores y las letras los eliges tú aquí; el cliente solo recibe el resultado.'),
         el('div',{},el('span',{class:'lab'},'Vista inicial'),vistas),el('div',{},el('span',{class:'lab'},'Colores · claros, oscuros, suaves y con contraste'),pals),
         el('div',{},el('span',{class:'lab'},'Tipografía'),fuentes),
@@ -4588,11 +4646,14 @@ function enEditor(pid){
         el('div',{},el('span',{class:'lab'},'Música de la galería (hasta 3 canciones)'),el('p',{class:'muted',style:'margin:0 0 6px;font-size:.85rem'},'Súbelas en Archivos y web → Música de las galerías. Suenan en orden y en bucle; el cliente solo puede silenciarlas.'),el('div',{class:'dg2'},...musSels.map((x,n)=>el('label',{class:'dfl'},'Canción '+(n+1),x)))),
         el('label',{class:'wchk',style:'padding:0'},chkEl(cur.meta!==false,v=>{cur.meta=v}),'Mostrar los datos de cámara debajo de las fotos'),
         el('div',{},el('span',{class:'lab'},'Así se ve la portada'),prev),
-        enBtn('Guardar diseño','check',async()=>{
-          const config={...(p.config||{}),paleta:cur.paleta,fuente:cur.fuente,vista:cur.vista,foco:cur.foco,meta:cur.meta!==false,portada:sel.value||null,titulo:val('eg-t').trim()||null,subtitulo:val('eg-s').trim()||null,fecha:val('eg-f')||null,mensaje:val('eg-m').trim()||null,musicas:[...new Set(musSels.map(x=>x.value).filter(Boolean))],musica:null};
-          delete config.estilo;
-          if(await enPatch('en_proyectos','proy',pid,{config})){toast('Diseño guardado');pintar()}},'btn-gold'));
+        el('div',{style:'display:flex;gap:8px;flex-wrap:wrap'},enBtn('Guardar diseño','check',async()=>{
+          const config=armaCfg();
+          if(await enPatch('en_proyectos','proy',pid,{config})){toast('Diseño guardado');pintar();pv.enviar()}},'btn-gold'),
+          enBtn('Ver vista previa','image',()=>pv.abrir())));
       dis.addEventListener('input',pinPrev);der.append(dis);pinPrev();
+      /* la vista previa recibe el diseño tal como lo vas armando (sin guardar) */
+      pv.usa(armaCfg);let tpv=null;const vivo=()=>{if(!pv.abierta())return;clearTimeout(tpv);tpv=setTimeout(pv.enviar,450)};
+      ['input','change','click'].forEach(ev=>dis.addEventListener(ev,vivo));
       /* --- datos de las fotos (EXIF): miniatura y campos visibles para revisar --- */
       const campos=[['camara','Cámara','Sony A7 IV'],['distancia','Distancia','35 mm'],['apertura','Apertura','f/2.8'],['fotografo','Fotógrafo','Nombre']];
       const aplicaT=el('div',{class:'dg2'},...campos.map(([k,l,ph])=>{const i=el('input',{id:'em-'+k,placeholder:ph,value:(A.find(a=>a.meta&&a.meta[k])||{meta:{}}).meta[k]||''});return el('label',{class:'dfl'},l,i)}));
