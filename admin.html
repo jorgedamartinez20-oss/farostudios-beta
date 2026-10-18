@@ -3989,7 +3989,7 @@ async function enCargar(){
   const t=$('#t-en');if(t&&!t.hidden)renderEn();
 }
 function enBadge(){const n=EN.proy.filter(p=>p.estado==='cambios_pedidos').length+(EN.sol||[]).filter(x=>x.estado==='nueva').length+(EN.res||[]).filter(x=>!x.publicada).length,b=$('#nen');if(b){b.textContent=n;b.hidden=!n}}
-function enTab(){renderEn();if(!EN.cargado)enCargar()}
+function enTab(){renderEn();if(!EN.cargado||EN.sqlv2===false)enCargar()}
 async function enPatch(tabla,lista,id,body){
   const r=await api('/rest/v1/'+tabla+'?id=eq.'+encodeURIComponent(id),{method:'PATCH',body,headers:{Prefer:'return=minimal'}});
   if(!r.ok){toast(await errText(r));return false}
@@ -4044,7 +4044,7 @@ function enBandejas(root){
 
 /* ---------- lista de accesos ---------- */
 function renderEn(){
-  const root=$('#en-body');if(!root)return;root.textContent='';
+  const root=$('#en-body');if(!root||EN.editando)return;root.textContent='';
   root.append(el('div',{class:'dh'},el('div',{},el('h1',{},'Entregas'),el('p',{class:'muted'},'Un solo acceso para tus clientes. Al crearlo eliges si es empresa, agencia o galería.')),
     enBtn('Nuevo acceso','plus',()=>enNuevaCuenta(),'btn-gold')));
   if(EN.err){root.append(el('div',{class:'msg',style:'margin:12px 0'},EN.st===401||EN.st===403?'Tu sesión no tiene permiso para leer las entregas (error '+EN.st+'). En Supabase abre SQL Editor, pega el bloque “grant” de sql/entregas.sql y dale Run; luego cierra sesión y vuelve a entrar.':'No se pudieron cargar las entregas (error '+(EN.st||'de conexión')+'). Si las tablas no existen, corre sql/entregas.sql en Supabase (una sola vez) y recarga.'));return}
@@ -4194,6 +4194,30 @@ function enMini(palk,fuk,img,titulo,sub,foco){
    +'<div style="position:absolute;left:0;right:0;bottom:0;height:6%;background:'+bg+'"></div></div>';
 }
 
+/* miniaturas con cola corta, sin repintar toda la página */
+const EN_TH={url:{},cola:[],act:0};
+function enMiniatura(a,img){
+  if(EN_TH.url[a.id]){img.src=EN_TH.url[a.id];return}
+  EN_TH.cola.push([a,img]);enThSig();
+}
+function enThSig(){
+  while(EN_TH.act<4&&EN_TH.cola.length){
+    const [a,img]=EN_TH.cola.shift();EN_TH.act++;
+    matEnlace('privado',a.key,true,1).then(u=>{EN_TH.url[a.id]=u;img.src=u}).catch(()=>{}).finally(()=>{EN_TH.act--;enThSig()});
+  }
+}
+
+/* ---------- editor dentro de la página principal (no flotante) ---------- */
+function enPagina(titulo){
+  const root=$('#en-body');EN.editando=true;root.textContent='';window.scrollTo(0,0);
+  const cerrar=()=>{EN.editando=false;renderEn();window.scrollTo(0,0)};
+  const h=el('h2',{style:'margin:0;font-weight:400;font-size:1.6rem;flex:1;min-width:0'},titulo);
+  root.append(el('div',{style:'display:flex;gap:12px;align-items:center;margin-bottom:14px;flex-wrap:wrap'},el('button',{class:'btn btn-ghost btn-sm',type:'button',onclick:cerrar},'← Volver a Entregas'),h));
+  const body=el('div',{style:'max-width:980px'});root.append(body);
+  Object.defineProperty(body,'scrollTop',{get:()=>window.scrollY,set:v=>window.scrollTo(0,v)});
+  return{bg:root,dr:root,body,cerrar,titulo:t=>{h.textContent=t}};
+}
+
 /* ---------- datos de una foto ---------- */
 function enMetaFoto(a,despues){
   const D=enDrawer('Datos de la foto','460px'),m=a.meta||{};
@@ -4257,7 +4281,7 @@ async function enSubirArchivos(p,files,estado){
 function enEditor(pid){
   const p0=EN.proy.find(x=>x.id===pid);if(!p0)return;
   const c=enCuenta(p0.cuenta_id),gal=c.tipo==='galeria';
-  const D=enDrawer(p0.titulo,'min(820px,100vw)');
+  const D=enPagina(p0.titulo);
   const imgs={};let subiendo='';
   const cargarImg=async a=>{if(!a||imgs[a.id])return;try{imgs[a.id]=await matEnlace('privado',a.key,true,1);pintar()}catch(e){}};
   const pintar=()=>{
@@ -4303,7 +4327,7 @@ function enEditor(pid){
       const vistas=el('div',{class:'seg',role:'group','aria-label':'Vista'});
       const pinVis=()=>{vistas.textContent='';EN_VISTAS.forEach(([k,n,d])=>vistas.append(el('button',{type:'button',title:d,'aria-pressed':String(cur.vista===k),onclick:()=>{cur.vista=k;pinVis()}},n)))};
       const fuentes=el('div',{style:'display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px'});
-      const pinFu=()=>{fuentes.textContent='';Object.entries(EN_FUENTES).forEach(([k,[n,ff]])=>fuentes.append(el('button',{type:'button',style:'text-align:center;border:2px solid '+(cur.fuente===k?'var(--oro)':'var(--line)')+';background:var(--surface);border-radius:12px;padding:10px 6px;color:inherit',onclick:()=>{cur.fuente=k;pinFu();pinPrev()}},el('span',{style:'display:block;font:400 1.4rem/1.1 '+ff},'Aliss Avea'),el('small',{class:'muted'},n))))};
+      const pinFu=()=>{fuentes.textContent='';Object.entries(EN_FUENTES).forEach(([k,[n,ff,gf]])=>fuentes.append(el('button',{type:'button',style:'text-align:center;border:2px solid '+(cur.fuente===k?'var(--oro)':'var(--line)')+';background:var(--surface);border-radius:12px;padding:10px 6px;color:inherit',onclick:()=>{cur.fuente=k;pinFu();pinPrev()}},el('span',{style:'display:block;font:400 1.4rem/1.1 '+ff},gf.split(':')[0].replace(/\+/g,' ').split('&')[0]),el('small',{class:'muted'},n))))};
       const foco=el('div',{style:'display:grid;grid-template-columns:repeat(3,36px);gap:4px'});
       const pinFo=()=>{foco.textContent='';[[15,15],[50,15],[85,15],[15,50],[50,50],[85,50],[15,85],[50,85],[85,85]].forEach(([x,y])=>foco.append(el('button',{type:'button','aria-label':'Enfocar '+x+'% '+y+'%','aria-pressed':String(cur.foco.x===x&&cur.foco.y===y),style:'height:36px;border-radius:8px;border:2px solid '+(cur.foco.x===x&&cur.foco.y===y?'var(--oro)':'var(--line)')+';background:'+(cur.foco.x===x&&cur.foco.y===y?'var(--oro)':'var(--surface)'),onclick:()=>{cur.foco={x,y};pinFo();pinPrev()}})))};
       const pals=el('div',{style:'display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:8px'});
@@ -4327,16 +4351,24 @@ function enEditor(pid){
           delete config.estilo;
           if(await enPatch('en_proyectos','proy',pid,{config})){toast('Diseño guardado');pintar()}},'btn-gold'));
       dis.addEventListener('input',pinPrev);D.body.append(dis);pinPrev();
-      /* --- datos de las fotos (EXIF) --- */
+      /* --- datos de las fotos (EXIF): miniatura y campos visibles para revisar --- */
       const campos=[['camara','Cámara','Sony A7 IV'],['distancia','Distancia','35 mm'],['apertura','Apertura','f/2.8'],['fotografo','Fotógrafo','Nombre']];
       const aplicaT=el('div',{class:'dg2'},...campos.map(([k,l,ph])=>{const i=el('input',{id:'em-'+k,placeholder:ph,value:(A.find(a=>a.meta&&a.meta[k])||{meta:{}}).meta[k]||''});return el('label',{class:'dfl'},l,i)}));
       const conDatos=fotos.filter(a=>a.meta&&Object.keys(a.meta).length).length;
-      D.body.append(sec('Datos de las fotos',el('p',{class:'muted',style:'margin:0;font-size:.88rem'},'Al subir cada foto se leen solos (cámara, distancia y apertura). '+conDatos+' de '+fotos.length+' tienen datos. Puedes corregirlos por foto con el botón “Datos” o aplicar lo mismo a todas.'),aplicaT,
+      const tabla=el('div',{style:'display:grid;gap:8px'});
+      fotos.forEach(a=>{
+        const im=el('img',{alt:'',style:'width:72px;height:72px;object-fit:cover;border-radius:8px;background:var(--line);flex:none'});
+        enMiniatura(a,im);
+        const ins=campos.map(([k,l,ph])=>{const i=el('input',{placeholder:l,value:(a.meta||{})[k]||'','aria-label':l+' de '+a.nombre,style:'min-width:0;padding:7px 9px;border-radius:8px;border:1px solid var(--line);background:var(--input);color:var(--text);font-size:.85rem'});
+          i.addEventListener('change',async()=>{const meta={...(a.meta||{})};const v=i.value.trim();if(v)meta[k]=v;else delete meta[k];if(await enPatch('en_archivos','arch',a.id,{meta}))toast('Guardado')});return i});
+        tabla.append(el('div',{style:'display:flex;gap:10px;align-items:center;padding:6px 0;border-top:1px solid var(--line)'},im,el('div',{style:'flex:1;min-width:0;display:grid;gap:6px'},el('small',{class:'muted',style:'overflow:hidden;text-overflow:ellipsis;white-space:nowrap'},a.nombre),el('div',{style:'display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:6px'},...ins))));
+      });
+      D.body.append(sec('Datos de las fotos',el('p',{class:'muted',style:'margin:0;font-size:.88rem'},'Se leen solos al subir cada foto. '+conDatos+' de '+fotos.length+' ya tienen datos. Revísalos abajo y corrige lo que haga falta; se guarda al salir de cada casilla. O llena esto y aplícalo a todas.'),aplicaT,
         enBtn('Aplicar a todas','check',async()=>{
           const m={};campos.forEach(([k])=>{const v=val('em-'+k).trim();if(v)m[k]=v});if(!Object.keys(m).length){toast('Escribe al menos un dato');return}
           if(!confirm('¿Aplicar estos datos a las '+fotos.length+' fotos? Reemplaza lo que tengan en esos campos.'))return;
           let ok=0;for(const a of fotos){if(await enPatch('en_archivos','arch',a.id,{meta:{...(a.meta||{}),...m}}))ok++;else break}
-          toast(ok+' fotos actualizadas');pintar()},'btn-gold')));
+          toast(ok+' fotos actualizadas');pintar()},'btn-gold'),tabla));
     }
     /* --- archivos --- */
     const inp=el('input',{type:'file',multiple:'',accept:gal?'image/*,video/*':'video/*,audio/*,image/*,application/pdf',style:'display:none'});
@@ -4356,7 +4388,6 @@ function enEditor(pid){
         gal?null:el('span',{class:'tag '+(a.estado==='aprobado'?'confirmada':a.estado==='cambios'?'cancelada':'')},a.estado==='aprobado'?'Aprobado':a.estado==='cambios'?'Con cambios':'Pendiente'),
         el('label',{class:'wchk',style:'padding:0',title:'El cliente lo ve'},chkEl(a.habilitado,async v=>{await enPatch('en_archivos','arch',a.id,{habilitado:v})}),'Visible'),
         el('button',{class:'btn btn-ghost btn-sm',type:'button',onclick:()=>mover(-1),'aria-label':'Subir'},'↑'),el('button',{class:'btn btn-ghost btn-sm',type:'button',onclick:()=>mover(1),'aria-label':'Bajar'},'↓'),
-        gal&&a.tipo==='imagen'?enBtn('Datos',null,()=>enMetaFoto(a,pintar)):null,
         enBtn('Ver','image',()=>matVer('privado',a.key).catch(e=>toast(e.message))),
         el('button',{class:'btn btn-ghost btn-sm',type:'button',onclick:()=>re.click()},icoEl('refresh'),' Reemplazar'),re,
         el('button',{class:'btn btn-ghost btn-sm',type:'button','aria-label':'Borrar',onclick:async()=>{
