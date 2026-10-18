@@ -1110,7 +1110,8 @@ const ENT={
     {k:'nombre',l:'Nombre del cliente',req:1},{k:'correo',l:'Correo (el que dio al reservar; con él entra)',t:'email'},{k:'whatsapp',l:'WhatsApp (para avisarle por mensaje)'},{k:'proyecto',l:'Proyecto (Boda Ana y Luis, Graduación…)'},{k:'tipo',l:'Tipo de servicio'},
     {k:'fecha',l:'Fecha del proyecto',t:'date'},{k:'galeria_url',l:'Enlace a su galería en Pixieset',t:'url'},
     {k:'nota',l:'Mensaje de bienvenida (lo ve el cliente)',t:'area'},{k:'activo',l:'Activo',t:'check',def:true}],
-    row:r=>[r.nombre+(r.proyecto?' · '+r.proyecto:'')+(r.activo?'':' (inactivo)'),(r.galeria_url?'Galería lista':'Sin galería')+' · '+accTxt('cliente','cliente_id',r.id)]},
+    row:r=>[r.nombre+(r.proyecto?' · '+r.proyecto:'')+(r.activo?'':' (inactivo)'),(r.galeria_url?'Galería lista':'Sin galería')+' · '+accTxt('cliente','cliente_id',r.id)+' · '+enEstadoCli(r)],
+    acts:r=>[[enCuentaDe(r)?'Abrir Entregas':'Preparar Entregas',()=>enPreparar(r)]]},
   cldoc:{g:'cl',tabla:'cl_documentos',t:'Documentos y entregas',ord:'creado.desc',ico:'📄',byCli:1,bucket:'clientes',f:[
     {k:'cliente_id',l:'Cliente',t:'cli',req:1},{k:'tipo',l:'Qué es',t:'sel',o:[['contrato','Contrato'],['entrega','Entrega (fotos, video, audio)'],['voucher','Voucher de reserva (pestaña Facturas del cliente)'],['factura','Factura (pestaña Facturas del cliente)'],['enlace','Enlace'],['otro','Otro']],def:'entrega'},
     {k:'titulo',l:'Título',req:1},{k:'ruta',l:'Archivo (máx. 50 MB)',t:'file',folder:''}],
@@ -3977,7 +3978,7 @@ function renderEn(){
     const ps=EN.proy.filter(p=>p.cuenta_id===c.user_id);
     const card=el('div',{class:'card dp w6'+(c.activo?'':' ses-ok')});
     card.append(el('div',{style:'display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap'},
-      el('div',{style:'flex:1;min-width:0'},el('h3',{style:'margin:0'},c.nombre),el('small',{class:'muted'},'Usuario: '+c.usuario+(c.whatsapp?' · '+c.whatsapp:''))),
+      el('div',{style:'flex:1;min-width:0'},el('h3',{style:'margin:0'},c.nombre),el('small',{class:'muted'},'Usuario: '+c.usuario+(c.whatsapp?' · '+c.whatsapp:'')+(c.cliente_id?' · enlazado a Clientes':''))),
       el('span',{class:'tag'},EN_TIPOS[c.tipo][0]+(c.activo?'':' · desactivado'))));
     const l=el('div',{class:'plist',style:'margin-top:8px'});
     ps.forEach(p=>{const na=EN.arch.filter(a=>a.proyecto_id===p.id).length;
@@ -3999,18 +4000,35 @@ async function enPatchCuenta(c,body){
 function enMensajeAcceso(c,usuario,clave){
   return 'Hola '+c.nombre.split(' ')[0]+', este es tu acceso a Entregas de Faro Studios, donde verás '+(c.tipo==='galeria'?'y descargarás tus fotos y videos':'tu material, dejarás tus correcciones y descargarás lo aprobado')+':\n\nEnlace: '+enUrl()+'\nUsuario: '+usuario+'\nContraseña: '+clave+'\n\nGuarda estos datos. Faro Studios';
 }
-function enNuevaCuenta(){
-  const D=enDrawer('Nuevo acceso a Entregas');let tipo='empresa';
+const enCuentaDe=r=>EN.cuentas.find(c=>c.cliente_id===r.id);
+const enEstadoCli=r=>{const c=enCuentaDe(r);if(!c)return 'Entregas: sin preparar';const n=EN.proy.filter(p=>p.cuenta_id===c.user_id).length;return 'Entregas: '+EN_TIPOS[c.tipo][0]+' · '+n+' proyecto'+(n===1?'':'s')};
+const enTipoSugerido=r=>{const t=String((r&&r.tipo)||'')+' '+String((r&&r.proyecto)||'');return /boda|xv|quince|gradua|sesi[oó]n|retrato|familia|evento|bautizo|cumple/i.test(t)?'galeria':'empresa'};
+async function enPreparar(r){
+  if(!EN.cargado)await enCargar();
+  const c=enCuentaDe(r);
+  if(!c){enNuevaCuenta(r);return}
+  const D=enDrawer('Entregas de '+c.nombre);
+  const ps=EN.proy.filter(p=>p.cuenta_id===c.user_id);
+  D.body.append(el('p',{class:'sub'},EN_TIPOS[c.tipo][0]+' · usuario '+c.usuario));
+  ps.forEach(p=>D.body.append(el('div',{class:'prow',onclick:()=>{D.cerrar();enEditor(p.id)}},el('span',{style:'flex:1'},el('b',{style:'display:block;font-weight:400'},p.titulo),el('small',{class:'muted'},EN.arch.filter(a=>a.proyecto_id===p.id).length+' archivos'+(p.visible?'':' · oculto'))))));
+  if(!ps.length)D.body.append(el('p',{class:'muted'},'Aún no tiene proyectos. Crea el primero para subir archivos'+(c.tipo==='galeria'?' y elegir el estilo y los colores de la galería.':'.')));
+  D.body.append(el('div',{style:'display:flex;gap:8px;flex-wrap:wrap;margin-top:10px'},enBtn('Nuevo proyecto','plus',()=>{D.cerrar();enNuevoProyecto(c)},'btn-gold'),enBtn('Ver acceso','key',()=>{D.cerrar();enVerAcceso(c)}),enBtn('Ir a Entregas',null,()=>{D.cerrar();showTab('en')})));
+}
+function enNuevaCuenta(cli){
+  const D=enDrawer(cli?'Preparar Entregas · '+cli.nombre:'Nuevo acceso a Entregas');let tipo=cli?enTipoSugerido(cli):'empresa';
   const pintar=()=>{
     D.body.textContent='';
     const chips=el('div',{style:'display:grid;gap:8px'});
     Object.entries(EN_TIPOS).forEach(([k,[n,d]])=>chips.append(el('button',{type:'button',class:'btn '+(tipo===k?'btn-gold':'btn-ghost'),style:'text-align:left;display:block;border-radius:14px',onclick:()=>{tipo=k;guarda();pintar()}},el('b',{style:'display:block'},n),el('small',{style:'font-weight:400;opacity:.85;white-space:normal'},d))));
-    const nom=el('input',{id:'en-n',placeholder:tipo==='galeria'?'Ej. Ana y Luis':'Ej. Colegio Santa Lucía'}),wa=el('input',{id:'en-w',placeholder:'5555 1234',inputmode:'tel'}),
+    const libres=(AC.list.cli||[]).filter(x=>!enCuentaDe(x));
+     const selC=cli?null:el('select',{id:'en-cl',onchange:e=>{const x=libres.find(y=>y.id===e.target.value);ST_N.cli=x||null;if(x){ST_N.n=x.nombre;ST_N.w=x.whatsapp||'';ST_N.u=enSugerir(x.nombre);ST_N.uManual=false;tipo=enTipoSugerido(x)}pintar()}},el('option',{value:''},'Cliente nuevo (escribir los datos)'),...libres.map(x=>el('option',{value:x.id},x.nombre+(x.proyecto?' · '+x.proyecto:''))));
+     if(selC&&ST_N.cli)selC.value=ST_N.cli.id;
+     const nom=el('input',{id:'en-n',placeholder:tipo==='galeria'?'Ej. Ana y Luis':'Ej. Colegio Santa Lucía'}),wa=el('input',{id:'en-w',placeholder:'5555 1234',inputmode:'tel'}),
       us=el('input',{id:'en-u',autocapitalize:'none',autocomplete:'off',spellcheck:'false'}),cl=el('input',{id:'en-c',autocomplete:'off'});
     nom.value=ST_N.n||'';wa.value=ST_N.w||'';cl.value=ST_N.c||grp(3);us.value=ST_N.u||'';
     nom.addEventListener('input',()=>{if(!ST_N.uManual){us.value=enSugerir(nom.value)}guarda()});us.addEventListener('input',()=>{ST_N.uManual=true;guarda()});[wa,cl].forEach(x=>x.addEventListener('input',guarda));
     const err=el('p',{class:'msg',style:'display:none'});
-    D.body.append(el('p',{class:'sub'},'¿Qué tipo de cliente es?'),chips,
+    D.body.append(selC?el('label',{class:'dfl'},'Cliente registrado',selC):el('p',{class:'sub'},'Datos tomados de Clientes: no hay que escribirlos otra vez.'),el('p',{class:'sub'},'¿Qué tipo de cliente es?'),chips,
       el('label',{class:'dfl'},'Nombre',nom),el('label',{class:'dfl'},'WhatsApp (para avisarle)',wa),
       el('div',{class:'dg2'},el('label',{class:'dfl'},'Usuario',us),el('label',{class:'dfl'},'Contraseña',cl)),err,
       el('div',{style:'display:flex;gap:8px;flex-wrap:wrap'},enBtn('Crear acceso','check',async()=>{
@@ -4019,10 +4037,10 @@ function enNuevaCuenta(){
         if(!nombre)return mal('Escribe el nombre del cliente.');
         if(!/^[a-z0-9][a-z0-9._-]{2,59}$/.test(usuario))return mal('El usuario solo puede tener letras minúsculas sin acento, números, punto, guion o guion bajo (mínimo 3).');
         if(clave.length<6)return mal('La contraseña necesita al menos 6 caracteres.');
-        await enCrearCuenta({tipo,nombre,usuario,clave,whatsapp:wa.value.trim()},D);
+        await enCrearCuenta({tipo,nombre,usuario,clave,whatsapp:wa.value.trim(),cliente:cli||ST_N.cli||null},D);
       },'btn-gold'),enBtn('Sugerir otra contraseña',null,()=>{cl.value=grp(3);guarda()})));
   };
-  const ST_N={};
+  const ST_N={};if(cli){ST_N.cli=cli;ST_N.n=cli.nombre;ST_N.w=cli.whatsapp||'';ST_N.u=enSugerir(cli.nombre)}
   const guarda=()=>{const g=id=>{const e=D.body.querySelector(id);return e?e.value:''};ST_N.n=g('#en-n');ST_N.w=g('#en-w');ST_N.u=g('#en-u');ST_N.c=g('#en-c')};
   pintar();setTimeout(()=>{const n=D.body.querySelector('#en-n');if(n)n.focus()},60);
 }
@@ -4038,11 +4056,13 @@ async function enCrearCuenta(d,D){
     if(!j.access_token)alert('Se creó el usuario, pero Supabase pide confirmar el correo y esa persona NO podrá entrar.\n\nEn Supabase: Authentication > Sign In / Providers > Email > desactiva "Confirm email". Luego crea el acceso otra vez.');
     let slugc=matSlug(d.nombre)||'cliente';const usados=new Set(EN.cuentas.filter(c=>c.tipo===d.tipo).map(c=>c.slug));let sl=slugc,i=2;while(usados.has(sl))sl=slugc+'-'+(i++);
     const body={user_id:uid,tipo:d.tipo,nombre:d.nombre,slug:sl,usuario:d.usuario,email_auth:email,whatsapp:d.whatsapp||null};
-    const x=await api('/rest/v1/en_cuentas',{method:'POST',body,headers:{Prefer:'return=representation'}});
+    if(d.cliente){body.cliente_id=d.cliente.id;if(d.cliente.correo)body.contacto=d.cliente.correo}
+    let x=await api('/rest/v1/en_cuentas',{method:'POST',body,headers:{Prefer:'return=representation'}});
+    if(!x.ok&&d.cliente){const t0=await x.clone().text();if(/cliente_id/.test(t0)){delete body.cliente_id;x=await api('/rest/v1/en_cuentas',{method:'POST',body,headers:{Prefer:'return=representation'}});toast('Falta correr sql/entregas-clientes.sql: el acceso se creó sin enlazar al cliente')}}
     if(!x.ok){const t=await errText(x);throw new Error(/duplicate|unique/i.test(t)?'Ese usuario ya está en uso. Elige otro.':t+' (¿corriste sql/entregas.sql?)')}
     const c=(await x.json())[0]||body;EN.cuentas.unshift(c);
     vaultSet(uid,{usuario:d.usuario,clave:d.clave,email,rol:'entregas',nombre:d.nombre,fecha:new Date().toISOString()});
-    renderEn();enCredenciales(c,d.usuario,d.clave,D);
+    renderEn();try{if(AC.sel&&AC.sel.cl)renderGrp('cl')}catch(e){}enCredenciales(c,d.usuario,d.clave,D);
   }catch(e){toast(e.message||'No se pudo crear')}
 }
 function enCredenciales(c,usuario,clave,D){
