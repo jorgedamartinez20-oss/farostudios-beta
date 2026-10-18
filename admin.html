@@ -4612,7 +4612,7 @@ function enEditor(pid){
     izq.append(datos);
     /* --- diseño de galería --- */
     if(gal){
-      const cfg=Object.assign({paleta:'marfil',fuente:'faro',vista:'cuadricula',foco:{x:50,y:50},meta:true},p.config||{});
+      const cfg=Object.assign({paleta:'marfil',fuente:'faro',vista:'editorial',foco:{x:50,y:50},meta:true},p.config||{});
       const fotos=A.filter(a=>a.tipo==='imagen');const portada=A.find(a=>a.id===cfg.portada)||fotos[0];
       if(portada)cargarImg(portada);
       const cur={...cfg,foco:{...(cfg.foco||{x:50,y:50})}};
@@ -4634,7 +4634,7 @@ function enEditor(pid){
       fjson('/api/lista?bucket=privado&prefix='+encodeURIComponent('faro-studios/musica-galerias/')).then(r=>{const aud=(r.archivos||[]).filter(o=>MAT_VER.aud.test(o.key));musSels.forEach((x,n)=>{aud.filter(o=>o.key!==musIni[n]).forEach(o=>x.append(el('option',{value:o.key},o.key.split('/').pop())));x.value=musIni[n]||''})}).catch(()=>{});
       pinVis();pinFu();pinFo();pinPal();
       const armaCfg=()=>{
-        const config={...(p.config||{}),paleta:cur.paleta,fuente:cur.fuente,vista:cur.vista,foco:cur.foco,meta:cur.meta!==false,portada:sel.value||null,titulo:val('eg-t').trim()||null,subtitulo:val('eg-s').trim()||null,fecha:val('eg-f')||null,mensaje:val('eg-m').trim()||null,musicas:[...new Set(musSels.map(x=>x.value).filter(Boolean))],musica:null};
+        const config={...(p.config||{}),paleta:cur.paleta,fuente:cur.fuente,vista:cur.vista,foco:cur.foco,meta:cur.meta!==false,portada:sel.value||null,titulo:val('eg-t').trim()||null,subtitulo:val('eg-s').trim()||null,fecha:val('eg-f')||null,mensaje:val('eg-m').trim()||null,cinta:val('eg-c').trim()||null,musicas:[...new Set(musSels.map(x=>x.value).filter(Boolean))],musica:null};
         delete config.estilo;return config};
       const dis=sec('Diseño de la galería',el('p',{class:'muted',style:'margin:0;font-size:.88rem'},'Los colores y las letras los eliges tú aquí; el cliente solo recibe el resultado.'),
         el('div',{},el('span',{class:'lab'},'Vista inicial'),vistas),el('div',{},el('span',{class:'lab'},'Colores · claros, oscuros, suaves y con contraste'),pals),
@@ -4643,6 +4643,7 @@ function enEditor(pid){
         el('div',{class:'dg2'},f('eg-f','Fecha del evento','date',cfg.fecha),el('label',{class:'dfl'},'Foto de portada',sel)),
         el('div',{},el('span',{class:'lab'},'Hacia dónde mira la portada (punto de enfoque)'),foco),
         f('eg-m','Mensaje sobre el muro (opcional)','area',cfg.mensaje),
+        f('eg-c','Texto de la cinta que se mueve (opcional; vacío = descuento de referidos de siempre)','area',cfg.cinta),
         el('div',{},el('span',{class:'lab'},'Música de la galería (hasta 3 canciones)'),el('p',{class:'muted',style:'margin:0 0 6px;font-size:.85rem'},'Súbelas en Archivos y web → Música de las galerías. Suenan en orden y en bucle; el cliente solo puede silenciarlas.'),el('div',{class:'dg2'},...musSels.map((x,n)=>el('label',{class:'dfl'},'Canción '+(n+1),x)))),
         el('label',{class:'wchk',style:'padding:0'},chkEl(cur.meta!==false,v=>{cur.meta=v}),'Mostrar los datos de cámara debajo de las fotos'),
         el('div',{},el('span',{class:'lab'},'Así se ve la portada'),prev),
@@ -4668,7 +4669,7 @@ function enEditor(pid){
           metaTodas?enBtn('Editar cada foto por separado','edit',async()=>{if(await enPatch('en_proyectos','proy',pid,{config:{...(p.config||{}),metaTodas:false}}))pintar()}):null)));
     }
     /* --- archivos --- */
-    const inp=el('input',{type:'file',multiple:'',accept:gal?'image/*,video/*':'video/*,audio/*,image/*,application/pdf',style:'display:none'});
+    const inp=el('input',{type:'file',multiple:'',accept:gal?'image/*,video/*,application/pdf':'video/*,audio/*,image/*,application/pdf',style:'display:none'});
     inp.addEventListener('change',async()=>{if(!inp.files.length)return;const fl=[...inp.files];inp.value='';
       await enSubirArchivos(p,fl,(h,t,fa)=>{subiendo='Subidos '+h+' de '+t+(fa?' · '+fa+' con error':'');const s=D.body.querySelector('#en-sub');if(s)s.textContent=subiendo});
       subiendo='';renderEn();pintar()});
@@ -4714,7 +4715,7 @@ function enEditor(pid){
     });
     if(!A.length)lista.append(el('p',{class:'muted',style:'margin:6px 0'},'Aún no hay archivos. Súbelos aquí abajo.'));
     D.body.append(sec(gal?'Fotos y videos ('+A.length+')':'Piezas para revisar ('+A.length+')',
-      el('div',{style:'display:flex;gap:8px;align-items:center;flex-wrap:wrap'},enBtn('Subir archivos','upload',()=>inp.click(),'btn-gold'),inp,gal?enBtn('Optimizar fotos','refresh',()=>enOptimizar(A.filter(a=>a.tipo==='imagen'))):null,el('small',{class:'muted',id:'en-sub'},subiendo||(gal?'Las fotos se muestran en máxima calidad tal como las subas.':'Videos, audios, imágenes o PDF. Puedes subir varios a la vez.'))),gal?el('div',{class:'optbox',id:'opt-res',hidden:''}):null,lista));
+      el('div',{style:'display:flex;gap:8px;align-items:center;flex-wrap:wrap'},enBtn('Subir archivos','upload',()=>inp.click(),'btn-gold'),inp,gal?enBtn('Optimizar fotos','refresh',()=>enOptimizar(A.filter(a=>a.tipo==='imagen'))):null,el('small',{class:'muted',id:'en-sub'},subiendo||(gal?'Las fotos se muestran en máxima calidad tal como las subas. Si subes el contrato en PDF, aparece al final de la galería en “Tu contrato”.':'Videos, audios, imágenes o PDF. Puedes subir varios a la vez.'))),gal?el('div',{class:'optbox',id:'opt-res',hidden:''}):null,lista));
     if(gal)enOptPinta();
     /* --- correcciones / favoritas --- */
     if(!gal){

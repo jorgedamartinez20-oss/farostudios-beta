@@ -82,7 +82,7 @@ const gX='<button class="x" data-x aria-label="Cerrar">'+ic('x')+'</button>';
 
 /* ================= VISTA PRINCIPAL ================= */
 async function vistaGaleria(){
-  const p=ST.p,cfg=p.config||{};G.cfg=cfg;G.vista=(PREVIA?null:gLS(gKey('faro_vista')))||cfg.vista||'cuadricula';G.filtro=null;G.fin=false;G.promoVisto=false;G.abierta=false;G.carro=[];G.pre=null;G.quiere=false;
+  const p=ST.p,cfg=p.config||{};G.cfg=cfg;G.vista=(PREVIA?null:gLS(gKey('faro_vista')))||cfg.vista||'editorial';G.filtro=null;G.fin=false;G.promoVisto=false;G.abierta=false;G.carro=[];G.pre=null;G.quiere=false;
   if(G.au){try{G.au.pause()}catch(e){}G.au=null}
   gAplica(cfg);
   const fotos=ST.arch,portada=fotos.find(a=>a.id===cfg.portada)||fotos.find(a=>a.tipo==='imagen')||fotos[0];
@@ -99,13 +99,15 @@ async function vistaGaleria(){
     +'<button class="gb" id="gdl" aria-label="Descargar">'+ic('dl')+'<span class="t">Descargar</span></button>'
     +'<button class="gb" id="gay" aria-label="Ayuda">'+ic('help')+'</button>'
     +'<button class="gb" id="gsal" aria-label="Salir">'+ic('out')+'<span class="t">Salir</span></button></header>'
-   +'<div class="grib" id="grib"><b>GANAN LOS DOS</b><span id="grt"></span><i class="cur"></i></div>'
-   +'<section class="gcov" id="gcv"><div class="im" style="'+(pl&&pl.urlVer?'background-image:url(\''+esc(pl.urlVer)+'\');':'')+'--fx:'+(+foco.x||50)+'%;--fy:'+(+foco.y||50)+'%"></div><div class="bar t"></div><div class="bar b"></div>'
+   +'<div class="grib" id="grib" role="marquee" aria-label="Descuento de referidos"><div class="mq"><div class="tk" id="grt"></div></div></div>'
+   +'<section class="gcov" id="gcv"><div class="im" style="'+(pl&&pl.urlVer?'background-image:url(\''+esc(pl.urlVer)+'\');':'')+'--fx:'+(+foco.x||50)+'%;--fy:'+(+foco.y||50)+'%"></div>'
    +'<div class="tx">'+(fe?'<p class="fe">'+esc(fe)+'</p>':'')+'<h1>'+esc(titulo)+'</h1>'+(sub?'<p class="su">'+esc(sub)+'</p>':'')+'<span class="reg"></span><button class="bt" id="bver">Ver galería</button><p class="priv">Galería privada</p></div>'
    +'<p class="pie">'+nImg+' fotografías</p></section>'
    +'<section class="gmuro" id="gmu"><div class="in">'+(cfg.mensaje?'<p class="cab">'+esc(cfg.mensaje)+'</p>':'')+'<div id="gfl"></div><div id="gcuerpo"></div>'
    +'<div class="gfin" id="gfin"><span class="iso"></span><p>Gracias por dejarnos contar tu historia. Guarda tus favoritas, compártelas con quien quieras y, si te gustó, cuéntanos cómo fue.</p><div class="row"><button class="gbtn p" id="gresb">'+ic('star')+' Dejar una reseña</button><button class="gbtn" id="gprb">'+ic('bag')+' Pedir impresiones</button></div></div></div>'
-   +'<footer class="gpie">Faro Studios</footer></section>'
+   +'<div class="gcon" id="gcon" hidden></div>'
+   +'<footer class="gpie">© '+new Date().getFullYear()+' Faro Studios · farostudios.net<br>Todos los derechos reservados</footer></section>'
+   +'<div id="gcor" aria-hidden="true"><div class="ld-wrap"><div class="ld-mark"><div class="ld-base"></div><div class="ld-fill"></div></div></div></div>'
    +'<button class="gbolsa" id="gbolsa" aria-label="Impresiones">'+ic('bag')+'<span class="cnt" id="gbc" hidden></span></button>'
    +'<div class="gmus" id="gmus" hidden><div class="cv" id="gmcv"><span class="iso"></span></div><div class="tx"><b id="gmt"></b><small id="gma"></small></div><button id="gmp" aria-label="Silenciar la música">'+ic('vol')+'</button><i class="eq" aria-hidden="true"><s></s><s></s><s></s></i></div></div>';
   const mh=()=>{const t=$('#gtp');if(t)document.documentElement.style.setProperty('--gh',t.offsetHeight+'px')};mh();addEventListener('resize',mh);
@@ -115,41 +117,54 @@ async function vistaGaleria(){
   $('#glis').onclick=gAbrirListas;$('#gdl').onclick=()=>gAbrirDescarga('todas');
   $('#gbolsa').onclick=gAbrirBolsa;$('#gresb').onclick=()=>gAbrirResena(true);$('#gprb').onclick=gAbrirBolsa;
   document.querySelectorAll('#gvista button').forEach(b=>b.onclick=()=>{G.vista=b.dataset.v;gLS(gKey('faro_vista'),G.vista);gPintaMuro()});
-  const tp=$('#gtp');const f=()=>tp.classList.toggle('sol',scrollY>window.innerHeight*.5);addEventListener('scroll',f,{passive:true});f();
+  const tp=$('#gtp'),ga=document.querySelector('.gal');
+  if(G.onScroll)removeEventListener('scroll',G.onScroll);
+  G.onScroll=()=>{const x=scrollY>24;tp.classList.toggle('sol',x);ga.classList.toggle('sol',x)};
+  addEventListener('scroll',G.onScroll,{passive:true});G.onScroll();
   new IntersectionObserver(es=>{if(es[0].isIntersecting)gLlegoAlFinal()},{threshold:.6}).observe($('#gfin'));
   /* en segundo plano solo los enlaces (pesan casi nada); las fotos no se descargan hasta abrir la galería */
   setTimeout(()=>{if(!G.pre&&!G.abierta)G.pre=enlaces(ST.arch.map(a=>a.id)).catch(()=>{})},700);
   gMusicaPrep();
 }
-async function gAbrirMuro(){
+const gEspera=ms=>new Promise(r=>setTimeout(r,ms));
+/* cortina: el farito se llena mientras carga la galería */
+function gCortina(){
+  const c=$('#gcor');if(!c)return{fin:async()=>{}};
+  let p=0;c.style.setProperty('--p','0');c.classList.add('on');
+  const iv=setInterval(()=>{p+=(0.92-p)*.14;c.style.setProperty('--p',p.toFixed(3))},100);
+  return{fin:async()=>{clearInterval(iv);c.style.setProperty('--p','1');await gEspera(450);c.classList.remove('on')}};
+}
+async function gAbrirMuro(silencio){
   const b=$('#bver');if(!b||b.disabled)return;
   gMusicaPlay();
+  let nueva=false;
   if(!G.abierta){
-    b.disabled=true;b.innerHTML='<span class="gsp"></span> Cargando…';
+    nueva=true;b.disabled=true;
+    const cor=silencio===true?null:gCortina(),t0=Date.now();
     try{await Promise.all([G.pre||enlaces(ST.arch.map(a=>a.id)),gCargarListas()]);await enlaces(ST.arch.map(a=>a.id))}catch(e){}
     try{G.carro=JSON.parse(gLS(gKey('faro_bolsa'))||'[]').filter(x=>ST.arch.some(a=>a.id===x.id))}catch(e){}
-    G.abierta=true;const g=document.querySelector('.gal');if(!g)return;g.classList.remove('pre');
-    gPintaMuro();gContadores();gRibon();
+    G.abierta=true;const g=document.querySelector('.gal');if(!g){if(cor)cor.fin();return}
+    g.classList.remove('pre');g.classList.add('abierta');
+    gPintaMuro();gContratoPinta();gContadores();gRibon();
     const mp=$('#gmus');if(mp&&G.au)mp.hidden=false;
-    b.disabled=false;b.textContent='Ver galería';
+    /* la portada queda como encabezado corto, arriba */
+    window.scrollTo(0,0);if(G.onScroll)G.onScroll();
+    if(cor){await gEspera(Math.max(0,1500-(Date.now()-t0)));await cor.fin()}
+    b.disabled=false;
   }
-  $('#gmu').scrollIntoView({behavior:'smooth'});
-  if(!PREVIA&&!gLS(gKey('faro_tut')))setTimeout(()=>gTutorial(true),1100);
+  if(nueva&&!PREVIA&&!gLS(gKey('faro_tut')))setTimeout(()=>gTutorial(true),700);
 }
-/* cinta de recomendación: se escribe y se borra en bucle, fija debajo del menú */
+/* cinta de recomendación: letrero LED que pasa despacio en bucle, debajo del menú (aparece cuando el encabezado ya es sólido) */
 function gRibon(){
   const t=$('#grt');if(!t||t.dataset.on)return;t.dataset.on='1';
-  const M=['Recomiéndanos con un amigo','Precio especial para ti en tu próxima sesión','Y descuento para tu amigo'];
-  if(matchMedia('(prefers-reduced-motion:reduce)').matches){let i=0;t.textContent=M[0];const iv=setInterval(()=>{if(!document.body.contains(t)){clearInterval(iv);return}i=(i+1)%M.length;t.textContent=M[i]},4200);return}
-  let i=0,n=0,fase=0;
-  const paso=()=>{
-    if(!document.body.contains(t))return;const m=M[i];
-    if(fase===0){n++;t.textContent=m.slice(0,n);if(n>=m.length){fase=1;setTimeout(paso,2400)}else setTimeout(paso,55);return}
-    if(fase===1)fase=2;
-    n--;t.textContent=m.slice(0,Math.max(0,n));
-    if(n<=0){fase=0;i=(i+1)%M.length;setTimeout(paso,380)}else setTimeout(paso,24);
-  };
-  paso();
+  const personal=typeof G.cfg.cinta==='string'&&G.cfg.cinta.trim();
+  const M=personal?[G.cfg.cinta.trim()]:['Por tu preferencia te obsequiamos un descuento de referidos: 15% para ti en tu próxima sesión y 15% para tu amigo en la suya','Recomiéndanos con quien quieras y ganan los dos'];
+  const item=M.map(m=>'<span>'+esc(m)+'</span><i aria-hidden="true">◆</i>').join('');
+  const mq=t.parentElement;let mitad=item,n=1;
+  t.innerHTML=mitad+mitad;
+  while(t.scrollWidth/2<mq.clientWidth&&n<8){mitad+=item;t.innerHTML=mitad+mitad;n++}
+  /* velocidad lenta y constante: unos 38 px por segundo */
+  t.style.setProperty('--mqd',Math.max(28,(t.scrollWidth/2)/38).toFixed(1)+'s');
 }
 /* ---------- música: pastilla flotante discreta (como Apple Music) ---------- */
 function gTxtId3(d){
@@ -231,7 +246,7 @@ function gContadores(){
 
 /* ---------- muro: cuadrícula y editorial ---------- */
 function gVisibles(){
-  let v=ST.arch;
+  let v=ST.arch.filter(a=>a.tipo==='imagen'||a.tipo==='video');
   if(G.filtro){const l=G.listas.find(x=>x.id===G.filtro);v=l?v.filter(a=>l.ids.has(a.id)):v}
   return v;
 }
@@ -246,10 +261,16 @@ function gTile(a,i,cap){
 }
 /* fotos casi cuadradas: en cuadrícula se recortan un poco distinto para que no quede una rejilla perfecta (solo al mostrarlas; al abrirlas se ven completas) */
 const GAR=['1/1','4/5','5/4','5/6','1/1','6/5','4/5','1/1','5/4'];
+/* en el teléfono (2 columnas) todas las fotos cambian de tamaño en ritmo de tres: nunca queda una rejilla igual */
+const GARM={v:['2/3','4/5','1/1'],h:['3/2','5/4','1/1'],c:['2/3','1/1','4/5']};
 function gVaria(im){
   const t=im.closest('.gph');if(!t||G.vista==='editorial'||!im.naturalWidth)return;
-  const r=im.naturalWidth/im.naturalHeight;if(r<.92||r>1.08)return;
-  t.style.setProperty('--ar',GAR[(+t.dataset.i||0)%GAR.length]);t.classList.add('va');
+  const r=im.naturalWidth/im.naturalHeight,i=+t.dataset.i||0;
+  if(matchMedia('(max-width:720px)').matches){
+    const set=r<.92?GARM.v:r>1.08?GARM.h:GARM.c;
+    t.style.setProperty('--ar',set[i%3]);t.classList.add('va');return}
+  if(r<.92||r>1.08)return;
+  t.style.setProperty('--ar',GAR[i%GAR.length]);t.classList.add('va');
 }
 function gPintaMuro(){
   const cu=$('#gcuerpo'),fl=$('#gfl');if(!cu)return;
@@ -275,7 +296,23 @@ function gPintaMuro(){
     t.querySelectorAll('.acts button').forEach(b=>b.onclick=e=>{e.stopPropagation();const a=ST.arch.find(x=>x.id===b.dataset.id);
       if(b.dataset.a==='fav')gAbrirGuardar(a);else if(b.dataset.a==='ig')gAbrirHistoria(a);else gAbrirDescarga('una',a)});
   });
+  if('IntersectionObserver' in window&&!matchMedia('(prefers-reduced-motion:reduce)').matches){
+    const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('gvisto');io.unobserve(e.target)}}),{rootMargin:'0px 0px -5% 0px',threshold:.04});
+    cu.querySelectorAll('.gph').forEach(t=>{t.classList.add('gaparece');io.observe(t)});
+    setTimeout(()=>cu.querySelectorAll('.gph.gaparece:not(.gvisto)').forEach(t=>t.classList.add('gvisto')),4000);
+  }
   gContadores();
+}
+/* espacio del contrato: aparece al final solo si Faro subió un PDF a la galería */
+function gContratoPinta(){
+  const c=$('#gcon');if(!c)return;
+  const pdfs=ST.arch.filter(a=>a.tipo==='pdf'&&gLink(a.id).urlVer);
+  if(!pdfs.length){c.hidden=true;c.innerHTML='';return}
+  c.hidden=false;
+  c.innerHTML=pdfs.map((a,i)=>'<div class="cc">'+ic('file')+'<div class="tt"><b>Tu contrato</b><small>'+esc(a.nombre)+'</small></div><div class="row"><button class="gbtn" data-k="ver" data-i="'+i+'">'+ic('eye')+' Ver</button>'+(gLink(a.id).url?'<button class="gbtn p" data-k="dl" data-i="'+i+'">'+ic('dl')+' Descargar</button>':'')+'</div></div>').join('');
+  c.querySelectorAll('button').forEach(b=>b.onclick=()=>{const a=pdfs[+b.dataset.i],l=gLink(a.id);
+    if(b.dataset.k==='ver')window.open(l.urlVer,'_blank','noopener');
+    else{const x=document.createElement('a');x.href=l.url;x.rel='noopener';document.body.append(x);x.click();x.remove()}});
 }
 function gRefrescaCorazones(){
   document.querySelectorAll('[data-a="fav"]').forEach(b=>b.classList.toggle('on',ST.favs.has(b.dataset.id)));

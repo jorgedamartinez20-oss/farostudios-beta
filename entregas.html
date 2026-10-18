@@ -404,7 +404,7 @@ function confirmarEnvio(){
 async function previaRepinta(){
   const abierta=G.abierta,y=scrollY;
   await vistaGaleria();
-  if(abierta){await gAbrirMuro();window.scrollTo(0,y)}
+  if(abierta){await gAbrirMuro(true);window.scrollTo(0,y)}
 }
 function previaBoot(){
   APP.innerHTML='<div class="lg"><p style="position:relative;color:var(--muted)">Preparando la vista previa…</p></div>';
