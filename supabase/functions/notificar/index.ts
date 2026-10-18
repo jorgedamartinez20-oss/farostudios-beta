@@ -75,6 +75,10 @@ Deno.serve(async (req: Request) => {
     aviso = { title: "📅 Nueva reserva", body: [corto(d.nombre, 40), corto(d.categoria, 40), [d.fecha, hora].filter(Boolean).join(" ")].filter(Boolean).join(" · "), tag: "reserva-" + (d.id ?? "") };
   } else if (tipo === "cotizacion") {
     aviso = { title: "💬 Nueva cotización", body: [corto(d.nombre, 40), corto(d.categoria, 40), corto(d.ciudad, 30)].filter(Boolean).join(" · "), tag: "cot-" + (d.id ?? "") };
+  } else if (tipo === "solicitud") {
+    aviso = { title: "🖨️ Solicitud de impresiones", body: [corto(d.cliente, 40), `${d.cantidad ?? 0} impresión(es)`, d.total ? `Q${d.total}` : ""].filter(Boolean).join(" · "), tag: "sol-" + (d.id ?? "") };
+  } else if (tipo === "resena") {
+    aviso = { title: "⭐ Nueva reseña", body: [corto(d.nombre, 40), "★".repeat(Number(d.estrellas) || 0), corto(d.texto, 80)].filter(Boolean).join(" · "), tag: "res-" + (d.id ?? "") };
   } else if (tipo === "descarga") {
     aviso = { title: "⬇️ Descargaron un archivo", body: corto(d.archivo, 120), tag: "descarga" };
   } else if (tipo === "resumen") {

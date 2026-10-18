@@ -49,6 +49,11 @@ const REGLAS = { 'alu-token': { leer: (k) => k.includes('ana-1111/'), escribir: 
   'doc-token': { leer: (k) => k.includes('ana-1111/'), escribir: (k) => k.includes('ana-1111/respuestas/') || k.includes('ana-1111/material/'), borrar: (k) => k.includes('ana-1111/respuestas/') || k.includes('ana-1111/material/') } };
 const ID_OK = '11111111-1111-1111-1111-111111111111', ID_IMG = '22222222-2222-2222-2222-222222222222';
 globalThis.fetch = async (u, init) => {
+  if (String(u).endsWith('/rest/v1/rpc/en_lista_publica')) { // lista compartida: solo con el token correcto
+    const b = JSON.parse(init.body);
+    if (b.p_token !== 'abcdefghij0123456789abcd') return new Response('null', { status: 200 });
+    return new Response(JSON.stringify({ lista: 'Familia', titulo: 'Boda', config: { paleta: 'oliva', fuente: 'serif', secreto: 'no-debe-salir' }, archivos: [{ id: ID_IMG, key: globalThis.K_PRUEBA, nombre: 'Foto', tipo: 'imagen', meta: { camara: 'Sony A7 IV' } }, { id: ID_OK, key: 'faro-academy/x/y.jpg', nombre: 'Fuera', tipo: 'imagen', meta: {} }] }), { status: 200 });
+  }
   if (String(u).includes('/rest/v1/en_archivos')) { // RLS simulado: solo el cliente ve sus archivos
     const t = (init.headers.Authorization || '').replace('Bearer ', '');
     if (t !== 'cli-token') return new Response(t === 'malo' ? '{}' : '[]', { status: t === 'malo' ? 401 : 200 });
@@ -88,7 +93,7 @@ let n = 0; const ok = (m) => console.log('  ✓ ' + m, ++n && '');
 // utilidades
 assert.equal(slug('Maxi Despensa — Mamá Lucha'), 'maxi-despensa-mama-lucha'); ok('slug quita tildes y símbolos');
 assert.equal(nombreArchivo('Aftermovie Final (v2).mp4'), 'Aftermovie-Final-(v2).mp4'); ok('nombreArchivo limpia espacios');
-assert.equal(DESTINOS.length, 4 + 2 * 7 + 5 + 3 + 12); ok('árbol: ' + DESTINOS.length + ' carpetas base');
+assert.equal(DESTINOS.length, 4 + 2 * 7 + 5 + 4 + 12); ok('árbol: ' + DESTINOS.length + ' carpetas base');
 
 // CORS
 let r = await q('/api/arbol', { method: 'OPTIONS', headers: { Origin: ORI } });
@@ -206,6 +211,13 @@ const uf = new URL(enl[ID_IMG].urlVer); r = await q(uf.pathname + uf.search); as
 const despues = (await (await q('/api/stats', { headers: A })).json()).archivos[K]; assert.equal(despues.v, antes.v); ok('las miniaturas de fotos no inflan las estadísticas');
 const uv = new URL(enl[ID_OK].urlVer); await q(uv.pathname + uv.search);
 const d3 = (await (await q('/api/stats', { headers: A })).json()).archivos[K]; assert.equal(d3.v, antes.v + 1); ok('ver un video sí cuenta como reproducción');
+
+// listas compartidas (enlace privado)
+r = await q('/api/lista/enlaces', { method: 'POST', body: JSON.stringify({ token: 'malo' }) }); assert.equal(r.status, 404); ok('lista: token con mal formato → 404');
+r = await q('/api/lista/enlaces', { method: 'POST', body: JSON.stringify({ token: 'zzzzzzzzzz0123456789zzzz' }) }); assert.equal(r.status, 404); ok('lista: token que no existe → 404');
+r = await q('/api/lista/enlaces', { method: 'POST', body: JSON.stringify({ token: 'abcdefghij0123456789abcd' }) });
+const lp = await r.json(); assert.equal(lp.lista, 'Familia'); assert.equal(lp.archivos.length, 1); assert.equal(lp.archivos[0].meta.camara, 'Sony A7 IV'); assert.equal(lp.config.secreto, undefined);
+const ul = new URL(lp.archivos[0].urlVer); r = await q(ul.pathname + ul.search); assert.equal(r.status, 200); ok('lista: entrega solo sus fotos con enlaces firmados (y descarta rutas ajenas)');
 
 // borrar = papelera (se puede restaurar)
 r = await q(`/api/objeto?bucket=privado&key=${encodeURIComponent(K)}`, { method: 'DELETE', headers: A }); assert.equal(r.status, 200); assert.ok(env.PRIVADO.m.has(K)); ok('borrar manda a la papelera (el archivo sigue en R2)');

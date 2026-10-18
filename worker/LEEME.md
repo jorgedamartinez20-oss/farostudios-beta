@@ -64,3 +64,8 @@ Rutas del administrador: `/api/papelera`, `/api/restaurar`, `/api/purgar`, `/api
 ## Pendiente (siguiente etapa)
 - Dominio propio (por ejemplo `archivos.farostudios.net`) cuando el DNS del dominio pase a Cloudflare.
 - Vencimiento automático de entregas (la fecha vive en Supabase; un proceso diario borra lo vencido).
+
+## Galerías de Entregas (versión 2)
+- Carpeta nueva en R2: `Faro Studios › Música de las galerías` (`faro-studios/musica-galerias/`). Se crea con "Preparar carpetas" en Materiales.
+- `POST /api/lista/enlaces` (público): recibe `{token}` de una lista compartida y devuelve solo las fotos de esa lista con enlaces temporales (2 horas). Sin sesión.
+- Antes de usarlo: correr `sql/entregas-galeria-v2.sql` en Supabase, desplegar el Worker (`npx wrangler deploy`) y volver a desplegar la función `notificar`.

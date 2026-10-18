@@ -63,6 +63,8 @@ export const DESTINOS = [
   { id: 'academy/estudiantes', bucket: 'privado', prefijo: 'faro-academy/estudiantes/', etiqueta: 'Faro Academy › Alumnos (carpeta propia)', entidad: true, persona: 'estudiante' },
   { id: 'academy/docentes', bucket: 'privado', prefijo: 'faro-academy/docentes/', etiqueta: 'Faro Academy › Docentes (carpeta propia)', entidad: true, persona: 'docente' },
   { id: 'studios/clientes', bucket: 'privado', prefijo: 'faro-studios/clientes/', etiqueta: 'Faro Studios › Clientes (carpeta propia)', entidad: true, persona: 'cliente' },
+  // Música de fondo de las galerías (ej. el piano): un archivo por galería, que el cliente solo escucha.
+  { id: 'studios/musica-galerias', bucket: 'privado', prefijo: 'faro-studios/musica-galerias/', etiqueta: 'Faro Studios › Música de las galerías', entidad: false },
   ...LANDING.map(([id, et]) => ({ id: 'landing/' + id, bucket: 'publico', prefijo: `landing/${id}/`, etiqueta: `Landing › ${et}`, entidad: false })),
 ];
 
@@ -434,6 +436,31 @@ export default {
         enlaces[f.id] = { nombre: f.nombre, puede, urlVer: `${url.origin}/api/bajar?inline=1&t=${tv}`, ...(puede ? { url: `${url.origin}/api/bajar?t=${td}` } : {}) };
       }
       return json(request, env, { enlaces, vence_en: seg });
+    }
+
+    // Listas compartidas: quien tiene el enlace privado ve SOLO las fotos de esa lista. Supabase decide (función en_lista_publica).
+    if (ruta === '/api/lista/enlaces' && request.method === 'POST') {
+      if (!env.FIRMA_SECRETO) return err(request, env, 'Falta configurar FIRMA_SECRETO en el servicio (ver LEEME)', 500);
+      const b = await request.json().catch(() => ({}));
+      const token = String(b.token || '');
+      if (!/^[a-z0-9]{20,64}$/i.test(token)) return err(request, env, 'El enlace no es válido', 404);
+      let r;
+      try {
+        r = await fetch(`${env.SUPABASE_URL}/rest/v1/rpc/en_lista_publica`, { method: 'POST', headers: { apikey: env.SUPABASE_KEY, Authorization: `Bearer ${env.SUPABASE_KEY}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ p_token: token }) });
+      } catch (e) { return err(request, env, 'No se pudo consultar', 502); }
+      if (!r.ok) return err(request, env, 'No se pudo consultar', 502);
+      const lista = await r.json().catch(() => null);
+      if (!lista || !Array.isArray(lista.archivos)) return err(request, env, 'Esta lista ya no está disponible', 404);
+      const e = Math.floor(Date.now() / 1000) + 7200;
+      const archivos = [];
+      for (const f of lista.archivos.slice(0, 300)) {
+        if (!f.key || f.key.includes('..') || f.key.endsWith('/.keep') || !f.key.startsWith('faro-studios/')) continue;
+        const td = await firmar(env, { b: 'privado', k: f.key, e });
+        const tv = await firmar(env, { b: 'privado', k: f.key, e, n: 1 });
+        archivos.push({ id: f.id, nombre: f.nombre, meta: f.meta || {}, urlVer: `${url.origin}/api/bajar?inline=1&t=${tv}`, url: `${url.origin}/api/bajar?t=${td}` });
+      }
+      const cfg = lista.config || {};
+      return json(request, env, { lista: lista.lista, titulo: lista.titulo, config: { paleta: cfg.paleta, fuente: cfg.fuente, meta: cfg.meta }, archivos, vence_en: 7200 });
     }
 
     // Todo lo demás es solo para el administrador
