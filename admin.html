@@ -2056,7 +2056,13 @@ async function matSubirKey(file,bucket,key,onProg){
 }
 async function matSubirKey0(file,bucket,key,onProg){
   const q='bucket='+bucket+'&key='+encodeURIComponent(key),tipo=file.type||'application/octet-stream';
-  if(file.size<=MAT.umbral){await xhrPut('/api/subir?'+q,{'Content-Type':tipo},file,onProg);return{key,bucket}}
+  if(file.size<=MAT.umbral){
+    /* un corte de red momentáneo no debe perder la foto: hasta 4 intentos con pausa creciente */
+    for(let n=0;;n++){
+      try{await xhrPut('/api/subir?'+q,{'Content-Type':tipo},file,onProg);return{key,bucket}}
+      catch(e){if(n>=3||!/conexi/i.test(e.message||''))throw e;await new Promise(r=>setTimeout(r,1200*(n+1)))}
+    }
+  }
   const{uploadId}=await fjson('/api/multipart/inicio?'+q+'&tipo='+encodeURIComponent(tipo),{method:'POST'});
   const partes=[];let hecho=0;
   try{
@@ -4159,7 +4165,7 @@ async function enSubirArchivos(p,files,estado){
     }catch(e){fallos++;toast('No se pudo subir '+f.name+': '+(e.message||''))}
     hechos++;estado(hechos,lista.length,fallos);
   };
-  const cola=[...lista];const obreros=Array.from({length:Math.min(3,cola.length)},async()=>{while(cola.length)await un(cola.shift())});
+  const cola=[...lista];const obreros=Array.from({length:Math.min(2,cola.length)},async()=>{while(cola.length)await un(cola.shift())});
   await Promise.all(obreros);
 }
 function enEditor(pid){
