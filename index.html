@@ -1921,7 +1921,7 @@ html[data-page="academy"] .hero2,html[data-page="music"] .hero2,html[data-page="
     <span class="brand-tag" id="brand-tag" hidden>ACADEMY</span>
   </button>
   <nav class="nav-links" data-for="studios" aria-label="Secciones de Studios">
-    <a href="#quienes">Nosotros</a><a href="#servicios">Servicios</a><a href="#portafolio">Portafolio</a><a href="#audio">Música</a><a href="#catalogo">Catálogo</a><a href="#descargas-s">Recursos</a><button data-page-go="cotizar">Cotizar</button><button data-page-go="reservas">Agendar</button><button type="button" data-open="dlg-cli">Mi espacio</button>
+    <a href="#quienes">Nosotros</a><a href="#servicios">Servicios</a><a href="#portafolio">Portafolio</a><a href="#audio">Música</a><a href="#catalogo">Catálogo</a><a href="#descargas-s">Recursos</a><button data-page-go="cotizar">Cotizar</button><button data-page-go="reservas">Agendar</button><button type="button" data-open="dlg-cli">Entregas</button>
   </nav>
   <nav class="nav-links" data-for="academy" aria-label="Páginas de Academy" hidden>
     <button data-page-go="academy" id="nl-academy">Academy</button>
@@ -2364,16 +2364,16 @@ html[data-page="academy"] .hero2,html[data-page="music"] .hero2,html[data-page="
   <div class="jr" data-j='[["i-file","Facturas","Descarga las de cada mes"],["i-card","Saldos","Lo pagado y lo pendiente"],["i-cal","Próximas clases","Horarios y cambios"],["i-compass","Avance","Metas de cada etapa"]]'></div>
   <div class="apl-help">¿No tienes tus datos? Escríbenos por <a data-wa="academy" target="_blank" rel="noopener" href="#">WhatsApp</a>. Pagos con tarjeta de crédito y cuotas con VisaLink; consulta recargos y disponibilidad.</div>
 </div></dialog>
-<dialog id="dlg-cli" class="portal apl pal-studios" data-r="cl"><div class="dlg">
+<dialog id="dlg-cli" class="portal apl pal-studios" data-r="en"><div class="dlg">
   <button class="x" data-close aria-label="Cerrar">×</button>
-  <div class="apl-hd"><span class="apl-ic"><svg class="ico"><use href="#i-user"/></svg></span><h3>Mi espacio de cliente</h3><p>Tu galería, tu contrato y tus entregas en un solo lugar.</p></div>
-  <form class="apl-form" data-r="cl" autocomplete="on">
-    <label class="apl-f"><span>Correo</span><input name="u" type="email" autocomplete="email" placeholder="tucorreo@ejemplo.com" required></label>
-    <label class="apl-f"><span>Código de acceso</span><input name="p" type="password" autocomplete="off" autocapitalize="characters" placeholder="XXXX-XXXX" required><button type="button" class="apl-eye" aria-label="Mostrar u ocultar el código"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button></label>
+  <div class="apl-hd"><span class="apl-ic"><svg class="ico"><use href="#i-vid"/></svg></span><h3>Entregas</h3><p>Revisa tus videos, deja tus comentarios y descarga tu material.</p></div>
+  <form class="apl-form" data-r="en" autocomplete="on">
+    <label class="apl-f"><span>Usuario</span><input name="u" autocomplete="username" autocapitalize="none" placeholder="tu usuario" required></label>
+    <label class="apl-f"><span>Contraseña</span><input name="p" type="password" autocomplete="current-password" placeholder="XXXX-XXXX" required><button type="button" class="apl-eye" aria-label="Mostrar u ocultar la contraseña"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button></label>
     <button class="btn btn-solid apl-go" type="submit">Entrar</button>
   </form>
-  <div class="jr" data-j='[["i-cam","Mi galería","Elige y descarga tus fotos"],["i-file","Documentos","Contrato y facturas"],["i-vid","Entregas","Videos y álbumes"],["i-chat","Buzón","Comentarios y ajustes"]]'></div>
-  <div class="apl-help">Entras con el correo que usaste al reservar y el código que te enviamos. ¿No lo tienes? Escríbenos por <a data-wa="studios" target="_blank" rel="noopener" href="#">WhatsApp</a>.</div>
+  <div class="jr" data-j='[["i-vid","Revisión","Aprueba o pide cambios por clip"],["i-cam","Galerías","Tus fotos en máxima calidad"],["i-dl","Descargas","Todo tu material en un lugar"],["i-chat","Comentarios","Notas en el minuto exacto"]]'></div>
+  <div class="apl-help">Entras con el usuario y la contraseña que te enviamos. ¿No los tienes? Escríbenos por <a data-wa="studios" target="_blank" rel="noopener" href="#">WhatsApp</a>.</div>
 </div></dialog>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <div id="loader" aria-hidden="true"><div class="ld-wrap"><div class="ld-mark"><div class="ld-base"></div><div class="ld-fill"></div></div><div class="ld-bar"><i></i></div></div></div>
@@ -2500,7 +2500,11 @@ $('#foot-sw').addEventListener('click',()=>goPage(curSide()==='studios'?'academy
 $('#home').addEventListener('click',()=>{const t=curSide()==='academy'?'academy':'studios';if(current===t)window.scrollTo({top:0,behavior:reduce?'auto':'smooth'});else goPage(t)});
 document.addEventListener('click',e=>{
   const a=e.target.closest('a[href^="#"]');
-  if(a&&a.getAttribute('href').length>1){e.preventDefault();const t=document.getElementById(a.getAttribute('href').slice(1));if(t)t.scrollIntoView({behavior:reduce?'auto':'smooth'})}
+  if(a&&a.getAttribute('href').length>1){e.preventDefault();const t=document.getElementById(a.getAttribute('href').slice(1));
+    if(t){const pk=Object.keys(PAGES).find(k=>$('#'+PAGES[k].el).contains(t));
+      if(pk&&pk!==current){const go2=()=>{const f=()=>t.scrollIntoView({behavior:'auto'});applyPage(pk);requestAnimationFrame(f)};
+        if(busy)return;if(leaveNeeded()){askLeave(()=>{go2()});return}go2()}
+      else t.scrollIntoView({behavior:reduce?'auto':'smooth'})}}
   const go=e.target.closest('[data-page-go]');if(go){pendingPreset=go.dataset.preset||'';const [x,y]=center(go);goPage(go.dataset.pageGo,x,y)}
 });
 
@@ -3440,7 +3444,7 @@ $$('[data-wa]').forEach(a=>a.href=WA+encodeURIComponent(waMsg[a.dataset.wa]));
     e.preventDefault();
     const u=f.elements.u.value.trim(),p=f.elements.p.value;if(!u||!p)return;
     try{sessionStorage.setItem('faro_handoff',JSON.stringify({t:f.dataset.r,u:u,p:p}))}catch(x){}
-    location.href='portal.html?r='+f.dataset.r;
+    location.href=f.dataset.r==='en'?'entregas.html':'portal.html?r='+f.dataset.r;
   }));
   $$('.apl-eye').forEach(b=>b.addEventListener('click',()=>{const i=b.parentElement.querySelector('input');i.type=i.type==='password'?'text':'password'}));
   /* recorrido visual */

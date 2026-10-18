@@ -548,7 +548,16 @@ function abrirLB(i){
 }
 
 /* ---------- arranque ---------- */
-if(SES)arrancar();else pantallaLogin('');
+(async()=>{
+  let h=null;try{h=JSON.parse(sessionStorage.getItem('faro_handoff')||'null');sessionStorage.removeItem('faro_handoff')}catch(e){}
+  if(h&&h.t==='en'&&h.u&&h.p){
+    const u=String(h.u).trim().toLowerCase().replace(/\s+/g,''),p=h.p;
+    let s=await signIn(u+DOM,p);if(!s&&normClave(p)!==p)s=await signIn(u+DOM,normClave(p));
+    if(s)return arrancar();
+    return pantallaLogin(/confirm/i.test(LASTERR)?'Tu acceso aún no está activado. Escríbenos por WhatsApp.':'Usuario o contraseña incorrectos. Revisa los datos que te enviamos.');
+  }
+  if(SES)arrancar();else pantallaLogin('');
+})();
 </script>
 </body>
 </html>
