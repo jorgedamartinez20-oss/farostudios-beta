@@ -485,9 +485,9 @@ export async function respaldoPaso(env, { fecha = hoyGT(), nuevo = false } = {})
       };
       await rGuardar(env, base + 'resumen.json', resumen);
       await rGuardar(env, RESP + 'ultimo.json', { fecha, estado: resumen.estado, fin: resumen.fin });
-      // conserva solo los últimos RESP_DIAS respaldos
+      // conserva los últimos RESP_DIAS respaldos y, para siempre, el del día 1 de cada mes
       const dias = (await env.PRIVADO.list({ prefix: RESP, delimiter: '/' })).delimitedPrefixes.sort();
-      for (const d of dias.slice(0, Math.max(0, dias.length - RESP_DIAS))) {
+      for (const d of dias.slice(0, Math.max(0, dias.length - RESP_DIAS)).filter(d => !/-01\/$/.test(d))) {
         const x = await env.PRIVADO.list({ prefix: d });
         for (const o of x.objects) await env.PRIVADO.delete(o.key);
       }
@@ -876,7 +876,8 @@ export default {
         return json(request, env, estadoPublico(st));
       }
       if (ruta === '/api/respaldo/lista' && request.method === 'GET') {
-        const dias = (await env.PRIVADO.list({ prefix: RESP, delimiter: '/' })).delimitedPrefixes.sort().reverse().slice(0, RESP_DIAS);
+        const todos = (await env.PRIVADO.list({ prefix: RESP, delimiter: '/' })).delimitedPrefixes.sort().reverse();
+        const dias = todos.filter((d, i) => i < RESP_DIAS || /-01\/$/.test(d)); // últimos 30 días + el del día 1 de cada mes
         const items = [];
         for (const d of dias) { const r = await rLeer(env, d + 'resumen.json'); if (r) items.push(r); }
         const hoy = await rLeer(env, RESP + hoyGT() + '/estado.json');

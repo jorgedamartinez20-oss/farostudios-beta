@@ -80,7 +80,7 @@ Rutas del administrador: `/api/papelera`, `/api/restaurar`, `/api/purgar`, `/api
 
 
 ## Respaldo diario (00:00 hora de Guatemala)
-- Se guarda en R2 (bucket privado) en `_respaldos/AAAA-MM-DD/`: `codigo.zip`, `datos/<tabla>.json`, `esquema-api.json`, `archivos-privado.json`, `archivos-publico.json`, `descargas.json`, `resumen.json`. Se conservan 30 días.
+- Se guarda en R2 (bucket privado) en `_respaldos/AAAA-MM-DD/`: `codigo.zip`, `datos/<tabla>.json`, `esquema-api.json`, `archivos-privado.json`, `archivos-publico.json`, `descargas.json`, `resumen.json`. Se conservan los últimos 30 días y, para siempre, el del día 1 de cada mes.
 - Los archivos de R2 (fotos, videos) no se duplican: se guarda la lista completa con nombre, peso y fecha.
 - Hay que crear en Cloudflare (Settings → Triggers → Cron): `0 6 * * *`, `3 6 * * *`, `6 6 * * *`, `9 6 * * *`, `12 6 * * *` (UTC; 06:00 UTC = 00:00 Guatemala).
 - Secreto `SUPABASE_SERVICE_KEY` (service_role). Sin él se guarda el código y la lista de archivos, y el resumen avisa.

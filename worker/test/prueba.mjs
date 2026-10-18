@@ -319,7 +319,7 @@ r = await q('/api/lista?bucket=privado&prefix=' + encodeURIComponent('faro-studi
   // se conservan solo 30 días
   for (let d = 1; d <= 32; d++) await envS.PRIVADO.put('_respaldos/2025-01-' + String(d).padStart(2, '0') + '/resumen.json', '{}');
   await respaldoPaso(envS, { fecha: '2026-10-20' });
-  const dias = (await envS.PRIVADO.list({ prefix: '_respaldos/', delimiter: '/' })).delimitedPrefixes; assert.equal(dias.length, 30); ok('guarda solo los últimos 30 respaldos');
+  const dias = (await envS.PRIVADO.list({ prefix: '_respaldos/', delimiter: '/' })).delimitedPrefixes; assert.equal(dias.length, 31); assert.ok(dias.includes('_respaldos/2025-01-01/')); assert.ok(!dias.includes('_respaldos/2025-01-02/')); ok('guarda los últimos 30 respaldos y el del día 1 de cada mes');
   globalThis.fetch = fetchAntes;
   // endpoints del admin
   const envE = { ...env, PRIVADO: envR.PRIVADO };

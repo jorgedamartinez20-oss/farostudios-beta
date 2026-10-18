@@ -3076,7 +3076,7 @@ async function renderPre(){
       el('button',{class:'btn btn-ghost btn-sm',type:'button',onclick:()=>csvDescarga('facturas',AC.list.fac||[])},icoEl('dl'),' Facturas'),
       el('button',{class:'btn btn-ghost btn-sm',type:'button',onclick:()=>csvDescarga('redes',AN.redes||[])},icoEl('dl'),' Redes')),
     el('p',{class:'sub',style:'margin-top:10px'},'Los archivos incluyen datos de clientes: guárdalos en un lugar seguro.'));
-  respInit(card('w12','Respaldos automáticos',null,el('p',{class:'muted',style:'margin:0'},'Cada día a las 00:00 (medianoche, hora de Guatemala) se guarda en tu R2 una copia del código, de todas las tablas (formularios, registros, landing, entregas…) y de la lista de archivos. Se conservan los últimos 30 días.')));
+  respInit(card('w12','Respaldos automáticos',null,el('p',{class:'muted',style:'margin:0'},'Cada día a las 00:00 (medianoche, hora de Guatemala) se guarda en tu R2 una copia del código, de todas las tablas (formularios, registros, landing, entregas…) y de la lista de archivos. Se conservan los últimos 30 días y, para siempre, el del día 1 de cada mes.')));
   const fila2=(ok,t,d)=>el('div',{class:'srow'},el('div',{style:'min-width:0'},el('b',{style:'display:block;font-weight:400'},t),d?el('small',{class:'muted'},d):null),el('span',{class:'tag '+(ok?'confirmada':'pendiente')},ok?'Conectado':'Revisar'));
   const items=[];
   items.push(fila2(true,'Base de datos (Supabase)',(D.agenda||[]).length+' reservas · '+(D.cot||[]).length+' cotizaciones · '+(AC.list.est||[]).length+' alumnos'));
