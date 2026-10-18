@@ -2146,7 +2146,12 @@ async function matInit(){
       el('button',{class:'btn btn-gold',type:'button',onclick:()=>{const v=inp.value.trim().replace(/\/+$/,'');
         if(v&&!/^https:\/\//.test(v)){toast('La dirección debe empezar con https://');return}
         try{localStorage.setItem(FILES_LS,v)}catch(e){}FILES=v;MAT.destinos=[];toast(v?'Conectado a esta dirección':'Desconectado');matInit()}},'Conectar'),
-      FILES?el('button',{class:'btn btn-ghost',type:'button',onclick:async()=>{try{const j=await fjson('/api/init',{method:'POST'});toast('Carpetas listas ('+j.carpetas+')')}catch(e){toast(e.message)}}},'Preparar carpetas'):null,
+      FILES?el('button',{class:'btn btn-ghost',type:'button',onclick:async e=>{const b=e.currentTarget,t0=b.textContent;b.disabled=true;b.textContent='Preparando…';
+        const aviso=(ok,txt)=>{const p=b.parentElement;let m=p.parentElement.querySelector('#carp-res');if(!m){m=el('div',{id:'carp-res',role:'status',style:'margin-top:12px;padding:12px 16px;border-radius:12px;font-size:.92rem;border:1px solid var(--line)'});p.after(m)}
+          m.style.background=ok?'rgba(60,140,90,.12)':'rgba(139,26,42,.1)';m.style.borderColor=ok?'rgba(60,140,90,.5)':'rgba(139,26,42,.5)';m.textContent=(ok?'✓ ':'✕ ')+txt};
+        try{const j=await fjson('/api/init',{method:'POST'});aviso(true,'Carpetas preparadas: '+j.carpetas+' en total (incluye “Música de las galerías” y todas las de clientes). Ya puedes subir material.');toast('Carpetas preparadas ('+j.carpetas+')')}
+        catch(err){aviso(false,'No se pudieron preparar las carpetas: '+(err.message||'sin conexión con el servicio de archivos'))}
+        b.disabled=false;b.textContent=t0}},'Preparar carpetas'):null,
       FILES?el('button',{class:'btn btn-ghost',type:'button',onclick:async()=>{try{toast('Sincronizando…');const n=await r2Sync();toast('Carpetas de personas listas ('+n+')')}catch(e){toast(e.message)}}},'Sincronizar carpetas de alumnos, docentes y clientes'):null));
   if(SOLO){}else if(FILES){cfg.hidden=true;cfg.style.cssText='margin-top:12px;padding-top:12px;border-top:1px solid var(--line)';cfg.prepend(el('p',{class:'muted'},'Solo cambia esto si moviste el servicio de archivos a otra dirección.'));
     top.append(el('div',{style:'display:flex;align-items:center;gap:10px;margin-top:10px'},el('span',{},icoEl('check'),' Conectado'),el('button',{class:'btn btn-ghost btn-sm',type:'button',title:'Configuración de la conexión','aria-label':'Configuración de la conexión',onclick:()=>{cfg.hidden=!cfg.hidden}},icoEl('sliders'))),cfg)}else top.append(cfg);
