@@ -423,7 +423,8 @@ export async function respaldoPaso(env, { fecha = hoyGT(), nuevo = false } = {})
   const red = (...a) => { llamadas++; return fetch(...a); };
   const hay = () => llamadas < RESP_LLAMADAS;
   const SK = env.SUPABASE_SERVICE_KEY;
-  const cab = { apikey: SK, Authorization: `Bearer ${SK}` };
+  // La llave nueva de Supabase (sb_secret_…) va solo en apikey; la antigua service_role (eyJ…) también como Bearer
+  const cab = SK && String(SK).startsWith('eyJ') ? { apikey: SK, Authorization: `Bearer ${SK}` } : { apikey: SK };
   const sigue = () => { st.fase = RESP_FASES[RESP_FASES.indexOf(st.fase) + 1] || 'listo'; st.fallos = 0; };
   try {
     if (st.fase === 'esquema') {
