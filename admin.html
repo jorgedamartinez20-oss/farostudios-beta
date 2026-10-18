@@ -3076,7 +3076,7 @@ async function renderPre(){
       el('button',{class:'btn btn-ghost btn-sm',type:'button',onclick:()=>csvDescarga('facturas',AC.list.fac||[])},icoEl('dl'),' Facturas'),
       el('button',{class:'btn btn-ghost btn-sm',type:'button',onclick:()=>csvDescarga('redes',AN.redes||[])},icoEl('dl'),' Redes')),
     el('p',{class:'sub',style:'margin-top:10px'},'Los archivos incluyen datos de clientes: guárdalos en un lugar seguro.'));
-  respInit(card('w12','Respaldos automáticos',null,el('p',{class:'muted',style:'margin:0'},'Cada día a las 12:00 (hora de Guatemala) se guarda en tu R2 una copia del código, de todas las tablas (formularios, registros, landing, entregas…) y de la lista de archivos. Se conservan los últimos 30 días.')));
+  respInit(card('w12','Respaldos automáticos',null,el('p',{class:'muted',style:'margin:0'},'Cada día a las 00:00 (medianoche, hora de Guatemala) se guarda en tu R2 una copia del código, de todas las tablas (formularios, registros, landing, entregas…) y de la lista de archivos. Se conservan los últimos 30 días.')));
   const fila2=(ok,t,d)=>el('div',{class:'srow'},el('div',{style:'min-width:0'},el('b',{style:'display:block;font-weight:400'},t),d?el('small',{class:'muted'},d):null),el('span',{class:'tag '+(ok?'confirmada':'pendiente')},ok?'Conectado':'Revisar'));
   const items=[];
   items.push(fila2(true,'Base de datos (Supabase)',(D.agenda||[]).length+' reservas · '+(D.cot||[]).length+' cotizaciones · '+(AC.list.est||[]).length+' alumnos'));
@@ -4322,7 +4322,7 @@ async function respInit(card){
     const u=d.items[0],msg=el('small',{class:'muted',id:'rs-msg'});
     const ahora=Date.now(),viejo=!u||ahora-Date.parse(u.fin)>30*3600e3;
     if(!d.datos)box.append(el('div',{class:'optbox mal'},el('b',{},'Falta activar el respaldo de la base de datos'),el('small',{class:'muted'},'En Cloudflare → tu servicio faro-archivos → Settings → Variables and Secrets, agrega el secreto SUPABASE_SERVICE_KEY (la llave service_role de Supabase). Mientras tanto se guarda el código y la lista de archivos.')));
-    if(viejo)box.append(el('div',{class:'optbox mal'},el('b',{},u?'El último respaldo es de hace más de un día':'Todavía no hay respaldos'),el('small',{class:'muted'},'Pulsa «Respaldar ahora». Si se repite, revisa que el servicio tenga los disparadores de las 12:00 (Settings → Triggers → Cron).')));
+    if(viejo)box.append(el('div',{class:'optbox mal'},el('b',{},u?'El último respaldo es de hace más de un día':'Todavía no hay respaldos'),el('small',{class:'muted'},'Pulsa «Respaldar ahora». Si se repite, revisa que el servicio tenga los disparadores de las 00:00 (Settings → Triggers → Cron).')));
     else box.append(el('div',{class:'optbox ok'},el('b',{},'✓ Último respaldo: '+new Date(u.fin).toLocaleString('es-GT',{timeZone:'America/Guatemala',weekday:'long',day:'numeric',month:'short',hour:'numeric',minute:'2-digit'})),el('small',{class:'muted'},u.tablas+' tablas · '+u.filas.toLocaleString('es-GT')+' registros · código '+RS_MB(u.codigoBytes)+' · '+(u.manifiesto&&u.manifiesto.privado?u.manifiesto.privado.n.toLocaleString('es-GT')+' archivos privados':'')+(u.manifiesto&&u.manifiesto.publico?' · '+u.manifiesto.publico.n+' públicos':''))));
     const ahoraBtn=enBtn('Respaldar ahora','refresh',async()=>{
       ahoraBtn.disabled=true;

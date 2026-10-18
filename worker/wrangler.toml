@@ -21,10 +21,10 @@ ORIGENES = "https://jorgedamartinez20-oss.github.io,https://farostudios.net,http
 # Secreto (NO va aquí): FIRMA_SECRETO, para los enlaces temporales de descarga.
 #   npx wrangler secret put FIRMA_SECRETO
 
-# Respaldo diario: 12:00 hora de Guatemala = 18:00 UTC. Varios disparos seguidos porque el respaldo trabaja por pasos
+# Respaldo diario: 00:00 (medianoche) hora de Guatemala = 06:00 UTC. Varios disparos seguidos porque el respaldo trabaja por pasos
 # (si ya terminó, los demás no hacen nada).
 [triggers]
-crons = ["0 18 * * *", "3 18 * * *", "6 18 * * *", "9 18 * * *", "12 18 * * *"]
+crons = ["0 6 * * *", "3 6 * * *", "6 6 * * *", "9 6 * * *", "12 6 * * *"]
 
 # Secretos nuevos (NO van aquí):
 #   SUPABASE_SERVICE_KEY  llave service_role de Supabase (para respaldar todas las tablas)

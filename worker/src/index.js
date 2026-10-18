@@ -395,7 +395,7 @@ async function portal(request, env, ctx, ruta, url) {
   return err(request, env, 'No encontrado', 404);
 }
 
-/* ---------- Respaldos diarios (12:00 hora de Guatemala) ----------
+/* ---------- Respaldos diarios (00:00 hora de Guatemala) ----------
    Cada día guarda en el bucket privado, carpeta "_respaldos/AAAA-MM-DD/":
    · codigo.zip            todo el código del repositorio de GitHub
    · datos/<tabla>.json    todas las tablas de Supabase (formularios, registros, landing, entregas…)
@@ -403,7 +403,7 @@ async function portal(request, env, ctx, ruta, url) {
    · archivos-privado.json / archivos-publico.json   lista de todos los archivos de R2 (nombre, peso, fecha)
    · descargas.json        contador de descargas
    · resumen.json          qué se guardó y si hubo avisos
-   Trabaja por pasos pequeños (así cabe en los límites de Cloudflare); los disparadores de las 12:00 lo van continuando. */
+   Trabaja por pasos pequeños (así cabe en los límites de Cloudflare); los disparadores de las 00:00 lo van continuando. */
 const RESP = '_respaldos/';
 const RESP_DIAS = 30;
 const RESP_LLAMADAS = 35;
@@ -618,7 +618,7 @@ async function limpiarAlmacenamiento(env, que) {
 
 /* ---------- Servicio ---------- */
 export default {
-  // Disparador de las 12:00 (hora de Guatemala): hace o continúa el respaldo del día
+  // Disparador de las 00:00 (hora de Guatemala): hace o continúa el respaldo del día
   async scheduled(event, env, ctx) { ctx.waitUntil(respaldoPaso(env).catch(() => {})); },
 
   async fetch(request, env, ctx) {
