@@ -201,14 +201,16 @@ const estPill=e=>{const x=ESTADOS[e]||['',''];return '<span class="est '+x[1]+'"
 /* ---------- enlaces temporales de los archivos ---------- */
 async function enlaces(ids){
   if(Date.now()-ST.linksAt>90*60000){ST.links={};ST.linksAt=Date.now()}
-  const falta=ids.filter(i=>!ST.links[i]);
-  for(let i=0;i<falta.length;i+=80){
-    const lote=falta.slice(i,i+80);
-    if(SES&&SES.exp-60000<Date.now())await refreshSes();
+  const falta=ids.filter(i=>!ST.links[i]),lotes=[];
+  for(let i=0;i<falta.length;i+=80)lotes.push(falta.slice(i,i+80));
+  if(!lotes.length)return;
+  if(SES&&SES.exp-60000<Date.now())await refreshSes();
+  const uno=async lote=>{
     try{const r=await fetch(FILES+'/api/mi/enlaces',{method:'POST',headers:{Authorization:'Bearer '+SES.access,'Content-Type':'application/json'},body:JSON.stringify({ids:lote})});
       if(r.status===401){salir('Tu sesión venció. Vuelve a entrar.');return}
       const j=await r.json();Object.assign(ST.links,j.enlaces||{})}catch(e){}
-  }
+  };
+  await Promise.all(lotes.map(uno));
 }
 function descargar(id){const l=ST.links[id];if(!l||!l.url){toast('Podrás descargarlo cuando se apruebe');return}
   const a=document.createElement('a');a.href=l.url;a.rel='noopener';document.body.append(a);a.click();a.remove()}

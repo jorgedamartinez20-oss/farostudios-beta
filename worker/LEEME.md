@@ -69,3 +69,11 @@ Rutas del administrador: `/api/papelera`, `/api/restaurar`, `/api/purgar`, `/api
 - Carpeta nueva en R2: `Faro Studios › Música de las galerías` (`faro-studios/musica-galerias/`). Se crea con "Preparar carpetas" en Materiales.
 - `POST /api/lista/enlaces` (público): recibe `{token}` de una lista compartida y devuelve solo las fotos de esa lista con enlaces temporales (2 horas). Sin sesión.
 - Antes de usarlo: correr `sql/entregas-galeria-v2.sql` en Supabase, desplegar el Worker (`npx wrangler deploy`) y volver a desplegar la función `notificar`.
+
+
+## Fotos livianas y música (Entregas)
+- Al subir una foto a una galería, el Workspace crea junto al original dos copias pequeñas: `_mini-<nombre>.jpg` (≈900 px, para el muro) y `_vista-<nombre>.jpg` (≈2400 px, para verla grande). El original no se toca y es lo que se descarga.
+- Para las fotos ya subidas: Entregas → la galería → **Optimizar fotos**.
+- Los enlaces firmados duran horas con el mismo valor y el navegador guarda las fotos 2 h en caché (se ven al instante la segunda vez).
+- `POST /api/mi/musica` entrega la canción elegida para la galería (`config.musica`, dentro de `faro-studios/musica-galerias/`).
+- Después de actualizar este código: `npx wrangler deploy`.

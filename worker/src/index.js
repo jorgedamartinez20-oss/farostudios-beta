@@ -128,7 +128,8 @@ function cors(request, env, extra = {}) {
   if (o) {
     h.set('Access-Control-Allow-Origin', o);
     h.set('Vary', 'Origin');
-    h.set('Access-Control-Allow-Headers', 'Authorization, Content-Type');
+    h.set('Access-Control-Allow-Headers', 'Authorization, Content-Type, Range');
+    h.set('Access-Control-Expose-Headers', 'Content-Range, Content-Length, Accept-Ranges');
     h.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
     h.set('Access-Control-Max-Age', '86400');
   }

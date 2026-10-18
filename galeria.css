@@ -40,8 +40,35 @@ body.g{background:var(--g-bg);color:var(--g-tx);font-family:var(--g-ft2)}
 .gcov .pie{position:absolute;left:0;right:0;bottom:6.4vh;z-index:4;font-size:.78rem;letter-spacing:.26em;text-transform:uppercase;color:rgba(245,242,238,.7)}
 
 /* ---------- franja de recomendación ---------- */
-.grib{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;text-align:center;background:var(--borgona);color:#F5F2EE;padding:11px 18px;font-size:.92rem;box-shadow:0 8px 18px rgba(0,0,0,.25)}
-.grib b{font-weight:400;font-size:.74rem;letter-spacing:.26em;color:var(--oro)}
+.grib{position:fixed;top:var(--gh,56px);left:0;right:0;z-index:39;height:34px;display:flex;align-items:center;gap:12px;background:var(--borgona);color:#F5F2EE;padding:0 clamp(14px,3vw,30px);font-size:.88rem;box-shadow:0 6px 14px rgba(0,0,0,.22);overflow:hidden;white-space:nowrap}
+.grib b{font-weight:400;font-size:.72rem;letter-spacing:.26em;color:var(--oro);flex:none}
+.grib span{overflow:hidden;text-overflow:ellipsis;min-width:0}
+.grib .cur{width:1px;height:1.05em;background:var(--oro);flex:none;margin-left:-8px;animation:gcur 1s steps(1) infinite}
+@keyframes gcur{50%{opacity:0}}
+/* al inicio solo se ve la portada */
+.gal.pre .grib,.gal.pre .gvista,.gal.pre #glis,.gal.pre #gdl,.gal.pre #gay,.gal.pre #gmu,.gal.pre .gbolsa{display:none}
+.gsp{display:inline-block;width:14px;height:14px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:gspin .8s linear infinite;vertical-align:-2px}
+@keyframes gspin{to{transform:rotate(360deg)}}
+.gcov .bt:disabled{opacity:.8;cursor:progress}
+/* cuadrícula con pequeñas diferencias de tamaño */
+.gph.va{aspect-ratio:var(--ar,1/1);min-height:0}
+.gph.va>button.ver{height:100%}
+.gph.va img{height:100%;object-fit:cover}
+/* música: pastilla flotante */
+.gmus{position:fixed;left:14px;bottom:calc(14px + env(safe-area-inset-bottom));z-index:45;display:flex;align-items:center;gap:10px;max-width:min(300px,calc(100vw - 92px));padding:6px 8px 6px 6px;border-radius:16px;background:color-mix(in srgb,var(--g-bg) 76%,transparent);color:var(--g-tx);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);box-shadow:0 10px 30px rgba(0,0,0,.28);border:1px solid color-mix(in srgb,var(--g-tx) 14%,transparent);animation:gmin .5s ease both}
+@keyframes gmin{from{opacity:0;transform:translateY(10px)}}
+.gmus .cv{width:40px;height:40px;border-radius:9px;overflow:hidden;background:var(--borgona) center/cover no-repeat;display:grid;place-items:center;color:#F5F2EE;flex:none}
+.gmus .cv.im .iso{display:none}.gmus .cv .iso{height:24px}
+.gmus .tx{min-width:0;display:grid;line-height:1.25}
+.gmus .tx b{font-size:.8rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gmus .tx small{font-size:.7rem;opacity:.7;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.gmus .tx small:empty{display:none}
+.gmus button{border:0;background:none;color:inherit;width:34px;height:34px;display:grid;place-items:center;border-radius:50%;flex:none}
+.gmus button .ico{width:20px;height:20px}
+.gmus .eq{display:flex;gap:2px;align-items:flex-end;height:14px;flex:none;margin-right:4px}
+.gmus .eq s{display:block;width:3px;height:30%;background:var(--g-ac);border-radius:1px;animation:geq 1s ease-in-out infinite;animation-play-state:paused}
+.gmus.on .eq s{animation-play-state:running}.gmus .eq s:nth-child(2){animation-delay:-.4s}.gmus .eq s:nth-child(3){animation-delay:-.7s}
+@keyframes geq{0%,100%{height:25%}50%{height:100%}}
+@media(prefers-reduced-motion:reduce){.gmus .eq s,.grib .cur{animation:none}}
 
 /* ---------- muro ---------- */
 .gmuro{position:relative;padding:0 0 70px}
@@ -207,4 +234,4 @@ body.g{background:var(--g-bg);color:var(--g-tx);font-family:var(--g-ft2)}
 .gpub .ctit h1{font:400 clamp(2.4rem,7vw,4.6rem)/1 var(--g-ft);letter-spacing:var(--g-ls);text-transform:var(--g-up)}
 .gpub .ctit p{letter-spacing:.3em;text-transform:uppercase;font-size:.8rem;opacity:.7;margin-top:10px}
 @media(prefers-reduced-motion:reduce){.gcov .im{animation:none}.gt .pl{animation:none}}
-#gmu{scroll-margin-top:64px}
+#gmu{scroll-margin-top:104px}
