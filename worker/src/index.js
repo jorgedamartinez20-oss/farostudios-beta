@@ -307,7 +307,7 @@ async function resumenBucket(bucket, areaDeKey, oculto = new Set(), nombre = '')
   do {
     const r = await bucket.list({ cursor, limit: 1000 });
     for (const o of r.objects) {
-      if (o.key.endsWith('/.keep') || o.key.startsWith('_stats/') || o.key.startsWith('_papelera/') || oculto.has(nombre + '|' + o.key)) continue;
+      if (o.key.endsWith('/.keep') || o.key.startsWith('_stats/') || o.key.startsWith('_papelera/') || o.key.startsWith('_respaldos/') || oculto.has(nombre + '|' + o.key)) continue;
       const a = areas[areaDeKey(o.key)] || (areas[areaDeKey(o.key)] = { n: 0, b: 0, meses: {} });
       a.n++; a.b += o.size;
       const m = new Date(o.uploaded).toISOString().slice(0, 7);
@@ -395,8 +395,119 @@ async function portal(request, env, ctx, ruta, url) {
   return err(request, env, 'No encontrado', 404);
 }
 
+/* ---------- Respaldos diarios (12:00 hora de Guatemala) ----------
+   Cada día guarda en el bucket privado, carpeta "_respaldos/AAAA-MM-DD/":
+   · codigo.zip            todo el código del repositorio de GitHub
+   · datos/<tabla>.json    todas las tablas de Supabase (formularios, registros, landing, entregas…)
+   · esquema-api.json      estructura de las tablas
+   · archivos-privado.json / archivos-publico.json   lista de todos los archivos de R2 (nombre, peso, fecha)
+   · descargas.json        contador de descargas
+   · resumen.json          qué se guardó y si hubo avisos
+   Trabaja por pasos pequeños (así cabe en los límites de Cloudflare); los disparadores de las 12:00 lo van continuando. */
+const RESP = '_respaldos/';
+const RESP_DIAS = 30;
+const RESP_LLAMADAS = 35;
+const RESP_FASES = ['esquema', 'datos', 'codigo', 'archivos', 'cierre'];
+const hoyGT = () => new Date(Date.now() - 6 * 3600e3).toISOString().slice(0, 10);
+async function rLeer(env, k) { const o = await env.PRIVADO.get(k); if (!o) return null; try { return JSON.parse(await new Response(o.body).text()); } catch (e) { return null; } }
+const rGuardar = (env, k, v, tipo = 'application/json') => env.PRIVADO.put(k, typeof v === 'string' || v instanceof ArrayBuffer ? v : JSON.stringify(v), { httpMetadata: { contentType: tipo } });
+export async function respaldoPaso(env, { fecha = hoyGT(), nuevo = false } = {}) {
+  const base = RESP + fecha + '/';
+  let st = await rLeer(env, base + 'estado.json');
+  if (st && st.fase === 'listo' && !nuevo) return st;
+  if (st && st.bloqueo > Date.now() && !nuevo) return { ...st, ocupado: true };
+  if (!st || nuevo) st = { fecha, fase: 'esquema', inicio: new Date().toISOString(), avisos: [], tablas: [], ti: 0, pag: 0, filas: {}, fallos: 0, manifiesto: {} };
+  st.bloqueo = Date.now() + 90000;
+  await rGuardar(env, base + 'estado.json', st);
+  let llamadas = 0;
+  const red = (...a) => { llamadas++; return fetch(...a); };
+  const hay = () => llamadas < RESP_LLAMADAS;
+  const SK = env.SUPABASE_SERVICE_KEY;
+  const cab = { apikey: SK, Authorization: `Bearer ${SK}` };
+  const sigue = () => { st.fase = RESP_FASES[RESP_FASES.indexOf(st.fase) + 1] || 'listo'; st.fallos = 0; };
+  try {
+    if (st.fase === 'esquema') {
+      if (!SK) { st.avisos.push('Falta el secreto SUPABASE_SERVICE_KEY: no se respaldaron las tablas de la base de datos.'); st.fase = 'codigo'; }
+      else {
+        const r = await red(`${env.SUPABASE_URL}/rest/v1/`, { headers: cab });
+        if (!r.ok) { st.avisos.push('No se pudo leer la estructura de la base (' + r.status + ').'); st.fase = 'codigo'; }
+        else {
+          const api = await r.json();
+          await rGuardar(env, base + 'esquema-api.json', api);
+          st.tablas = Object.keys(api.paths || {}).filter((p) => p !== '/' && !p.startsWith('/rpc/')).map((p) => p.slice(1));
+          st.fase = 'datos';
+        }
+      }
+    }
+    while (st.fase === 'datos' && hay()) {
+      if (st.ti >= st.tablas.length) { sigue(); break; }
+      const t = st.tablas[st.ti], desde = st.pag * 1000;
+      const r = await red(`${env.SUPABASE_URL}/rest/v1/${encodeURIComponent(t)}?select=*`, { headers: { ...cab, 'Range-Unit': 'items', Range: `${desde}-${desde + 999}` } });
+      let filas = [];
+      if (r.ok) filas = await r.json(); else if (r.status !== 416) st.avisos.push(`Tabla ${t}: error ${r.status}`);
+      if (filas.length || st.pag === 0) {
+        if (r.ok) { await rGuardar(env, `${base}datos/${t}${st.pag ? '.p' + st.pag : ''}.json`, filas); st.filas[t] = (st.filas[t] || 0) + filas.length; }
+      }
+      if (filas.length >= 1000) st.pag++; else { st.ti++; st.pag = 0; }
+    }
+    if (st.fase === 'codigo' && hay()) {
+      const repo = env.GITHUB_REPO || 'jorgedamartinez20-oss/farostudios-beta', rama = env.GITHUB_RAMA || 'main';
+      const h = { 'User-Agent': 'faro-respaldo', Accept: 'application/vnd.github+json' };
+      if (env.GITHUB_TOKEN) h.Authorization = 'Bearer ' + env.GITHUB_TOKEN;
+      const r = await red(`https://api.github.com/repos/${repo}/zipball/${rama}`, { headers: h });
+      if (r.ok) { const buf = await r.arrayBuffer(); await rGuardar(env, base + 'codigo.zip', buf, 'application/zip'); st.codigoBytes = buf.byteLength; }
+      else st.avisos.push('No se pudo bajar el código de GitHub (' + r.status + ').' + (r.status === 404 ? ' Si el repositorio es privado, falta el secreto GITHUB_TOKEN.' : ''));
+      sigue();
+    }
+    if (st.fase === 'archivos') {
+      for (const [nom, b] of [['privado', env.PRIVADO], ['publico', env.PUBLICO]]) {
+        const items = []; let cursor, pg = 0, bytes = 0;
+        do {
+          const r = await b.list({ cursor, limit: 1000 });
+          for (const o of r.objects) { if (o.key.startsWith(RESP)) continue; items.push([o.key, o.size, o.uploaded]); bytes += o.size; }
+          cursor = r.truncated ? r.cursor : undefined;
+        } while (cursor && ++pg < 200);
+        await rGuardar(env, `${base}archivos-${nom}.json`, { generado: new Date().toISOString(), total: items.length, bytes, completo: !cursor, archivos: items });
+        st.manifiesto[nom] = { n: items.length, bytes };
+      }
+      const est = await env.PRIVADO.get(STATS_KEY);
+      if (est) await rGuardar(env, base + 'descargas.json', await new Response(est.body).text());
+      sigue();
+    }
+    if (st.fase === 'cierre') {
+      const r = await env.PRIVADO.list({ prefix: base });
+      const archivos = r.objects.filter((o) => !o.key.endsWith('/estado.json') && !o.key.endsWith('/resumen.json')).map((o) => ({ key: o.key, size: o.size }));
+      const resumen = {
+        fecha, inicio: st.inicio, fin: new Date().toISOString(), estado: st.avisos.length ? 'parcial' : 'completo',
+        tablas: Object.keys(st.filas).length, filas: Object.values(st.filas).reduce((s, x) => s + x, 0), codigoBytes: st.codigoBytes || 0,
+        manifiesto: st.manifiesto, avisos: st.avisos, bytes: archivos.reduce((s, x) => s + x.size, 0), archivos,
+      };
+      await rGuardar(env, base + 'resumen.json', resumen);
+      await rGuardar(env, RESP + 'ultimo.json', { fecha, estado: resumen.estado, fin: resumen.fin });
+      // conserva solo los últimos RESP_DIAS respaldos
+      const dias = (await env.PRIVADO.list({ prefix: RESP, delimiter: '/' })).delimitedPrefixes.sort();
+      for (const d of dias.slice(0, Math.max(0, dias.length - RESP_DIAS))) {
+        const x = await env.PRIVADO.list({ prefix: d });
+        for (const o of x.objects) await env.PRIVADO.delete(o.key);
+      }
+      st.fase = 'listo';
+    }
+  } catch (e) {
+    st.fallos = (st.fallos || 0) + 1;
+    st.avisos.push(`Paso "${st.fase}" con error: ${String((e && e.message) || e).slice(0, 120)}`);
+    if (st.fallos >= 3) sigue();
+  }
+  st.bloqueo = 0;
+  await rGuardar(env, base + 'estado.json', st);
+  return st;
+}
+const estadoPublico = (st) => ({ fecha: st.fecha, fase: st.fase, listo: st.fase === 'listo', ocupado: !!st.ocupado, tablas: (st.tablas || []).length, hechas: st.ti || 0, avisos: st.avisos || [] });
+
 /* ---------- Servicio ---------- */
 export default {
+  // Disparador de las 12:00 (hora de Guatemala): hace o continúa el respaldo del día
+  async scheduled(event, env, ctx) { ctx.waitUntil(respaldoPaso(env).catch(() => {})); },
+
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
     const ruta = url.pathname.replace(/\/+$/, '') || '/';
@@ -560,7 +671,7 @@ export default {
         const r = await bucket.list({ prefix, delimiter: '/', limit: 1000, include: ['customMetadata'] });
         const oculto = await clavesPapelera(env);
         return json(request, env, {
-          carpetas: r.delimitedPrefixes.filter((c) => c !== '_stats/' && c !== PAPELERA),
+          carpetas: r.delimitedPrefixes.filter((c) => c !== '_stats/' && c !== PAPELERA && c !== RESP),
           archivos: r.objects.filter((o) => !o.key.endsWith('/.keep') && !oculto.has(bucketNombre + '|' + o.key)).map((o) => ({ key: o.key, size: o.size, subido: o.uploaded })),
           nombres: Object.fromEntries(r.objects.filter((o) => o.customMetadata && o.customMetadata.nombre && !oculto.has(bucketNombre + '|' + o.key)).map((o) => [o.key, o.customMetadata.nombre])),
         });
@@ -625,11 +736,24 @@ export default {
 
       // Borrar un archivo: va a la papelera (se puede restaurar)
       if (ruta === '/api/objeto' && request.method === 'DELETE') {
-        if (!bucket || !key || key.includes('..') || key.endsWith('/.keep') || key.startsWith(PAPELERA) || key.startsWith('_stats/')) return err(request, env, 'Archivo inválido');
+        if (!bucket || !key || key.includes('..') || key.endsWith('/.keep') || key.startsWith(PAPELERA) || key.startsWith('_stats/') || key.startsWith(RESP)) return err(request, env, 'Archivo inválido');
         const o = await bucket.head(key);
         if (!o) return err(request, env, 'No existe ese archivo', 404);
         await aPapelera(env, bucketNombre, key, env.ADMIN_EMAIL, o.size);
         return json(request, env, { ok: true, papelera: true });
+      }
+
+      // Respaldos: ejecutar un paso, ver la lista
+      if (ruta === '/api/respaldo/ejecutar' && request.method === 'POST') {
+        const st = await respaldoPaso(env, { nuevo: url.searchParams.get('nuevo') === '1' });
+        return json(request, env, estadoPublico(st));
+      }
+      if (ruta === '/api/respaldo/lista' && request.method === 'GET') {
+        const dias = (await env.PRIVADO.list({ prefix: RESP, delimiter: '/' })).delimitedPrefixes.sort().reverse().slice(0, RESP_DIAS);
+        const items = [];
+        for (const d of dias) { const r = await rLeer(env, d + 'resumen.json'); if (r) items.push(r); }
+        const hoy = await rLeer(env, RESP + hoyGT() + '/estado.json');
+        return json(request, env, { items, hoy: hoy ? estadoPublico(hoy) : null, hoyFecha: hoyGT(), datos: !!env.SUPABASE_SERVICE_KEY, dias: RESP_DIAS });
       }
 
       // Papelera: lista, restaurar, borrar de verdad

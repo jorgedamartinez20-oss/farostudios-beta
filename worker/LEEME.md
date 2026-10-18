@@ -77,3 +77,12 @@ Rutas del administrador: `/api/papelera`, `/api/restaurar`, `/api/purgar`, `/api
 - Los enlaces firmados duran horas con el mismo valor y el navegador guarda las fotos 2 h en caché (se ven al instante la segunda vez).
 - `POST /api/mi/musica` entrega la canción elegida para la galería (`config.musica`, dentro de `faro-studios/musica-galerias/`).
 - Después de actualizar este código: `npx wrangler deploy`.
+
+
+## Respaldo diario (12:00 hora de Guatemala)
+- Se guarda en R2 (bucket privado) en `_respaldos/AAAA-MM-DD/`: `codigo.zip`, `datos/<tabla>.json`, `esquema-api.json`, `archivos-privado.json`, `archivos-publico.json`, `descargas.json`, `resumen.json`. Se conservan 30 días.
+- Los archivos de R2 (fotos, videos) no se duplican: se guarda la lista completa con nombre, peso y fecha.
+- Hay que crear en Cloudflare (Settings → Triggers → Cron): `0 18 * * *`, `3 18 * * *`, `6 18 * * *`, `9 18 * * *`, `12 18 * * *` (UTC; 18:00 UTC = 12:00 Guatemala).
+- Secreto `SUPABASE_SERVICE_KEY` (service_role). Sin él se guarda el código y la lista de archivos, y el resumen avisa.
+- Se consulta y descarga en Workspace → Ajustes → Respaldos automáticos. «Respaldar ahora» lo hace al momento.
+- No incluye los usuarios y contraseñas de Supabase Auth (Supabase los respalda por su lado).

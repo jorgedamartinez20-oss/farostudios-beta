@@ -3068,6 +3068,7 @@ async function renderPre(){
       el('button',{class:'btn btn-ghost btn-sm',type:'button',onclick:()=>csvDescarga('facturas',AC.list.fac||[])},icoEl('dl'),' Facturas'),
       el('button',{class:'btn btn-ghost btn-sm',type:'button',onclick:()=>csvDescarga('redes',AN.redes||[])},icoEl('dl'),' Redes')),
     el('p',{class:'sub',style:'margin-top:10px'},'Los archivos incluyen datos de clientes: guárdalos en un lugar seguro.'));
+  respInit(card('w12','Respaldos automáticos',null,el('p',{class:'muted',style:'margin:0'},'Cada día a las 12:00 (hora de Guatemala) se guarda en tu R2 una copia del código, de todas las tablas (formularios, registros, landing, entregas…) y de la lista de archivos. Se conservan los últimos 30 días.')));
   const fila2=(ok,t,d)=>el('div',{class:'srow'},el('div',{style:'min-width:0'},el('b',{style:'display:block;font-weight:400'},t),d?el('small',{class:'muted'},d):null),el('span',{class:'tag '+(ok?'confirmada':'pendiente')},ok?'Conectado':'Revisar'));
   const items=[];
   items.push(fila2(true,'Base de datos (Supabase)',(D.agenda||[]).length+' reservas · '+(D.cot||[]).length+' cotizaciones · '+(AC.list.est||[]).length+' alumnos'));
@@ -4291,6 +4292,49 @@ async function enOptimizar(fotos){
     guardadoOk(fa?'Optimización con avisos':'Fotos optimizadas');
   }catch(e){enOptSet({t:'No se pudo optimizar',tipo:'mal',det:e.message||''})}
   finally{EN.optimizando=false}
+}
+
+/* ---------- respaldos diarios ---------- */
+const RS_MB=b=>b>=1048576?(b/1048576).toFixed(1)+' MB':Math.max(1,Math.round(b/1024))+' KB';
+function rsCargaZip(){return window.JSZip?Promise.resolve():new Promise((ok,no)=>{const s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';s.onload=ok;s.onerror=()=>no(new Error('No se pudo cargar el compresor'));document.head.append(s)})}
+async function rsZip(r,estado){
+  await rsCargaZip();const z=new JSZip(),cola=[...r.archivos];let h=0;
+  const un=async()=>{while(cola.length){const a=cola.shift();const u=await matEnlace('privado',a.key,false,1);const x=await fetch(u);if(!x.ok)throw new Error('No se pudo leer '+a.key);
+    z.file(a.key.slice(('_respaldos/'+r.fecha+'/').length),await x.arrayBuffer(),{compression:a.key.endsWith('.zip')?'STORE':'DEFLATE'});h++;estado('Preparando… '+h+' de '+r.archivos.length)}};
+  await Promise.all([un(),un(),un()]);z.file('resumen.json',JSON.stringify(r,null,2));
+  estado('Comprimiendo…');const b=await z.generateAsync({type:'blob'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='respaldo-faro-'+r.fecha+'.zip';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),20000);
+  estado('');
+}
+async function respInit(card){
+  const box=el('div',{style:'display:grid;gap:10px;margin-top:8px'},el('p',{class:'muted'},'Cargando…'));card.append(box);
+  const pinta=async()=>{
+    let d;try{d=await fjson('/api/respaldo/lista')}catch(e){box.textContent='';box.append(el('p',{class:'muted'},'No se pudo leer: '+(e.message||'revisa que el servicio de archivos esté actualizado')));return}
+    box.textContent='';
+    const u=d.items[0],msg=el('small',{class:'muted',id:'rs-msg'});
+    const ahora=Date.now(),viejo=!u||ahora-Date.parse(u.fin)>30*3600e3;
+    if(!d.datos)box.append(el('div',{class:'optbox mal'},el('b',{},'Falta activar el respaldo de la base de datos'),el('small',{class:'muted'},'En Cloudflare → tu servicio faro-archivos → Settings → Variables and Secrets, agrega el secreto SUPABASE_SERVICE_KEY (la llave service_role de Supabase). Mientras tanto se guarda el código y la lista de archivos.')));
+    if(viejo)box.append(el('div',{class:'optbox mal'},el('b',{},u?'El último respaldo es de hace más de un día':'Todavía no hay respaldos'),el('small',{class:'muted'},'Pulsa «Respaldar ahora». Si se repite, revisa que el servicio tenga los disparadores de las 12:00 (Settings → Triggers → Cron).')));
+    else box.append(el('div',{class:'optbox ok'},el('b',{},'✓ Último respaldo: '+new Date(u.fin).toLocaleString('es-GT',{timeZone:'America/Guatemala',weekday:'long',day:'numeric',month:'short',hour:'numeric',minute:'2-digit'})),el('small',{class:'muted'},u.tablas+' tablas · '+u.filas.toLocaleString('es-GT')+' registros · código '+RS_MB(u.codigoBytes)+' · '+(u.manifiesto&&u.manifiesto.privado?u.manifiesto.privado.n.toLocaleString('es-GT')+' archivos privados':'')+(u.manifiesto&&u.manifiesto.publico?' · '+u.manifiesto.publico.n+' públicos':''))));
+    const ahoraBtn=enBtn('Respaldar ahora','refresh',async()=>{
+      ahoraBtn.disabled=true;
+      try{let nuevo=true,st;for(let i=0;i<60;i++){st=await fjson('/api/respaldo/ejecutar'+(nuevo?'?nuevo=1':''),{method:'POST'});nuevo=false;
+          msg.textContent=st.listo?'Terminando…':'Respaldando… '+(st.fase==='datos'?'tablas '+st.hechas+' de '+st.tablas:st.fase);if(st.listo)break;if(st.ocupado)await new Promise(r=>setTimeout(r,3000))}
+        guardadoOk(st&&st.avisos&&st.avisos.length?'Respaldo con avisos':'Respaldo listo')}
+      catch(e){toast(e.message||'No se pudo respaldar')}
+      ahoraBtn.disabled=false;pinta()},'btn-gold');
+    box.append(el('div',{style:'display:flex;gap:10px;align-items:center;flex-wrap:wrap'},ahoraBtn,msg));
+    const lista=el('div',{class:'plist'});
+    d.items.forEach(r=>{
+      const dz=enBtn('Descargar todo (ZIP)','dl',async()=>{dz.disabled=true;try{await rsZip(r,t=>{msg.textContent=t})}catch(e){toast(e.message||'No se pudo preparar el ZIP');msg.textContent=''}dz.disabled=false});
+      const cod=enBtn('Código','dl',async()=>{try{const url=await matEnlace('privado','_respaldos/'+r.fecha+'/codigo.zip',false,1);const a=document.createElement('a');a.href=url;a.download='codigo-'+r.fecha+'.zip';document.body.append(a);a.click();a.remove()}catch(e){toast('Este respaldo no tiene código')}});
+      lista.append(el('div',{class:'prow',style:'cursor:default;flex-wrap:wrap'},el('b',{style:'font-weight:700;min-width:96px'},new Date(r.fecha+'T12:00:00').toLocaleDateString('es-GT',{day:'numeric',month:'short',year:'numeric'})),
+        el('span',{class:'tag '+(r.estado==='completo'?'confirmada':'pendiente')},r.estado==='completo'?'Completo':'Con avisos'),
+        el('small',{class:'muted',style:'flex:1;min-width:180px'},r.tablas+' tablas · '+r.filas.toLocaleString('es-GT')+' registros · '+RS_MB(r.bytes)+(r.avisos&&r.avisos.length?' · '+r.avisos[0]:'')),cod,dz));
+    });
+    if(d.items.length)box.append(lista);
+  };
+  pinta();
 }
 /* ---------- editor dentro de la página principal (no flotante) ---------- */
 function enPagina(titulo){

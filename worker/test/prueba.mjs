@@ -1,13 +1,13 @@
 // Pruebas locales del servicio de archivos (sin Cloudflare): R2 y Supabase simulados.
 // Ejecutar:  node test/prueba.mjs
 import assert from 'node:assert/strict';
-import worker, { DESTINOS, slug, nombreArchivo, firmar, marcadoresPersona } from '../src/index.js';
+import worker, { DESTINOS, slug, nombreArchivo, firmar, marcadoresPersona, respaldoPaso } from '../src/index.js';
 
 /* ---- R2 simulado ---- */
 class R2Falso {
   constructor() { this.m = new Map(); this.mp = new Map(); }
   async put(key, body, opts = {}) {
-    const bytes = body instanceof ReadableStream ? new Uint8Array(await new Response(body).arrayBuffer()) : new Uint8Array(body);
+    const bytes = body instanceof ReadableStream ? new Uint8Array(await new Response(body).arrayBuffer()) : typeof body === 'string' ? new TextEncoder().encode(body) : new Uint8Array(body);
     this.m.set(key, { bytes, ct: opts.httpMetadata?.contentType, meta: opts.customMetadata, up: new Date() });
   }
   async get(key, { range } = {}) {
@@ -287,5 +287,45 @@ for (const [p, m] of [['/api/init', 'POST'], ['/api/subir?bucket=privado&key=' +
 }
 ok('lector: no sube, no crea carpetas, no ve estadísticas ni papelera');
 r = await q('/api/lista?bucket=privado&prefix=' + encodeURIComponent('faro-studios/agencias/lector/'), { headers: { Authorization: 'Bearer otro-token', Origin: ORI } }); assert.equal(r.status, 401); ok('quien no tiene el permiso → 401');
+
+
+// respaldos diarios
+{
+  const fetchAntes = globalThis.fetch; let llam = 0;
+  const filasGrande = Array.from({ length: 1000 }, (_, i) => ({ id: i }));
+  globalThis.fetch = async (u, init = {}) => {
+    llam++; const x = String(u);
+    if (x.endsWith('/rest/v1/')) return new Response(JSON.stringify({ paths: { '/': {}, '/clientes': {}, '/grande': {}, '/rpc/algo': {} } }), { status: 200 });
+    if (x.includes('/rest/v1/clientes')) return new Response(JSON.stringify([{ id: 1, nombre: 'Ana' }]), { status: 200 });
+    if (x.includes('/rest/v1/grande')) { const rg = init.headers.Range; return new Response(JSON.stringify(rg.startsWith('0-') ? filasGrande : [{ id: 1000 }]), { status: 206 }); }
+    if (x.includes('api.github.com')) return new Response(new Uint8Array([80, 75, 3, 4]), { status: 200 });
+    throw new Error('url inesperada ' + x);
+  };
+  const envR = { ...env, PRIVADO: new R2Falso(), PUBLICO: new R2Falso(), SUPABASE_SERVICE_KEY: 'svc' };
+  await envR.PRIVADO.put('faro-studios/x/a.jpg', new Uint8Array([1, 2, 3])); await envR.PUBLICO.put('landing/p/b.png', new Uint8Array([1]));
+  const st = await respaldoPaso(envR, { fecha: '2026-10-18' });
+  assert.equal(st.fase, 'listo'); assert.equal(st.avisos.length, 0);
+  const B = '_respaldos/2026-10-18/';
+  for (const k of ['codigo.zip', 'datos/clientes.json', 'datos/grande.json', 'datos/grande.p1.json', 'esquema-api.json', 'archivos-privado.json', 'archivos-publico.json', 'resumen.json']) assert.ok(envR.PRIVADO.m.has(B + k), k);
+  const res = JSON.parse(new TextDecoder().decode(envR.PRIVADO.m.get(B + 'resumen.json').bytes));
+  assert.equal(res.estado, 'completo'); assert.equal(res.tablas, 2); assert.equal(res.filas, 1002); assert.equal(res.manifiesto.privado.n >= 1, true);
+  assert.ok(envR.PRIVADO.m.has('_respaldos/ultimo.json')); ok('respaldo diario completo: tablas, código y listas de archivos');
+  assert.ok(!JSON.parse(new TextDecoder().decode(envR.PRIVADO.m.get(B + 'archivos-privado.json').bytes)).archivos.some((a) => a[0].startsWith('_respaldos/'))); ok('el respaldo no se respalda a sí mismo');
+  const antes = llam; await respaldoPaso(envR, { fecha: '2026-10-18' }); assert.equal(llam, antes); ok('si ya está listo, los otros disparadores no repiten el trabajo');
+  // sin llave de servicio: guarda código y listas, avisa de las tablas
+  const envS = { ...envR, PRIVADO: new R2Falso(), SUPABASE_SERVICE_KEY: undefined };
+  const s2 = await respaldoPaso(envS, { fecha: '2026-10-19' });
+  assert.equal(s2.fase, 'listo'); assert.ok(s2.avisos[0].includes('SUPABASE_SERVICE_KEY')); assert.ok(envS.PRIVADO.m.has('_respaldos/2026-10-19/codigo.zip')); ok('sin SUPABASE_SERVICE_KEY: avisa y guarda lo demás');
+  // se conservan solo 30 días
+  for (let d = 1; d <= 32; d++) await envS.PRIVADO.put('_respaldos/2025-01-' + String(d).padStart(2, '0') + '/resumen.json', '{}');
+  await respaldoPaso(envS, { fecha: '2026-10-20' });
+  const dias = (await envS.PRIVADO.list({ prefix: '_respaldos/', delimiter: '/' })).delimitedPrefixes; assert.equal(dias.length, 30); ok('guarda solo los últimos 30 respaldos');
+  globalThis.fetch = fetchAntes;
+  // endpoints del admin
+  const envE = { ...env, PRIVADO: envR.PRIVADO };
+  r = await worker.fetch(new Request('https://w.test/api/respaldo/lista', { headers: A }), envE); const lj = await r.json(); assert.equal(lj.items.length, 1); assert.equal(lj.datos, false); ok('el admin ve la lista de respaldos');
+  r = await worker.fetch(new Request('https://w.test/api/respaldo/lista', { headers: { Authorization: 'Bearer lector-token', Origin: ORI } }), envE); assert.equal(r.status, 401); ok('el lector no ve respaldos');
+  r = await worker.fetch(new Request('https://w.test/api/lista?bucket=privado&prefix=', { headers: A }), envE); assert.ok(!(await r.json()).carpetas.includes('_respaldos/')); ok('la carpeta de respaldos no aparece en Materiales');
+}
 
 console.log('\nTodo bien: ' + n + ' comprobaciones.');
