@@ -9,6 +9,7 @@ Object.assign(P,{
   copy:'<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 012-2h9"/>',
   star:'<path d="M12 3l2.7 5.6 6.1.8-4.5 4.2 1.1 6.1L12 16.8 6.6 19.7l1.1-6.1L3.2 9.4l6.1-.8z"/>',
   check:'<path d="M5 12.5l4.5 4.5L19 7.5"/>',
+  gift:'<path d="M20 12v9H4v-9"/><path d="M2 7h20v5H2z"/><path d="M12 22V7"/><path d="M12 7H7.5a2.5 2.5 0 010-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7z"/>',
   tag:'<path d="M3 12.2V4.8A1.8 1.8 0 014.8 3h7.4a1.8 1.8 0 011.3.5l7 7a1.8 1.8 0 010 2.6l-7.4 7.4a1.8 1.8 0 01-2.6 0l-7-7A1.8 1.8 0 013 12.2z"/><circle cx="8" cy="8" r="1.4"/>',
   wa:'<path d="M21 12a8.5 8.5 0 01-12.6 7.4L3 21l1.6-5.2A8.5 8.5 0 1121 12z"/>',
   eye:'<path d="M2 12s3.5-6.5 10-6.5S22 12 22 12s-3.5 6.5-10 6.5S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>'
@@ -112,7 +113,7 @@ async function vistaGaleria(){
    +'<button class="gbolsa" id="gbolsa" aria-label="Impresiones">'+ic('bag')+'<span class="cnt" id="gbc" hidden></span></button>'
    +'<div class="gmus" id="gmus" hidden><div class="cv" id="gmcv"><span class="iso"></span></div><div class="tx"><b id="gmt"></b><small id="gma"></small></div><button id="gmp" aria-label="Silenciar la música">'+ic('vol')+'</button><i class="eq" aria-hidden="true"><s></s><s></s><s></s></i></div></div>';
   const mh=()=>{const t=$('#gtp');if(t)document.documentElement.style.setProperty('--gh',t.offsetHeight+'px')};mh();addEventListener('resize',mh);
-  $('#gsal').onclick=()=>salir('');const gv=$('#gvol');if(gv)gv.onclick=()=>inicio();
+  $('#gsal').onclick=gConfirmaSalir;const gv=$('#gvol');if(gv)gv.onclick=()=>inicio();
   $('#bver').onclick=gAbrirMuro;
   $('#gay').onclick=()=>{$('#gmu').scrollIntoView({behavior:'auto'});setTimeout(()=>gTutorial(false),120)};
   $('#glis').onclick=gAbrirListas;$('#gdl').onclick=()=>gAbrirDescarga('todas');
@@ -120,9 +121,9 @@ async function vistaGaleria(){
   document.querySelectorAll('#gvista button').forEach(b=>b.onclick=()=>{G.vista=b.dataset.v;gLS(gKey('faro_vista'),G.vista);gPintaMuro()});
   const tp=$('#gtp'),ga=document.querySelector('.gal');
   if(G.onScroll)removeEventListener('scroll',G.onScroll);
-  G.onScroll=()=>{const x=scrollY>24;tp.classList.toggle('sol',x);ga.classList.toggle('sol',x);gChequeaFin()};
+  G.onScroll=()=>{const x=scrollY>24;tp.classList.toggle('sol',x);ga.classList.toggle('sol',x);gChequeaMedio();gChequeaFin()};
   addEventListener('scroll',G.onScroll,{passive:true});G.onScroll();
-  G.finOk=false;gCodigoLiga();
+  G.finOk=false;G.codVisto=false;gCodigoLiga();
   /* en segundo plano solo los enlaces (pesan casi nada); las fotos no se descargan hasta abrir la galería */
   setTimeout(()=>{if(!G.pre&&!G.abierta)G.pre=enlaces(ST.arch.map(a=>a.id)).catch(()=>{})},700);
   gMusicaPrep();
@@ -160,27 +161,56 @@ async function gAbrirMuro(silencio){
     const mp=$('#gmus');if(mp&&G.au)mp.hidden=false;
     /* la portada queda como encabezado corto, arriba */
     window.scrollTo(0,0);if(G.onScroll)G.onScroll();
+    /* primera vez: la carta de bienvenida ya está lista debajo de la cortina; se ve en cuanto ésta se abre */
+    const hayTut=!PREVIA&&!gLS(gKey('faro_tut'));
+    G.finOk=!hayTut;
+    const bv=hayTut?gBienvenida():null;
     if(cor)await cor.fin();
     g.classList.add('go');
     b.disabled=false;
+    /* orden: bienvenida → tutorial (inmediato) → la galería empieza desde arriba; la reseña va al final */
+    if(bv){await bv;await gEspera(150);gTutorial(true)}
   }
-  /* primero el tutorial; la reseña solo sale al final de la galería y después de él */
-  const hayTut=nueva&&!PREVIA&&!gLS(gKey('faro_tut'));
-  G.finOk=!hayTut;
-  if(hayTut)setTimeout(()=>gTutorial(true),700);
+}
+/* carta de bienvenida de Faro, antes del tutorial */
+function gBienvenida(){
+  return new Promise(res=>{
+    const nom=(ST.perfil&&ST.perfil.nombre||'').split(' ')[0];
+    const cuerpo=String(G.cfg.bienvenida||'').trim();
+    const parr=cuerpo?cuerpo.split(/\n+/).map(t=>'<p>'+esc(t)+'</p>').join('')
+      :'<p>Gracias por confiarnos un momento que te importa. Cuidamos cada foto como si fuera nuestra, y esperamos que al verlas vuelvas a sentir ese día.</p><p>Esta galería es tuya: guarda tus favoritas, descárgalas en alta calidad y compártelas con quien quieras.</p><p>Antes de empezar, te mostramos en un minuto cómo moverte por ella.</p>';
+    const m=gModal('<div class="top"></div><div class="bd"><span class="iso"></span><div class="eti">BIENVENIDA</div><h2>'+(nom?'Hola, '+esc(nom):'Hola')+'</h2><div class="cuerpo">'+parr+'</div>'
+      +'<div class="firma">Faro Studios<small>CON CARIÑO Y GRATITUD</small></div>'
+      +'<div class="acts"><button class="btn2 b" id="gbvok">Comenzar</button></div></div>',false);
+    m.firstChild.classList.add('carta');
+    $('#gbvok',m).onclick=()=>m.cierra();
+    const ob=new MutationObserver(()=>{if(!document.body.contains(m)){ob.disconnect();res()}});ob.observe(document.body,{childList:true});
+  });
 }
 /* la reseña va al final: solo cuando ya no hay tutorial pendiente y la persona llegó al cierre bajando */
 function gChequeaFin(){
   if(PREVIA||G.fin||!G.abierta||!G.finOk||document.querySelector('.gt,.gm'))return;
   const f=document.getElementById('gfin');if(!f)return;
   const r=f.getBoundingClientRect();
-  if(r.top<innerHeight*.55&&r.bottom>0&&scrollY>400)gLlegoAlFinal();
+  if(((r.top<innerHeight*.6&&r.bottom>0)||innerHeight+scrollY>=document.documentElement.scrollHeight-60)&&scrollY>400)gLlegoAlFinal();
+}
+/* a mitad de la galería el regalo se abre solo una vez (por sesión) y se cierra solo; la pestaña se queda */
+function gChequeaMedio(){
+  const c=document.getElementById('gcod');
+  if(!c||G.codVisto||!G.abierta||!G.finOk||document.querySelector('.gt,.gm,.glb,.gdr'))return;
+  if(gSS(gKey('faro_cod'))){G.codVisto=true;return}
+  const mu=document.getElementById('gmu');if(!mu)return;
+  const r=mu.getBoundingClientRect(),medio=r.top+r.height*.5;
+  if(medio<innerHeight*.62&&medio>-innerHeight*.2&&scrollY>400){
+    G.codVisto=true;gSS(gKey('faro_cod'),'1');c.classList.add('abre');const b=document.getElementById('gcodb');if(b)b.setAttribute('aria-expanded','true');
+    setTimeout(()=>{if(!c.matches(':hover')){c.classList.remove('abre');if(b)b.setAttribute('aria-expanded','false')}},9000);
+  }
 }
 /* pestaña flotante con el código de descuento (lo cambia Faro en Workspace) */
 function gCodigoHtml(cfg){
   const cod=String(cfg.codigo||'').toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,12);if(!cod)return '';
   const n=+cfg.descuento,dt=n>0?n+'% de descuento':'tu descuento';
-  return '<aside class="gcod" id="gcod" aria-label="Código de descuento"><button class="tb" id="gcodb" aria-expanded="false" aria-controls="gcodp">'+ic('tag')+'<span class="vt">Tu código</span></button>'
+  return '<aside class="gcod" id="gcod" aria-label="Código de descuento"><button class="tb" id="gcodb" aria-expanded="false" aria-controls="gcodp">'+ic('gift')+'<span class="vt">Tu código</span></button>'
     +'<div class="pn" id="gcodp"><div class="in2"><small>DESCUENTO PARA TI</small><b class="cdg">'+esc(cod)+'</b>'
     +'<p>Menciona este código al reservar tu próxima sesión y recibe <b>'+esc(dt)+'</b>.</p>'
     +'<div class="row"><button class="gbtn p" id="gcodc">'+ic('copy')+' Copiar</button><button class="gbtn" id="gcodw">'+ic('wa')+' Usarlo</button></div></div></div></aside>';
@@ -279,7 +309,16 @@ function gVisibles(){
   if(G.filtro){const l=G.listas.find(x=>x.id===G.filtro);v=l?v.filter(a=>l.ids.has(a.id)):v}
   return v;
 }
-const GSPAN=[12,7,5,4,4,4,5,7,8,4,6,6],GOFF=[0,0,56,0,44,0,44,0,0,64,0,52];
+/* editorial ordenado: foto grande arriba y luego filas con un ritmo fijo (nunca al azar). Cada fila tiene la misma altura */
+const GED_D=[[7,5],[4,4,4],[5,7],[6,6],[4,4,4],[8,4],[6,6],[4,8]],GED_M=[[12],[6,6],[8,4],[12],[6,6],[4,8]];
+const GMAR={12:1.5,8:1.25,6:.95,4:.62};
+function gLayoutEd(n){
+  const o=[{s:12,ar:2,ms:12,mar:1.5}];let r=n-1,row=0;
+  const dd=[];let q=r;while(q>0){let p=GED_D[row%GED_D.length];if(q===1)p=[0];else if(q===2)p=[6,6];else if(q===3)p=[4,4,4];else if(q===4)p=[6,6];p=p.slice(0,q);dd.push(...p);q-=p.length;row++}
+  const mm=[];q=r;row=0;while(q>0){let p=GED_M[row%GED_M.length];if(q===1)p=[12];p=p.slice(0,q);mm.push(...p);q-=p.length;row++}
+  dd.forEach((s,i)=>{const solo=s===0,sd=solo?8:s;o.push({s:sd,ar:+(sd*.2).toFixed(2),solo,ms:mm[i],mar:GMAR[mm[i]]})});
+  return o;
+}
 function gTile(a,i,cap){
   const l=gLink(a.id),on=ST.favs.has(a.id),vid=a.tipo==='video';
   return '<div class="gph" data-i="'+i+'"><button class="ver" aria-label="Abrir foto '+(i+1)+'">'
@@ -310,10 +349,10 @@ function gPintaMuro(){
   const v=gVisibles();
   if(!v.length){cu.innerHTML='<p style="text-align:center;opacity:.7;padding:40px">Esta lista aún no tiene fotos. Toca el corazón en las que más te gusten.</p>';return}
   if(G.vista==='editorial'){
+    const lay=gLayoutEd(v.length);
     cu.innerHTML='<div class="ged">'+v.map((a,i)=>{
-      const k=i===0?0:1+((i-1)%(GSPAN.length-1)),sp=i===0?12:GSPAN[k],off=i===0?0:GOFF[k];
-      const mc=a.tipo==='imagen'?gMetaCorta(a):'';
-      return '<figure style="grid-column:span '+sp+';margin-top:'+off+'px"'+(i===0?' class="heroe"':'')+'>'+gTile(a,i,mc&&sp>=5?'<span class="cap">'+esc(mc)+'</span>':'')+'</figure>';
+      const L=lay[i];
+      return '<figure class="'+(i===0?'heroe ':'')+(L.solo?'solo':'')+'" style="--s:'+L.s+';--ar:'+L.ar+';--ms:'+L.ms+';--mar:'+L.mar+'">'+gTile(a,i)+'</figure>';
     }).join('')+'</div>';
     const h=v[0];if(h&&h.tipo==='imagen'){const mh=gMetaHtml(h);if(mh)cu.querySelector('figure.heroe').insertAdjacentHTML('beforeend',mh)}
   }else{
@@ -606,6 +645,14 @@ function gAbrirBolsa(){
   pinta();
 }
 
+/* salir: pide confirmación y vuelve al landing de Faro Studios */
+function gConfirmaSalir(){
+  if(PREVIA){toast('Vista previa: aquí el cliente saldría de su galería');return}
+  if(document.querySelector('.gm'))return;
+  const m=gModal('<div class="top"></div><div class="bd"><span class="iso"></span><div class="eti">HASTA PRONTO</div><h2>¿Quieres salir?</h2><p>Tu galería queda guardada. Podrás volver a entrar cuando quieras con tu usuario y contraseña.</p>'
+    +'<div class="acts"><button class="btn2" data-x>Seguir aquí</button><button class="btn2 b" id="gsalok">Sí, salir</button></div></div>',false);
+  $('#gsalok',m).onclick=()=>{try{sessionStorage.removeItem('faro_ent')}catch(e){}SES=null;ST.links={};location.href=GWEB};
+}
 /* ================= RESEÑA Y PROMOCIÓN ================= */
 function gAbrirResena(manual){
   if(document.querySelector('.gm,.gt'))return;
@@ -654,7 +701,7 @@ const GPASOS=[
   {s:'#gvista',t:'Muévete por la galería',x:'Cambia entre Editorial y Cuadrícula. Es la misma sesión, solo se ve distinta.'},
   {s:'.gph .gh',t:'Estas son todas tus fotos',x:'Tú decides cuáles incluir. Toca el corazón para guardar una foto en una lista.'},
   {s:'#glis',t:'Listas para compartir',x:'Crea hasta cinco listas y compártelas con quien quieras. Cada una tiene su enlace privado.'},
-  {s:'#gcodb',t:'Tu código de descuento',x:'Toca esta pestaña cuando quieras ver tu código. Úsalo en tu próxima sesión y tendrás tu descuento.'},
+  {s:'#gcodb',t:'Un regalo para ti',x:'Este regalo se queda aquí, a un lado. Tócalo cuando quieras para ver tu código de descuento y úsalo en tu próxima sesión.'},
   {s:'#gdl',t:'Descarga en alta calidad',x:'Una por una o todas juntas en ZIP. Tú eliges el tamaño de cada descarga.'},
   {s:'.gph .gi',t:'Súbela a tu historia',x:'Toca el botón de Instagram de cualquier foto y se abre en tu teléfono, lista para publicar.',vista:true},
   {s:'#gbolsa',t:'¿Las quieres impresas?',x:'Tenemos tienda. Toca la bolsita, elige tamaños y envía tu solicitud: te contactamos para agendar. Envío gratis desde '+GGRATIS+' impresiones.'}
@@ -670,7 +717,7 @@ function gTutorial(primera){
   let k=0;
   const portada=ST.arch.find(a=>a.id===G.cfg.portada)||gImgs()[0];
   const fin=pr=>{G.finOk=true;t.remove();document.body.classList.remove('gtut');if(!document.querySelector('.gm,.glb,.gdr'))document.body.style.overflow='';removeEventListener('resize',pos);removeEventListener('scroll',pos);clearInterval(iv);removeEventListener('keydown',tec);
-    if(primera){gLS(gKey('faro_tut'),'1');if(pr)setTimeout(()=>gAbrirPromo(false),350)}};
+    if(primera){gLS(gKey('faro_tut'),'1');window.scrollTo(0,0);if(G.onScroll)G.onScroll()}};
   const tec=e=>{if(e.key==='Escape')fin(false)};addEventListener('keydown',tec);
   const pos=()=>{
     const p=pasos[k],el=document.querySelector(p.s);

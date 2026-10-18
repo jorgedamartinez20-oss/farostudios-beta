@@ -106,7 +106,7 @@ body.g{background:var(--g-bg);color:var(--g-tx);font-family:var(--g-ft2)}
 @media(prefers-reduced-motion:reduce){.gmus .eq s,#gcor .ld-fill::before,#gcor .ld-fill::after{animation:none}.gal.go .gcov .im,.gal.go.abierta .gcov .im{animation:none}.gcod,.gcod .pn{transition:none}}
 
 /* ---------- muro ---------- */
-.gmuro{position:relative;padding:0 0 70px}
+.gmuro{position:relative;padding:0}
 .gmuro .in{max-width:1500px;margin:0 auto;padding:clamp(30px,5vw,60px) clamp(10px,2.4vw,34px) 0}
 .gmuro .cab{text-align:center;margin:0 0 30px;font:400 clamp(1.1rem,2vw,1.4rem)/1.5 var(--g-ft2);opacity:.85}
 .gfiltro{display:flex;justify-content:center;margin:0 0 22px}
@@ -137,23 +137,26 @@ body.g{background:var(--g-bg);color:var(--g-tx);font-family:var(--g-ft2)}
 .gph .vid{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);color:#fff;background:rgba(0,0,0,.35);border-radius:50%;width:54px;height:54px;display:grid;place-items:center;pointer-events:none}
 @media(hover:none){.gph .acts{opacity:1;padding-top:14px}.gph .acts button{width:36px;height:36px}}
 
-/* editorial: foto grande y fotos menores, cuadrícula asimétrica pero ordenada */
-.ged{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:clamp(14px,2.4vw,34px);align-items:start}
-.ged .gph{margin:0;min-height:0;box-shadow:0 20px 44px -22px rgba(0,0,0,.45)}
-.ged .cap{display:block;margin-top:9px;font-size:.78rem;letter-spacing:.08em;opacity:.75}
-.ged figure{margin:0}
+/* editorial: foto grande arriba y filas ordenadas, cada foto con su marco (passe-partout) */
+.ged{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:clamp(14px,2.2vw,30px);align-items:stretch}
+.ged>figure{margin:0;grid-column:span var(--s);aspect-ratio:var(--ar);display:grid;min-height:0}
+.ged>figure.solo{grid-column:3/span 8}
+.ged>figure.heroe{aspect-ratio:auto;display:block}
+.ged>figure.heroe .gph{aspect-ratio:var(--ar);height:auto}
+.ged .gph{margin:0;min-height:0;height:100%;display:flex;padding:clamp(7px,1vw,14px);background:color-mix(in srgb,var(--g-tx) 7%,var(--g-bg));border:1px solid color-mix(in srgb,var(--g-tx) 16%,transparent);box-shadow:0 22px 46px -24px rgba(0,0,0,.5)}
+.ged .gph>button.ver{flex:1;min-width:0;min-height:0;height:100%;overflow:hidden;outline:1px solid color-mix(in srgb,var(--g-tx) 14%,transparent);outline-offset:-1px}
+.ged .gph img,.ged .gph video{height:100%;object-fit:cover}
+.ged .gph .acts{left:clamp(7px,1vw,14px);right:clamp(7px,1vw,14px);bottom:clamp(7px,1vw,14px)}
 .gmeta{display:flex;flex-wrap:wrap;justify-content:center;gap:6px 26px;background:var(--pizarra);color:#F5F2EE;padding:13px 18px;font-size:.88rem;letter-spacing:.04em}
 .gmeta b{font-weight:700;color:var(--oro);font-size:.72rem;letter-spacing:.2em;margin-right:7px}
 @media(max-width:720px){
   .gcol{columns:2;column-gap:8px}.gph{margin-bottom:8px}
   .ged{gap:10px}
-  .ged>figure{margin-top:0!important}
-  /* ritmo de tamaños: completa, mitad + mitad, dos tercios + un tercio */
-  .ged>figure:nth-child(5n+2){grid-column:span 12!important}
-  .ged>figure:nth-child(5n+3),.ged>figure:nth-child(5n+4){grid-column:span 6!important}
-  .ged>figure:nth-child(5n+5){grid-column:span 8!important}
-  .ged>figure:nth-child(5n+1){grid-column:span 4!important}
-  .ged>figure.heroe{grid-column:1/-1!important}
+  .ged>figure,.ged>figure.solo{grid-column:span var(--ms);aspect-ratio:var(--mar)}
+  .ged>figure.heroe{aspect-ratio:auto;grid-column:1/-1}
+  .ged>figure.heroe .gph{aspect-ratio:var(--mar)}
+  .ged .gph{padding:6px}
+  .ged .gph .acts{left:6px;right:6px;bottom:6px}
 }
 
 /* cierre */
@@ -163,7 +166,7 @@ body.g{background:var(--g-bg);color:var(--g-tx);font-family:var(--g-ft2)}
 .gfin .row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
 .gbtn{display:inline-flex;align-items:center;justify-content:center;gap:9px;min-height:50px;padding:0 26px;border:1px solid color-mix(in srgb,var(--g-tx) 45%,transparent);background:none;color:var(--g-tx);font-size:.82rem;letter-spacing:.18em;text-transform:uppercase}
 .gbtn.p{background:var(--borgona);border-color:var(--borgona);color:#fff;box-shadow:0 12px 26px rgba(139,26,42,.35)}
-.gpie{text-align:center;padding:22px 20px 80px;font:300 .72rem/1.8 var(--g-ft2);letter-spacing:.2em;text-transform:uppercase;opacity:.65}
+.gpie{text-align:center;padding:26px 20px calc(30px + env(safe-area-inset-bottom));font:300 .72rem/1.8 var(--g-ft2);letter-spacing:.2em;text-transform:uppercase;opacity:.65}
 /* espacio del contrato (solo se ve si Faro subió el PDF a la galería) */
 .gcon{max-width:760px;margin:10px auto 0;padding:0 clamp(12px,3vw,24px)}
 .gcon .cc{display:flex;align-items:center;gap:16px;flex-wrap:wrap;justify-content:center;text-align:center;padding:22px 24px;border:1px solid color-mix(in srgb,var(--g-tx) 22%,transparent);background:color-mix(in srgb,var(--g-tx) 5%,transparent)}
@@ -308,3 +311,20 @@ body:has(.glb) .gtop,body:has(.glb) .gcod,body:has(.glb) .gbolsa,body:has(.glb) 
 .gpub .ctit p{letter-spacing:.3em;text-transform:uppercase;font-size:.8rem;opacity:.7;margin-top:10px}
 @media(prefers-reduced-motion:reduce){.gcov .im{animation:none}.gt .pl{animation:none}}
 #gmu{scroll-margin-top:104px}
+
+/* portada: landing completo, sin desplazamiento */
+html:has(.gal.pre),body:has(.gal.pre){overflow:hidden;height:100%;overscroll-behavior:none}
+.gal.pre .gcov{height:100vh;height:100svh;min-height:0}
+/* pestaña del regalo: salta discretamente */
+@keyframes gsalta{0%,62%,100%{transform:translateY(0) rotate(0)}70%{transform:translateY(-7px) rotate(-6deg)}78%{transform:translateY(0) rotate(0)}85%{transform:translateY(-3px) rotate(4deg)}92%{transform:translateY(0)}}
+.gcod:not(.abre) .tb .ico{animation:gsalta 4.6s ease-in-out 1.2s infinite}
+.gcod .tb .ico{width:1.5em;height:1.5em}
+@media(prefers-reduced-motion:reduce){.gcod .tb .ico{animation:none!important}}
+/* bienvenida (carta) */
+.gmc.carta .bd{gap:14px;padding-top:30px}
+.gmc.carta .iso{height:46px;color:var(--borgona)}
+.gmc.carta h2{font-size:clamp(2.2rem,6vw,3.2rem)}
+.gmc.carta .cuerpo{display:grid;gap:12px;max-width:470px}
+.gmc.carta .cuerpo p{font-size:1.02rem;line-height:1.7;margin:0}
+.gmc.carta .firma{font:400 1.7rem/1 'Bebas Neue',Impact,sans-serif;letter-spacing:.12em;color:var(--borgona);margin-top:4px}
+.gmc.carta .firma small{display:block;font:300 .72rem 'Lato',sans-serif;letter-spacing:.3em;color:#3A3A3A;margin-top:6px}
