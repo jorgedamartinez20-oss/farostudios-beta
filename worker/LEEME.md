@@ -86,3 +86,8 @@ Rutas del administrador: `/api/papelera`, `/api/restaurar`, `/api/purgar`, `/api
 - Secreto `SUPABASE_SERVICE_KEY` (service_role). Sin él se guarda el código y la lista de archivos, y el resumen avisa.
 - Se consulta y descarga en Workspace → Ajustes → Respaldos automáticos. «Respaldar ahora» lo hace al momento.
 - No incluye los usuarios y contraseñas de Supabase Auth (Supabase los respalda por su lado).
+
+## Almacenamiento y limpieza (Materiales)
+- `GET /api/almacenamiento` calcula cuánto ocupa todo R2 (por tipo, por área y por persona/cliente/agencia) y qué se puede limpiar. Guarda el resultado 5 min (`?fresco=1` recalcula).
+- `POST /api/limpiar` con `{"que":"papelera"}` o `{"que":"huerfanas"}` borra solo la papelera o las copias livianas sin foto original.
+- En Workspace: aviso al 80 % y al pasar 10 GB en todas las secciones, y autorización antes de subir si se pasaría del límite gratis.

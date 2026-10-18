@@ -1,7 +1,7 @@
 // Pruebas locales del servicio de archivos (sin Cloudflare): R2 y Supabase simulados.
 // Ejecutar:  node test/prueba.mjs
 import assert from 'node:assert/strict';
-import worker, { DESTINOS, slug, nombreArchivo, firmar, marcadoresPersona, respaldoPaso } from '../src/index.js';
+import worker, { DESTINOS, slug, nombreArchivo, firmar, marcadoresPersona, respaldoPaso, analizarAlmacenamiento, tipoDeArchivo, duenoDe } from '../src/index.js';
 
 /* ---- R2 simulado ---- */
 class R2Falso {
@@ -326,6 +326,30 @@ r = await q('/api/lista?bucket=privado&prefix=' + encodeURIComponent('faro-studi
   r = await worker.fetch(new Request('https://w.test/api/respaldo/lista', { headers: A }), envE); const lj = await r.json(); assert.equal(lj.items.length, 1); assert.equal(lj.datos, false); ok('el admin ve la lista de respaldos');
   r = await worker.fetch(new Request('https://w.test/api/respaldo/lista', { headers: { Authorization: 'Bearer lector-token', Origin: ORI } }), envE); assert.equal(r.status, 401); ok('el lector no ve respaldos');
   r = await worker.fetch(new Request('https://w.test/api/lista?bucket=privado&prefix=', { headers: A }), envE); assert.ok(!(await r.json()).carpetas.includes('_respaldos/')); ok('la carpeta de respaldos no aparece en Materiales');
+}
+
+
+// almacenamiento: cuánto ocupa, quién ocupa más, qué se limpia
+{
+  const MBn = 1048576, e2 = { ...env, PRIVADO: new R2Falso(), PUBLICO: new R2Falso() };
+  const poner = (b, k, mb) => e2[b.toUpperCase()].put(k, new Uint8Array(Math.round(mb * 1024)).fill(1)); // 1 "MB" simulado = 1 KB
+  assert.equal(tipoDeArchivo('a/b/Foto.JPG'), 'fotos'); assert.equal(tipoDeArchivo('a/clip.mp4'), 'videos'); assert.equal(tipoDeArchivo('a/_mini-x.jpg'), 'copias'); assert.equal(tipoDeArchivo('a/doc.pdf'), 'documentos'); assert.equal(tipoDeArchivo('a/x.xyz'), 'otros');
+  assert.deepEqual(duenoDe('privado', 'faro-academy/estudiantes/ana-1a2b3c4d/practicas/a.mp3').grupo, 'Alumno'); assert.equal(duenoDe('privado', 'faro-studios/agencias/nova/x.mp4').slug, 'nova'); assert.equal(duenoDe('privado', 'faro-studios/clientes/luis-9f8e7d6c/a.jpg').grupo, 'Cliente'); ok('clasifica tipos y dueños (alumno, agencia, cliente)');
+  await poner('privado', 'faro-studios/agencias/nova/a.mp4', 900); await poner('privado', 'faro-studios/agencias/nova/b.mp4', 600);
+  await poner('privado', 'faro-academy/estudiantes/ana-1a2b3c4d/practicas/a.mp3', 50); await poner('publico', 'landing/portafolio/p.jpg', 30);
+  await poner('privado', 'faro-studios/clientes-individuales/ana/f1.jpg', 20); await poner('privado', 'faro-studios/clientes-individuales/ana/_mini-f1.jpg', 2); await poner('privado', 'faro-studios/clientes-individuales/ana/_mini-borrada.jpg', 2);
+  await poner('privado', 'faro-studios/clientes-individuales/luis/f1.jpg', 20);
+  await poner('privado', 'faro-studios/agencias/nova/vieja.pdf', 40); e2.PRIVADO.m.set('_papelera/xx', { bytes: new Uint8Array(0), meta: { b: 'privado', k: 'faro-studios/agencias/nova/vieja.pdf' }, up: new Date() });
+  const a = await analizarAlmacenamiento(e2);
+  assert.equal(a.duenos[0].slug, 'nova'); assert.equal(a.duenos[0].b, 1500 * 1024); assert.equal(a.areas.papelera.n, 1); assert.equal(a.limpieza.papelera.b, 40 * 1024); ok('quién ocupa más y cuánto hay en papelera');
+  assert.equal(a.limpieza.huerfanas.n, 1); assert.ok(a.limpieza.huerfanas.items[0].key.endsWith('_mini-borrada.jpg')); ok('detecta copias livianas sin original');
+  assert.equal(a.tipos.videos.b, 1500 * 1024); assert.equal(a.total.n, 10); ok('suma por tipo y total');
+  const envA = { ...env, PRIVADO: e2.PRIVADO, PUBLICO: e2.PUBLICO };
+  r = await worker.fetch(new Request('https://w.test/api/almacenamiento?fresco=1', { headers: A }), envA); assert.equal((await r.json()).total.n, 10); ok('endpoint de almacenamiento (admin)');
+  r = await worker.fetch(new Request('https://w.test/api/almacenamiento', { headers: { Authorization: 'Bearer lector-token', Origin: ORI } }), envA); assert.equal(r.status, 401); ok('el lector no ve el almacenamiento');
+  r = await worker.fetch(new Request('https://w.test/api/limpiar', { method: 'POST', headers: A, body: JSON.stringify({ que: 'huerfanas' }) }), envA); assert.equal((await r.json()).borrados, 1); assert.ok(!e2.PRIVADO.m.has('faro-studios/clientes-individuales/ana/_mini-borrada.jpg')); assert.ok(e2.PRIVADO.m.has('faro-studios/clientes-individuales/ana/_mini-f1.jpg')); ok('borra solo copias huérfanas');
+  r = await worker.fetch(new Request('https://w.test/api/limpiar', { method: 'POST', headers: A, body: JSON.stringify({ que: 'papelera' }) }), envA); assert.equal((await r.json()).borrados, 1); assert.ok(!e2.PRIVADO.m.has('faro-studios/agencias/nova/vieja.pdf')); assert.ok(e2.PRIVADO.m.has('faro-studios/agencias/nova/a.mp4')); ok('vaciar papelera borra solo lo que está en ella');
+  r = await worker.fetch(new Request('https://w.test/api/limpiar', { method: 'POST', headers: A, body: JSON.stringify({ que: 'todo' }) }), envA); assert.equal(r.status, 400); ok('limpieza desconocida rechazada');
 }
 
 console.log('\nTodo bien: ' + n + ' comprobaciones.');

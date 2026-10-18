@@ -117,6 +117,15 @@ button,input,select,textarea{font:inherit;color:inherit}
 .fcard .mg{display:grid;grid-template-columns:1fr 1fr;gap:6px}
 .fcard input{min-width:0;width:100%;padding:6px 9px;border-radius:8px;border:1px solid var(--line);background:var(--input);color:var(--text);font-size:.85rem}.fcard input:disabled{opacity:.45;cursor:not-allowed;background:var(--line)}
 .fcard .fa{display:flex;gap:5px;align-items:center;flex-wrap:wrap}.fcard .fa .btn{padding:5px 9px}
+.almbar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:10px 16px;border-radius:14px;margin:0 0 14px;font-size:.92rem;border:1.5px solid #c98a1b;background:color-mix(in srgb,#c98a1b 14%,var(--card,#fff));box-shadow:0 6px 18px -12px rgba(0,0,0,.4)}
+.almbar.over{border-color:#a33;background:color-mix(in srgb,#a33 12%,var(--card,#fff))}.almbar b{font-weight:700}.almbar .sp{flex:1;min-width:120px}
+.almbar[hidden]{display:none}
+.almb{height:16px;border-radius:99px;background:var(--line);position:relative;overflow:hidden;margin:6px 0}.almb i{display:block;height:100%;border-radius:99px;transition:width .5s}.almb u{position:absolute;top:0;bottom:0;left:80%;width:2px;background:var(--text);opacity:.45}
+.almst{display:flex;height:14px;border-radius:99px;overflow:hidden;background:var(--line);margin:8px 0}.almst i{display:block;height:100%}
+.almlg{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:.88rem}.almlg span{display:inline-flex;gap:6px;align-items:center}.almlg em{width:11px;height:11px;border-radius:3px;display:inline-block}
+.almrow{display:grid;grid-template-columns:minmax(120px,1.2fr) 2fr auto;gap:10px;align-items:center;padding:6px 0;border-top:1px solid var(--line);font-size:.9rem}.almrow:first-child{border-top:0}
+.almrow .bb{height:8px;border-radius:99px;background:var(--line);overflow:hidden}.almrow .bb i{display:block;height:100%;background:var(--oro)}
+@media(max-width:700px){.almrow{grid-template-columns:1fr auto}.almrow .bb{grid-column:1/-1}}
 .optbox{border:1px solid var(--line);border-radius:12px;padding:10px 12px;display:grid;gap:6px;background:var(--input);font-size:.9rem}
 .optbox .obar{height:8px;border-radius:99px;background:var(--line);overflow:hidden}.optbox .obar i{display:block;height:100%;background:var(--oro);transition:width .3s}
 .optbox.ok{border-color:#4d7a4d}.optbox.mal{border-color:#a33}
@@ -882,6 +891,7 @@ async function start(){
     if(!ME.ok){logout();const e=$('#lerr');e.hidden=false;e.textContent='Esta cuenta todavía no tiene permisos en el panel (o fue desactivada). Pídele al director que te los active.';return}
   }finally{$('#v-wait').hidden=true;cargaOff()}
   $('#v-login').hidden=true;$('#v-app').hidden=false;$('#out').hidden=false;
+  setTimeout(()=>{almCargar(false);if(!ALM.iv)ALM.iv=setInterval(()=>almCargar(false),30*60000)},1500);
   try{FaroPerfil.entrar()}catch(e){}
   aplicarPermisos();{let g=null;try{g=localStorage.getItem('faro_tab')}catch(e){}showTab(g&&$('#t-'+g)&&permiteTab(g)?g:(ME.owner?'ini':primeraPestana()))}
   if(!cy){const t=today();cy=+t.slice(0,4);cm=+t.slice(5,7)-1}
@@ -2089,8 +2099,9 @@ async function matSubir(file,destId,ent,onProg,nombre){
   return matSubirKey(file,d.bucket,carpeta+nm,onProg);
 }
 async function matSubirKey(file,bucket,key,onProg){
+  await almGuard(file.size);
   const T=subidaNueva((file.name||key.split('/').pop()),file.size);
-  try{const r=await matSubirKey0(file,bucket,key,l=>{T.prog(l);if(onProg)onProg(l)});T.ok();return r}catch(e){T.fail(e.message||'No se pudo subir');throw e}
+  try{const r=await matSubirKey0(file,bucket,key,l=>{T.prog(l);if(onProg)onProg(l)});T.ok();almSumar(file.size);return r}catch(e){T.fail(e.message||'No se pudo subir');throw e}
 }
 async function matSubirKey0(file,bucket,key,onProg){
   const q='bucket='+bucket+'&key='+encodeURIComponent(key),tipo=file.type||'application/octet-stream';
@@ -2194,6 +2205,7 @@ async function matInit(){
   if(SOLO){}else if(FILES){cfg.hidden=true;cfg.style.cssText='margin-top:12px;padding-top:12px;border-top:1px solid var(--line)';cfg.prepend(el('p',{class:'muted'},'Solo cambia esto si moviste el servicio de archivos a otra dirección.'));
     top.append(el('div',{style:'display:flex;align-items:center;gap:10px;margin-top:10px'},el('span',{},icoEl('check'),' Conectado'),el('button',{class:'btn btn-ghost btn-sm',type:'button',title:'Configuración de la conexión','aria-label':'Configuración de la conexión',onclick:()=>{cfg.hidden=!cfg.hidden}},icoEl('sliders'))),cfg)}else top.append(cfg);
   box.append(top);
+  if(!SOLO&&FILES){box.append(almCardEl());if(!ALM.data)almCargar(false)}
   if(!FILES){box.append(el('div',{class:'card'},el('p',{class:'muted'},'Todavía no está conectado. Publica el servicio con los pasos de worker/LEEME.md, pega aquí su dirección y toca “Conectar”. Mientras tanto, “Sitio web” sigue subiendo archivos como antes.')));return}
   try{await matArbol()}catch(e){top.append(el('div',{class:'msg',style:'margin-top:12px'},e.message+'. Revisa la dirección y que el servicio esté publicado.'));return}
   if(SOLO)MAT.destinos=MAT.destinos.filter(d=>!d.prefijo.startsWith('documentos/'));
@@ -2457,12 +2469,8 @@ function dashEspacioPintar(ep){
 }
 async function dashEspacio(){
   if(DASH.espBusy||typeof FILES==='undefined'||!FILES)return;DASH.espBusy=true;DASH.espErr='';dashEspacioPintar();
-  try{
-    let archivos=0;
-    const suma=async(bucket,prefix)=>{const j=await fjson('/api/lista?bucket='+bucket+'&prefix='+encodeURIComponent(prefix));let s=0;j.archivos.forEach(a=>{s+=a.size;archivos++});for(const c of j.carpetas)s+=await suma(bucket,c);return s};
-    const studios=await suma('privado','faro-studios/'),academy=await suma('privado','faro-academy/'),landing=await suma('publico','landing/');
-    DASH.esp={studios,academy,landing,archivos};
-  }catch(e){DASH.espErr='No se pudo calcular: '+(e.message||'sin respuesta')}
+  await almCargar(true);
+  if(ALM.data){const a=ALM.data.areas;DASH.esp={studios:(a.studios||{b:0}).b,academy:(a.academy||{b:0}).b,landing:(a.landing||{b:0}).b+(a.documentos||{b:0}).b,archivos:ALM.data.total.n}}else DASH.espErr=ALM.err||'No se pudo calcular';
   DASH.espBusy=false;dashEspacioPintar();
 }
 
@@ -4335,6 +4343,103 @@ async function respInit(card){
     if(d.items.length)box.append(lista);
   };
   pinta();
+}
+
+/* ---------- almacenamiento de R2: uso, avisos, quién ocupa más y limpieza segura ---------- */
+const ALM={data:null,busy:false,lim:10e9,precio:0.015,extra:0,autorizado:false,filtro:'Todos',mas:false};
+const almTam=b=>b>=1e9?(b/1e9).toFixed(b>=1e10?1:2)+' GB':b>=1e6?(b/1e6).toFixed(b>=1e8?0:1)+' MB':Math.max(0,Math.round(b/1e3))+' KB';
+const almCosto=gb=>Math.max(0,gb-10)*ALM.precio;
+const almUsado=()=>ALM.data?ALM.data.total.b+(ALM.extra||0):0;
+const ALM_TIPOS=[['fotos','Fotos','#B8A06A'],['videos','Videos','#8B1A2A'],['audios','Audios','#5a5a5e'],['documentos','Documentos','#3A3A3A'],['copias','Copias livianas de fotos','#d8c9a3'],['otros','Otros','#bdb6aa']];
+const ALM_AREAS={studios:'Faro Studios',academy:'Faro Academy',documentos:'Documentos',landing:'Landing',respaldos:'Respaldos',papelera:'Papelera',otros:'Otros'};
+function almHace(iso){const m=Math.round((Date.now()-Date.parse(iso))/60000);return m<1?'hace un momento':m<60?'hace '+m+' min':m<1440?'hace '+Math.round(m/60)+' h':'hace '+Math.round(m/1440)+' d'}
+async function almCargar(fresco){
+  if(ALM.busy||typeof FILES==='undefined'||!FILES||!ME.owner)return;ALM.busy=true;almPintar();
+  try{ALM.data=await fjson('/api/almacenamiento'+(fresco?'?fresco=1':''));ALM.extra=0;ALM.err=''}catch(e){ALM.err='No se pudo calcular: '+(e.message||'sin respuesta')}
+  ALM.busy=false;almPintar();
+}
+function almSumar(n){ALM.extra=(ALM.extra||0)+n;almPintar();clearTimeout(ALM.t);ALM.t=setTimeout(()=>almCargar(true),4000)}
+/* si una subida te haría pasar de los 10 GB gratis, pide tu autorización (una vez por sesión) */
+async function almGuard(size){
+  if(!ALM.data||ALM.autorizado)return;
+  const u=almUsado()+size;if(u<=ALM.lim)return;
+  if(ALM.pend)return ALM.pend;
+  ALM.pend=(async()=>{
+    const si=confirm('Con esta subida pasarías de los 10 GB gratis de R2 (quedarías en '+almTam(u)+').\n\nCosto estimado: US$'+almCosto(u/1e9).toFixed(2)+' al mes (US$0.015 por cada GB adicional).\n\n¿Autorizas seguir subiendo?');
+    if(!si)throw new Error('Subida cancelada: no autorizaste pasar los 10 GB gratis');
+    ALM.autorizado=true;
+  })().finally(()=>{ALM.pend=null});
+  return ALM.pend;
+}
+function almPintar(){
+  almBanner();almPintarCard();
+  if(typeof DASH!=='undefined'&&ALM.data){const a=ALM.data.areas;DASH.esp={studios:(a.studios||{b:0}).b,academy:(a.academy||{b:0}).b,landing:(a.landing||{b:0}).b+(a.documentos||{b:0}).b,archivos:ALM.data.total.n};if($('#dash-body .dp.w12:last-child'))dashEspacioPintar()}
+}
+function almBanner(){
+  let b=$('#alm-aviso');
+  if(!b){b=el('div',{id:'alm-aviso',class:'almbar',hidden:''});const a=$('#v-app');if(a)a.before(b);else return}
+  const u=almUsado(),pct=100*u/ALM.lim,nivel=pct>=100?'over':pct>=80?'warn':'';
+  if(!ALM.data||!nivel||$('#v-app').hidden||sessionStorage.getItem('faro_alm_x')===nivel){b.hidden=true;return}
+  b.hidden=false;b.className='almbar'+(nivel==='over'?' over':'');b.textContent='';
+  b.append(el('span',{},nivel==='over'?el('b',{},'Superaste los 10 GB gratis de R2. '):el('b',{},'Tu almacenamiento va casi lleno. '),nivel==='over'?'Usas '+almTam(u)+'; costo estimado desde ahora: US$'+almCosto(u/1e9).toFixed(2)+' al mes.':'Llevas '+almTam(u)+' de 10 GB gratis ('+pct.toFixed(0)+'%); quedan '+almTam(ALM.lim-u)+'.'),
+    el('span',{class:'sp'}),el('button',{class:'btn btn-ghost btn-sm',type:'button',onclick:()=>showTab('mat')},'Ver y limpiar'),
+    el('button',{class:'btn btn-ghost btn-sm',type:'button','aria-label':'Ocultar este aviso',onclick:()=>{try{sessionStorage.setItem('faro_alm_x',nivel)}catch(e){}b.hidden=true}},'✕'));
+}
+function almNombres(){
+  const m={};try{['est','doc','cli'].forEach(k=>(AC.list[k]||[]).forEach(x=>{if(x.carpeta)m[x.carpeta.replace(/\/$/,'').split('/').pop()]=x.nombre}));(EN.cuentas||[]).forEach(c=>{m[c.slug]=c.nombre})}catch(e){}
+  return m;
+}
+const almBonito=s=>String(s||'').replace(/-[0-9a-f]{8}$/,'').replace(/-+/g,' ').replace(/\b\w/g,l=>l.toUpperCase());
+function almCardEl(){const c=el('div',{class:'card',id:'alm-card',style:'margin-bottom:18px'});ALM.card=c;setTimeout(almPintarCard,0);return c}
+function almPintarCard(){
+  const c=ALM.card;if(!c||!c.isConnected)return;c.textContent='';const d=ALM.data;
+  c.append(el('div',{style:'display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center'},el('div',{},el('h2',{},'Almacenamiento · Cloudflare R2'),el('p',{class:'muted',style:'margin:4px 0 0'},d?'Actualizado '+almHace(d.generado)+' · se vuelve a calcular solo después de cada carga':(ALM.busy?'Calculando…':ALM.err||'Aún sin datos'))),enBtn(ALM.busy?'Calculando…':'Actualizar','refresh',()=>almCargar(true))));
+  if(!d)return;
+  const u=almUsado(),pct=100*u/ALM.lim,col=pct>=100?'#a33':pct>=80?'#c98a1b':'var(--oro)';
+  c.append(el('div',{style:'margin-top:12px'},
+    el('div',{style:'display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;font-weight:700'},el('span',{},almTam(u)+' de 10 GB gratis ('+Math.min(999,pct).toFixed(1)+'%)'),el('span',{style:'color:'+col},pct>=100?'Excedes por '+almTam(u-ALM.lim):'Te quedan '+almTam(ALM.lim-u))),
+    el('div',{class:'almb',title:'La marca es el 80%'},el('i',{style:'width:'+Math.min(100,pct)+'%;background:'+col}),el('u')),
+    pct>=100?el('p',{class:'muted',style:'margin:2px 0 0;color:#a33'},'Pasaste el límite gratis. Cloudflare cobra el adicional; antes de subir más te pido autorización.'):pct>=80?el('p',{class:'muted',style:'margin:2px 0 0;color:#c98a1b'},'Estás por llegar al límite gratis. Revisa abajo qué puedes limpiar.'):null));
+  /* costo */
+  const gbIn=el('input',{type:'number',min:'0',step:'10',value:'100',style:'width:90px;padding:6px 9px;border-radius:8px;border:1px solid var(--line);background:var(--input);color:var(--text)'}),res=el('b',{});
+  const calc=()=>{const g=Math.max(0,+gbIn.value||0);res.textContent='US$'+almCosto(g).toFixed(2)+' al mes'};gbIn.addEventListener('input',calc);calc();
+  c.append(el('div',{style:'margin-top:10px;display:grid;gap:6px'},
+    el('div',{},'Costo estimado del mes con tu uso actual: ',el('b',{},'US$'+almCosto(u/1e9).toFixed(2)),u<=ALM.lim?' (dentro de lo gratis)':''),
+    el('div',{style:'display:flex;gap:8px;align-items:center;flex-wrap:wrap'},'Si llegara a',gbIn,'GB →',res,...[50,100,250,500].map(g=>el('button',{class:'btn btn-ghost btn-sm',type:'button',onclick:()=>{gbIn.value=g;calc()}},g+' GB'))),
+    el('small',{class:'muted'},'R2: 10 GB gratis al mes y luego US$0.015 por GB adicional (se promedia en el mes). Es un cálculo aproximado y no incluye operaciones, que tienen una cuota gratis amplia.')));
+  /* por tipo */
+  const tp=d.tipos,tot=Math.max(1,Object.values(tp).reduce((s,x)=>s+x.b,0));
+  c.append(el('h3',{style:'margin:16px 0 0;font-size:1rem'},'Qué ocupa el espacio'),
+    el('div',{class:'almst'},...ALM_TIPOS.filter(([k])=>tp[k]).map(([k,n,col])=>el('i',{style:'width:'+(100*tp[k].b/tot)+'%;background:'+col,title:n}))),
+    el('div',{class:'almlg'},...ALM_TIPOS.filter(([k])=>tp[k]).map(([k,n,col])=>el('span',{},el('em',{style:'background:'+col}),n+': ',el('b',{},almTam(tp[k].b)),el('small',{class:'muted'},' · '+tp[k].n.toLocaleString('es-GT'))))),
+    el('div',{class:'almlg',style:'margin-top:8px'},...Object.entries(ALM_AREAS).filter(([k])=>d.areas[k]).map(([k,n])=>el('span',{class:'tag'},n+' · '+almTam(d.areas[k].b)))));
+  /* quién ocupa más */
+  const nm=almNombres(),personas=['Cliente','Alumno','Agencia','Empresa','Docente'],gr=['Todos',...personas.filter(g=>d.duenos.some(x=>x.grupo===g)),'Otros'];
+  if(!gr.includes(ALM.filtro))ALM.filtro='Todos';
+  const lista=d.duenos.filter(x=>ALM.filtro==='Todos'||(ALM.filtro==='Otros'?!personas.includes(x.grupo):x.grupo===ALM.filtro));
+  const mx=Math.max(1,...lista.map(x=>x.b)),vis=ALM.mas?lista.slice(0,40):lista.slice(0,10);
+  const seg=el('div',{class:'seg',role:'group'},...gr.map(g=>el('button',{type:'button','aria-pressed':String(ALM.filtro===g),onclick:()=>{ALM.filtro=g;ALM.mas=false;almPintarCard()}},g)));
+  c.append(el('h3',{style:'margin:16px 0 6px;font-size:1rem'},'Quién ocupa más'),seg,
+    el('div',{style:'margin-top:6px'},...vis.map(x=>{const pr=Object.entries(x.t).sort((p,q)=>q[1]-p[1])[0];return el('div',{class:'almrow'},el('div',{style:'min-width:0'},el('b',{style:'font-weight:700'},nm[x.slug]||almBonito(x.slug)),el('small',{class:'muted',style:'display:block'},x.grupo+' · '+x.n.toLocaleString('es-GT')+' archivos'+(pr?' · sobre todo '+(ALM_TIPOS.find(t=>t[0]===pr[0])||[0,pr[0]])[1].toLowerCase():''))),el('div',{class:'bb'},el('i',{style:'width:'+(100*x.b/mx)+'%'})),el('b',{},almTam(x.b)))})),
+    ...(lista.length>10&&!ALM.mas?[enBtn('Ver más ('+Math.min(40,lista.length)+')',null,()=>{ALM.mas=true;almPintarCard()})]:[]));
+  /* limpieza segura */
+  const L=d.limpieza,sinUso=L.papelera.b+L.huerfanas.b;
+  const corre=async(que,txt)=>{
+    if(!confirm(txt))return;
+    try{let r,n=0,b=0;do{r=await fjson('/api/limpiar',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({que})});n+=r.borrados;b+=r.bytes}while(r.restantes>0&&r.borrados>0);
+      guardadoOk('Liberaste '+almTam(b));await almCargar(true)}catch(e){toast(e.message||'No se pudo limpiar')}};
+  const det=el('details',{style:'margin-top:16px',open:sinUso>0||undefined},el('summary',{style:'cursor:pointer;font-weight:700'},'Limpieza segura · se puede liberar '+almTam(sinUso)),
+    el('p',{class:'muted',style:'margin:8px 0'},'Cloudflare R2 no guarda archivos de caché propios. Las fotos que ves rápido se guardan en el celular o computadora de cada persona (no ocupan tu espacio y se limpian solas). Lo que sí ocupa espacio sin servirte: la papelera, copias livianas de fotos que ya no existen y archivos repetidos. Nada se borra sin tu confirmación.'),
+    el('div',{class:'almrow',style:'grid-template-columns:1fr auto'},el('div',{},el('b',{},'Papelera'),el('small',{class:'muted',style:'display:block'},L.papelera.n+' archivos que ya mandaste a la papelera · '+almTam(L.papelera.b))),
+      enBtn('Vaciar papelera','trash',()=>corre('papelera','Se borrarán para siempre '+L.papelera.n+' archivos ('+almTam(L.papelera.b)+') que ya estaban en la papelera. No se puede deshacer. ¿Continuar?'))),
+    el('div',{class:'almrow',style:'grid-template-columns:1fr auto'},el('div',{},el('b',{},'Copias livianas sin foto original'),el('small',{class:'muted',style:'display:block'},L.huerfanas.n+' archivos «_mini-/_vista-» cuya foto ya no existe · '+almTam(L.huerfanas.b)+' · son seguras de borrar')),
+      enBtn('Borrar copias','trash',()=>corre('huerfanas','Se borrarán '+L.huerfanas.n+' copias livianas que ya no tienen su foto original. Las fotos no se tocan. ¿Continuar?'))));
+  if(L.duplicados.length){const dl=el('div',{style:'margin-top:8px'},el('b',{},'Posibles repetidos (mismo nombre y peso) · revísalos antes de borrar'));
+    L.duplicados.slice(0,8).forEach(g=>dl.append(el('div',{style:'padding:6px 0;border-top:1px solid var(--line);font-size:.88rem'},el('b',{style:'font-weight:700'},g.nombre+' · '+almTam(g.size)+' × '+g.copias),...g.keys.map(k=>{const [bk,...rest]=k.split('|'),key=rest.join('|');return el('div',{style:'display:flex;gap:8px;align-items:center;flex-wrap:wrap'},el('small',{class:'muted',style:'flex:1;min-width:200px;word-break:break-all'},key),enBtn('Ver','image',()=>matVer(bk,key).catch(e=>toast(e.message))),enBtn('A la papelera','trash',async()=>{if(!confirm('¿Mandar a la papelera este archivo?\n'+key+'\n\nPuedes recuperarlo después.'))return;try{await fjson('/api/objeto?bucket='+bk+'&key='+encodeURIComponent(key),{method:'DELETE'});toast('Enviado a la papelera');almCargar(true)}catch(e){toast(e.message)}}))}))));det.append(dl)}
+  if(L.pesados.length){const pl=el('div',{style:'margin-top:10px'},el('b',{},'Los archivos más pesados'));
+    L.pesados.slice(0,8).forEach(p=>pl.append(el('div',{style:'display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:5px 0;border-top:1px solid var(--line);font-size:.88rem'},el('small',{class:'muted',style:'flex:1;min-width:200px;word-break:break-all'},p.key),el('b',{},almTam(p.size)),enBtn('Ver','image',()=>matVer(p.bucket,p.key).catch(e=>toast(e.message))))));det.append(pl)}
+  det.append(el('div',{style:'margin-top:10px'},enBtn('Analizar de nuevo','refresh',()=>almCargar(true))));
+  c.append(det);
 }
 /* ---------- editor dentro de la página principal (no flotante) ---------- */
 function enPagina(titulo){

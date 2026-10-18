@@ -503,6 +503,118 @@ export async function respaldoPaso(env, { fecha = hoyGT(), nuevo = false } = {})
 }
 const estadoPublico = (st) => ({ fecha: st.fecha, fase: st.fase, listo: st.fase === 'listo', ocupado: !!st.ocupado, tablas: (st.tablas || []).length, hechas: st.ti || 0, avisos: st.avisos || [] });
 
+/* ---------- Almacenamiento: cuánto ocupa todo, quién ocupa más y qué se puede limpiar sin riesgo ---------- */
+const ALM_KEY = '_stats/almacenamiento.json';
+const ALM_VIGENCIA = 5 * 60 * 1000;
+const EXT_TIPO = {
+  fotos: 'jpg jpeg png webp heic heif gif avif tif tiff bmp raw dng cr2 arw nef', videos: 'mp4 mov m4v webm mkv avi mts wmv',
+  audios: 'mp3 wav m4a aac flac ogg aiff wma', documentos: 'pdf doc docx xls xlsx ppt pptx txt csv rtf odt key pages numbers zip json',
+};
+const TIPO_POR_EXT = Object.fromEntries(Object.entries(EXT_TIPO).flatMap(([t, l]) => l.split(' ').map((e) => [e, t])));
+const esCopiaLiviana = (nombre) => /^_(mini|vista)-.+\.jpg$/i.test(nombre);
+export function tipoDeArchivo(key) {
+  const n = key.split('/').pop().toLowerCase();
+  if (esCopiaLiviana(n)) return 'copias';
+  const m = /\.([a-z0-9]+)$/.exec(n);
+  return (m && TIPO_POR_EXT[m[1]]) || 'otros';
+}
+const ROL_STUDIOS = { agencias: 'Agencia', corporativo: 'Empresa', 'clientes-individuales': 'Cliente', clientes: 'Cliente' };
+// Quién es el "dueño" de un archivo (agencia, cliente, alumno, docente…) y a qué área pertenece
+export function duenoDe(bucket, key) {
+  const p = key.split('/');
+  if (bucket === 'publico') return { area: 'landing', grupo: 'Landing', id: 'publico|' + p.slice(0, 2).join('/'), slug: p[1] || 'landing' };
+  if (key.startsWith(RESP)) return { area: 'respaldos', grupo: 'Respaldos', id: 'respaldos', slug: 'respaldos' };
+  if (p[0] === 'faro-studios') {
+    if (ROL_STUDIOS[p[1]] && p.length > 3) return { area: 'studios', grupo: ROL_STUDIOS[p[1]], id: p.slice(0, 3).join('/'), slug: p[2] };
+    if (p[1] === 'contenido') return { area: 'studios', grupo: 'Contenido en redes', id: 'faro-studios/contenido', slug: 'contenido-en-redes' };
+    if (p[1] === 'musica-galerias') return { area: 'studios', grupo: 'Música de galerías', id: 'faro-studios/musica-galerias', slug: 'musica-de-galerias' };
+    return { area: 'studios', grupo: 'Faro Studios (otros)', id: p.slice(0, 2).join('/'), slug: p[1] || 'studios' };
+  }
+  if (p[0] === 'faro-academy') {
+    if ((p[1] === 'estudiantes' || p[1] === 'docentes') && p.length > 3) return { area: 'academy', grupo: p[1] === 'estudiantes' ? 'Alumno' : 'Docente', id: p.slice(0, 3).join('/'), slug: p[2] };
+    if ((p[2] === 'alumnos' || p[2] === 'docentes') && p.length > 4) return { area: 'academy', grupo: p[2] === 'alumnos' ? 'Alumno' : 'Docente', id: p.slice(0, 4).join('/'), slug: p[3] };
+    return { area: 'academy', grupo: 'Academy (material general)', id: p.slice(0, 3).join('/'), slug: p.slice(1, 3).join(' · ') };
+  }
+  if (p[0] === 'documentos') return { area: 'documentos', grupo: 'Documentos', id: p.slice(0, 2).join('/'), slug: p[1] || 'documentos' };
+  return { area: 'otros', grupo: 'Otros', id: p[0] || 'raiz', slug: p[0] || 'raiz' };
+}
+async function recorrerBuckets(env, fn) {
+  for (const [nom, b] of [['privado', env.PRIVADO], ['publico', env.PUBLICO]]) {
+    let cursor, pg = 0;
+    do {
+      const r = await b.list({ cursor, limit: 1000 });
+      for (const o of r.objects) fn(nom, o);
+      cursor = r.truncated ? r.cursor : undefined;
+    } while (cursor && ++pg < 300);
+  }
+}
+const llaveCopia = (key) => { const i = key.lastIndexOf('/'); return key.slice(0, i + 1) + key.slice(i + 1).replace(/^_(mini|vista)-/, '').replace(/\.[^.]+$/, ''); };
+async function copiasHuerfanas(env) {
+  const originales = new Set(), copias = [];
+  await recorrerBuckets(env, (b, o) => {
+    if (b !== 'privado') return;
+    const nom = o.key.split('/').pop();
+    if (esCopiaLiviana(nom)) copias.push({ key: o.key, size: o.size });
+    else originales.add(llaveCopia(o.key));
+  });
+  return copias.filter((c) => !originales.has(llaveCopia(c.key)));
+}
+export async function analizarAlmacenamiento(env) {
+  const papelera = await clavesPapelera(env);
+  const tot = { n: 0, b: 0 }, bk = { privado: { n: 0, b: 0 }, publico: { n: 0, b: 0 } };
+  const tipos = {}, areas = {}, duenos = new Map(), pesados = [], dups = new Map(), originales = new Set(), copias = [];
+  const pap = { n: 0, b: 0 };
+  await recorrerBuckets(env, (b, o) => {
+    if (o.key.endsWith('/.keep')) return;
+    const nom = o.key.split('/').pop(), size = o.size;
+    tot.n++; tot.b += size; bk[b].n++; bk[b].b += size;
+    const tp = tipoDeArchivo(o.key), enPap = papelera.has(b + '|' + o.key);
+    const t = tipos[tp] || (tipos[tp] = { n: 0, b: 0 }); t.n++; t.b += size;
+    if (enPap) { pap.n++; pap.b += size; const a = areas.papelera || (areas.papelera = { n: 0, b: 0 }); a.n++; a.b += size; return; }
+    const d = duenoDe(b, o.key);
+    const a = areas[d.area] || (areas[d.area] = { n: 0, b: 0 }); a.n++; a.b += size;
+    const x = duenos.get(d.id) || { id: d.id, grupo: d.grupo, slug: d.slug, n: 0, b: 0, t: {} };
+    x.n++; x.b += size; x.t[tp] = (x.t[tp] || 0) + size; duenos.set(d.id, x);
+    if (d.area === 'respaldos') return;
+    if (b === 'privado') { if (esCopiaLiviana(nom)) copias.push({ key: o.key, size }); else originales.add(llaveCopia(o.key)); }
+    if (size > 1048576 && tp !== 'copias') {
+      pesados.push({ bucket: b, key: o.key, size }); if (pesados.length > 60) { pesados.sort((p, q) => q.size - p.size); pesados.length = 30; }
+      const k = nom.toLowerCase() + '|' + size; const g = dups.get(k); if (g) g.push(b + '|' + o.key); else dups.set(k, [b + '|' + o.key]);
+    }
+  });
+  pesados.sort((p, q) => q.size - p.size);
+  const huerf = copias.filter((c) => !originales.has(llaveCopia(c.key)));
+  const duplicados = [...dups.entries()].filter(([, v]) => v.length > 1).map(([k, v]) => { const i = k.lastIndexOf('|'); return { nombre: k.slice(0, i), size: Number(k.slice(i + 1)), copias: v.length, keys: v.slice(0, 6) }; })
+    .sort((p, q) => q.size * (q.copias - 1) - p.size * (p.copias - 1)).slice(0, 15);
+  return {
+    generado: new Date().toISOString(), total: tot, buckets: bk, tipos, areas,
+    duenos: [...duenos.values()].filter((x) => !['respaldos'].includes(x.id)).sort((p, q) => q.b - p.b).slice(0, 120),
+    limpieza: { papelera: pap, huerfanas: { n: huerf.length, b: huerf.reduce((s, x) => s + x.size, 0), items: huerf.slice(0, 20) }, duplicados, pesados: pesados.slice(0, 15) },
+  };
+}
+async function limpiarAlmacenamiento(env, que) {
+  let n = 0, b = 0, restantes = 0; const TOPE = 400;
+  if (que === 'papelera') {
+    let cursor;
+    do {
+      const r = await env.PRIVADO.list({ prefix: PAPELERA, cursor, limit: 1000, include: ['customMetadata'] });
+      for (const o of r.objects) {
+        const c = o.customMetadata || {};
+        if (!c.k || !({ privado: env.PRIVADO, publico: env.PUBLICO })[c.b]) continue;
+        if (n >= TOPE) { restantes++; continue; }
+        const x = await ({ privado: env.PRIVADO, publico: env.PUBLICO })[c.b].head(c.k);
+        if (x) b += x.size;
+        await ({ privado: env.PRIVADO, publico: env.PUBLICO })[c.b].delete(c.k); await env.PRIVADO.delete(o.key); n++;
+      }
+      cursor = r.truncated ? r.cursor : undefined;
+    } while (cursor);
+  } else if (que === 'huerfanas') {
+    const lista = await copiasHuerfanas(env);
+    for (const c of lista) { if (n >= TOPE) { restantes++; continue; } await env.PRIVADO.delete(c.key); n++; b += c.size; }
+  } else return null;
+  return { borrados: n, bytes: b, restantes };
+}
+
 /* ---------- Servicio ---------- */
 export default {
   // Disparador de las 12:00 (hora de Guatemala): hace o continúa el respaldo del día
@@ -741,6 +853,20 @@ export default {
         if (!o) return err(request, env, 'No existe ese archivo', 404);
         await aPapelera(env, bucketNombre, key, env.ADMIN_EMAIL, o.size);
         return json(request, env, { ok: true, papelera: true });
+      }
+
+      // Almacenamiento: cuánto ocupa todo y qué se puede limpiar (con memoria de 5 min; ?fresco=1 recalcula)
+      if (ruta === '/api/almacenamiento' && request.method === 'GET') {
+        let d = url.searchParams.get('fresco') === '1' ? null : await rLeer(env, ALM_KEY);
+        if (!d || Date.now() - Date.parse(d.generado) > ALM_VIGENCIA) { d = await analizarAlmacenamiento(env); await rGuardar(env, ALM_KEY, d); }
+        return json(request, env, d);
+      }
+      if (ruta === '/api/limpiar' && request.method === 'POST') {
+        const b = await request.json().catch(() => ({}));
+        const r = await limpiarAlmacenamiento(env, b.que);
+        if (!r) return err(request, env, 'Limpieza no válida');
+        await env.PRIVADO.delete(ALM_KEY);
+        return json(request, env, r);
       }
 
       // Respaldos: ejecutar un paso, ver la lista
