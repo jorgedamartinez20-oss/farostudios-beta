@@ -9,6 +9,7 @@ Object.assign(P,{
   copy:'<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 012-2h9"/>',
   star:'<path d="M12 3l2.7 5.6 6.1.8-4.5 4.2 1.1 6.1L12 16.8 6.6 19.7l1.1-6.1L3.2 9.4l6.1-.8z"/>',
   check:'<path d="M5 12.5l4.5 4.5L19 7.5"/>',
+  tag:'<path d="M3 12.2V4.8A1.8 1.8 0 014.8 3h7.4a1.8 1.8 0 011.3.5l7 7a1.8 1.8 0 010 2.6l-7.4 7.4a1.8 1.8 0 01-2.6 0l-7-7A1.8 1.8 0 013 12.2z"/><circle cx="8" cy="8" r="1.4"/>',
   wa:'<path d="M21 12a8.5 8.5 0 01-12.6 7.4L3 21l1.6-5.2A8.5 8.5 0 1121 12z"/>',
   eye:'<path d="M2 12s3.5-6.5 10-6.5S22 12 22 12s-3.5 6.5-10 6.5S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>'
 });
@@ -58,7 +59,8 @@ const G={cfg:{},listas:[],carro:[],vista:'cuadricula',filtro:null,fin:false,prom
 const gKey=k=>k+'_'+(ST.p?ST.p.id:'');
 const gLS=(k,v)=>{try{if(v===undefined)return localStorage.getItem(k);localStorage.setItem(k,v)}catch(e){return null}};
 const gSS=(k,v)=>{try{if(v===undefined)return sessionStorage.getItem(k);sessionStorage.setItem(k,v)}catch(e){return null}};
-const gImgs=()=>ST.arch.filter(a=>a.tipo==='imagen');
+const gPortadaId=()=>{const id=G.cfg&&G.cfg.portada;return id&&ST.arch.some(a=>a.id===id)?id:null};
+const gImgs=()=>ST.arch.filter(a=>a.tipo==='imagen'&&a.id!==gPortadaId());
 const gMetaOn=()=>G.cfg.meta!==false;
 function gMeta(a){
   const m=(a&&a.meta)||{},it=[['CÁMARA',m.camara],['DISTANCIA',m.distancia],['APERTURA',m.apertura],['FOTÓGRAFO',m.fotografo]].filter(x=>x[1]);
@@ -94,20 +96,19 @@ async function vistaGaleria(){
   const nImg=gImgs().length;
   const cerrar=ST.unico?'':'<button class="gb" id="gvol" aria-label="Mis galerías">'+ic('back')+'<span class="t">Galerías</span></button>';
   APP.innerHTML='<div class="gal pre"><header class="gtop" id="gtp"><span class="iso"></span>'+cerrar+'<span class="sp"></span>'
-    +'<div class="gvista" role="group" aria-label="Vista" id="gvista"><button data-v="cuadricula" aria-pressed="false">Cuadrícula</button><button data-v="editorial" aria-pressed="false">Editorial</button></div>'
+    +'<div class="gvista" role="group" aria-label="Vista" id="gvista"><button data-v="editorial" aria-pressed="false">Editorial</button><button data-v="cuadricula" aria-pressed="false">Cuadrícula</button></div>'
     +'<button class="gb" id="glis" aria-label="Mis listas">'+ic('heart')+'<span class="t">Mis listas</span><span class="cnt" id="glc" hidden></span></button>'
     +'<button class="gb" id="gdl" aria-label="Descargar">'+ic('dl')+'<span class="t">Descargar</span></button>'
     +'<button class="gb" id="gay" aria-label="Ayuda">'+ic('help')+'</button>'
     +'<button class="gb" id="gsal" aria-label="Salir">'+ic('out')+'<span class="t">Salir</span></button></header>'
-   +'<div class="grib" id="grib" role="marquee" aria-label="Descuento de referidos"><div class="mq"><div class="tk" id="grt"></div></div></div>'
    +'<section class="gcov" id="gcv"><div class="im" style="'+(pl&&pl.urlVer?'background-image:url(\''+esc(pl.urlVer)+'\');':'')+'--fx:'+(+foco.x||50)+'%;--fy:'+(+foco.y||50)+'%"></div>'
    +'<div class="tx">'+(fe?'<p class="fe">'+esc(fe)+'</p>':'')+'<h1>'+esc(titulo)+'</h1>'+(sub?'<p class="su">'+esc(sub)+'</p>':'')+'<span class="reg"></span><button class="bt" id="bver">Ver galería</button><p class="priv">Galería privada</p></div>'
    +'<p class="pie">'+nImg+' fotografías</p></section>'
    +'<section class="gmuro" id="gmu"><div class="in">'+(cfg.mensaje?'<p class="cab">'+esc(cfg.mensaje)+'</p>':'')+'<div id="gfl"></div><div id="gcuerpo"></div>'
-   +'<div class="gfin" id="gfin"><span class="iso"></span><p>Gracias por dejarnos contar tu historia. Guarda tus favoritas, compártelas con quien quieras y, si te gustó, cuéntanos cómo fue.</p><div class="row"><button class="gbtn p" id="gresb">'+ic('star')+' Dejar una reseña</button><button class="gbtn" id="gprb">'+ic('bag')+' Pedir impresiones</button></div></div></div>'
+   +'<div class="gfin" id="gfin"><span class="iso"></span><p>Gracias por dejarnos contar tu historia. Guarda tus favoritas, compártelas con quien quieras y si te gustó, cuéntanos cómo fue.</p><div class="row"><button class="gbtn p" id="gresb">'+ic('star')+' Dejar una reseña</button><button class="gbtn" id="gprb">'+ic('bag')+' Pedir impresiones</button></div></div></div>'
    +'<div class="gcon" id="gcon" hidden></div>'
    +'<footer class="gpie">© '+new Date().getFullYear()+' Faro Studios · farostudios.net<br>Todos los derechos reservados</footer></section>'
-   +'<div id="gcor" aria-hidden="true"><div class="ld-wrap"><div class="ld-mark"><div class="ld-base"></div><div class="ld-fill"></div></div></div></div>'
+   +gCodigoHtml(cfg)
    +'<button class="gbolsa" id="gbolsa" aria-label="Impresiones">'+ic('bag')+'<span class="cnt" id="gbc" hidden></span></button>'
    +'<div class="gmus" id="gmus" hidden><div class="cv" id="gmcv"><span class="iso"></span></div><div class="tx"><b id="gmt"></b><small id="gma"></small></div><button id="gmp" aria-label="Silenciar la música">'+ic('vol')+'</button><i class="eq" aria-hidden="true"><s></s><s></s><s></s></i></div></div>';
   const mh=()=>{const t=$('#gtp');if(t)document.documentElement.style.setProperty('--gh',t.offsetHeight+'px')};mh();addEventListener('resize',mh);
@@ -119,52 +120,80 @@ async function vistaGaleria(){
   document.querySelectorAll('#gvista button').forEach(b=>b.onclick=()=>{G.vista=b.dataset.v;gLS(gKey('faro_vista'),G.vista);gPintaMuro()});
   const tp=$('#gtp'),ga=document.querySelector('.gal');
   if(G.onScroll)removeEventListener('scroll',G.onScroll);
-  G.onScroll=()=>{const x=scrollY>24;tp.classList.toggle('sol',x);ga.classList.toggle('sol',x)};
+  G.onScroll=()=>{const x=scrollY>24;tp.classList.toggle('sol',x);ga.classList.toggle('sol',x);gChequeaFin()};
   addEventListener('scroll',G.onScroll,{passive:true});G.onScroll();
-  new IntersectionObserver(es=>{if(es[0].isIntersecting)gLlegoAlFinal()},{threshold:.6}).observe($('#gfin'));
+  G.finOk=false;gCodigoLiga();
   /* en segundo plano solo los enlaces (pesan casi nada); las fotos no se descargan hasta abrir la galería */
   setTimeout(()=>{if(!G.pre&&!G.abierta)G.pre=enlaces(ST.arch.map(a=>a.id)).catch(()=>{})},700);
   gMusicaPrep();
+  /* si venimos de «Entrar», la cortina espera a que la portada esté lista; el zoom arranca cuando ya se ve */
+  if(window.GCOR)await gPre(pl&&pl.urlVer,6000);
+  await gCorFin();
+  const g0=document.querySelector('.gal');if(g0)g0.classList.add('go');
 }
 const gEspera=ms=>new Promise(r=>setTimeout(r,ms));
-/* cortina: el farito se llena mientras carga la galería */
-function gCortina(){
-  const c=$('#gcor');if(!c)return{fin:async()=>{}};
-  let p=0;c.style.setProperty('--p','0');c.classList.add('on');
-  const iv=setInterval(()=>{p+=(0.92-p)*.14;c.style.setProperty('--p',p.toFixed(3))},100);
-  return{fin:async()=>{clearInterval(iv);c.style.setProperty('--p','1');await gEspera(450);c.classList.remove('on')}};
+const gPre=(u,ms)=>new Promise(r=>{if(!u)return r();const i=new Image();i.onload=i.onerror=()=>r();i.src=u;setTimeout(r,ms||5000)});
+/* cortina: el farito se llena mientras carga (al entrar con correo y contraseña y al abrir la galería) */
+function gCortina(min){
+  let c=document.getElementById('gcor');
+  if(!c){c=document.createElement('div');c.id='gcor';c.setAttribute('aria-hidden','true');
+    c.innerHTML='<div class="ld-wrap"><div class="ld-mark"><div class="ld-base"></div><div class="ld-fill"></div></div></div>';document.body.append(c)}
+  const t0=Date.now();let p=0,hecho=false;c.style.setProperty('--p','0');c.classList.add('on');
+  const iv=setInterval(()=>{p+=(0.92-p)*.1;c.style.setProperty('--p',p.toFixed(3))},100);
+  return{fin:async()=>{if(hecho)return;hecho=true;await gEspera(Math.max(0,(min||1400)-(Date.now()-t0)));clearInterval(iv);c.style.setProperty('--p','1');await gEspera(450);c.classList.remove('on')}};
 }
+/* cortina del ingreso: se prende al tocar «Entrar» y se apaga cuando la portada ya está lista */
+function gCorIni(){try{if(window.GCOR)return window.GCOR;window.GCOR=gCortina(1500)}catch(e){window.GCOR=null}return window.GCOR}
+async function gCorFin(){const c=window.GCOR;window.GCOR=null;if(c)await c.fin()}
 async function gAbrirMuro(silencio){
   const b=$('#bver');if(!b||b.disabled)return;
   gMusicaPlay();
   let nueva=false;
   if(!G.abierta){
     nueva=true;b.disabled=true;
-    const cor=silencio===true?null:gCortina(),t0=Date.now();
+    const cor=silencio===true?null:gCortina(1500);
     try{await Promise.all([G.pre||enlaces(ST.arch.map(a=>a.id)),gCargarListas()]);await enlaces(ST.arch.map(a=>a.id))}catch(e){}
     try{G.carro=JSON.parse(gLS(gKey('faro_bolsa'))||'[]').filter(x=>ST.arch.some(a=>a.id===x.id))}catch(e){}
     G.abierta=true;const g=document.querySelector('.gal');if(!g){if(cor)cor.fin();return}
-    g.classList.remove('pre');g.classList.add('abierta');
-    gPintaMuro();gContratoPinta();gContadores();gRibon();
+    g.classList.remove('pre','go');g.classList.add('abierta');
+    gPintaMuro();gContratoPinta();gContadores();
     const mp=$('#gmus');if(mp&&G.au)mp.hidden=false;
     /* la portada queda como encabezado corto, arriba */
     window.scrollTo(0,0);if(G.onScroll)G.onScroll();
-    if(cor){await gEspera(Math.max(0,1500-(Date.now()-t0)));await cor.fin()}
+    if(cor)await cor.fin();
+    g.classList.add('go');
     b.disabled=false;
   }
-  if(nueva&&!PREVIA&&!gLS(gKey('faro_tut')))setTimeout(()=>gTutorial(true),700);
+  /* primero el tutorial; la reseña solo sale al final de la galería y después de él */
+  const hayTut=nueva&&!PREVIA&&!gLS(gKey('faro_tut'));
+  G.finOk=!hayTut;
+  if(hayTut)setTimeout(()=>gTutorial(true),700);
 }
-/* cinta de recomendación: letrero LED que pasa despacio en bucle, debajo del menú (aparece cuando el encabezado ya es sólido) */
-function gRibon(){
-  const t=$('#grt');if(!t||t.dataset.on)return;t.dataset.on='1';
-  const personal=typeof G.cfg.cinta==='string'&&G.cfg.cinta.trim();
-  const M=personal?[G.cfg.cinta.trim()]:['Por tu preferencia te obsequiamos un descuento de referidos: 15% para ti en tu próxima sesión y 15% para tu amigo en la suya','Recomiéndanos con quien quieras y ganan los dos'];
-  const item=M.map(m=>'<span>'+esc(m)+'</span><i aria-hidden="true">◆</i>').join('');
-  const mq=t.parentElement;let mitad=item,n=1;
-  t.innerHTML=mitad+mitad;
-  while(t.scrollWidth/2<mq.clientWidth&&n<8){mitad+=item;t.innerHTML=mitad+mitad;n++}
-  /* velocidad lenta y constante: unos 38 px por segundo */
-  t.style.setProperty('--mqd',Math.max(28,(t.scrollWidth/2)/38).toFixed(1)+'s');
+/* la reseña va al final: solo cuando ya no hay tutorial pendiente y la persona llegó al cierre bajando */
+function gChequeaFin(){
+  if(PREVIA||G.fin||!G.abierta||!G.finOk||document.querySelector('.gt,.gm'))return;
+  const f=document.getElementById('gfin');if(!f)return;
+  const r=f.getBoundingClientRect();
+  if(r.top<innerHeight*.55&&r.bottom>0&&scrollY>400)gLlegoAlFinal();
+}
+/* pestaña flotante con el código de descuento (lo cambia Faro en Workspace) */
+function gCodigoHtml(cfg){
+  const cod=String(cfg.codigo||'').toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,12);if(!cod)return '';
+  const n=+cfg.descuento,dt=n>0?n+'% de descuento':'tu descuento';
+  return '<aside class="gcod" id="gcod" aria-label="Código de descuento"><button class="tb" id="gcodb" aria-expanded="false" aria-controls="gcodp">'+ic('tag')+'<span class="vt">Tu código</span></button>'
+    +'<div class="pn" id="gcodp"><div class="in2"><small>DESCUENTO PARA TI</small><b class="cdg">'+esc(cod)+'</b>'
+    +'<p>Menciona este código al reservar tu próxima sesión y recibe <b>'+esc(dt)+'</b>.</p>'
+    +'<div class="row"><button class="gbtn p" id="gcodc">'+ic('copy')+' Copiar</button><button class="gbtn" id="gcodw">'+ic('wa')+' Usarlo</button></div></div></div></aside>';
+}
+function gCodigoLiga(){
+  const c=$('#gcod');if(!c)return;
+  const cod=c.querySelector('.cdg').textContent,set=v=>{c.classList.toggle('abre',v);$('#gcodb').setAttribute('aria-expanded',String(v))};
+  $('#gcodb').onclick=()=>set(!c.classList.contains('abre'));
+  $('#gcodc').onclick=async()=>{try{await navigator.clipboard.writeText(cod);toast('Código copiado: '+cod)}catch(e){toast('Tu código es '+cod)}};
+  $('#gcodw').onclick=()=>window.open(WA+'?text='+encodeURIComponent('Hola, quiero usar mi código de descuento '+cod),'_blank','noopener');
+  if(!G.hookCod){G.hookCod=1;
+    document.addEventListener('pointerdown',e=>{const x=document.getElementById('gcod');if(x&&x.classList.contains('abre')&&!x.contains(e.target)){x.classList.remove('abre');const b=document.getElementById('gcodb');if(b)b.setAttribute('aria-expanded','false')}});
+    addEventListener('keydown',e=>{if(e.key==='Escape'){const x=document.getElementById('gcod');if(x)x.classList.remove('abre')}})}
 }
 /* ---------- música: pastilla flotante discreta (como Apple Music) ---------- */
 function gTxtId3(d){
@@ -246,7 +275,7 @@ function gContadores(){
 
 /* ---------- muro: cuadrícula y editorial ---------- */
 function gVisibles(){
-  let v=ST.arch.filter(a=>a.tipo==='imagen'||a.tipo==='video');
+  let v=ST.arch.filter(a=>(a.tipo==='imagen'||a.tipo==='video')&&a.id!==gPortadaId());
   if(G.filtro){const l=G.listas.find(x=>x.id===G.filtro);v=l?v.filter(a=>l.ids.has(a.id)):v}
   return v;
 }
@@ -622,9 +651,10 @@ function gAbrirPromo(recordatorio){
 
 /* ================= TUTORIAL CON FLECHAS ================= */
 const GPASOS=[
-  {s:'#gvista',t:'Muévete por la galería',x:'Cambia entre Cuadrícula y Editorial. Es la misma sesión, solo se ve distinta.'},
+  {s:'#gvista',t:'Muévete por la galería',x:'Cambia entre Editorial y Cuadrícula. Es la misma sesión, solo se ve distinta.'},
   {s:'.gph .gh',t:'Estas son todas tus fotos',x:'Tú decides cuáles incluir. Toca el corazón para guardar una foto en una lista.'},
   {s:'#glis',t:'Listas para compartir',x:'Crea hasta cinco listas y compártelas con quien quieras. Cada una tiene su enlace privado.'},
+  {s:'#gcodb',t:'Tu código de descuento',x:'Toca esta pestaña cuando quieras ver tu código. Úsalo en tu próxima sesión y tendrás tu descuento.'},
   {s:'#gdl',t:'Descarga en alta calidad',x:'Una por una o todas juntas en ZIP. Tú eliges el tamaño de cada descarga.'},
   {s:'.gph .gi',t:'Súbela a tu historia',x:'Toca el botón de Instagram de cualquier foto y se abre en tu teléfono, lista para publicar.',vista:true},
   {s:'#gbolsa',t:'¿Las quieres impresas?',x:'Tenemos tienda. Toca la bolsita, elige tamaños y envía tu solicitud: te contactamos para agendar. Envío gratis desde '+GGRATIS+' impresiones.'}
@@ -639,7 +669,7 @@ function gTutorial(primera){
   document.body.append(t);document.body.style.overflow='hidden';
   let k=0;
   const portada=ST.arch.find(a=>a.id===G.cfg.portada)||gImgs()[0];
-  const fin=pr=>{t.remove();document.body.classList.remove('gtut');if(!document.querySelector('.gm,.glb,.gdr'))document.body.style.overflow='';removeEventListener('resize',pos);removeEventListener('scroll',pos);clearInterval(iv);removeEventListener('keydown',tec);
+  const fin=pr=>{G.finOk=true;t.remove();document.body.classList.remove('gtut');if(!document.querySelector('.gm,.glb,.gdr'))document.body.style.overflow='';removeEventListener('resize',pos);removeEventListener('scroll',pos);clearInterval(iv);removeEventListener('keydown',tec);
     if(primera){gLS(gKey('faro_tut'),'1');if(pr)setTimeout(()=>gAbrirPromo(false),350)}};
   const tec=e=>{if(e.key==='Escape')fin(false)};addEventListener('keydown',tec);
   const pos=()=>{

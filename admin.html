@@ -4616,6 +4616,7 @@ function enEditor(pid){
       const fotos=A.filter(a=>a.tipo==='imagen');const portada=A.find(a=>a.id===cfg.portada)||fotos[0];
       if(portada)cargarImg(portada);
       const cur={...cfg,foco:{...(cfg.foco||{x:50,y:50})}};
+      const enGenCod=()=>{const L='ABCDEFGHJKLMNPQRSTUVWXYZ',N='23456789';let c='';for(let i=0;i<4;i++)c+=L[Math.floor(Math.random()*L.length)];for(let i=0;i<2;i++)c+=N[Math.floor(Math.random()*N.length)];return c};
       const vistas=el('div',{class:'seg',role:'group','aria-label':'Vista'});
       const pinVis=()=>{vistas.textContent='';EN_VISTAS.forEach(([k,n,d])=>vistas.append(el('button',{type:'button',title:d,'aria-pressed':String(cur.vista===k),onclick:()=>{cur.vista=k;pinVis()}},n)))};
       const fuentes=el('div',{style:'display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px'});
@@ -4634,16 +4635,17 @@ function enEditor(pid){
       fjson('/api/lista?bucket=privado&prefix='+encodeURIComponent('faro-studios/musica-galerias/')).then(r=>{const aud=(r.archivos||[]).filter(o=>MAT_VER.aud.test(o.key));musSels.forEach((x,n)=>{aud.filter(o=>o.key!==musIni[n]).forEach(o=>x.append(el('option',{value:o.key},o.key.split('/').pop())));x.value=musIni[n]||''})}).catch(()=>{});
       pinVis();pinFu();pinFo();pinPal();
       const armaCfg=()=>{
-        const config={...(p.config||{}),paleta:cur.paleta,fuente:cur.fuente,vista:cur.vista,foco:cur.foco,meta:cur.meta!==false,portada:sel.value||null,titulo:val('eg-t').trim()||null,subtitulo:val('eg-s').trim()||null,fecha:val('eg-f')||null,mensaje:val('eg-m').trim()||null,cinta:val('eg-c').trim()||null,musicas:[...new Set(musSels.map(x=>x.value).filter(Boolean))],musica:null};
-        delete config.estilo;return config};
+        const config={...(p.config||{}),paleta:cur.paleta,fuente:cur.fuente,vista:cur.vista,foco:cur.foco,meta:cur.meta!==false,portada:sel.value||null,titulo:val('eg-t').trim()||null,subtitulo:val('eg-s').trim()||null,fecha:val('eg-f')||null,mensaje:val('eg-m').trim()||null,codigo:val('eg-cod').toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,12)||null,descuento:val('eg-dsc')?Math.min(90,Math.max(1,Math.round(+val('eg-dsc')||0)))||null:null,musicas:[...new Set(musSels.map(x=>x.value).filter(Boolean))],musica:null};
+        delete config.estilo;delete config.cinta;return config};
       const dis=sec('Diseño de la galería',el('p',{class:'muted',style:'margin:0;font-size:.88rem'},'Los colores y las letras los eliges tú aquí; el cliente solo recibe el resultado.'),
         el('div',{},el('span',{class:'lab'},'Vista inicial'),vistas),el('div',{},el('span',{class:'lab'},'Colores · claros, oscuros, suaves y con contraste'),pals),
         el('div',{},el('span',{class:'lab'},'Tipografía'),fuentes),
         el('div',{class:'dg2'},f('eg-t','Título de la portada','text',cfg.titulo||p.titulo),f('eg-s','Subtítulo (lugar, tema)','text',cfg.subtitulo)),
-        el('div',{class:'dg2'},f('eg-f','Fecha del evento','date',cfg.fecha),el('label',{class:'dfl'},'Foto de portada',sel)),
+        el('div',{class:'dg2'},f('eg-f','Fecha del evento','date',cfg.fecha),el('label',{class:'dfl'},'Foto de portada (no se repite en la galería)',sel)),
         el('div',{},el('span',{class:'lab'},'Hacia dónde mira la portada (punto de enfoque)'),foco),
         f('eg-m','Mensaje sobre el muro (opcional)','area',cfg.mensaje),
-        f('eg-c','Texto de la cinta que se mueve (opcional; vacío = descuento de referidos de siempre)','area',cfg.cinta),
+        el('div',{class:'dg2'},f('eg-cod','Código de descuento (pestaña flotante; vacío = sin pestaña)','text',cfg.codigo||enGenCod()),f('eg-dsc','Descuento que da el código (%)','number',cfg.descuento||15)),
+        el('div',{style:'display:flex;gap:8px;flex-wrap:wrap'},enBtn('Generar otro código','refresh',()=>{D.body.querySelector('#eg-cod').value=enGenCod()})),
         el('div',{},el('span',{class:'lab'},'Música de la galería (hasta 3 canciones)'),el('p',{class:'muted',style:'margin:0 0 6px;font-size:.85rem'},'Súbelas en Archivos y web → Música de las galerías. Suenan en orden y en bucle; el cliente solo puede silenciarlas.'),el('div',{class:'dg2'},...musSels.map((x,n)=>el('label',{class:'dfl'},'Canción '+(n+1),x)))),
         el('label',{class:'wchk',style:'padding:0'},chkEl(cur.meta!==false,v=>{cur.meta=v}),'Mostrar los datos de cámara debajo de las fotos'),
         el('div',{},el('span',{class:'lab'},'Así se ve la portada'),prev),

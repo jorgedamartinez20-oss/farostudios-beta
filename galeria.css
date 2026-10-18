@@ -25,9 +25,11 @@ body.g{background:var(--g-bg);color:var(--g-tx);font-family:var(--g-ft2)}
 /* ---------- portada ---------- */
 /* La foto de portada llena siempre todo el espacio (sin franjas negras) y se aleja despacio (zoom out). */
 .gcov{position:relative;height:100vh;height:100svh;min-height:560px;overflow:hidden;color:#fff;display:grid;place-items:center;text-align:center;background:#0e0e10}
-.gcov .im{position:absolute;inset:0;background-size:cover;background-position:var(--fx,50%) var(--fy,50%);transform-origin:var(--fx,50%) var(--fy,50%);animation:gzo 18s cubic-bezier(.16,.55,.3,1) both;will-change:transform}
-@keyframes gzo{from{transform:scale(1.38)}to{transform:scale(1)}}
-@keyframes gzo2{from{transform:scale(1.16)}to{transform:scale(1)}}
+.gcov .im{position:absolute;inset:0;background-size:cover;background-position:var(--fx,50%) var(--fy,50%);transform-origin:var(--fx,50%) var(--fy,50%);transform:scale(1.2);will-change:transform}
+/* zoom out lento y parejo: unos 45 segundos, sin arranque brusco */
+.gal.go .gcov .im{animation:gzo 45s cubic-bezier(.35,.12,.3,1) both}
+@keyframes gzo{from{transform:scale(1.2)}to{transform:scale(1)}}
+@keyframes gzo2{from{transform:scale(1.1)}to{transform:scale(1)}}
 /* capa negra de baja opacidad: da el aspecto premium y asegura que el texto se lea con cualquier foto */
 .gcov::before{content:"";position:absolute;inset:0;z-index:1;background:rgba(0,0,0,.42);box-shadow:inset 0 -140px 120px -70px rgba(0,0,0,.4)}
 .gcov::after{content:"";position:absolute;inset:0;z-index:2;pointer-events:none;opacity:.16;mix-blend-mode:overlay;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
@@ -43,7 +45,8 @@ body.g{background:var(--g-bg);color:var(--g-tx);font-family:var(--g-ft2)}
 .gcov .pie{position:absolute;left:0;right:0;bottom:6vh;z-index:4;font-size:.78rem;letter-spacing:.26em;text-transform:uppercase;color:rgba(255,255,255,.88);text-shadow:0 2px 12px rgba(0,0,0,.7)}
 /* ya abierta la galería: la portada queda como foto de encabezado corta. Se mueve con la página (no queda fija). */
 .gal.abierta .gcov{height:46vh;height:46svh;min-height:300px}
-.gal.abierta .gcov .im{animation-name:gzo2;animation-duration:9s}
+.gal.go.abierta .gcov .im{animation:gzo2 30s cubic-bezier(.35,.12,.3,1) both}
+.gal.abierta .gcov .im{transform:scale(1.1)}
 .gal.abierta .gcov .bt,.gal.abierta .gcov .priv{display:none}
 .gal.abierta .gcov .tx{padding-top:var(--gh,56px)}
 .gal.abierta .gcov h1{font-size:clamp(2.3rem,7vw,5rem)}
@@ -61,18 +64,24 @@ body.g{background:var(--g-bg);color:var(--g-tx);font-family:var(--g-ft2)}
 @keyframes gwave{to{background-position:28px 0}}
 @keyframes gshine{to{transform:translateX(120%)}}
 
-/* ---------- franja de recomendación: letrero LED que da vueltas despacio ---------- */
-.grib{position:fixed;top:var(--gh,56px);left:0;right:0;z-index:39;height:34px;display:flex;align-items:center;background:var(--borgona);color:#F5F2EE;box-shadow:0 6px 14px rgba(0,0,0,.22);overflow:hidden;white-space:nowrap;transform:translateY(-120%);opacity:0;pointer-events:none;transition:transform .5s cubic-bezier(.2,.8,.2,1),opacity .35s}
-/* aparece solo cuando el encabezado ya está sólido */
-.gal.sol .grib{transform:none;opacity:1;pointer-events:auto}
-.grib .mq{flex:1;min-width:0;overflow:hidden;-webkit-mask-image:linear-gradient(90deg,transparent,#000 3%,#000 97%,transparent);mask-image:linear-gradient(90deg,transparent,#000 3%,#000 97%,transparent)}
-.grib .tk{display:inline-flex;align-items:center;white-space:nowrap;will-change:transform;animation:gmq var(--mqd,60s) linear infinite;font-size:.8rem;letter-spacing:.14em;text-transform:uppercase;text-shadow:0 0 8px rgba(234,217,166,.5)}
-.grib .tk span{flex:none}
-.grib .tk i{flex:none;font-style:normal;color:#EAD9A6;margin:0 2.2em;font-size:.7em}
-@keyframes gmq{to{transform:translateX(-50%)}}
-@media(hover:hover){.grib:hover .tk{animation-play-state:paused}}
+/* ---------- pestaña flotante con el código de descuento ---------- */
+.gcod{position:fixed;right:0;top:40%;z-index:44;display:flex;align-items:stretch;opacity:0;transform:translateX(28px);pointer-events:none;transition:opacity .6s ease,transform .6s cubic-bezier(.2,.8,.2,1)}
+.gal.sol .gcod,body.gtut .gcod{opacity:1;transform:none;pointer-events:auto}
+.gcod .tb{display:flex;flex-direction:column;align-items:center;gap:10px;border:0;border-radius:14px 0 0 14px;background:var(--borgona);color:#fff;padding:14px 9px 16px;box-shadow:-6px 10px 26px rgba(0,0,0,.34);cursor:pointer;transition:padding .25s,background .25s}
+.gcod .tb:hover{background:#A3202F;padding-right:13px}
+.gcod .tb .ico{width:1.35em;height:1.35em;color:#EAD9A6}
+.gcod .tb .vt{writing-mode:vertical-rl;font:700 .7rem var(--g-ft2);letter-spacing:.28em;text-transform:uppercase}
+.gcod .pn{width:0;overflow:hidden;background:var(--papel);color:var(--pizarra);box-shadow:-10px 14px 34px rgba(0,0,0,.34);border-top:4px solid var(--borgona);transition:width .45s cubic-bezier(.2,.8,.2,1)}
+.gcod.abre .pn{width:min(272px,calc(100vw - 58px))}
+.gcod .in2{width:min(272px,calc(100vw - 58px));padding:18px 16px 16px;display:grid;gap:9px;justify-items:center;text-align:center;font-family:'Lato',sans-serif}
+.gcod .in2 small{font-size:.68rem;letter-spacing:.3em;color:var(--borgona)}
+.gcod .cdg{font:400 2.5rem/1 'Bebas Neue',Impact,sans-serif;letter-spacing:.2em;padding:6px 8px 6px 18px;border:1.5px dashed rgba(139,26,42,.6);background:#fff;color:var(--borgona);user-select:all}
+.gcod .in2 p{font-size:.88rem;line-height:1.5;color:#3A3A3A}
+.gcod .row{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.gcod .gbtn{min-height:42px;padding:0 16px;font-size:.72rem;letter-spacing:.14em;background:#fff;color:var(--pizarra);border-color:rgba(37,37,40,.4)}
+.gcod .gbtn.p{background:var(--borgona);border-color:var(--borgona);color:#fff;box-shadow:0 8px 16px rgba(139,26,42,.3)}
 /* al inicio solo se ve la portada */
-.gal.pre .grib,.gal.pre .gvista,.gal.pre #glis,.gal.pre #gdl,.gal.pre #gay,.gal.pre #gmu,.gal.pre .gbolsa{display:none}
+.gal.pre .gcod,.gal.pre .gvista,.gal.pre #glis,.gal.pre #gdl,.gal.pre #gay,.gal.pre #gmu,.gal.pre .gbolsa{display:none}
 .gsp{display:inline-block;width:14px;height:14px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:gspin .8s linear infinite;vertical-align:-2px}
 @keyframes gspin{to{transform:rotate(360deg)}}
 .gcov .bt:disabled{opacity:.8;cursor:progress}
@@ -94,7 +103,7 @@ body.g{background:var(--g-bg);color:var(--g-tx);font-family:var(--g-ft2)}
 .gmus .eq s{display:block;width:3px;height:30%;background:var(--g-ac);border-radius:1px;animation:geq 1s ease-in-out infinite;animation-play-state:paused}
 .gmus.on .eq s{animation-play-state:running}.gmus .eq s:nth-child(2){animation-delay:-.4s}.gmus .eq s:nth-child(3){animation-delay:-.7s}
 @keyframes geq{0%,100%{height:25%}50%{height:100%}}
-@media(prefers-reduced-motion:reduce){.gmus .eq s,.grib .tk,#gcor .ld-fill::before,#gcor .ld-fill::after{animation:none}.gcov .im{animation:none}}
+@media(prefers-reduced-motion:reduce){.gmus .eq s,#gcor .ld-fill::before,#gcor .ld-fill::after{animation:none}.gal.go .gcov .im,.gal.go.abierta .gcov .im{animation:none}.gcod,.gcod .pn{transition:none}}
 
 /* ---------- muro ---------- */
 .gmuro{position:relative;padding:0 0 70px}
@@ -114,9 +123,7 @@ body.g{background:var(--g-bg);color:var(--g-tx);font-family:var(--g-ft2)}
 @keyframes grv{from{opacity:0;transform:translateY(22px) scale(.985)}}
 @media(hover:hover){
   .gph{transition:transform .45s cubic-bezier(.2,.8,.2,1),box-shadow .45s ease,opacity .4s ease,filter .4s ease}
-  .gph::after{content:"";position:absolute;inset:0;border:2px solid var(--g-ac);opacity:0;transition:opacity .3s;pointer-events:none}
   .gph:hover{transform:translateY(-5px) scale(1.012);box-shadow:0 26px 46px -18px rgba(0,0,0,.55);z-index:2}
-  .gph:hover::after{opacity:.85}
   .gcol:hover .gph:not(:hover),.ged:hover .gph:not(:hover){opacity:.7;filter:saturate(.82)}
   .gph .acts{transform:translateY(10px);transition:opacity .25s,transform .35s cubic-bezier(.2,.8,.2,1)}
   .gph:hover .acts,.gph:focus-within .acts{transform:none}
@@ -257,18 +264,21 @@ body.g{background:var(--g-bg);color:var(--g-tx);font-family:var(--g-ft2)}
 /* ---------- visor ---------- */
 .glb{position:fixed;inset:0;z-index:90;background:rgba(12,12,14,.52);-webkit-backdrop-filter:blur(36px) saturate(1.15);backdrop-filter:blur(36px) saturate(1.15);display:grid;grid-template-rows:auto minmax(0,1fr) auto;color:#fff;animation:glbin .35s ease both}
 @keyframes glbin{from{opacity:0}}
-.glb .st img,.glb .st video{box-shadow:0 30px 80px rgba(0,0,0,.45)}
-.glb .gmeta{background:rgba(20,20,22,.4)}
+/* mientras se ve una foto, el menú y las pestañas se quitan para que el fondo no se vea sucio */
+body:has(.glb) .gtop,body:has(.glb) .gcod,body:has(.glb) .gbolsa,body:has(.glb) .gmus{opacity:0!important;pointer-events:none}
+.glb .gmeta{background:none;color:rgba(255,255,255,.86);font:300 .8rem/1.4 'Lato',sans-serif;letter-spacing:.16em;padding:6px 18px 16px;gap:2px 16px;text-transform:none}
+.glb .gmeta b{display:none}
+.glb .gmeta span:not(:last-child)::after{content:'·';margin-left:16px;opacity:.55}
 .glb .bar{display:flex;align-items:center;gap:8px;padding:10px 14px}
 .glb .bar span{flex:1;font-size:.85rem;opacity:.7}
 .glb .bar button{border:1px solid rgba(255,255,255,.28);background:none;color:#fff;border-radius:99px;min-height:40px;padding:6px 14px;font-size:.82rem;display:inline-flex;gap:7px;align-items:center}
 .glb .bar button.on{background:var(--borgona);border-color:var(--borgona)}
 .glb .bar button.on .ico{fill:#fff}
-.glb .st{display:grid;place-items:center;min-height:0;position:relative;padding:0 56px}
-.glb .st img,.glb .st video{max-width:100%;max-height:100%;object-fit:contain}
+.glb .st{display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr);min-height:0;position:relative;padding:2px 66px 6px}
+.glb .st img,.glb .st video{width:100%;height:100%;min-width:0;min-height:0;object-fit:contain}
 .glb .nv{position:absolute;top:50%;transform:translateY(-50%);border:0;background:rgba(255,255,255,.1);color:#fff;width:46px;height:46px;border-radius:50%;display:grid;place-items:center}
 .glb .nv.l{left:8px}.glb .nv.r{right:8px}
-.glb .gmeta{min-height:44px}
+/* el alto del pie del visor lo marca el propio texto de la foto */
 /* teléfono: el menú cabe completo (incluido «Salir») sin salirse de la pantalla */
 @media(max-width:480px){.gtop{gap:6px;padding:10px 10px}.gtop .iso{height:26px}.gtop .gb{padding:6px 9px;min-height:36px}.gtop .gvista{padding:2px}.gtop .gvista button{padding:4px 9px;font-size:.76rem}}
 @media(max-width:700px){.glb .st{padding:0 6px}.glb .bar button .t{display:none}.gtop .gb .t{display:none}.gtop .gb{padding:6px 11px}.gtop .gvista button{padding:4px 10px}}
