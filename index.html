@@ -2435,6 +2435,7 @@ function curSide(){return PAGES[current].side||lastSide}
 let tt;function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('on'),3200)}
 
 /* ---------- Páginas ---------- */
+let pendingAnchor=null;
 function applyPage(p){
   current=p;root.dataset.page=p;if(PAGES[p].side){if(PAGES[p].side!==lastSide&&window.faroVisita)window.faroVisita(PAGES[p].side);lastSide=PAGES[p].side;}const side=PAGES[p].side||lastSide;
   Object.keys(PAGES).forEach(k=>$('#'+PAGES[k].el).hidden=k!==p);
@@ -2453,6 +2454,7 @@ function applyPage(p){
   document.title=PAGES[p].title;
   $$('[data-wa]').forEach(a=>a.href=WA+encodeURIComponent(waMsg[a.dataset.wa]));
   window.scrollTo(0,0);
+  if(pendingAnchor){const t=pendingAnchor;pendingAnchor=null;requestAnimationFrame(()=>t.scrollIntoView({behavior:'auto'}))}
 }
 function formDirty(f){
   if(!f)return false;
@@ -2471,7 +2473,7 @@ function leaveNeeded(){
 }
 let leaveCb=null;
 function askLeave(cb){leaveCb=cb;$('#dlg-leave').showModal()}
-$('#lv-stay').addEventListener('click',()=>{leaveCb=null;$('#dlg-leave').close()});
+$('#lv-stay').addEventListener('click',()=>{leaveCb=null;pendingAnchor=null;$('#dlg-leave').close()});
 $('#lv-go').addEventListener('click',()=>{$('#dlg-leave').close();const c=leaveCb;leaveCb=null;if(c)c(true)});
 window.addEventListener('beforeunload',e=>{if(leaveNeeded()){e.preventDefault();e.returnValue=''}});
 function goPage(p,x,y,force){
@@ -2502,8 +2504,7 @@ document.addEventListener('click',e=>{
   const a=e.target.closest('a[href^="#"]');
   if(a&&a.getAttribute('href').length>1){e.preventDefault();const t=document.getElementById(a.getAttribute('href').slice(1));
     if(t){const pk=Object.keys(PAGES).find(k=>$('#'+PAGES[k].el).contains(t));
-      if(pk&&pk!==current){const go2=()=>{const f=()=>t.scrollIntoView({behavior:'auto'});applyPage(pk);requestAnimationFrame(f)};
-        if(busy)return;if(leaveNeeded()){askLeave(()=>{go2()});return}go2()}
+      if(pk&&pk!==current){if(busy)return;pendingAnchor=t;const [x,y]=center(a);goPage(pk,x,y)}
       else t.scrollIntoView({behavior:reduce?'auto':'smooth'})}}
   const go=e.target.closest('[data-page-go]');if(go){pendingPreset=go.dataset.preset||'';const [x,y]=center(go);goPage(go.dataset.pageGo,x,y)}
 });
