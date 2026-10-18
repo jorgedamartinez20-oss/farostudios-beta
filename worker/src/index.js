@@ -505,12 +505,17 @@ export default {
       if (r.status === 401 || r.status === 403) return err(request, env, 'Tu sesión venció. Vuelve a entrar.', 401);
       if (!r.ok) return err(request, env, 'No se pudo consultar', 502);
       const fila = (await r.json().catch(() => []))[0];
-      const key = fila && fila.config && typeof fila.config.musica === 'string' ? fila.config.musica : '';
-      if (!key || key.includes('..') || !key.startsWith('faro-studios/musica-galerias/') || key.endsWith('/.keep')) return json(request, env, { musica: null });
-      const o = await env.PRIVADO.head(key);
-      if (!o) return json(request, env, { musica: null });
-      const t = await firmar(env, { b: 'privado', k: key, e: vencimientoEstable(), n: 1 });
-      return json(request, env, { musica: { url: `${url.origin}/api/bajar?inline=1&t=${t}`, nombre: key.split('/').pop(), size: o.size } });
+      const cfgM = (fila && fila.config) || {};
+      const claves = (Array.isArray(cfgM.musicas) ? cfgM.musicas : typeof cfgM.musica === 'string' && cfgM.musica ? [cfgM.musica] : []).filter((k) => typeof k === 'string').slice(0, 3);
+      const musicas = [];
+      for (const key of claves) {
+        if (!key || key.includes('..') || !key.startsWith('faro-studios/musica-galerias/') || key.endsWith('/.keep')) continue;
+        const o = await env.PRIVADO.head(key);
+        if (!o) continue;
+        const t = await firmar(env, { b: 'privado', k: key, e: vencimientoEstable(), n: 1 });
+        musicas.push({ url: `${url.origin}/api/bajar?inline=1&t=${t}`, nombre: key.split('/').pop(), size: o.size });
+      }
+      return json(request, env, { musicas, musica: musicas[0] || null });
     }
 
     // Todo lo demás es solo para el administrador

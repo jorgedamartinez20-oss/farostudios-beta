@@ -5,7 +5,7 @@ Object.assign(P,{
   ig:'<rect x="3" y="3" width="18" height="18" rx="5.5"/><circle cx="12" cy="12" r="4.2"/><circle cx="17.2" cy="6.8" r=".6" fill="currentColor"/>',
   share:'<path d="M14 5l6 5.5-6 5.5v-3.2c-4.5 0-7.5 1.2-10 4.7.6-5 3.5-8.5 10-9z"/>',
   help:'<circle cx="12" cy="12" r="9"/><path d="M9.6 9.4a2.5 2.5 0 114 2c-.8.6-1.6 1.1-1.6 2.1M12 17h.01"/>',
-  plus:'<path d="M12 5v14M5 12h14"/>',pause:'<path d="M8 5v14M16 5v14"/>',trash:'<path d="M5 7h14M10 7V5h4v2M7 7l1 13h8l1-13"/>',
+  plus:'<path d="M12 5v14M5 12h14"/>',pause:'<path d="M8 5v14M16 5v14"/>',vol:'<path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M16 9a4 4 0 010 6M18.5 6.5a8 8 0 010 11"/>',mute:'<path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M17 9l4 6M21 9l-4 6"/>',trash:'<path d="M5 7h14M10 7V5h4v2M7 7l1 13h8l1-13"/>',
   copy:'<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 012-2h9"/>',
   star:'<path d="M12 3l2.7 5.6 6.1.8-4.5 4.2 1.1 6.1L12 16.8 6.6 19.7l1.1-6.1L3.2 9.4l6.1-.8z"/>',
   check:'<path d="M5 12.5l4.5 4.5L19 7.5"/>',
@@ -107,7 +107,7 @@ async function vistaGaleria(){
    +'<div class="gfin" id="gfin"><span class="iso"></span><p>Gracias por dejarnos contar tu historia. Guarda tus favoritas, compártelas con quien quieras y, si te gustó, cuéntanos cómo fue.</p><div class="row"><button class="gbtn p" id="gresb">'+ic('star')+' Dejar una reseña</button><button class="gbtn" id="gprb">'+ic('bag')+' Pedir impresiones</button></div></div></div>'
    +'<footer class="gpie">Faro Studios</footer></section>'
    +'<button class="gbolsa" id="gbolsa" aria-label="Impresiones">'+ic('bag')+'<span class="cnt" id="gbc" hidden></span></button>'
-   +'<div class="gmus" id="gmus" hidden><div class="cv" id="gmcv"><span class="iso"></span></div><div class="tx"><b id="gmt"></b><small id="gma"></small></div><button id="gmp" aria-label="Pausar o reproducir la música">'+ic('pause')+'</button><i class="eq" aria-hidden="true"><s></s><s></s><s></s></i></div></div>';
+   +'<div class="gmus" id="gmus" hidden><div class="cv" id="gmcv"><span class="iso"></span></div><div class="tx"><b id="gmt"></b><small id="gma"></small></div><button id="gmp" aria-label="Silenciar la música">'+ic('vol')+'</button><i class="eq" aria-hidden="true"><s></s><s></s><s></s></i></div></div>';
   const mh=()=>{const t=$('#gtp');if(t)document.documentElement.style.setProperty('--gh',t.offsetHeight+'px')};mh();addEventListener('resize',mh);
   $('#gsal').onclick=()=>salir('');const gv=$('#gvol');if(gv)gv.onclick=()=>inicio();
   $('#bver').onclick=gAbrirMuro;
@@ -183,34 +183,46 @@ async function gId3(url){
     return o;
   }catch(e){return null}
 }
-function gMusicaSync(){
-  const pill=$('#gmus'),au=G.au;if(!pill||!au)return;const on=!au.paused;
-  pill.classList.toggle('on',on);const bt=$('#gmp');if(bt)bt.innerHTML=ic(on?'pause':'play');
+function gMusicaTitulo(){
+  const m=(G.meta&&G.meta[G.mi])||{},l=G.lista&&G.lista[G.mi];if(!l||!$('#gmus'))return;
+  $('#gmt').textContent=m.titulo||l.nombre.replace(/\.[^.]+$/,'').replace(/[-_]+/g,' ');
+  $('#gma').textContent=[m.artista,m.album].filter(Boolean).join(' · ');
+  const cv=$('#gmcv');if(m.cover){cv.style.backgroundImage='url('+m.cover+')';cv.classList.add('im')}else{cv.style.backgroundImage='';cv.classList.remove('im')}
 }
+function gMusicaSync(){
+  const pill=$('#gmus'),au=G.au;if(!pill||!au)return;
+  pill.classList.toggle('on',!au.paused&&!au.muted);
+  const bt=$('#gmp');if(bt){bt.innerHTML=ic(au.muted?'mute':'vol');bt.setAttribute('aria-label',au.muted?'Activar el sonido':'Silenciar la música')}
+}
+/* hasta 3 canciones: suenan en orden y en bucle. El cliente solo puede silenciar (no pausar, adelantar ni cambiar). */
 async function gMusicaPrep(){
-  if(!G.cfg.musica||!ST.p||ST.p.id==='pub')return;
+  const c=G.cfg;if(!c||!(c.musicas&&c.musicas.length||c.musica)||!ST.p||ST.p.id==='pub')return;
   try{
     if(SES&&SES.exp-60000<Date.now())await refreshSes();
     const r=await fetch(FILES+'/api/mi/musica',{method:'POST',headers:{Authorization:'Bearer '+SES.access,'Content-Type':'application/json'},body:JSON.stringify({proyecto:ST.p.id})});
-    if(!r.ok)return;const j=await r.json();if(!j.musica)return;
-    const pill=$('#gmus');if(!pill)return;
-    const au=new Audio();au.loop=true;au.preload='auto';au.volume=.6;au.src=j.musica.url;G.au=au;
-    $('#gmt').textContent=j.musica.nombre.replace(/\.[^.]+$/,'').replace(/[-_]+/g,' ');
-    gId3(j.musica.url).then(t=>{if(!t||!$('#gmus'))return;if(t.titulo)$('#gmt').textContent=t.titulo;$('#gma').textContent=[t.artista,t.album].filter(Boolean).join(' · ');
-      if(t.cover){const cv=$('#gmcv');cv.style.backgroundImage='url('+t.cover+')';cv.classList.add('im')}});
-    au.addEventListener('play',gMusicaSync);au.addEventListener('pause',gMusicaSync);
-    $('#gmp').onclick=()=>{if(au.paused){gLS(gKey('faro_mus'),'1');au.play().catch(()=>{})}else{gLS(gKey('faro_mus'),'0');au.pause()}};
-    if(!G.hookV){G.hookV=1;document.addEventListener('play',e=>{if(e.target&&e.target.tagName==='VIDEO'&&G.au&&!G.au.paused&&!e.target.muted)G.au.pause()},true)}
+    if(!r.ok)return;const j=await r.json();const lista=j.musicas||(j.musica?[j.musica]:[]);if(!lista.length||!$('#gmus'))return;
+    G.lista=lista;G.mi=0;G.meta=[];
+    const au=new Audio();au.preload='auto';au.volume=.6;au.muted=gLS(gKey('faro_mus'))==='0';au.src=lista[0].url;G.au=au;
+    gMusicaTitulo();
+    lista.forEach((l,i)=>gId3(l.url).then(t=>{if(t){G.meta[i]=t;if(G.mi===i)gMusicaTitulo()}}));
+    au.addEventListener('play',gMusicaSync);au.addEventListener('pause',gMusicaSync);au.addEventListener('volumechange',gMusicaSync);
+    au.addEventListener('ended',()=>{G.mi=(G.mi+1)%lista.length;au.src=lista[G.mi].url;gMusicaTitulo();au.play().catch(()=>{})});
+    $('#gmp').onclick=()=>{au.muted=!au.muted;gLS(gKey('faro_mus'),au.muted?'0':'1');if(au.paused)au.play().catch(()=>{})};
+    if(!G.hookV){G.hookV=1;
+      document.addEventListener('play',e=>{if(e.target&&e.target.tagName==='VIDEO'&&!e.target.muted&&G.au&&!G.au.paused){G.au.pause();G.porVideo=true}},true);
+      const sigue=e=>{if(e.target&&e.target.tagName==='VIDEO'&&G.porVideo&&G.au){G.porVideo=false;G.au.play().catch(()=>{})}};
+      document.addEventListener('pause',sigue,true);document.addEventListener('ended',sigue,true)}
     const vigila=setInterval(()=>{if(!document.getElementById('gmus')){au.pause();clearInterval(vigila)}},1500);
-    if(G.abierta)pill.hidden=false;
+    gMusicaSync();
+    if(G.abierta)$('#gmus').hidden=false;
     if(G.quiere)gMusicaPlay();
   }catch(e){}
 }
 function gMusicaPlay(){
   G.quiere=true;const au=G.au;if(!au)return;
   const mp=$('#gmus');if(mp&&G.abierta)mp.hidden=false;
-  if(gLS(gKey('faro_mus'))==='0')return;
-  const q=au.play();if(q&&q.catch)q.catch(()=>{});
+  const q=au.play();
+  if(q&&q.catch)q.catch(()=>{const reintenta=()=>{au.play().catch(()=>{})};document.addEventListener('pointerdown',reintenta,{once:true})});
 }
 function gContadores(){
   const lc=$('#glc');if(lc){const n=ST.favs.size;lc.textContent=n;lc.hidden=!n}
