@@ -256,6 +256,27 @@ async function entregar(request, env, bucket, key, { descargar = false, nombre =
   return new Response(request.method === 'HEAD' ? null : obj.body, { status, headers: h });
 }
 
+
+/* ---------- Versiones livianas de las fotos (se crean en el navegador del admin al subir) ---------- */
+// _mini-<nombre>.jpg (≈900 px, para el muro) y _vista-<nombre>.jpg (≈2400 px, para verla grande) junto al original.
+const baseSinExt = (k) => k.split('/').pop().replace(/\.[^.]+$/, '');
+const carpetaDe = (k) => k.slice(0, k.lastIndexOf('/') + 1);
+export async function derivadasDe(env, filas) {
+  const por = new Map();
+  for (const f of filas) { if (f.tipo === 'imagen' && f.key) por.set(carpetaDe(f.key), 1); }
+  const hay = new Set();
+  if (env.PRIVADO && typeof env.PRIVADO.list === 'function') {
+    for (const c of por.keys()) {
+      for (const pre of ['_mini-', '_vista-']) {
+        try { const r = await env.PRIVADO.list({ prefix: c + pre, limit: 1000 }); for (const o of r.objects) hay.add(o.key); } catch (e) { /* sin versiones livianas: se usa el original */ }
+      }
+    }
+  }
+  return (key) => ({ mini: hay.has(carpetaDe(key) + '_mini-' + baseSinExt(key) + '.jpg') ? carpetaDe(key) + '_mini-' + baseSinExt(key) + '.jpg' : null, vista: hay.has(carpetaDe(key) + '_vista-' + baseSinExt(key) + '.jpg') ? carpetaDe(key) + '_vista-' + baseSinExt(key) + '.jpg' : null });
+}
+// Mismo enlace durante varias horas (se redondea el vencimiento) para que el navegador guarde las fotos en caché.
+const vencimientoEstable = () => (Math.floor(Date.now() / 3600000) + 3) * 3600;
+
 /* ---------- Contador de descargas y vistas (un archivo pequeño en el bucket privado) ---------- */
 const STATS_KEY = '_stats/descargas.json';
 const DIAS_GUARDADOS = 400;
@@ -405,7 +426,7 @@ export default {
         const primera = !rango || /^bytes=0-/.test(rango); // el video pide muchos trozos: cuenta solo el primero
         if (primera && p.b === 'privado') { const t = contar(env, p.k, descargar ? 'd' : 'v'); if (ctx && ctx.waitUntil) ctx.waitUntil(t); else await t; }
       }
-      return entregar(request, env, B[p.b], p.k, { descargar });
+      return entregar(request, env, B[p.b], p.k, { descargar, ...(p.n && !descargar ? { cache: 'private, max-age=7200' } : {}) });
     }
 
     // Clientes de Entregas: piden enlaces de SUS archivos. Supabase decide qué ven (RLS) con la sesión del cliente.
@@ -424,8 +445,10 @@ export default {
       if (!r.ok) return err(request, env, 'No se pudo consultar', 502);
       const filas = await r.json().catch(() => []);
       const seg = Math.min(Math.max(Number(b.seg) || 7200, 300), TTL_ENLACE_MAX);
-      const e = Math.floor(Date.now() / 1000) + seg;
+      const e = seg === 7200 ? vencimientoEstable() : Math.floor(Date.now() / 1000) + seg;
       const enlaces = {};
+      const der = await derivadasDe(env, filas);
+      const ver = async (k) => `${url.origin}/api/bajar?inline=1&t=${await firmar(env, { b: 'privado', k, e, n: 1 })}`;
       for (const f of filas) {
         if (!f.key || f.key.includes('..') || f.key.endsWith('/.keep') || !f.key.startsWith('faro-studios/')) continue;
         const td = await firmar(env, { b: 'privado', k: f.key, e });
@@ -433,7 +456,9 @@ export default {
         // Descargar: galerías siempre; revisión (empresa/agencia) solo lo aprobado
         const py = f.proyecto || {};
         const puede = (py.cuenta && py.cuenta.tipo === 'galeria') || f.estado === 'aprobado' || py.estado === 'aprobado' || py.estado === 'entregado';
-        enlaces[f.id] = { nombre: f.nombre, puede, urlVer: `${url.origin}/api/bajar?inline=1&t=${tv}`, ...(puede ? { url: `${url.origin}/api/bajar?t=${td}` } : {}) };
+        const d = f.tipo === 'imagen' ? der(f.key) : { mini: null, vista: null };
+        const urlVer = d.vista ? await ver(d.vista) : `${url.origin}/api/bajar?inline=1&t=${tv}`;
+        enlaces[f.id] = { nombre: f.nombre, puede, urlVer, urlMini: d.mini ? await ver(d.mini) : urlVer, ...(puede ? { url: `${url.origin}/api/bajar?t=${td}` } : {}) };
       }
       return json(request, env, { enlaces, vence_en: seg });
     }
@@ -451,16 +476,40 @@ export default {
       if (!r.ok) return err(request, env, 'No se pudo consultar', 502);
       const lista = await r.json().catch(() => null);
       if (!lista || !Array.isArray(lista.archivos)) return err(request, env, 'Esta lista ya no está disponible', 404);
-      const e = Math.floor(Date.now() / 1000) + 7200;
+      const e = vencimientoEstable();
       const archivos = [];
+      const der = await derivadasDe(env, lista.archivos.slice(0, 300).map((f) => ({ ...f, tipo: 'imagen' })));
+      const ver = async (k) => `${url.origin}/api/bajar?inline=1&t=${await firmar(env, { b: 'privado', k, e, n: 1 })}`;
       for (const f of lista.archivos.slice(0, 300)) {
         if (!f.key || f.key.includes('..') || f.key.endsWith('/.keep') || !f.key.startsWith('faro-studios/')) continue;
         const td = await firmar(env, { b: 'privado', k: f.key, e });
-        const tv = await firmar(env, { b: 'privado', k: f.key, e, n: 1 });
-        archivos.push({ id: f.id, nombre: f.nombre, meta: f.meta || {}, urlVer: `${url.origin}/api/bajar?inline=1&t=${tv}`, url: `${url.origin}/api/bajar?t=${td}` });
+        const d = der(f.key);
+        const urlVer = d.vista ? await ver(d.vista) : await ver(f.key);
+        archivos.push({ id: f.id, nombre: f.nombre, meta: f.meta || {}, urlVer, urlMini: d.mini ? await ver(d.mini) : urlVer, url: `${url.origin}/api/bajar?t=${td}` });
       }
       const cfg = lista.config || {};
       return json(request, env, { lista: lista.lista, titulo: lista.titulo, config: { paleta: cfg.paleta, fuente: cfg.fuente, meta: cfg.meta }, archivos, vence_en: 7200 });
+    }
+
+    // Música de la galería: el cliente pide la canción de SU galería (Supabase decide con su sesión si la ve).
+    if (ruta === '/api/mi/musica' && request.method === 'POST') {
+      const m = /^Bearer\s+(.+)$/i.exec(request.headers.get('Authorization') || '');
+      if (!m) return err(request, env, 'Necesitas entrar', 401);
+      if (!env.FIRMA_SECRETO) return err(request, env, 'Falta configurar FIRMA_SECRETO en el servicio (ver LEEME)', 500);
+      const b = await request.json().catch(() => ({}));
+      const pid = String(b.proyecto || '');
+      if (!/^[0-9a-f-]{36}$/i.test(pid)) return err(request, env, 'Galería no válida', 400);
+      let r;
+      try { r = await fetch(`${env.SUPABASE_URL}/rest/v1/en_proyectos?id=eq.${pid}&select=config`, { headers: { apikey: env.SUPABASE_KEY, Authorization: `Bearer ${m[1]}` } }); } catch (e) { return err(request, env, 'No se pudo consultar', 502); }
+      if (r.status === 401 || r.status === 403) return err(request, env, 'Tu sesión venció. Vuelve a entrar.', 401);
+      if (!r.ok) return err(request, env, 'No se pudo consultar', 502);
+      const fila = (await r.json().catch(() => []))[0];
+      const key = fila && fila.config && typeof fila.config.musica === 'string' ? fila.config.musica : '';
+      if (!key || key.includes('..') || !key.startsWith('faro-studios/musica-galerias/') || key.endsWith('/.keep')) return json(request, env, { musica: null });
+      const o = await env.PRIVADO.head(key);
+      if (!o) return json(request, env, { musica: null });
+      const t = await firmar(env, { b: 'privado', k: key, e: vencimientoEstable(), n: 1 });
+      return json(request, env, { musica: { url: `${url.origin}/api/bajar?inline=1&t=${t}`, nombre: key.split('/').pop(), size: o.size } });
     }
 
     // Todo lo demás es solo para el administrador

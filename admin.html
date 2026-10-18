@@ -107,6 +107,11 @@ button,input,select,textarea{font:inherit;color:inherit}
 .modal video{width:100%;max-height:75vh;display:block;background:#000;border-radius:4px}.modal audio{width:100%;display:block}
 .toast{position:fixed;left:50%;bottom:22px;transform:translate(-50%,20px);opacity:0;pointer-events:none;background:var(--text);color:var(--bg);padding:12px 20px;border-radius:10px;font-weight:700;transition:.3s;z-index:90;max-width:92vw;text-align:center}
 .toast.on{opacity:1;transform:translate(-50%,0)}
+.okflot{position:fixed;left:50%;bottom:28px;transform:translateX(-50%);display:flex;gap:8px;align-items:center;background:var(--text);color:var(--bg);padding:10px 18px;border-radius:999px;font-weight:700;z-index:95;pointer-events:none;animation:okfl 2s ease both;box-shadow:0 6px 24px rgba(0,0,0,.25)}
+@keyframes okfl{0%{opacity:0;transform:translate(-50%,10px)}15%{opacity:1;transform:translate(-50%,0)}75%{opacity:1}100%{opacity:0;transform:translate(-50%,-6px)}}
+.frow{display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-top:1px solid var(--line);flex-wrap:wrap}.frow:first-child{border-top:0}
+.frow .fm{flex:1;min-width:240px;display:grid;gap:6px}.frow .fm input{min-width:0;padding:6px 9px;border-radius:8px;border:1px solid var(--line);background:var(--input);color:var(--text);font-size:.85rem}.frow .fm input:disabled{opacity:.45;cursor:not-allowed;background:var(--line)}
+.frow .fa{display:flex;gap:6px;align-items:center;flex-wrap:wrap}.frow .fa .btn{padding:5px 9px}
 @media (max-width:860px){.grid2{grid-template-columns:1fr}.rc dl{grid-template-columns:1fr}.rc dt{margin-top:6px}}
 @media (max-width:520px){.row{grid-template-columns:1fr}.top .t b{display:none}}
 /* ---------- estructura: barra lateral + contenido ---------- */
@@ -4216,6 +4221,23 @@ function enMini(palk,fuk,img,titulo,sub,foco){
    +'<div style="position:absolute;left:0;right:0;bottom:0;height:6%;background:'+bg+'"></div></div>';
 }
 
+/* ---------- versiones livianas (el original no se toca: solo se hacen copias más chicas para que cargue rápido) ---------- */
+const enDerKey=(key,pre)=>{const i=key.lastIndexOf('/');return key.slice(0,i+1)+pre+key.slice(i+1).replace(/\.[^.]+$/,'')+'.jpg'};
+async function enImgRedim(src,max,q){
+  const bmp=await createImageBitmap(src,{imageOrientation:'from-image'});
+  const k=Math.min(1,max/Math.max(bmp.width,bmp.height)),w=Math.max(1,Math.round(bmp.width*k)),h=Math.max(1,Math.round(bmp.height*k));
+  const cv=document.createElement('canvas');cv.width=w;cv.height=h;const cx=cv.getContext('2d');cx.imageSmoothingQuality='high';cx.drawImage(bmp,0,0,w,h);if(bmp.close)bmp.close();
+  return new Promise((ok,no)=>cv.toBlob(b=>b?ok(b):no(new Error('No se pudo reducir la foto')),'image/jpeg',q));
+}
+async function enDerivadas(src,key,solo){
+  for(const [pre,max,q] of [['_mini-',900,.82],['_vista-',2400,.85]]){
+    if(solo&&!solo.includes(pre))continue;
+    const b=await enImgRedim(src,max,q);
+    await matSubirKey0(new File([b],'v.jpg',{type:'image/jpeg'}),'privado',enDerKey(key,pre),null);
+  }
+}
+function guardadoOk(t){const d=el('div',{class:'okflot',role:'status'},icoEl('check'),t||'Guardado');document.body.append(d);setTimeout(()=>d.remove(),2100)}
+
 /* miniaturas con cola corta, sin repintar toda la página */
 const EN_TH={url:{},cola:[],act:0};
 function enMiniatura(a,img){
@@ -4225,10 +4247,30 @@ function enMiniatura(a,img){
 function enThSig(){
   while(EN_TH.act<4&&EN_TH.cola.length){
     const [a,img]=EN_TH.cola.shift();EN_TH.act++;
-    matEnlace('privado',a.key,true,1).then(u=>{EN_TH.url[a.id]=u;img.src=u}).catch(()=>{}).finally(()=>{EN_TH.act--;enThSig()});
+    const orig=()=>matEnlace('privado',a.key,true,1).then(u=>{EN_TH.url[a.id]=u;img.onerror=null;img.src=u}).catch(()=>{});
+    matEnlace('privado',enDerKey(a.key,'_mini-'),true,1).then(u=>{EN_TH.url[a.id]=u;img.onerror=()=>{img.onerror=null;orig()};img.src=u}).catch(orig).finally(()=>{EN_TH.act--;enThSig()});
   }
 }
 
+/* crea las versiones livianas de las fotos que aún no las tienen (las ya subidas antes) */
+async function enOptimizar(fotos,estado,fin){
+  if(EN.optimizando)return;EN.optimizando=true;
+  try{
+    const hay=new Set();
+    for(const c of new Set(fotos.map(a=>a.key.slice(0,a.key.lastIndexOf('/')+1)))){
+      const r=await fjson('/api/lista?bucket=privado&prefix='+encodeURIComponent(c));(r.archivos||[]).forEach(o=>hay.add(o.key));
+    }
+    const faltan=fotos.map(a=>({a,solo:['_mini-','_vista-'].filter(p=>!hay.has(enDerKey(a.key,p)))})).filter(x=>x.solo.length);
+    if(!faltan.length){toast('Todas las fotos ya están optimizadas');estado('Todas las fotos ya están optimizadas.');return}
+    let h=0,fa=0;const cola=[...faltan];
+    const un=async()=>{while(cola.length){const {a,solo}=cola.shift();
+      try{const u=await matEnlace('privado',a.key,true,1);const r=await fetch(u);if(!r.ok)throw new Error('No se pudo leer');const b=await r.blob();await enDerivadas(b,a.key,solo)}catch(e){fa++}
+      h++;estado('Optimizando '+h+' de '+faltan.length+(fa?' · '+fa+' con error':''))}};
+    await Promise.all([un(),un()]);
+    guardadoOk('Fotos optimizadas');estado('Listo: '+(faltan.length-fa)+' fotos optimizadas'+(fa?' · '+fa+' no se pudieron':''));
+  }catch(e){toast(e.message||'No se pudo optimizar')}
+  finally{EN.optimizando=false;if(fin)setTimeout(fin,1200)}
+}
 /* ---------- editor dentro de la página principal (no flotante) ---------- */
 function enPagina(titulo){
   const root=$('#en-body');EN.editando=true;root.textContent='';window.scrollTo(0,0);
@@ -4287,6 +4329,7 @@ async function enSubirArchivos(p,files,estado){
   const un=async f=>{
     try{
       const nm=matNombre(f.name),meta=c.tipo==='galeria'?await enExif(f):{},r=await matSubir(f,dest,c.slug,null,nm);
+      if(c.tipo==='galeria'&&enTipoArch(nm)==='imagen'){try{await enDerivadas(f,r.key)}catch(e){/* sin versión liviana: se usa el original; "Optimizar fotos" la crea después */}}
       const prev=EN.arch.find(a=>a.proyecto_id===p.id&&a.key===r.key);
       const conMeta=Object.keys(meta).length&&EN.metaOk!==false;
       if(prev){await enPatch('en_archivos','arch',prev.id,{version:prev.version+1,estado:'pendiente',tipo:enTipoArch(nm)})}
@@ -4309,7 +4352,7 @@ function enEditor(pid){
   const pintar=()=>{
     const p=EN.proy.find(x=>x.id===pid);if(!p){D.cerrar();return}
     const sy=D.body.scrollTop;D.body.textContent='';D.titulo(p.titulo);
-    const A=enArchP(pid);
+    const A=enArchP(pid);const metaTodas=gal&&!!(p.config&&p.config.metaTodas);
     /* --- estado y acción principal --- */
     const top=el('div',{style:'display:flex;gap:8px;align-items:center;flex-wrap:wrap'},el('span',{class:'tag'},EN_TIPOS[c.tipo][0]+' · '+c.nombre));
     if(gal){
@@ -4358,6 +4401,10 @@ function enEditor(pid){
       const prev=el('div',{style:'max-width:420px'});const pinPrev=()=>{prev.innerHTML=enMini(cur.paleta,cur.fuente,portada&&imgs[portada.id],val('eg-t')||cfg.titulo||p.titulo,val('eg-s'),cur.foco)};
       const sel=el('select',{id:'eg-p'},el('option',{value:''},'Automática (primera foto)'),...fotos.map(a=>el('option',{value:a.id},a.nombre)));sel.value=cfg.portada||'';
       sel.addEventListener('change',()=>{cur.portada=sel.value||undefined;const a=A.find(x=>x.id===sel.value);if(a)cargarImg(a)});
+      const musSel=el('select',{id:'eg-mu'},el('option',{value:''},'Sin música'));
+      if(cfg.musica)musSel.append(el('option',{value:cfg.musica},cfg.musica.split('/').pop()));
+      musSel.value=cfg.musica||'';
+      fjson('/api/lista?bucket=privado&prefix='+encodeURIComponent('faro-studios/musica-galerias/')).then(r=>{(r.archivos||[]).filter(o=>MAT_VER.aud.test(o.key)&&o.key!==cfg.musica).forEach(o=>musSel.append(el('option',{value:o.key},o.key.split('/').pop())));musSel.value=cfg.musica||''}).catch(()=>{});
       pinVis();pinFu();pinFo();pinPal();
       const dis=sec('Diseño de la galería',el('p',{class:'muted',style:'margin:0;font-size:.88rem'},'Los colores y las letras los eliges tú aquí; el cliente solo recibe el resultado.'),
         el('div',{},el('span',{class:'lab'},'Vista inicial'),vistas),el('div',{},el('span',{class:'lab'},'Colores · claros, oscuros, suaves y con contraste'),pals),
@@ -4366,10 +4413,11 @@ function enEditor(pid){
         el('div',{class:'dg2'},f('eg-f','Fecha del evento','date',cfg.fecha),el('label',{class:'dfl'},'Foto de portada',sel)),
         el('div',{},el('span',{class:'lab'},'Hacia dónde mira la portada (punto de enfoque)'),foco),
         f('eg-m','Mensaje sobre el muro (opcional)','area',cfg.mensaje),
+        el('label',{class:'dfl'},'Música de la galería (súbela en Archivos y web → Música de las galerías)',musSel),
         el('label',{class:'wchk',style:'padding:0'},chkEl(cur.meta!==false,v=>{cur.meta=v}),'Mostrar los datos de cámara debajo de las fotos'),
         el('div',{},el('span',{class:'lab'},'Así se ve la portada'),prev),
         enBtn('Guardar diseño','check',async()=>{
-          const config={...(p.config||{}),paleta:cur.paleta,fuente:cur.fuente,vista:cur.vista,foco:cur.foco,meta:cur.meta!==false,portada:sel.value||null,titulo:val('eg-t').trim()||null,subtitulo:val('eg-s').trim()||null,fecha:val('eg-f')||null,mensaje:val('eg-m').trim()||null};
+          const config={...(p.config||{}),paleta:cur.paleta,fuente:cur.fuente,vista:cur.vista,foco:cur.foco,meta:cur.meta!==false,portada:sel.value||null,titulo:val('eg-t').trim()||null,subtitulo:val('eg-s').trim()||null,fecha:val('eg-f')||null,mensaje:val('eg-m').trim()||null,musica:musSel.value||null};
           delete config.estilo;
           if(await enPatch('en_proyectos','proy',pid,{config})){toast('Diseño guardado');pintar()}},'btn-gold'));
       dis.addEventListener('input',pinPrev);D.body.append(dis);pinPrev();
@@ -4377,20 +4425,14 @@ function enEditor(pid){
       const campos=[['camara','Cámara','Sony A7 IV'],['distancia','Distancia','35 mm'],['apertura','Apertura','f/2.8'],['fotografo','Fotógrafo','Nombre']];
       const aplicaT=el('div',{class:'dg2'},...campos.map(([k,l,ph])=>{const i=el('input',{id:'em-'+k,placeholder:ph,value:(A.find(a=>a.meta&&a.meta[k])||{meta:{}}).meta[k]||''});return el('label',{class:'dfl'},l,i)}));
       const conDatos=fotos.filter(a=>a.meta&&Object.keys(a.meta).length).length;
-      const tabla=el('div',{style:'display:grid;gap:8px'});
-      fotos.forEach(a=>{
-        const im=el('img',{alt:'',style:'width:72px;height:72px;object-fit:cover;border-radius:8px;background:var(--line);flex:none'});
-        enMiniatura(a,im);
-        const ins=campos.map(([k,l,ph])=>{const i=el('input',{placeholder:l,value:(a.meta||{})[k]||'','aria-label':l+' de '+a.nombre,style:'min-width:0;padding:7px 9px;border-radius:8px;border:1px solid var(--line);background:var(--input);color:var(--text);font-size:.85rem'});
-          i.addEventListener('change',async()=>{const meta={...(a.meta||{})};const v=i.value.trim();if(v)meta[k]=v;else delete meta[k];if(await enPatch('en_archivos','arch',a.id,{meta}))toast('Guardado')});return i});
-        tabla.append(el('div',{style:'display:flex;gap:10px;align-items:center;padding:6px 0;border-top:1px solid var(--line)'},im,el('div',{style:'flex:1;min-width:0;display:grid;gap:6px'},el('small',{class:'muted',style:'overflow:hidden;text-overflow:ellipsis;white-space:nowrap'},a.nombre),el('div',{style:'display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:6px'},...ins))));
-      });
-      D.body.append(sec('Datos de las fotos',el('p',{class:'muted',style:'margin:0;font-size:.88rem'},'Se leen solos al subir cada foto. '+conDatos+' de '+fotos.length+' ya tienen datos. Revísalos abajo y corrige lo que haga falta; se guarda al salir de cada casilla. O llena esto y aplícalo a todas.'),aplicaT,
-        enBtn('Aplicar a todas','check',async()=>{
+      D.body.append(sec('Datos de las fotos',el('p',{class:'muted',style:'margin:0;font-size:.88rem'},metaTodas?'Estos datos están aplicados a todas las fotos, por eso las casillas de cada foto están apagadas.':'Se leen solos al subir cada foto ('+conDatos+' de '+fotos.length+' ya tienen datos). Corrígelos en cada fila de abajo y toca el disquete. O llena esto y aplícalo a todas.'),aplicaT,
+        el('div',{style:'display:flex;gap:8px;flex-wrap:wrap'},enBtn('Aplicar a todas','check',async()=>{
           const m={};campos.forEach(([k])=>{const v=val('em-'+k).trim();if(v)m[k]=v});if(!Object.keys(m).length){toast('Escribe al menos un dato');return}
           if(!confirm('¿Aplicar estos datos a las '+fotos.length+' fotos? Reemplaza lo que tengan en esos campos.'))return;
           let ok=0;for(const a of fotos){if(await enPatch('en_archivos','arch',a.id,{meta:{...(a.meta||{}),...m}}))ok++;else break}
-          toast(ok+' fotos actualizadas');pintar()},'btn-gold'),tabla));
+          if(ok===fotos.length)await enPatch('en_proyectos','proy',pid,{config:{...(p.config||{}),metaTodas:true}});
+          guardadoOk(ok+' fotos actualizadas');pintar()},'btn-gold'),
+          metaTodas?enBtn('Editar cada foto por separado','edit',async()=>{if(await enPatch('en_proyectos','proy',pid,{config:{...(p.config||{}),metaTodas:false}}))pintar()}):null)));
     }
     /* --- archivos --- */
     const inp=el('input',{type:'file',multiple:'',accept:gal?'image/*,video/*':'video/*,audio/*,image/*,application/pdf',style:'display:none'});
@@ -4398,29 +4440,41 @@ function enEditor(pid){
       await enSubirArchivos(p,fl,(h,t,fa)=>{subiendo='Subidos '+h+' de '+t+(fa?' · '+fa+' con error':'');const s=D.body.querySelector('#en-sub');if(s)s.textContent=subiendo});
       subiendo='';renderEn();pintar()});
     const lista=el('div',{class:'plist'});
+    const camposF=[['camara','Cámara'],['distancia','Distancia'],['apertura','Apertura'],['fotografo','Fotógrafo']];
     A.forEach((a,i)=>{
-      const nom=el('input',{value:a.nombre,style:'width:100%;padding:5px 8px;border-radius:8px;border:1px solid var(--line);background:var(--input);color:var(--text);font-size:.85rem'});
-      nom.addEventListener('change',()=>enPatch('en_archivos','arch',a.id,{nombre:nom.value.trim()||a.nombre}));
+      const conFoto=gal&&a.tipo==='imagen';
+      const nom=el('input',{value:a.nombre,'aria-label':'Nombre del archivo',style:'width:100%'});
+      const ins=conFoto?camposF.map(([k,l])=>el('input',{placeholder:l,'aria-label':l+' de '+a.nombre,value:(a.meta||{})[k]||''})):[];
+      if(metaTodas)ins.forEach(x=>{x.disabled=true;x.title='Aplicado a todas las fotos'});
+      const guardar=async()=>{
+        const b={nombre:nom.value.trim()||a.nombre};
+        if(conFoto&&!metaTodas){const meta={};camposF.forEach(([k],n)=>{const v=ins[n].value.trim();if(v)meta[k]=v});b.meta=meta}
+        if(await enPatch('en_archivos','arch',a.id,b))guardadoOk('Guardado')};
+      if(!gal)nom.addEventListener('change',()=>enPatch('en_archivos','arch',a.id,{nombre:nom.value.trim()||a.nombre}));
       const re=el('input',{type:'file',style:'display:none'});re.addEventListener('change',async()=>{const fl=re.files[0];if(!fl)return;toast('Reemplazando…');
-        try{const d=EN_TIPOS[c.tipo][2];await matSubir(fl,d,c.slug,null,a.key.split('/').pop());await enPatch('en_archivos','arch',a.id,{version:a.version+1,estado:'pendiente'});toast('Nueva versión subida');pintar()}catch(e){toast(e.message||'No se pudo reemplazar')}});
+        try{const d=EN_TIPOS[c.tipo][2];await matSubir(fl,d,c.slug,null,a.key.split('/').pop());if(conFoto){try{await enDerivadas(fl,a.key);delete EN_TH.url[a.id]}catch(e){}}await enPatch('en_archivos','arch',a.id,{version:a.version+1,estado:'pendiente'});toast('Nueva versión subida');pintar()}catch(e){toast(e.message||'No se pudo reemplazar')}});
       const mover=async d=>{const o=A[i+d];if(!o)return;await Promise.all([enPatch('en_archivos','arch',a.id,{orden:o.orden===a.orden?o.orden+d:o.orden}),enPatch('en_archivos','arch',o.id,{orden:a.orden})]);pintar()};
-      lista.append(el('div',{class:'prow',style:'cursor:default;flex-wrap:wrap'},
-        el('span',{class:'tag'},a.tipo),el('span',{style:'flex:1;min-width:150px'},nom),
-        a.version>1?el('span',{class:'tag'},'v'+a.version):null,
-        gal?null:el('span',{class:'tag '+(a.estado==='aprobado'?'confirmada':a.estado==='cambios'?'cancelada':'')},a.estado==='aprobado'?'Aprobado':a.estado==='cambios'?'Con cambios':'Pendiente'),
-        el('label',{class:'wchk',style:'padding:0',title:'El cliente lo ve'},chkEl(a.habilitado,async v=>{await enPatch('en_archivos','arch',a.id,{habilitado:v})}),'Visible'),
-        el('button',{class:'btn btn-ghost btn-sm',type:'button',onclick:()=>mover(-1),'aria-label':'Subir'},'↑'),el('button',{class:'btn btn-ghost btn-sm',type:'button',onclick:()=>mover(1),'aria-label':'Bajar'},'↓'),
-        enBtn('Ver','image',()=>matVer('privado',a.key).catch(e=>toast(e.message))),
-        el('button',{class:'btn btn-ghost btn-sm',type:'button',onclick:()=>re.click()},icoEl('refresh'),' Reemplazar'),re,
-        el('button',{class:'btn btn-ghost btn-sm',type:'button','aria-label':'Borrar',onclick:async()=>{
-          if(!confirm('¿Borrar "'+a.nombre+'"? También se borra el archivo de R2.'))return;
-          try{await fjson('/api/objeto?bucket=privado&key='+encodeURIComponent(a.key),{method:'DELETE'})}catch(e){if(!/No existe/.test(e.message))toast('Aviso: '+e.message)}
-          const x=await api('/rest/v1/en_archivos?id=eq.'+a.id,{method:'DELETE',headers:{Prefer:'return=minimal'}});if(!x.ok){toast(await errText(x));return}
-          EN.arch=EN.arch.filter(z=>z.id!==a.id);renderEn();pintar()}},icoEl('trash'))));
+      let th=null;
+      if(conFoto){th=el('img',{alt:'',style:'width:84px;height:84px;object-fit:cover;border-radius:10px;background:var(--line);flex:none'});enMiniatura(a,th)}
+      const guardaBtn=gal?el('button',{class:'btn btn-gold btn-sm',type:'button',title:'Guardar nombre y datos de esta foto','aria-label':'Guardar',onclick:guardar},(()=>{const x=document.createElement('span');x.className='ico';x.innerHTML='<svg class="sv" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 3h11l4 4v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M8 3v5h7V3"/><rect x="7" y="13" width="10" height="8" rx="1"/></svg>';return x})()):null;
+      lista.append(el('div',{class:'frow'},th,
+        el('div',{class:'fm'},el('div',{style:'display:flex;gap:6px;align-items:center'},el('span',{class:'tag'},a.tipo),a.version>1?el('span',{class:'tag'},'v'+a.version):null,gal?null:el('span',{class:'tag '+(a.estado==='aprobado'?'confirmada':a.estado==='cambios'?'cancelada':'')},a.estado==='aprobado'?'Aprobado':a.estado==='cambios'?'Con cambios':'Pendiente'),el('span',{style:'flex:1;min-width:0'},nom)),
+          conFoto?el('div',{style:'display:grid;grid-template-columns:repeat(auto-fit,minmax(88px,1fr));gap:6px'},...ins):null),
+        el('div',{class:'fa'},
+          el('label',{class:'wchk',style:'padding:0',title:'El cliente lo ve'},chkEl(a.habilitado,async v=>{await enPatch('en_archivos','arch',a.id,{habilitado:v})}),'Visible'),
+          el('button',{class:'btn btn-ghost btn-sm',type:'button',onclick:()=>mover(-1),'aria-label':'Subir'},'↑'),el('button',{class:'btn btn-ghost btn-sm',type:'button',onclick:()=>mover(1),'aria-label':'Bajar'},'↓'),
+          enBtn('Ver','image',()=>matVer('privado',a.key).catch(e=>toast(e.message))),
+          el('button',{class:'btn btn-ghost btn-sm',type:'button',onclick:()=>re.click()},icoEl('refresh'),' Reemplazar'),re,
+          el('button',{class:'btn btn-ghost btn-sm',type:'button','aria-label':'Borrar',onclick:async()=>{
+            if(!confirm('¿Borrar "'+a.nombre+'"? También se borra el archivo de R2.'))return;
+            try{await fjson('/api/objeto?bucket=privado&key='+encodeURIComponent(a.key),{method:'DELETE'})}catch(e){if(!/No existe/.test(e.message))toast('Aviso: '+e.message)}
+            if(conFoto)for(const pre of ['_mini-','_vista-']){try{await fjson('/api/objeto?bucket=privado&key='+encodeURIComponent(enDerKey(a.key,pre)),{method:'DELETE'})}catch(e){}}
+            const x=await api('/rest/v1/en_archivos?id=eq.'+a.id,{method:'DELETE',headers:{Prefer:'return=minimal'}});if(!x.ok){toast(await errText(x));return}
+            EN.arch=EN.arch.filter(z=>z.id!==a.id);renderEn();pintar()}},icoEl('trash')),guardaBtn)));
     });
     if(!A.length)lista.append(el('p',{class:'muted',style:'margin:6px 0'},'Aún no hay archivos. Súbelos aquí abajo.'));
     D.body.append(sec(gal?'Fotos y videos ('+A.length+')':'Piezas para revisar ('+A.length+')',
-      el('div',{style:'display:flex;gap:8px;align-items:center;flex-wrap:wrap'},enBtn('Subir archivos','upload',()=>inp.click(),'btn-gold'),inp,el('small',{class:'muted',id:'en-sub'},subiendo||(gal?'Las fotos se muestran en máxima calidad tal como las subas.':'Videos, audios, imágenes o PDF. Puedes subir varios a la vez.'))),lista));
+      el('div',{style:'display:flex;gap:8px;align-items:center;flex-wrap:wrap'},enBtn('Subir archivos','upload',()=>inp.click(),'btn-gold'),inp,gal?enBtn('Optimizar fotos','refresh',()=>enOptimizar(A.filter(a=>a.tipo==='imagen'),t=>{const s=D.body.querySelector('#en-sub');if(s)s.textContent=t},()=>pintar())):null,el('small',{class:'muted',id:'en-sub'},subiendo||(gal?'Las fotos se muestran en máxima calidad tal como las subas.':'Videos, audios, imágenes o PDF. Puedes subir varios a la vez.'))),lista));
     /* --- correcciones / favoritas --- */
     if(!gal){
       const cm=EN.com.filter(x=>x.proyecto_id===pid&&x.enviado),borr=EN.com.filter(x=>x.proyecto_id===pid&&!x.enviado).length;
