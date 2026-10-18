@@ -509,6 +509,131 @@ html.is-app .top{padding-top:calc(10px + var(--top-extra) + env(safe-area-inset-
 @media (max-width:900px){.hclock{display:none!important}}
 /* logo del encabezado un poco más grande */
 .top img{height:48px}
+
+/* =====================================================================
+   INTERACTIVIDAD DEL WORKSPACE
+   Todo lo que se puede tocar responde al pasar el mouse, al enfocar y al presionar.
+   Todo lo que aparece, aparece con movimiento suave (se apaga con "reducir movimiento").
+   ===================================================================== */
+:root{--ease:cubic-bezier(.22,.8,.3,1);--hov:rgba(184,160,106,.15);--hov-2:rgba(184,160,106,.26);--hov-b:rgba(184,160,106,.7)}
+
+/* ---- campos de texto, listas y selectores ---- */
+input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]),select,textarea{transition:border-color .18s,box-shadow .18s,background-color .18s}
+input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):hover,select:hover,textarea:hover{border-color:var(--hov-b)}
+input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):focus,select:focus,textarea:focus{outline:none;border-color:var(--oro);box-shadow:0 0 0 3px var(--hov-2)}
+select{cursor:pointer}
+
+/* ---- botones: se iluminan, se elevan y se hunden al presionar ---- */
+.btn{position:relative;transition:transform .2s var(--ease),box-shadow .2s var(--ease),border-color .2s,background-color .2s,color .2s,filter .2s}
+.btn:active{transform:translateY(0) scale(.97);transition-duration:.07s}
+.btn-gold:hover{filter:brightness(1.07) saturate(1.05);box-shadow:0 10px 22px -10px rgba(184,160,106,.9)}
+.btn-ghost:hover{background:var(--hov);box-shadow:0 8px 18px -12px rgba(0,0,0,.45)}
+.btn-red:hover{background:rgba(217,90,106,.14);border-color:var(--rojo);box-shadow:0 8px 18px -12px rgba(217,90,106,.8)}
+.btn .sv{transition:transform .25s var(--ease)}
+.btn:hover .sv{transform:scale(1.15) rotate(-6deg)}
+.btn[disabled]{pointer-events:none}
+
+/* ---- chips, filtros y pestañas pequeñas ---- */
+.chip,.seg button,.stab{transition:background-color .18s,color .18s,border-color .18s,transform .15s var(--ease),box-shadow .18s}
+.chip:hover{border-color:var(--oro);background:var(--hov);transform:translateY(-1px)}
+.chip[aria-pressed="true"]:hover{background:var(--oro);filter:brightness(1.06)}
+.seg button:hover{color:var(--text);background:var(--hov)}
+.seg button[aria-pressed="true"]:hover{background:var(--surface)}
+.chip:active,.seg button:active,.stab:active{transform:scale(.95)}
+.stab:hover{background:var(--hov)}
+
+/* ---- barra lateral ---- */
+.tab{position:relative;transition:background-color .2s,transform .2s var(--ease),box-shadow .2s}
+.tab:hover{background:var(--hov)}
+.tab[aria-selected="true"]:hover{background:linear-gradient(90deg,rgba(184,160,106,.38),rgba(184,160,106,.12))}
+.tab .ni,.tab .ni .sv{transition:transform .25s var(--ease),color .2s}
+.tab:hover .ni{transform:scale(1.18)}
+.tab:active{transform:scale(.98)}
+.tab .n{transition:transform .2s var(--ease)}.tab:hover .n{transform:scale(1.1)}
+.ni2,.nf,.sidetog{transition:background-color .18s,transform .15s var(--ease)}
+.ni2:active,.nf:active,.sidetog:active{transform:scale(.98)}
+.nf:hover{background:var(--hov);color:var(--text)}
+
+/* ---- filas y elementos clickeables (ej. el proyecto "Gender Reveal") ---- */
+[data-clic],.prow,.lr,.cc,.cd,.mdc,.mt,.acgc,.acs,.sgc,.sctb,.uday,.dc-chip,.dc-row .dc-n,.pchk,.wchk,.subx,.enc summary,.pza summary,.fl-tab,.wpub{
+  transition:background-color .2s,border-color .2s,box-shadow .2s var(--ease),transform .2s var(--ease),color .2s}
+[data-clic]{cursor:pointer}
+
+.prow{position:relative;border-radius:12px;padding:10px 12px;margin:0 -8px}
+.prow:hover{background:var(--hov);box-shadow:inset 3px 0 0 var(--oro)}
+.prow:active{background:var(--hov-2);transform:scale(.995)}
+.prow[data-clic]::after{content:"›";flex:none;font:400 1.7rem/1 var(--display);color:var(--oro-t);opacity:0;transform:translateX(-8px);transition:opacity .2s,transform .25s var(--ease)}
+.prow[data-clic]:hover::after,.prow[data-clic]:focus-visible::after{opacity:1;transform:none}
+.prow[data-clic] b{transition:color .2s}.prow[data-clic]:hover b{color:var(--oro-t)}
+.prow+.prow:hover,.prow:hover+.prow{border-top-color:transparent}
+
+.lr:hover,.cc:hover,.mdc:hover,.cd:hover{border-color:var(--oro);box-shadow:0 14px 28px -16px rgba(0,0,0,.55)}
+.lr:hover,.cc:hover,.cd:hover{transform:translateY(-2px)}
+.lr:active,.cc:active,.mdc:active,.cd:active,.mt:active{transform:scale(.985)}
+.mt:hover,.acgc:hover,.acs:hover,.sgc:hover,.sctb:hover,.uday:hover,.dc-chip:hover,.dc-row .dc-n:hover,.subx:hover,.fl-tab:hover,.wpub:hover{background:var(--hov)}
+.mt:hover{transform:translateY(-3px);box-shadow:0 16px 30px -18px rgba(0,0,0,.6)}
+.pchk:hover,.wchk:hover{background:var(--soft);border-radius:10px}
+.enc summary:hover,.pza summary:hover{color:var(--oro-t)}
+summary{transition:color .18s}
+
+/* tarjetas del panel de inicio */
+.kpi{transition:transform .25s var(--ease),box-shadow .25s var(--ease),filter .2s}
+.kpi:hover{box-shadow:0 26px 40px -18px rgba(0,0,0,.7),inset 0 1px 0 rgba(255,255,255,.24);filter:brightness(1.05)}
+.kpi:active{transform:translateY(-1px) scale(.98)}
+.kpi svg.sp{transition:opacity .3s,transform .4s var(--ease)}.kpi:hover svg.sp{opacity:.55;transform:translateX(-4px)}
+
+/* interruptores */
+.sw span{transition:background-color .2s,box-shadow .2s}.sw:hover span{box-shadow:0 0 0 3px var(--hov)}
+
+
+/* onda al hacer click (la crea el script) */
+.rip-host{position:relative;overflow:hidden}
+.rip{position:absolute;border-radius:50%;pointer-events:none;background:currentColor;opacity:.22;transform:scale(0);animation:ripple .6s var(--ease) forwards}
+@keyframes ripple{to{transform:scale(1);opacity:0}}
+
+/* toque en pantallas táctiles: sin saltos al pasar el dedo */
+@media (hover:none),(pointer:coarse){
+  .chip:hover,.lr:hover,.cc:hover,.cd:hover,.mt:hover,.tab:hover .ni,.tab:hover .n,.btn:hover .sv{transform:none}
+  .prow[data-clic]::after{opacity:.5;transform:none}
+}
+
+/* ---------------- animaciones de entrada ---------------- */
+/* Las de tarjetas/filas solo corren justo después de entrar a una pestaña (clase .entra, la pone el script),
+   así no se repiten cada vez que el panel se refresca solo ni al tocar un filtro. */
+@media (prefers-reduced-motion:no-preference){
+  @keyframes ent{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+  @keyframes entl{from{opacity:0;transform:translateX(-14px)}to{opacity:1;transform:none}}
+  @keyframes entr{from{opacity:0;transform:translateX(24px)}to{opacity:1;transform:none}}
+  @keyframes entd{from{opacity:0;transform:translateY(-100%)}to{opacity:1;transform:none}}
+  @keyframes fade{from{opacity:0}to{opacity:1}}
+  @keyframes pop{from{opacity:0;transform:translateY(10px) scale(.96)}to{opacity:1;transform:none}}
+
+  /* al entrar al Workspace: el encabezado baja y la barra lateral entra desde la izquierda */
+  .top{animation:entd .5s var(--ease) backwards}
+  .side{animation:entl .55s var(--ease) .08s backwards}
+
+  /* al cambiar de pestaña, el contenido aparece suave */
+  .main>div:not([hidden]),.main>section:not([hidden]){animation:ent .38s var(--ease) backwards}
+
+  /* tarjetas, filas y cuadros entran uno tras otro */
+  .main.entra :is(.dgrid,.dkpis,.ugrid,.mgrid,.pr-lista,.plegend)>*{animation:ent .45s var(--ease) backwards}
+  .main.entra :is(.dgrid,.dkpis,.ugrid,.mgrid,.pr-lista,.plegend)>:nth-child(2){animation-delay:.05s}
+  .main.entra :is(.dgrid,.dkpis,.ugrid,.mgrid,.pr-lista,.plegend)>:nth-child(3){animation-delay:.1s}
+  .main.entra :is(.dgrid,.dkpis,.ugrid,.mgrid,.pr-lista,.plegend)>:nth-child(4){animation-delay:.15s}
+  .main.entra :is(.dgrid,.dkpis,.ugrid,.mgrid,.pr-lista,.plegend)>:nth-child(5){animation-delay:.2s}
+  .main.entra :is(.dgrid,.dkpis,.ugrid,.mgrid,.pr-lista,.plegend)>:nth-child(6){animation-delay:.25s}
+  .main.entra :is(.dgrid,.dkpis,.ugrid,.mgrid,.pr-lista,.plegend)>:nth-child(n+7){animation-delay:.3s}
+  .main.entra .plist>.prow{animation:entl .4s var(--ease) .12s backwards}
+  .main.entra .plist>.prow:nth-child(2){animation-delay:.17s}
+  .main.entra .plist>.prow:nth-child(3){animation-delay:.22s}
+  .main.entra .plist>.prow:nth-child(n+4){animation-delay:.27s}
+
+  /* ventanas y paneles laterales */
+  .drawer-bg{animation:fade .22s ease backwards}
+  .drawer{animation:entr .32s var(--ease) backwards}
+  .modal{animation:fade .2s ease backwards}
+  .modal .box{animation:pop .28s var(--ease) backwards}
+}
 </style>
 <script>if(navigator.standalone||(window.matchMedia&&matchMedia("(display-mode:standalone)").matches))document.documentElement.classList.add("is-app")</script>
 </head>
@@ -680,7 +805,8 @@ const $=(s,r=document)=>r.querySelector(s),$$=(s,r=document)=>[...r.querySelecto
 const MESES=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
 const DIAS=['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
 const pad=n=>String(n).padStart(2,'0');
-function el(tag,attrs,...kids){const e=document.createElement(tag);for(const k in(attrs||{})){if(k==='class')e.className=attrs[k];else if(k.startsWith('on'))e.addEventListener(k.slice(2),attrs[k]);else e.setAttribute(k,attrs[k])}kids.flat().forEach(c=>{if(c!=null)e.append(c.nodeType?c:document.createTextNode(c))});return e}
+function clicable(e){if(/^(BUTTON|A|INPUT|SELECT|TEXTAREA|LABEL|SUMMARY)$/.test(e.tagName))return;e.setAttribute('data-clic','');if(!e.hasAttribute('tabindex'))e.tabIndex=0;if(!e.hasAttribute('role'))e.setAttribute('role','button');e.addEventListener('keydown',ev=>{if((ev.key==='Enter'||ev.key===' ')&&ev.target===e){ev.preventDefault();e.click()}})}
+function el(tag,attrs,...kids){const e=document.createElement(tag);for(const k in(attrs||{})){if(k==='class')e.className=attrs[k];else if(k.startsWith('on')){e.addEventListener(k.slice(2),attrs[k]);if(k==='onclick')clicable(e)}else e.setAttribute(k,attrs[k])}kids.flat().forEach(c=>{if(c!=null)e.append(c.nodeType?c:document.createTextNode(c))});return e}
 function toast(t){const x=$('#toast');x.textContent=t;x.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>x.classList.remove('on'),3200)}
 
 /* ---------- iconos (trazo fino, heredan el color del texto) ---------- */
@@ -4753,6 +4879,41 @@ if(S){start().catch(()=>logout())}else document.documentElement.classList.remove
 function m(){document.documentElement.style.setProperty('--toph',t.offsetHeight+'px')}
 m();addEventListener('resize',m);addEventListener('orientationchange',m);addEventListener('load',m);
 if(window.ResizeObserver)new ResizeObserver(m).observe(t)})();
+</script>
+<script>
+/* Interactividad del Workspace: entrada de pestañas, onda al click, contadores que suben */
+(function(){
+  var reduce=matchMedia('(prefers-reduced-motion:reduce)').matches;
+  var main=document.querySelector('.main');
+  /* 1. al entrar a una pestaña, las tarjetas y filas entran escalonadas durante unos segundos */
+  var tm;function entra(){if(!main)return;main.classList.remove('entra');void main.offsetWidth;main.classList.add('entra');clearTimeout(tm);tm=setTimeout(function(){main.classList.remove('entra')},2600)}
+  if(typeof window.showTab==='function'){var o=window.showTab;window.showTab=function(){var r=o.apply(this,arguments);entra();return r}}
+  entra();
+  if(reduce)return;
+  /* 2. onda al hacer click en botones, tarjetas, filas y pestañas */
+  document.addEventListener('pointerdown',function(ev){
+    var t=ev.target.closest&&ev.target.closest('.btn,.kpi,.tab,.chip,.prow[data-clic],.mt');
+    if(!t||t.disabled||ev.button>0)return;
+    t.classList.add('rip-host');
+    var r=t.getBoundingClientRect(),d=Math.max(r.width,r.height)*2,s=document.createElement('span');
+    s.className='rip';s.style.cssText='width:'+d+'px;height:'+d+'px;left:'+(ev.clientX-r.left-d/2)+'px;top:'+(ev.clientY-r.top-d/2)+'px';
+    t.appendChild(s);setTimeout(function(){s.remove()},650)
+  },{passive:true});
+  /* 3. los números grandes del panel suben desde 0 al aparecer */
+  function sube(n){
+    var txt=n.textContent.trim();if(!/^\d{1,6}$/.test(txt))return;
+    var fin=+txt;if(fin<2)return;var t0=performance.now(),dur=700;
+    (function paso(t){var k=Math.min(1,(t-t0)/dur),v=Math.round(fin*(1-Math.pow(1-k,3)));n.textContent=v;if(k<1)requestAnimationFrame(paso);else n.textContent=fin})(t0)
+  }
+  var body=document.getElementById('dash-body');
+  if(body)new MutationObserver(function(ms){
+    if(!main||!main.classList.contains('entra'))return;
+    ms.forEach(function(m){m.addedNodes.forEach(function(n){
+      if(n.nodeType!==1)return;
+      if(n.matches('.kv'))sube(n);n.querySelectorAll('.kv').forEach(sube)
+    })})
+  }).observe(body,{childList:true,subtree:true});
+})();
 </script>
 </body>
 </html>
