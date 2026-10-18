@@ -23,7 +23,11 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+<script>try{if(localStorage.getItem('faro_adm')||sessionStorage.getItem('faro_adm'))document.documentElement.classList.add('ses')}catch(e){}</script>
 <style>
+html.ses #v-login{display:none!important}
+html.ses #v-wait[hidden]{display:block!important}
+
 :root{--pizarra:#252528;--borgona:#8B1A2A;--gris:#3A3A3A;--oro:#B8A06A;--marfil:#F5F2EE;--verde:#5E9E6B;--amar:#E2BE46;--rojo:#D95A6A;
 --bg:#252528;--bg2:rgba(58,58,58,.8);--surface:#3A3A3A;--soft:rgba(0,0,0,.18);--input:rgba(0,0,0,.26);--text:#F5F2EE;--muted:#B9B4AA;--line:rgba(245,242,238,.18);--oro-t:#B8A06A;--red-t:#F0A0AA;--msg-bg:rgba(139,26,42,.4);--nav:#2F2F32;
 --shadow:inset 0 1px 0 rgba(245,242,238,.07),0 24px 44px -22px rgba(0,0,0,.7);
@@ -836,6 +840,7 @@ async function mfaCard(card){
             el('button',{class:'btn btn-ghost btn-sm',type:'button',onclick:async()=>{await api('/auth/v1/factors/'+j.id,{method:'DELETE'}).catch(()=>{});pintar()}},'Cancelar')))}},'Activar'))};
   await pintar()}
 async function start(){
+  document.documentElement.classList.remove('ses');
   /* el panel no se muestra nada hasta pasar el código de 2 pasos y confirmar permisos */
   $('#v-app').hidden=true;$('#out').hidden=true;$('#v-login').hidden=true;$('#v-wait').hidden=false;
   try{
@@ -4426,7 +4431,7 @@ function enEditor(pid){
   pintar();
 }
 
-if(S){start().catch(()=>logout())}
+if(S){start().catch(()=>logout())}else document.documentElement.classList.remove('ses')
 </script>
 <script>
 (function(){var t=document.querySelector('header.top');if(!t)return;
