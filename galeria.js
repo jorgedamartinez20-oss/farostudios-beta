@@ -326,16 +326,15 @@ function gVisibles(){
   if(G.filtro){const l=G.listas.find(x=>x.id===G.filtro);v=l?v.filter(a=>l.ids.has(a.id)):v}
   return v;
 }
-/* editorial ordenado: foto grande arriba y luego filas con un ritmo fijo (nunca al azar). Cada fila tiene la misma altura */
-const GED_D=[[7,5],[4,4,4],[5,7],[6,6],[4,4,4],[8,4],[6,6],[4,8]],GED_M=[[12],[6,6],[8,4],[12],[6,6],[4,8]];
-const GMAR={12:1.5,8:1.25,6:.95,4:.62};
-function gLayoutEd(n){
-  const o=[{s:12,ar:2,ms:12,mar:1.5}];let r=n-1,row=0;
-  const dd=[];let q=r;while(q>0){let p=GED_D[row%GED_D.length];if(q===1)p=[0];else if(q===2)p=[6,6];else if(q===3)p=[4,4,4];else if(q===4)p=[6,6];p=p.slice(0,q);dd.push(...p);q-=p.length;row++}
-  const mm=[];q=r;row=0;while(q>0){let p=GED_M[row%GED_M.length];if(q===1)p=[12];p=p.slice(0,q);mm.push(...p);q-=p.length;row++}
-  dd.forEach((s,i)=>{const solo=s===0,sd=solo?8:s;o.push({s:sd,ar:+(sd*.2).toFixed(2),solo,ms:mm[i],mar:GMAR[mm[i]]})});
-  return o;
+/* editorial: cada foto conserva su proporción real (nada se recorta). Filas de altura igual con ritmo fijo de tres tamaños:
+   1 foto (grande), 2 (mediana) y 3 (pequeña). La primera va sola, como portada del muro. En el teléfono: 1, 2, 2. */
+const GED_D=[2,3,2,1,3,2],GED_M=[2,2,1];
+function gFilasEd(n,movil){
+  const pat=movil?GED_M:GED_D,f=[1];let q=n-1,k=0;
+  while(q>0){const c=Math.min(pat[k%pat.length],q);f.push(c);q-=c;k++}
+  return f;
 }
+const gArIni=a=>a.tipo==='video'?1.778:1.5;
 function gTile(a,i,cap){
   const l=gLink(a.id),on=ST.favs.has(a.id),vid=a.tipo==='video';
   return '<div class="gph" data-i="'+i+'"><button class="ver" aria-label="Abrir foto '+(i+1)+'">'
@@ -357,6 +356,18 @@ function gVaria(im){
   if(r<.92||r>1.08)return;
   t.style.setProperty('--ar',GAR[i%GAR.length]);t.classList.add('va');
 }
+/* proporciones reales de las fotos: se leen de las miniaturas (ya van a cargarse igual) y se guardan para no repetirlo */
+G.ars={};
+function gArFija(fig,w,h){
+  if(!fig||!w||!h)return;const r=+(w/h).toFixed(4);G.ars[fig.dataset.id]=r;if(fig.style.getPropertyValue('--ar')!==String(r))fig.style.setProperty('--ar',r);
+}
+function gArsCarga(v){
+  const cola=v.filter(a=>a.tipo==='imagen'&&!G.ars[a.id]);let act=0;const tk=G.tkAr=(G.tkAr||0)+1;
+  const sig=()=>{while(act<6&&cola.length&&tk===G.tkAr){const a=cola.shift(),l=gLink(a.id),u=l&&(l.urlMini||l.urlVer);if(!u)continue;act++;
+    const im=new Image();const fin=()=>{act--;sig()};
+    im.onload=()=>{const f=document.querySelector('.ged figure[data-id="'+a.id+'"]');G.ars[a.id]=+(im.naturalWidth/im.naturalHeight).toFixed(4);if(f)f.style.setProperty('--ar',G.ars[a.id]);fin()};im.onerror=fin;im.src=u}};
+  sig();
+}
 function gPintaMuro(){
   const cu=$('#gcuerpo'),fl=$('#gfl');if(!cu)return;
   document.querySelectorAll('#gvista button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.v===G.vista)));
@@ -366,16 +377,16 @@ function gPintaMuro(){
   const v=gVisibles();
   if(!v.length){cu.innerHTML='<p style="text-align:center;opacity:.7;padding:40px">Esta lista aún no tiene fotos. Toca el corazón en las que más te gusten.</p>';return}
   if(G.vista==='editorial'){
-    const lay=gLayoutEd(v.length);
-    cu.innerHTML='<div class="ged">'+v.map((a,i)=>{
-      const L=lay[i];
-      return '<figure class="'+(i===0?'heroe ':'')+(L.solo?'solo':'')+'" style="--s:'+L.s+';--ar:'+L.ar+';--ms:'+L.ms+';--mar:'+L.mar+'">'+gTile(a,i)+'</figure>';
+    const filas=gFilasEd(v.length,matchMedia('(max-width:720px)').matches);let p=0;
+    cu.innerHTML='<div class="ged">'+filas.map(c=>{
+      const fs=v.slice(p,p+c).map((a,x)=>'<figure'+(c===1?' class="uno"':'')+' style="--ar:'+(G.ars&&G.ars[a.id]||gArIni(a))+'" data-id="'+a.id+'">'+gTile(a,p+x)+'</figure>').join('');
+      p+=c;return '<div class="er">'+fs+'</div>';
     }).join('')+'</div>';
-    const h=v[0];if(h&&h.tipo==='imagen'){const mh=gMetaHtml(h);if(mh)cu.querySelector('figure.heroe').insertAdjacentHTML('beforeend',mh)}
+    gArsCarga(v);
   }else{
     cu.innerHTML='<div class="gcol">'+v.map((a,i)=>gTile(a,i)).join('')+'</div>';
   }
-  cu.querySelectorAll('img').forEach(im=>{const ok=()=>{im.classList.add('ok');gVaria(im)};im.complete?ok():im.onload=ok;im.onerror=()=>im.classList.add('ok')});
+  cu.querySelectorAll('img').forEach(im=>{const ok=()=>{im.classList.add('ok');gVaria(im);gArFija(im.closest('figure'),im.naturalWidth,im.naturalHeight)};im.complete?ok():im.onload=ok;im.onerror=()=>im.classList.add('ok')});
   cu.querySelectorAll('.gph').forEach(t=>{
     t.querySelector('.ver').onclick=()=>gAbrirVisor(+t.dataset.i);
     t.querySelectorAll('.acts button').forEach(b=>b.onclick=e=>{e.stopPropagation();const a=ST.arch.find(x=>x.id===b.dataset.id);

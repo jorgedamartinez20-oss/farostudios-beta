@@ -103,7 +103,6 @@ body.g{background:var(--g-bg);color:var(--g-tx);font-family:var(--g-ft2)}
 @media(hover:hover){
   .gph{transition:transform .45s cubic-bezier(.2,.8,.2,1),box-shadow .45s ease,opacity .4s ease,filter .4s ease}
   .gph:hover{transform:translateY(-5px) scale(1.012);box-shadow:0 26px 46px -18px rgba(0,0,0,.55);z-index:2}
-  .gcol:hover .gph:not(:hover),.ged:hover .gph:not(:hover){opacity:.7;filter:saturate(.82)}
   .gph .acts{transform:translateY(10px);transition:opacity .25s,transform .35s cubic-bezier(.2,.8,.2,1)}
   .gph:hover .acts,.gph:focus-within .acts{transform:none}
 }
@@ -116,26 +115,20 @@ body.g{background:var(--g-bg);color:var(--g-tx);font-family:var(--g-ft2)}
 .gph .vid{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);color:#fff;background:rgba(0,0,0,.35);border-radius:50%;width:54px;height:54px;display:grid;place-items:center;pointer-events:none}
 @media(hover:none){.gph .acts{opacity:1;padding-top:14px}.gph .acts button{width:36px;height:36px}}
 
-/* editorial: foto grande arriba y filas ordenadas, cada foto con su marco (passe-partout) */
-.ged{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:clamp(14px,2.2vw,30px);align-items:stretch}
-.ged>figure{margin:0;grid-column:span var(--s);aspect-ratio:var(--ar);display:grid;min-height:0}
-.ged>figure.solo{grid-column:3/span 8}
-.ged>figure.heroe{aspect-ratio:auto;display:block}
-.ged>figure.heroe .gph{aspect-ratio:var(--ar);height:auto}
-.ged .gph{margin:0;min-height:0;height:100%;display:flex;padding:clamp(7px,1vw,14px);background:color-mix(in srgb,var(--g-tx) 7%,var(--g-bg));border:1px solid color-mix(in srgb,var(--g-tx) 16%,transparent);box-shadow:0 22px 46px -24px rgba(0,0,0,.5)}
-.ged .gph>button.ver{flex:1;min-width:0;min-height:0;height:100%;overflow:hidden;outline:1px solid color-mix(in srgb,var(--g-tx) 14%,transparent);outline-offset:-1px}
-.ged .gph img,.ged .gph video{height:100%;object-fit:cover}
-.ged .gph .acts{left:clamp(7px,1vw,14px);right:clamp(7px,1vw,14px);bottom:clamp(7px,1vw,14px)}
+/* editorial: filas de altura igual; el ancho de cada foto sigue su proporción real (flex-grow = proporción, base = marco) y nada se recorta */
+.ged{--p:clamp(7px,1vw,14px);--g:clamp(14px,2.2vw,30px);display:flex;flex-direction:column;gap:var(--g)}
+.ged .er{display:flex;gap:var(--g);align-items:flex-start;justify-content:center}
+.ged figure{margin:0;flex:var(--ar,1.5) 1 calc(var(--p)*2);min-width:0}
+.ged figure.uno{flex:0 1 min(100%,calc(var(--ar,1.5)*80vh + var(--p)*2))}
+.ged .gph{margin:0;min-height:0;display:block;padding:var(--p);background:color-mix(in srgb,var(--g-tx) 7%,var(--g-bg));border:1px solid color-mix(in srgb,var(--g-tx) 16%,transparent);box-shadow:0 22px 46px -24px rgba(0,0,0,.5)}
+.ged .gph>button.ver{display:block;width:100%;aspect-ratio:var(--ar,1.5);overflow:hidden;outline:1px solid color-mix(in srgb,var(--g-tx) 14%,transparent);outline-offset:-1px}
+.ged .gph img,.ged .gph video{width:100%;height:100%;object-fit:cover}
+.ged .gph .acts{left:var(--p);right:var(--p);bottom:var(--p)}
 .gmeta{display:flex;flex-wrap:wrap;justify-content:center;gap:6px 26px;background:var(--pizarra);color:#F5F2EE;padding:13px 18px;font-size:.88rem;letter-spacing:.04em}
 .gmeta b{font-weight:700;color:var(--oro);font-size:.72rem;letter-spacing:.2em;margin-right:7px}
 @media(max-width:720px){
   .gcol{columns:2;column-gap:8px}.gph{margin-bottom:8px}
-  .ged{gap:10px}
-  .ged>figure,.ged>figure.solo{grid-column:span var(--ms);aspect-ratio:var(--mar)}
-  .ged>figure.heroe{aspect-ratio:auto;grid-column:1/-1}
-  .ged>figure.heroe .gph{aspect-ratio:var(--mar)}
-  .ged .gph{padding:6px}
-  .ged .gph .acts{left:6px;right:6px;bottom:6px}
+  .ged{--p:6px;--g:10px}
 }
 
 /* cierre */
