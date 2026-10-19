@@ -1884,11 +1884,11 @@ function pfEncuadre(url,get,set,k,esV){
   return el('details',{class:'enc'},el('summary',{},esV?'Encuadre del video':'Encuadre de la foto'),el('small',{class:'muted'},'Toca la parte '+(esV?'del video':'de la foto')+' que quieres que siempre se vea. A la derecha, cómo queda en la casilla.'),el('div',{class:'encw'},full,crop),rs)}
 function pfVista(P,ord){
   const nom=id=>{const bi=/^w\d+$/.test(id)?+id.slice(1)-1:-1;if(bi>=0)return(P.over[id]&&P.over[id].n)||PF_BASE[bi][0];const x=P.extra.find(z=>z.id===id);return(x&&x.n)||'Nueva'};
-  const med=id=>{const bi=/^w\d+$/.test(id)?+id.slice(1)-1:-1;if(bi>=0)return{u:sitioVal('img.'+id),v:false,p:(P.over[id]||{}).p};const x=P.extra.find(z=>z.id===id);return x?{u:x.src,v:x.type==='vid',p:x.p}:{}};
+  const med=id=>{const bi=/^w\d+$/.test(id)?+id.slice(1)-1:-1;if(bi>=0){const iu=sitioVal('img.'+id),vu=sitioVal('vid.'+id),p=(P.over[id]||{}).p;return iu?{u:iu,v:false,p}:vu?{u:vu,v:true,p}:{u:'',v:false,p}}const x=P.extra.find(z=>z.id===id);return x?{u:x.src,v:x.type==='vid',p:x.p}:{}};
   const oculto=id=>/^w\d+$/.test(id)?P.off.includes(id):(P.extra.find(z=>z.id===id)||{}).on===false;
   let from=-1;
   const cell=(id,k,geo)=>{const m=med(id),c=el('div',{class:'pvc'+(oculto(id)?' off':''),'data-id':id,draggable:'true',title:'Arrastra para cambiar de lugar · clic para ir a su casilla'},
-      m.u&&!m.v?el('img',{src:m.u,alt:'',loading:'lazy',draggable:'false',style:'object-position:'+(m.p||'50% 50%')}):m.u&&m.v?(()=>{const v=vidThumb(m.u);v.style.objectPosition=m.p||'50% 50%';return v})():null,el('i',{},String(k+1)),el('span',{},nom(id)));
+      m.u?pubThumb(m.u,m.v,m.p):null,el('i',{},String(k+1)),el('span',{},nom(id)));
     if(geo)c.style.cssText='grid-column:'+geo[0]+' / span '+geo[2]+';grid-row:'+geo[1]+' / span '+geo[3];
     c.addEventListener('dragstart',e=>{from=k;c.classList.add('drag');try{e.dataTransfer.setData('text/plain',String(k));e.dataTransfer.effectAllowed='move'}catch(_){}});
     c.addEventListener('dragend',()=>{c.classList.remove('drag');$$('.pvc.over').forEach(x=>x.classList.remove('over'))});
@@ -1932,7 +1932,7 @@ function rPfTablones(card){
       const x=P.extra.find(z=>z.id===id);if(!x)return;
       const fi=el('input',{type:'file',accept:'image/*,video/*',style:'display:none'});
       fi.addEventListener('change',async()=>{const f=fi.files[0];if(!f)return;try{toast('Subiendo…');x.src=await pfSubir('pf-'+x.id,f);x.type=/^video\//.test(f.type)?'vid':'img';await pfGuardar()}catch(e){toast(e.message||'No se pudo subir')}});
-      const prev=el('div',{class:'stp'},x.src?(x.type==='vid'?vidThumb(x.src):el('img',{src:x.src,alt:'',loading:'lazy'})):icoEl('image'));
+      const prev=el('div',{class:'stp'},x.src?pubThumb(x.src,x.type==='vid'):icoEl('image'));
       const ck=el('input',{type:'checkbox'});ck.checked=x.on!==false;ck.addEventListener('change',()=>{x.on=ck.checked});
       const nm=el('input',{type:'text',maxlength:'30',placeholder:'Nombre','aria-label':'Nombre de la casilla '+(k+1)});nm.value=x.n||'';nm.addEventListener('input',()=>{x.n=nm.value});
       t=el('div',{class:'st'+(x.src?' on':'')},prev,el('b',{},'Casilla nueva'),el('span',{class:'stg'},x.src?(x.type==='vid'?'✓ Video cargado (se reproduce solo)':'✓ Foto cargada'):'Vacío · sube una foto o un video'),
@@ -2334,6 +2334,17 @@ async function pubMinisPreparar(onProg){
   };
   await Promise.all(Array.from({length:Math.min(3,cola.length)},async()=>{while(cola.length)await uno(cola.shift())}));
   return{hechos:listos,fallaron:mal,total:lista.length};
+}
+/* miniatura para las vistas previas del Workspace: la copia liviana si existe (instantánea), si no el original */
+function pubMiniUrl(u){
+  try{const s=new Set(JSON.parse(sitioVal('minis')||'[]')||[]);if(!s.has(u))return '';const k=pubKeyDe(u);return k?FILES+'/pub/'+matKey(pubMiniKey(k)):''}catch(e){return ''}
+}
+function pubThumb(u,esVid,pos){
+  const pp=pos||'50% 50%',vid=()=>{const v=vidThumb(u);v.style.objectPosition=pp;return v},m=pubMiniUrl(u);
+  if(m){const i=el('img',{src:m,alt:'',loading:'lazy',draggable:'false'});i.style.objectPosition=pp;
+    i.addEventListener('error',()=>{if(esVid)i.replaceWith(vid());else i.src=u},{once:true});return i}
+  if(esVid)return vid();
+  const i=el('img',{src:u,alt:'',loading:'lazy',draggable:'false'});i.style.objectPosition=pp;return i;
 }
 function pubMinisCard(){
   const c=el('div',{class:'card sgp'});
