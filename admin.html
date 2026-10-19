@@ -412,6 +412,15 @@ button,.btn,.chip,.nav,.tab,.stab,.seg{-webkit-user-select:none;user-select:none
 .mda{border-style:dashed;justify-content:center}
 .mdd{border:1px solid var(--line);border-radius:16px;padding:clamp(12px,2vw,18px);background:var(--soft)}
 .mdd h3{font-size:1.15rem;margin-bottom:6px}
+.sit-borr{border-color:var(--oro-t)!important;box-shadow:0 0 0 3px rgba(184,160,106,.28)}
+.dsk-ver{margin-top:16px;padding:14px 16px;border:1px solid var(--line);border-radius:14px;background:var(--card,#fff);box-shadow:0 6px 18px rgba(0,0,0,.06)}
+.dsk-ver h4{font-size:1rem;margin-bottom:10px}
+.dvl{list-style:none;margin:0 0 8px;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:8px}
+.dv{display:grid;grid-template-columns:26px 1fr;column-gap:8px;align-items:center;padding:8px 10px;border-radius:10px;border:1px solid var(--line)}
+.dv .dvi{grid-row:span 2;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:.85rem}
+.dv.si{background:rgba(120,160,110,.12)}.dv.si .dvi{background:#5f8f55;color:#fff}
+.dv.no .dvi{background:var(--line);color:var(--muted)}.dv.no b{color:var(--muted)}
+.dv small,.dv em{font-size:.76rem;color:var(--muted);font-style:normal;grid-column:2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .mdcols{display:grid;grid-template-columns:minmax(0,1fr);gap:14px;align-items:start}
 @media (min-width:760px){.mdcols{grid-template-columns:minmax(200px,.8fr) minmax(0,1.4fr)}}
 .mdcols .mdf{grid-template-columns:repeat(auto-fill,minmax(min(150px,100%),1fr))}
@@ -2061,7 +2070,7 @@ function detalle(o){
   if((o.textos||[]).length)cols.append(el('div',{class:'sgf mdx'},o.textos.map(t=>campoTxt(t,ins))));
   box.append(cols);
   const acts=el('div',{class:'acts',style:'margin-top:12px'});
-  if(ins.length)acts.append(el('button',{class:'btn btn-gold',type:'button',onclick:()=>sitioTxt(ins)},icoEl('check'),' Guardar textos'));
+  if(ins.length&&!o.sinGuardar)acts.append(el('button',{class:'btn btn-gold',type:'button',onclick:()=>sitioTxt(ins)},icoEl('check'),' Guardar textos'));
   (o.extra||[]).forEach(x=>acts.append(x));
   if(acts.children.length)box.append(acts);
   return box;
@@ -2118,9 +2127,19 @@ function rDiscos(card){
   const sel=selDe('discos',8),n=sel+1;
   card.append(el('p',{class:'muted'},'Toca un disco para cargar su portada, su audio (MP3) y sus datos: título, artista, año, género y artistas similares. Todo queda junto en el mismo lugar.'));
   card.append(mdChips(rng('',8).map(x=>({l:sitioVal('at.'+x)||'Disco '+x,s:sitioVal('aa.'+x)||(sitioVal('audio.alb'+x)?'Con audio':'Vacío'),img:sitioVal('img.alb'+x),on:!!(sitioVal('img.alb'+x)||sitioVal('audio.alb'+x)),i:'music'})),sel,i=>{SIT.sel.discos=i;renderSitio()}));
-  card.append(detalle({titulo:'Disco '+n,dest:'landing/producciones-musicales',
+  const pan=el('div',{class:'dsk-ver',id:'dsk-ver',role:'status','aria-live':'polite'});
+  const guardar=el('button',{class:'btn btn-gold',type:'button',onclick:async e=>{
+    const b=e.currentTarget;b.disabled=true;
+    try{const ks=['at.','aa.','ay.','ag.','as.'].map(p=>p+n);
+      await sitioTxt($$('.sit-txt').filter(i=>ks.includes(i.dataset.k)));   /* guarda los textos y recarga */
+      await discoVerificar(n,$('#dsk-ver'))}finally{b.disabled=false}}},icoEl('check'),' Guardar disco');
+  const d=detalle({titulo:'Disco '+n,dest:'landing/producciones-musicales',sinGuardar:true,
+    nota:'Al subir el MP3, la portada y los datos que traiga (título, artista, año, género) se llenan solos. Revisa y pulsa «Guardar disco». «Artistas similares» se escribe a mano.',
     archivos:[{k:'img.alb'+n,l:'Portada',t:'img'},{k:'audio.alb'+n,l:'Audio (MP3)',t:'audio'}],
-    textos:[TX('at.'+n,'Título','Sencillo 01'),TX('aa.'+n,'Artista','Nombre del artista'),TX('ay.'+n,'Año','2026'),TX('ag.'+n,'Género','Ej. Pop cristiano'),TX('as.'+n,'Artistas similares','Ej. Alex Campos, Miel San Marcos')]}));
+    textos:[TX('at.'+n,'Título','Sencillo 01'),TX('aa.'+n,'Artista','Nombre del artista'),TX('ay.'+n,'Año','2026'),TX('ag.'+n,'Género','Ej. Pop cristiano'),TX('as.'+n,'Artistas similares','Ej. Alex Campos, Miel San Marcos')],
+    extra:[guardar]});
+  d.append(pan);card.append(d);
+  discoVerificar(n,pan);   /* al abrir un disco ya muestra qué hay guardado de verdad */
 }
 
 /* --- Catálogo: PDF + textos de las páginas --- */
@@ -2198,10 +2217,16 @@ function sitioRow(it,dest){
   if(['img','audio','pdf','vid'].includes(it.t)){
     const fi=el('input',{type:'file',accept:it.t==='img'?'image/*':it.t==='audio'?'audio/*':it.t==='vid'?'video/*':'application/pdf',style:'display:none'});
     fi.addEventListener('change',async()=>{const f=fi.files[0];if(!f)return;
-      try{toast('Subiendo…');let u;
-        if(FILES&&dest){u=await matSubirPublico(it,dest,f)}   /* R2: carpeta pública del landing */
-        else{const p=await upTo('sitio',it.k.replace(/[^\w]+/g,'_')+'/'+Date.now()+'-'+safeName(f.name),f,25);u=SB.url+'/storage/v1/object/public/sitio/'+p}
-        await sitioSet(it.k,u);toast('Guardado');await loadAc()}catch(e){toast(e.message||'No se pudo subir')}});
+      const dm=it.t==='audio'&&/^audio\.alb(\d+)$/.exec(it.k);  /* audio de un disco: además lee sus etiquetas */
+      try{toast('Subiendo…');
+        const meta=dm?await id3Leer(f).catch(()=>null):null;
+        const u=await sitioSubirArch(it,dest,f);   /* R2: carpeta pública del landing */
+        await sitioSet(it.k,u);
+        let por=false;if(dm&&meta){try{por=await discoPortada(+dm[1],meta,dest)}catch(e){toast('El audio se guardó, pero la portada no se pudo subir: '+(e.message||'error'))}}
+        await loadAc();
+        if(dm){const n=+dm[1],c=meta?discoBorrador(n,meta):0;
+          toast(meta?('Audio guardado. Leí del MP3: '+[por?'portada':'',c?c+' dato'+(c>1?'s':''):''].filter(Boolean).join(' y ')+(por||c?' · revisa y pulsa «Guardar disco»':'· no traía datos nuevos')):'Audio guardado. Este MP3 no trae etiquetas: llena los datos a mano')}
+        else toast('Guardado')}catch(e){toast(e.message||'No se pudo subir')}});
     const prev=el('div',{class:'stp'},v&&it.t==='img'?el('img',{src:v,alt:'',loading:'lazy',decoding:'async'}):v&&it.t==='vid'?vidThumb(v):icoEl(it.t==='img'?'image':it.t==='audio'?'music':it.t==='vid'?'camera':'pdf'));
     if(v&&it.t!=='img'){prev.style.cursor='pointer';prev.addEventListener('click',()=>window.open(v,'_blank','noopener'))}
     const tile=el('div',{class:'st'+(v?' on':''),title:it.k},prev,el('b',{},it.l),
@@ -2223,6 +2248,104 @@ async function sitioTxt(inputs){
     toast(n?'Guardado ('+n+')':'No hay cambios');await loadAc()}catch(e){toast(e.message||'No se pudo guardar')}
 }
 $('#sit-save').addEventListener('click',()=>sitioTxt($$('.sit-txt')));
+
+/* ---------- DISCOS · lectura automática de las etiquetas del MP3 (ID3) ----------
+   Se lee solo el archivo que el usuario eligió, en su navegador. La portada se sube con sus bytes originales (sin recomprimir ni retocar). */
+const id3Sync=(b,o)=>((b[o]&127)<<21)|((b[o+1]&127)<<14)|((b[o+2]&127)<<7)|(b[o+3]&127);
+function id3Txt(enc,u){
+  let l='iso-8859-1';
+  if(enc===1){if(u[0]===0xFE&&u[1]===0xFF){l='utf-16be';u=u.subarray(2)}else{l='utf-16le';if(u[0]===0xFF&&u[1]===0xFE)u=u.subarray(2)}}
+  else if(enc===2)l='utf-16be';else if(enc===3)l='utf-8';
+  return new TextDecoder(l).decode(u).replace(/\u0000[\s\S]*$/,'').trim();
+}
+/* APIC/PIC: codificación, tipo MIME, tipo de imagen, descripción y los bytes de la imagen */
+function id3Portada(d,ver){
+  const enc=d[0];let i;
+  if(ver===2)i=4;else{i=1;while(i<d.length&&d[i]!==0)i++;i++}
+  const tipo=d[i];i++;
+  if(enc===1||enc===2){while(i+1<d.length&&!(d[i]===0&&d[i+1]===0))i+=2;i+=2}else{while(i<d.length&&d[i]!==0)i++;i++}
+  const data=d.subarray(i);if(data.length<64)return null;
+  const mime=data[0]===0xFF&&data[1]===0xD8?'image/jpeg':data[0]===0x89&&data[1]===0x50?'image/png':data[0]===0x47&&data[1]===0x49?'image/gif':data[0]===0x52&&data[1]===0x49?'image/webp':null;
+  return mime?{data,mime,tipo}:null;
+}
+async function id3Leer(f){
+  const out={};
+  const h=new Uint8Array(await f.slice(0,10).arrayBuffer());
+  if(h[0]===0x49&&h[1]===0x44&&h[2]===0x33&&h[3]>=2&&h[3]<=4){
+    const ver=h[3],flags=h[5],size=id3Sync(h,6);
+    let b=new Uint8Array(await f.slice(10,10+size).arrayBuffer());
+    if(ver<4&&(flags&0x80)){const t=[];for(let k=0;k<b.length;k++){t.push(b[k]);if(b[k]===0xFF&&b[k+1]===0)k++}b=Uint8Array.from(t)} /* "unsynchronisation" */
+    let p=0;
+    if(ver>=3&&(flags&0x40))p=ver===4?id3Sync(b,0):(((b[0]<<24)|(b[1]<<16)|(b[2]<<8)|b[3])>>>0)+4;
+    const il=ver===2?3:4,hd=ver===2?6:10;
+    while(p+hd<=b.length){
+      const id=String.fromCharCode(...b.subarray(p,p+il));if(!/^[A-Z0-9]+$/.test(id))break;
+      const sz=ver===2?((b[p+3]<<16)|(b[p+4]<<8)|b[p+5]):ver===4?id3Sync(b,p+4):(((b[p+4]<<24)|(b[p+5]<<16)|(b[p+6]<<8)|b[p+7])>>>0);
+      const d=b.subarray(p+hd,p+hd+sz);p+=hd+sz;if(!sz)continue;
+      const tx=()=>id3Txt(d[0],d.subarray(1));
+      if(id==='TIT2'||id==='TT2')out.t=out.t||tx();
+      else if(id==='TPE1'||id==='TP1')out.a=out.a||tx();
+      else if(id==='TPE2'||id==='TP2')out.a2=out.a2||tx();
+      else if(id==='TDRC'||id==='TYER'||id==='TYE'||id==='TDRL'){const m=/(\d{4})/.exec(tx());if(m&&!out.y)out.y=m[1]}
+      else if(id==='TCON'||id==='TCO'){const g=tx().replace(/^(\(\d+\))+/,'').trim();if(g&&!/^\d+$/.test(g)&&!out.g)out.g=g}
+      else if(id==='APIC'||id==='PIC'){const pc=id3Portada(d,ver);if(pc&&(!out.pic||(pc.tipo===3&&out.pic.tipo!==3)))out.pic=pc}
+    }
+  }
+  /* respaldo: etiqueta antigua ID3v1 (últimos 128 bytes) para lo que falte */
+  if(f.size>=128){
+    const e=new Uint8Array(await f.slice(f.size-128).arrayBuffer());
+    if(e[0]===0x54&&e[1]===0x41&&e[2]===0x47){
+      const s=(a,z)=>new TextDecoder('iso-8859-1').decode(e.subarray(a,z)).replace(/\u0000[\s\S]*$/,'').trim();
+      out.t=out.t||s(3,33);out.a=out.a||s(33,63);const y=s(93,97);if(/^\d{4}$/.test(y)&&!out.y)out.y=y;
+    }
+  }
+  out.a=out.a||out.a2;delete out.a2;
+  return(out.t||out.a||out.y||out.g||out.pic)?out:null;
+}
+/* sube un archivo del sitio (mismo camino que el botón «Subir») y devuelve su dirección pública */
+async function sitioSubirArch(it,dest,f){
+  if(FILES&&dest)return await matSubirPublico(it,dest,f);
+  const p=await upTo('sitio',it.k.replace(/[^\w]+/g,'_')+'/'+Date.now()+'-'+safeName(f.name),f,25);
+  return SB.url+'/storage/v1/object/public/sitio/'+p;
+}
+/* portada incrustada del MP3 → casilla «Portada»; no pisa una portada que ya subiste */
+async function discoPortada(n,meta,dest){
+  if(!meta||!meta.pic||sitioVal('img.alb'+n))return false;
+  const ext={'image/jpeg':'jpg','image/png':'png','image/gif':'gif','image/webp':'webp'}[meta.pic.mime];
+  const f=new File([meta.pic.data],'portada-disco-'+n+'.'+ext,{type:meta.pic.mime});
+  const it={k:'img.alb'+n,l:'Portada',t:'img'};
+  await sitioSet(it.k,await sitioSubirArch(it,dest,f));return true;
+}
+/* textos leídos → casillas vacías, como borrador (se guardan con «Guardar disco»); nunca pisan lo que ya escribiste */
+function discoBorrador(n,meta){
+  let c=0;
+  [['at.',meta.t],['aa.',meta.a],['ay.',meta.y],['ag.',meta.g]].forEach(([p,v])=>{
+    const i=v&&$('.sit-txt[data-k="'+p+n+'"]');if(i&&!i.value.trim()&&!sitioVal(p+n)){i.value=v;i.classList.add('sit-borr');c++}});
+  return c;
+}
+const DSK_CAMPOS=[['img.alb','Portada'],['audio.alb','Audio (MP3)'],['at.','Título'],['aa.','Artista'],['ay.','Año'],['ag.','Género'],['as.','Artistas similares']];
+/* lee de la base de datos lo que realmente quedó guardado de este disco y lo muestra como lista de comprobación */
+async function discoVerificar(n,pan){
+  if(!pan)return;pan.textContent='';pan.append(el('p',{class:'muted'},'Comprobando lo guardado…'));
+  let filas=[];
+  try{const ks=DSK_CAMPOS.map(c=>c[0]+n);
+    const r=await api('/rest/v1/sitio_config?select=clave,valor,actualizado&clave=in.('+ks.join(',')+')');
+    if(!r.ok)throw new Error(await errText(r));filas=await r.json()}
+  catch(e){pan.textContent='';pan.append(el('div',{class:'msg'},'No pude comprobar lo guardado: '+(e.message||'error de conexión')));return}
+  const por={};filas.forEach(x=>por[x.clave]=x);
+  const hoy=t=>t?new Date(t).toLocaleString('es-GT',{timeZone:'America/Guatemala',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'';
+  const lis=[];let ok=0;
+  for(const [p,l] of DSK_CAMPOS){
+    const x=por[p+n],arch=p==='img.alb'||p==='audio.alb';
+    if(!x||!String(x.valor||'').trim()){lis.push(el('li',{class:'dv no'},el('span',{class:'dvi'},'—'),el('b',{},l),el('small',{},'Vacío')));continue}
+    ok++;let est='Guardado';
+    if(arch){try{const h=await fetch(x.valor,{method:'HEAD'});est=h.ok?'Guardado · el archivo responde':'⚠ Guardado, pero el archivo no responde (error '+h.status+')'}catch(e){}}
+    lis.push(el('li',{class:'dv si'},el('span',{class:'dvi'},'✓'),el('b',{},l),el('small',{},est+(x.actualizado?' · '+hoy(x.actualizado):'')),arch?null:el('em',{},String(x.valor).slice(0,60))));
+  }
+  pan.textContent='';
+  pan.append(el('h4',{},'Estado del disco '+n+': '+ok+' de '+DSK_CAMPOS.length+' guardados'),el('ul',{class:'dvl'},lis),
+    el('small',{class:'muted'},'Comprobado en la base de datos a las '+new Date().toLocaleTimeString('es-GT',{timeZone:'America/Guatemala'})));
+}
 
 /* ---------- MATERIALES · archivos en Cloudflare R2 ----------
    Datos (quién es quién) = Supabase. Archivos = R2, a través del servicio "faro-archivos" (carpeta worker/).
