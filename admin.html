@@ -414,6 +414,13 @@ button,.btn,.chip,.nav,.tab,.stab,.seg{-webkit-user-select:none;user-select:none
 .mdd h3{font-size:1.15rem;margin-bottom:6px}
 .sit-borr{border-color:var(--oro-t)!important;box-shadow:0 0 0 3px rgba(184,160,106,.28)}
 .dsk-ver{margin-top:16px;padding:14px 16px;border:1px solid var(--line);border-radius:14px;background:var(--card,#fff);box-shadow:0 6px 18px rgba(0,0,0,.06)}
+.dsk-pv{margin-top:16px;padding:14px 16px;border:1px solid var(--line);border-radius:14px;background:var(--card,#fff);box-shadow:0 6px 18px rgba(0,0,0,.06)}
+.dsk-pv h4{font-size:1rem;margin-bottom:8px;display:flex;gap:8px;align-items:center}
+.dsk-pv audio{margin:6px 0 10px}
+.pvt{position:relative;height:12px;border-radius:99px;background:var(--line);margin:8px 0 2px;overflow:hidden}
+.pvt i{position:absolute;top:0;bottom:0;border-radius:99px;background:linear-gradient(90deg,#E2CE9B,#B8A06A);box-shadow:0 0 0 1px rgba(0,0,0,.08)}
+.dsk-pv input[type=range]{width:100%}
+.pvr{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin:6px 0 10px}
 .dsk-ver h4{font-size:1rem;margin-bottom:10px}
 .dvl{list-style:none;margin:0 0 8px;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:8px}
 .dv{display:grid;grid-template-columns:26px 1fr;column-gap:8px;align-items:center;padding:8px 10px;border-radius:10px;border:1px solid var(--line)}
@@ -1840,7 +1847,7 @@ const SECC=[
  {id:'equipo',c:'landing',t:'Quiénes somos · fichas',i:'users',keys:eqKeys,r:rEquipo},
  {id:'servicios',c:'landing',t:'Servicios',i:'camera',keys:()=>SERV.flatMap(s=>['vid.'+s[0],'img.'+s[0],'sv.'+s[0]+'.t','sv.'+s[0]+'.d']),r:rServicios},
  {id:'portafolio',c:'landing',t:'Portafolio',i:'image',dest:'landing/portafolio',lead:'Cada casilla en un solo espacio: foto, nombre, categoría y video (se reproduce solo, diluido por el color del tablón). Usa ◀ ▶ para moverla de lugar: las primeras 14 ocupan el mosaico de la página, las demás se acomodan debajo. «Agregar casilla» suma una nueva. El orden, nombres y categorías se publican con «Guardar portafolio».',keys:()=>rng('w',14).flatMap(x=>['img.'+x,'vid.'+x]),r:rPfTablones,after:renderPortafolioMgr},
- {id:'discos',c:'landing',t:'Discos',i:'music',keys:()=>rng('',8).flatMap(n=>['img.alb'+n,'audio.alb'+n,'at.'+n,'aa.'+n,'ay.'+n,'ag.'+n,'as.'+n]),r:rDiscos},
+ {id:'discos',c:'landing',t:'Discos',i:'music',keys:()=>rng('',8).flatMap(n=>['img.alb'+n,'audio.alb'+n,'at.'+n,'aa.'+n,'ay.'+n,'ag.'+n,'as.'+n,'pv.'+n]),r:rDiscos},
  {id:'catalogo',c:'landing',t:'Catálogo',i:'book',keys:()=>['catalogoPdf',...CAT_PAGS.flatMap((_,i)=>['cat.'+i+'.h','cat.'+i+'.p'])],r:rCatalogo},
  {id:'recursos',c:'landing',t:'Recursos gratis',i:'pdf',keys:()=>RECS.flatMap(r=>['pdf.'+r.id,'rt.'+r.id,'rd.'+r.id]),r:rRecursos},
  {id:'resenas',c:'landing',t:'Reseñas',i:'star',keys:()=>rng('',6).flatMap(n=>['rv.'+n+'.q','rv.'+n+'.n','rv.'+n+'.r','img.t'+n]),r:rResenas},
@@ -2134,11 +2141,11 @@ function rDiscos(card){
       await sitioTxt($$('.sit-txt').filter(i=>ks.includes(i.dataset.k)));   /* guarda los textos y recarga */
       await discoVerificar(n,$('#dsk-ver'))}finally{b.disabled=false}}},icoEl('check'),' Guardar disco');
   const d=detalle({titulo:'Disco '+n,dest:'landing/producciones-musicales',sinGuardar:true,
-    nota:'Al subir el MP3, la portada y los datos que traiga (título, artista, año, género) se llenan solos. Revisa y pulsa «Guardar disco». «Artistas similares» se escribe a mano.',
+    nota:'Al subir el MP3, la portada y los datos que traiga (título, artista, año, género) se llenan solos. Revisa y pulsa «Guardar disco». «Artistas similares» se escribe a mano. Abajo eliges qué parte del audio suena como preview en la página (con fundido de entrada y de salida).',
     archivos:[{k:'img.alb'+n,l:'Portada',t:'img'},{k:'audio.alb'+n,l:'Audio (MP3)',t:'audio'}],
     textos:[TX('at.'+n,'Título','Sencillo 01'),TX('aa.'+n,'Artista','Nombre del artista'),TX('ay.'+n,'Año','2026'),TX('ag.'+n,'Género','Ej. Pop cristiano'),TX('as.'+n,'Artistas similares','Ej. Alex Campos, Miel San Marcos')],
     extra:[guardar]});
-  d.append(pan);card.append(d);
+  d.append(discoPreview(n),pan);card.append(d);
   discoVerificar(n,pan);   /* al abrir un disco ya muestra qué hay guardado de verdad */
 }
 
@@ -2222,10 +2229,11 @@ function sitioRow(it,dest){
         const meta=dm?await id3Leer(f).catch(()=>null):null;
         const u=await sitioSubirArch(it,dest,f);   /* R2: carpeta pública del landing */
         await sitioSet(it.k,u);
+        if(dm)for(const pf of ['pv.','pl.']){const kk=pf+dm[1];if(sitioVal(kk))await api('/rest/v1/sitio_config?clave=eq.'+encodeURIComponent(kk),{method:'DELETE',headers:{Prefer:'return=minimal'}})}  /* otro MP3 = otro largo: el preview se elige de nuevo */
         let por=false;if(dm&&meta){try{por=await discoPortada(+dm[1],meta,dest)}catch(e){toast('El audio se guardó, pero la portada no se pudo subir: '+(e.message||'error'))}}
         await loadAc();
         if(dm){const n=+dm[1],c=meta?discoBorrador(n,meta):0;
-          toast(meta?('Audio guardado. Leí del MP3: '+[por?'portada':'',c?c+' dato'+(c>1?'s':''):''].filter(Boolean).join(' y ')+(por||c?' · revisa y pulsa «Guardar disco»':'· no traía datos nuevos')):'Audio guardado. Este MP3 no trae etiquetas: llena los datos a mano')}
+          toast(meta?('Audio guardado (elige abajo su preview). Leí del MP3: '+[por?'portada':'',c?c+' dato'+(c>1?'s':''):''].filter(Boolean).join(' y ')+(por||c?' · revisa y pulsa «Guardar disco»':'· no traía datos nuevos')):'Audio guardado. Este MP3 no trae etiquetas: llena los datos a mano')}
         else toast('Guardado')}catch(e){toast(e.message||'No se pudo subir')}});
     const prev=el('div',{class:'stp'},v&&it.t==='img'?el('img',{src:v,alt:'',loading:'lazy',decoding:'async'}):v&&it.t==='vid'?vidThumb(v):icoEl(it.t==='img'?'image':it.t==='audio'?'music':it.t==='vid'?'camera':'pdf'));
     if(v&&it.t!=='img'){prev.style.cursor='pointer';prev.addEventListener('click',()=>window.open(v,'_blank','noopener'))}
@@ -2323,12 +2331,46 @@ function discoBorrador(n,meta){
     const i=v&&$('.sit-txt[data-k="'+p+n+'"]');if(i&&!i.value.trim()&&!sitioVal(p+n)){i.value=v;i.classList.add('sit-borr');c++}});
   return c;
 }
-const DSK_CAMPOS=[['img.alb','Portada'],['audio.alb','Audio (MP3)'],['at.','Título'],['aa.','Artista'],['ay.','Año'],['ag.','Género'],['as.','Artistas similares']];
+const tFmt=s=>{s=Math.max(0,Math.round(s||0));return Math.floor(s/60)+':'+String(s%60).padStart(2,'0')};
+/* elegir qué parte del audio suena como preview en la página (inicio y duración). La página aplica el fundido de entrada y de salida. */
+function discoPreview(n){
+  const box=el('div',{class:'dsk-pv'}),au0=sitioVal('audio.alb'+n);
+  box.append(el('h4',{},icoEl('music'),' Preview del disco '+n));
+  if(!au0){box.append(el('p',{class:'muted'},'Sube el MP3 para elegir qué parte se escucha en la página.'));return box}
+  const sv=parseFloat(sitioVal('pv.'+n)),sl=parseFloat(sitioVal('pl.'+n));
+  let st=sv>=0?sv:0,ln=sl>=5&&sl<=90?sl:30,tot=0,iv=0;
+  const au=el('audio',{controls:'',preload:'metadata',src:au0,style:'width:100%'});
+  const seg=el('i'),rg=el('input',{type:'range',min:'0',max:'600',step:'1','aria-label':'Segundo donde empieza el preview'});
+  const sel=el('select',{'aria-label':'Duración del preview'},[...new Set([15,20,30,45,60,ln])].sort((a,b)=>a-b).map(v=>el('option',{value:String(v)},v+' s')));
+  const lb=el('b',{class:'pvl'});rg.value=String(st);sel.value=String(ln);
+  const pinta=()=>{const m=tot||Math.max(st+ln,60);seg.style.left=(100*st/m)+'%';seg.style.width=Math.min(100-100*st/m,100*ln/m)+'%';lb.textContent='Empieza en '+tFmt(st)+' · dura '+ln+' s · termina en '+tFmt(st+ln)};
+  const parar=()=>{clearInterval(iv);iv=0;au.volume=1};
+  const oir=()=>{parar();au.currentTime=st;au.volume=0;const pr=au.play();if(pr&&pr.catch)pr.catch(()=>{});
+    const fi=Math.min(1.2,ln/4),fo=Math.min(2.4,ln/3);
+    iv=setInterval(()=>{const t=au.currentTime-st;if(t<0||t>=ln){au.pause();parar();return}au.volume=Math.sin(Math.max(0,Math.min(1,t/fi,(ln-t)/fo))*Math.PI/2)},40)};
+  au.addEventListener('pause',parar);
+  au.addEventListener('loadedmetadata',()=>{tot=au.duration;rg.max=String(Math.max(1,Math.floor(tot-5)));if(st>+rg.max)st=+rg.max;rg.value=String(st);pinta()});
+  rg.addEventListener('input',()=>{st=+rg.value;pinta()});
+  sel.addEventListener('change',()=>{ln=+sel.value;pinta()});
+  const guardar=el('button',{class:'btn btn-gold btn-sm',type:'button',onclick:async e=>{const b=e.currentTarget;b.disabled=true;
+    try{au.pause();await sitioSet('pv.'+n,String(st));await sitioSet('pl.'+n,String(ln));toast('Preview guardado: '+tFmt(st)+' → '+tFmt(st+ln));await loadAc();await discoVerificar(n,$('#dsk-ver'))}
+    catch(err){toast(err.message||'No se pudo guardar')}finally{b.disabled=false}}},icoEl('check'),' Guardar preview');
+  box.append(el('p',{class:'muted'},'Escucha el disco, pausa donde quieras que empiece y pulsa «Marcar inicio aquí» (o mueve la barra). Con «Escuchar preview» oyes ese tramo con su fundido.'),au,
+    el('div',{class:'pvt'},seg),rg,
+    el('div',{class:'pvr'},lb,el('label',{},'Duración ',sel)),
+    el('div',{class:'acts'},
+      el('button',{class:'btn btn-ghost btn-sm',type:'button',onclick:()=>{st=Math.min(Math.floor(au.currentTime),+rg.max);rg.value=String(st);pinta()}},icoEl('music'),' Marcar inicio aquí'),
+      el('button',{class:'btn btn-ghost btn-sm',type:'button',onclick:oir},icoEl('music'),' Escuchar preview'),guardar,
+      !isNaN(sv)?el('button',{class:'btn btn-red btn-sm',type:'button',onclick:async()=>{if(!confirm('¿Quitar el preview elegido? Volverá a sonar desde el inicio.'))return;
+        try{for(const k of ['pv.'+n,'pl.'+n])await api('/rest/v1/sitio_config?clave=eq.'+encodeURIComponent(k),{method:'DELETE',headers:{Prefer:'return=minimal'}});toast('Preview quitado');await loadAc()}catch(err){toast(err.message||'No se pudo quitar')}}},icoEl('trash'),' Quitar'):null));
+  pinta();return box;
+}
+const DSK_CAMPOS=[['img.alb','Portada'],['audio.alb','Audio (MP3)'],['at.','Título'],['aa.','Artista'],['ay.','Año'],['ag.','Género'],['as.','Artistas similares'],['pv.','Preview']];
 /* lee de la base de datos lo que realmente quedó guardado de este disco y lo muestra como lista de comprobación */
 async function discoVerificar(n,pan){
   if(!pan)return;pan.textContent='';pan.append(el('p',{class:'muted'},'Comprobando lo guardado…'));
   let filas=[];
-  try{const ks=DSK_CAMPOS.map(c=>c[0]+n);
+  try{const ks=DSK_CAMPOS.map(c=>c[0]+n).concat('pl.'+n);
     const r=await api('/rest/v1/sitio_config?select=clave,valor,actualizado&clave=in.('+ks.join(',')+')');
     if(!r.ok)throw new Error(await errText(r));filas=await r.json()}
   catch(e){pan.textContent='';pan.append(el('div',{class:'msg'},'No pude comprobar lo guardado: '+(e.message||'error de conexión')));return}
@@ -2337,10 +2379,10 @@ async function discoVerificar(n,pan){
   const lis=[];let ok=0;
   for(const [p,l] of DSK_CAMPOS){
     const x=por[p+n],arch=p==='img.alb'||p==='audio.alb';
-    if(!x||!String(x.valor||'').trim()){lis.push(el('li',{class:'dv no'},el('span',{class:'dvi'},'—'),el('b',{},l),el('small',{},'Vacío')));continue}
+    if(!x||!String(x.valor||'').trim()){lis.push(el('li',{class:'dv no'},el('span',{class:'dvi'},'—'),el('b',{},l),el('small',{},p==='pv.'?'Sin elegir · suena desde 0:00':'Vacío')));continue}
     ok++;let est='Guardado';
     if(arch){try{const h=await fetch(x.valor,{method:'HEAD'});est=h.ok?'Guardado · el archivo responde':'⚠ Guardado, pero el archivo no responde (error '+h.status+')'}catch(e){}}
-    lis.push(el('li',{class:'dv si'},el('span',{class:'dvi'},'✓'),el('b',{},l),el('small',{},est+(x.actualizado?' · '+hoy(x.actualizado):'')),arch?null:el('em',{},String(x.valor).slice(0,60))));
+    lis.push(el('li',{class:'dv si'},el('span',{class:'dvi'},'✓'),el('b',{},l),el('small',{},est+(x.actualizado?' · '+hoy(x.actualizado):'')),arch?null:el('em',{},p==='pv.'?'Empieza en '+tFmt(parseFloat(x.valor))+' · dura '+(parseFloat((por['pl.'+n]||{}).valor)||30)+' s':String(x.valor).slice(0,60))));
   }
   pan.textContent='';
   pan.append(el('h4',{},'Estado del disco '+n+': '+ok+' de '+DSK_CAMPOS.length+' guardados'),el('ul',{class:'dvl'},lis),
