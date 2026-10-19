@@ -2269,7 +2269,8 @@ async function matSubirKey0(file,bucket,key,onProg){
 /* Archivos del landing: van a la carpeta pública y el enlace queda guardado en Sitio web */
 async function matSubirPublico(it,dest,f){
   await matArbol();if(!matDest(dest))dest='landing/fotos-studios';  /* carpeta nueva aún no publicada en el servicio: usa la general */
-  const r=await matSubir(f,dest,'',null,it.k.replace(/[^\w]+/g,'-')+'-'+Date.now()+'-'+f.name);
+  const fo=await mp4Faststart(f);  /* mismo video, solo reordenado para que empiece a verse sin bajarse completo */
+  const r=await matSubir(fo,dest,'',null,it.k.replace(/[^\w]+/g,'-')+'-'+Date.now()+'-'+f.name);
   const url=FILES+'/pub/'+matKey(r.key);
   if(r.bucket==='publico'&&await pubMiniSubir(f,r.key))await pubMinisAdd([url]);
   return url;
@@ -2372,6 +2373,64 @@ function pubThumb(u,esVid,pos){
   if(esVid)return vid();
   const i=el('img',{src:u,alt:'',loading:'lazy',draggable:'false'});i.style.objectPosition=pp;return i;
 }
+/* ---------- videos que arrancan rápido (mp4 «faststart») ----------
+   Muchos programas de edición guardan el índice del mp4 AL FINAL del archivo: el navegador tiene que bajar casi todo el video antes de mostrar el primer cuadro.
+   Aquí solo se mueve ese índice al principio (el video no se vuelve a comprimir: misma calidad, mismos bytes de imagen). */
+async function mp4Cajas(f){
+  const out=[];let o=0;
+  while(o+8<=f.size){
+    const h=new Uint8Array(await f.slice(o,o+16).arrayBuffer()),dv=new DataView(h.buffer);
+    let s=dv.getUint32(0),hs=8;const t=String.fromCharCode(h[4],h[5],h[6],h[7]);
+    if(s===1&&h.length>=16){s=Number(dv.getBigUint64(8));hs=16}else if(s===0)s=f.size-o;
+    if(s<hs||!/^[\x20-\x7e]{4}$/.test(t))break;
+    out.push({t,o,s,hs});o+=s;
+  }
+  return out;
+}
+async function mp4Faststart(f){
+  try{
+    if(!/\.(mp4|m4v|mov)$/i.test(f.name||'')&&!/^video\/(mp4|quicktime)$/.test(f.type||''))return f;
+    const c=await mp4Cajas(f),mi=c.findIndex(b=>b.t==='moov'),di=c.findIndex(b=>b.t==='mdat');
+    if(mi<0||di<0||mi<di||c.some(b=>b.t==='moof'))return f;
+    const m=c[mi];if(m.s>200*1024*1024)return f;
+    const buf=new Uint8Array(await f.slice(m.o,m.o+m.s).arrayBuffer()),dv=new DataView(buf.buffer);let mal=false;
+    const walk=(s,e)=>{let o=s;while(o+8<=e){
+      let sz=dv.getUint32(o),hs=8;const t=String.fromCharCode(buf[o+4],buf[o+5],buf[o+6],buf[o+7]);
+      if(sz===1){sz=Number(dv.getBigUint64(o+8));hs=16}else if(sz===0)sz=e-o;
+      if(sz<hs||o+sz>e)break;
+      if(t==='trak'||t==='mdia'||t==='minf'||t==='stbl')walk(o+hs,o+sz);
+      else if(t==='stco'){const n=dv.getUint32(o+hs+4);for(let i=0;i<n;i++){const p=o+hs+8+i*4,v=dv.getUint32(p)+m.s;if(v>0xFFFFFFFF){mal=true;return}dv.setUint32(p,v)}}
+      else if(t==='co64'){const n=dv.getUint32(o+hs+4);for(let i=0;i<n;i++){const p=o+hs+8+i*8;dv.setBigUint64(p,dv.getBigUint64(p)+BigInt(m.s))}}
+      o+=sz}};
+    walk(m.hs,m.s);if(mal)return f;
+    const partes=[];c.forEach((b,i)=>{if(i===mi)return;if(i===di)partes.push(buf);partes.push(f.slice(b.o,b.o+b.s))});
+    return new File(partes,f.name,{type:f.type||'video/mp4'});
+  }catch(e){return f}
+}
+/* revisa los videos ya subidos y reordena los que lo necesitan */
+async function pubVideosOptimizar(onProg){
+  const base=FILES+'/pub/',hall=new Set();
+  Object.values(AC.cfg||{}).forEach(v=>{if(typeof v!=='string')return;(v.match(/https?:\/\/[^\s"'\\]+\/pub\/landing\/[^\s"'\\]+/g)||[]).forEach(u=>{if(u.startsWith(base)&&PUB_VID.test(u.split('?')[0]))hall.add(u)})});
+  const lista=[...hall],cola=[...lista];let i=0,arreglados=0,bien=0,mal=0,mb=[];
+  const uno=async u=>{
+    try{
+      const k=pubKeyDe(u),r=await fetch(u,{headers:{Range:'bytes=0-0'}}),tot=+((r.headers.get('content-range')||'').split('/')[1]||0);
+      if(tot)mb.push(Math.round(tot/1048576));
+      /* mira solo las cabeceras de las cajas del mp4, con pedidos chicos */
+      const rf={size:tot,slice:(a,b)=>({arrayBuffer:async()=>(await fetch(u,{headers:{Range:'bytes='+a+'-'+(Math.min(b,tot)-1)}})).arrayBuffer()})};
+      const c=await mp4Cajas(rf),mi=c.findIndex(b=>b.t==='moov'),di=c.findIndex(b=>b.t==='mdat');
+      if(mi>=0&&di>=0&&mi<di)bien++;
+      else if(mi>=0&&di>=0){
+        const bl=await (await fetch(u)).blob(),fo=await mp4Faststart(new File([bl],k.split('/').pop(),{type:'video/mp4'}));
+        if(fo.size===bl.size&&fo!==bl){await matSubirKey0(fo,'publico',k,null);arreglados++}else mal++;
+      }else mal++;
+    }catch(e){mal++}
+    i++;if(onProg)onProg(i,lista.length);
+  };
+  if(onProg)onProg(0,lista.length);
+  await Promise.all(Array.from({length:Math.min(2,cola.length)},async()=>{while(cola.length)await uno(cola.shift())}));
+  return{total:lista.length,arreglados,bien,mal,mb};
+}
 /* revisa las copias de videos ya subidas y rehace las que quedaron negras */
 async function pubMinisRehacer(onProg){
   let cur=[];try{cur=JSON.parse(sitioVal('minis')||'[]')||[]}catch(e){}
@@ -2417,6 +2476,10 @@ function pubMinisCard(){
     if(!n)b.disabled=true;
     const rh=el('button',{class:'btn btn-ghost',type:'button',title:'Si alguna vista previa de video se ve negra'},icoEl('check'),' Rehacer miniaturas negras');
     rh.addEventListener('click',async()=>{rh.disabled=true;try{const r=await pubMinisRehacer((i,t)=>{rh.textContent=' Revisando '+i+' de '+t+'…'});toast(r?'Listo: '+r+' miniatura(s) rehecha(s). Recarga con Cmd+Shift+R.':'Ninguna miniatura estaba negra')}catch(e){toast(e.message||'No se pudo')}pintar()});
+    const vo=el('button',{class:'btn btn-ghost',type:'button',title:'Reordena los videos para que empiecen a verse sin bajarse completos (no pierden calidad)'},icoEl('check'),' Acelerar videos ya subidos');
+    vo.addEventListener('click',async()=>{vo.disabled=true;try{const r=await pubVideosOptimizar((i,t)=>{vo.textContent=' Revisando '+i+' de '+t+'…'});
+      toast(r.arreglados?'Listo: '+r.arreglados+' video(s) acelerado(s). Recarga con Cmd+Shift+R.':'Revisados '+r.total+' videos: '+r.bien+' ya estaban bien'+(r.mal?', '+r.mal+' no se pudieron revisar':'')+(r.mb.length?' · pesan entre '+Math.min(...r.mb)+' y '+Math.max(...r.mb)+' MB':''))}
+      catch(e){toast(e.message||'No se pudo')}pintar()});
     b.addEventListener('click',async()=>{
       b.disabled=true;
       try{const r=await pubMinisPreparar((i,t)=>{b.textContent=' Listos '+i+' de '+t+'…'});
@@ -2426,7 +2489,7 @@ function pubMinisCard(){
     });
     c.append(el('h2',{},'Velocidad de carga del landing'),
       el('p',{class:'muted'},'Para que la página abra rápido, cada foto y video del landing tiene una copia chica que se muestra primero; la original (con su calidad completa, sin comprimir) se abre al verla en grande. Los archivos nuevos la crean solos al subirlos. Aquí se preparan los que ya estaban subidos.'),
-      el('div',{class:'acts'},b,rh));
+      el('div',{class:'acts'},b,rh,vo));
   };
   pintar();return c;
 }
