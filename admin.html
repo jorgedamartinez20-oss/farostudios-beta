@@ -2452,7 +2452,7 @@ async function pubMinisRehacer(onProg){
 let PUB_VCOLA=Promise.resolve();
 function pubElegirCuadro(u){
   const m=$('#modal'),b=$('#mbody');$('#mtl').textContent='Elegir vista previa';m.hidden=false;b.textContent='';
-  const v=el('video',{src:u,controls:'',preload:'auto',playsinline:''});v.crossOrigin='anonymous';v.muted=true;
+  const v=el('video',{src:u,controls:'',preload:'metadata',playsinline:''});v.crossOrigin='anonymous';v.muted=true;
   const t=el('span',{class:'muted'},'0.0 s'),r=el('input',{type:'range',min:'0',max:'1',step:'0.05',value:'0','aria-label':'Segundo del video',style:'width:100%'});
   const usar=el('button',{class:'btn btn-gold',type:'button'},icoEl('check'),' Usar este cuadro como vista previa');
   v.addEventListener('loadedmetadata',()=>{r.max=String(Math.max(.1,(v.duration||1)-.05));try{v.currentTime=Math.min(1,v.duration*.1)}catch(e){}});
