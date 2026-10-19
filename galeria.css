@@ -27,7 +27,6 @@ body.g{background:var(--g-bg);color:var(--g-tx);font-family:var(--g-ft2)}
 .gcov{position:relative;height:100vh;height:100svh;min-height:560px;overflow:hidden;color:#fff;display:grid;place-items:center;text-align:center;background:#0e0e10}
 @keyframes gzo{from{transform:scale(1.2)}to{transform:scale(1)}}
 @keyframes gzo2{from{transform:scale(1.1)}to{transform:scale(1)}}
-.gcov::after{content:"";position:absolute;inset:0;z-index:2;pointer-events:none;opacity:.16;mix-blend-mode:overlay;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
 /* botón con color (borgoña de Faro, borde dorado): contrasta con cualquier foto */
 /* ya abierta la galería: la portada queda como foto de encabezado corta. Se mueve con la página (no queda fija). */
 .gal.abierta .gcov{height:46vh;height:46svh;min-height:300px}

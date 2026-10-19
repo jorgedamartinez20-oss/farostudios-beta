@@ -61,7 +61,9 @@ const gKey=k=>k+'_'+(ST.p?ST.p.id:'');
 const gLS=(k,v)=>{try{if(v===undefined)return localStorage.getItem(k);localStorage.setItem(k,v)}catch(e){return null}};
 const gSS=(k,v)=>{try{if(v===undefined)return sessionStorage.getItem(k);sessionStorage.setItem(k,v)}catch(e){return null}};
 const gPortadaId=()=>{const id=G.cfg&&G.cfg.portada;return id&&ST.arch.some(a=>a.id===id)?id:null};
-const gImgs=()=>ST.arch.filter(a=>a.tipo==='imagen'&&a.id!==gPortadaId());
+/* la portada elegida de la galería también aparece abajo, según su orden; solo se esconde la que se subió «solo para la portada» */
+const gAparte=()=>new Set((G.cfg&&G.cfg.portadasAparte)||[]);
+const gImgs=()=>ST.arch.filter(a=>a.tipo==='imagen'&&!gAparte().has(a.id));
 const gMetaOn=()=>G.cfg.meta!==false;
 function gMeta(a){
   const m=(a&&a.meta)||{},it=[['CÁMARA',m.camara],['DISTANCIA',m.distancia],['APERTURA',m.apertura],['FOTÓGRAFO',m.fotografo]].filter(x=>x[1]);
@@ -88,7 +90,7 @@ async function vistaGaleria(){
   const p=ST.p,cfg=p.config||{};G.cfg=cfg;G.vista=(PREVIA?null:gLS(gKey('faro_vista')))||cfg.vista||'editorial';G.filtro=null;G.fin=false;G.promoVisto=false;G.abierta=false;G.carro=[];G.pre=null;G.quiere=false;
   if(G.au){try{G.au.pause()}catch(e){}G.au=null}
   gAplica(cfg);
-  const fotos=ST.arch,portada=fotos.find(a=>a.id===cfg.portada)||fotos.find(a=>a.tipo==='imagen')||fotos[0];
+  const fotos=ST.arch,portada=fotos.find(a=>a.id===cfg.portada)||gImgs()[0]||fotos[0];
   /* al inicio solo se pide el enlace de la portada; el resto se carga cuando tocan «Ver galería» */
   if(portada)await enlaces([portada.id]);
   const pl=portada&&gLink(portada.id);
@@ -320,7 +322,7 @@ function gContadores(){
 
 /* ---------- muro: cuadrícula y editorial ---------- */
 function gVisibles(){
-  let v=ST.arch.filter(a=>(a.tipo==='imagen'||a.tipo==='video')&&a.id!==gPortadaId());
+  let v=ST.arch.filter(a=>(a.tipo==='imagen'||a.tipo==='video')&&!gAparte().has(a.id));
   if(G.filtro){const l=G.listas.find(x=>x.id===G.filtro);v=l?v.filter(a=>l.ids.has(a.id)):v}
   return v;
 }

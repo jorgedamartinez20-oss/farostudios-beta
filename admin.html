@@ -120,6 +120,16 @@ button,input,select,textarea{font:inherit;color:inherit}
 body.pv-on #en-body{margin-right:calc(var(--pvw,450px) + 16px)}
 @media(max-width:1100px){.enpv{left:8px;right:8px;top:70px;width:auto}body.pv-on #en-body{margin-right:0}}
 .eg2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:14px;align-items:start}
+.cvg{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(260px,1fr);gap:18px;align-items:start}
+@media(max-width:900px){.cvg{grid-template-columns:minmax(0,1fr)}.cvph{position:static!important;max-height:none!important}}
+.cvph{position:sticky;top:8px;max-height:calc(100vh - 40px);overflow:auto;display:grid;gap:10px;align-content:start;min-width:0}
+.cvfg{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:8px}
+.cvf{all:unset;cursor:pointer;position:relative;display:block;aspect-ratio:1;background:var(--soft);border:2px solid transparent;border-radius:8px;overflow:hidden}
+.cvf img{width:100%;height:100%;object-fit:cover;display:block}
+.cvf[aria-pressed="true"]{border-color:var(--oro);box-shadow:0 0 0 2px var(--oro)}
+.cvf:focus-visible{outline:2px solid var(--oro);outline-offset:2px}
+.cvf .cvt{position:absolute;left:4px;bottom:4px;background:rgba(0,0,0,.65);color:#fff;font-size:.68rem;padding:1px 6px;border-radius:6px}
+.cvf .cvk{position:absolute;right:4px;top:4px;background:var(--oro);color:#000;font-size:.7rem;padding:1px 6px;border-radius:6px}
 @media(max-width:1100px){.eg2{grid-template-columns:minmax(0,1fr)}}
 .fgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
 .fcard{border:1px solid var(--line);border-radius:14px;padding:10px;display:grid;gap:8px;background:var(--surface);align-content:start}
@@ -5222,7 +5232,7 @@ function enEditor(pid){
     }
     D.body.append(top);
     const izq=el('div',{style:'display:grid;gap:10px;min-width:0'}),der=el('div',{style:'display:grid;gap:10px;min-width:0'});
-    D.body.append(el('div',{class:gal?'eg2':'',style:gal?'margin-top:6px':''},izq,der));
+    const eg2=el('div',{class:gal?'eg2':'',style:gal?'margin-top:6px':''},izq,der);D.body.append(eg2);
     /* --- datos --- */
     const f=(id,l,t,v,ex)=>{const i=el(t==='area'?'textarea':'input',t==='area'?{id,rows:'2'}:{id,type:t||'text'});i.value=v==null?'':v;return el('label',{class:'dfl'},l,i)};
     const sec=(t,...k)=>el('div',{class:'card',style:'padding:14px;display:grid;gap:10px;margin-top:6px'},el('h3',{style:'margin:0;font-size:1rem'},t),...k);
@@ -5238,9 +5248,9 @@ function enEditor(pid){
     /* --- diseño de galería --- */
     if(gal){
       const cfg=Object.assign({paleta:'marfil',fuente:'faro',vista:'editorial',foco:{x:50,y:50},meta:true},p.config||{});
-      const fotos=A.filter(a=>a.tipo==='imagen');const portada=A.find(a=>a.id===cfg.portada)||fotos[0];
+      const fotos=A.filter(a=>a.tipo==='imagen');const portada=A.find(a=>a.id===cfg.portada)||fotos.find(a=>!(cfg.portadasAparte||[]).includes(a.id));
       if(portada)cargarImg(portada);
-      const cb0=cfg.cubierta||{},cur={...cfg,foco:{...(cfg.foco||{x:50,y:50})},cb:{...EN_CB0,fx:(cfg.foco&&typeof cfg.foco.x==='number'?cfg.foco.x/100:.5),fy:(cfg.foco&&typeof cfg.foco.y==='number'?cfg.foco.y/100:.4),...cb0}};
+      const cb0=cfg.cubierta||{},cur={...cfg,aparte:[...(cfg.portadasAparte||[])],foco:{...(cfg.foco||{x:50,y:50})},cb:{...EN_CB0,fx:(cfg.foco&&typeof cfg.foco.x==='number'?cfg.foco.x/100:.5),fy:(cfg.foco&&typeof cfg.foco.y==='number'?cfg.foco.y/100:.4),...cb0}};
       const enGenCod=()=>{const L='ABCDEFGHJKLMNPQRSTUVWXYZ',N='23456789';let c='';for(let i=0;i<4;i++)c+=L[Math.floor(Math.random()*L.length)];for(let i=0;i<2;i++)c+=N[Math.floor(Math.random()*N.length)];return c};
       const vistas=el('div',{class:'seg',role:'group','aria-label':'Vista'});
       const pinVis=()=>{vistas.textContent='';EN_VISTAS.forEach(([k,n,d])=>vistas.append(el('button',{type:'button',title:d,'aria-pressed':String(cur.vista===k),onclick:()=>{cur.vista=k;pinVis()}},n)))};
@@ -5249,32 +5259,51 @@ function enEditor(pid){
       const pals=el('div',{style:'display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:8px'});
       const pinPal=()=>{pals.textContent='';const ks=EN_PAL_NUEVAS.slice();if(!ks.includes(cur.paleta))ks.push(cur.paleta);ks.forEach(k=>{const [n,bg,tx,ac,nota]=EN_PAPALETA(k);pals.append(el('button',{type:'button','aria-label':n,title:n+' · '+nota,style:'border-radius:12px;border:2px solid '+(cur.paleta===k?'var(--oro)':'var(--line)')+';background:'+bg+';color:'+tx+';padding:10px 6px;font-size:.78rem;display:grid;gap:4px;justify-items:center',onclick:()=>{cur.paleta=k;pinPal();pinPrev()}},el('span',{style:'display:flex;gap:3px'},el('i',{style:'width:14px;height:14px;border-radius:50%;background:'+ac}),el('i',{style:'width:14px;height:14px;border-radius:50%;background:'+tx+';opacity:.7'})),el('b',{style:'font-weight:700'},n),el('small',{style:'opacity:.75'},nota)))})};
       const EN_PAPALETA=k=>EN_PALETAS[k]||EN_PALETAS.marfil;
-      const sel=el('select',{id:'eg-p'},el('option',{value:''},'Automática (primera foto)'),...fotos.map(a=>el('option',{value:a.id},a.nombre)));sel.value=cfg.portada||'';
-      const prev=enPortadaUI(cur,()=>{const a=A.find(x=>x.id===(sel.value||''))||portada;return a&&imgs[a.id]},()=>({t:val('eg-t')||cfg.titulo||p.titulo,f:[val('eg-f')?new Date(val('eg-f')+'T12:00:00').toLocaleDateString('es-GT',{day:'numeric',month:'long',year:'numeric'}):'',val('eg-s')].filter(Boolean).join(' · ')}),()=>{if(typeof vivo==='function')vivo()});const pinPrev=()=>{if(prev.refresh)prev.refresh()};
-      sel.addEventListener('change',()=>{cur.portada=sel.value||undefined;const a=A.find(x=>x.id===sel.value);if(a)cargarImg(a)});
+      /* la foto de portada se elige a mano: cualquiera de la galería (sigue saliendo abajo en su orden) o una subida aparte */
+      const prev=enPortadaUI(cur,()=>{const a=A.find(x=>x.id===cur.portada)||fotos.find(x=>!cur.aparte.includes(x.id));return a&&imgs[a.id]},()=>({t:val('eg-t')||cfg.titulo||p.titulo,f:[val('eg-f')?new Date(val('eg-f')+'T12:00:00').toLocaleDateString('es-GT',{day:'numeric',month:'long',year:'numeric'}):'',val('eg-s')].filter(Boolean).join(' · ')}),()=>{if(typeof vivo==='function')vivo()});const pinPrev=()=>{if(prev.refresh)prev.refresh()};
       const musSels=[0,1,2].map(n=>{const x=el('select',{'aria-label':'Canción '+(n+1)},el('option',{value:''},n?'— ninguna —':'Sin música'));return x});
       const musIni=(Array.isArray(cfg.musicas)?cfg.musicas:cfg.musica?[cfg.musica]:[]);
       musSels.forEach((x,n)=>{if(musIni[n])x.append(el('option',{value:musIni[n]},musIni[n].split('/').pop()));x.value=musIni[n]||''});
       fjson('/api/lista?bucket=privado&prefix='+encodeURIComponent('faro-studios/musica-galerias/')).then(r=>{const aud=(r.archivos||[]).filter(o=>MAT_VER.aud.test(o.key));musSels.forEach((x,n)=>{aud.filter(o=>o.key!==musIni[n]).forEach(o=>x.append(el('option',{value:o.key},o.key.split('/').pop())));x.value=musIni[n]||''})}).catch(()=>{});
       pinVis();pinFu();pinPal();
       const armaCfg=()=>{
-        const config={...(p.config||{}),paleta:cur.paleta,fuente:cur.fuente,vista:cur.vista,foco:{x:Math.round(cur.cb.fx*100),y:Math.round(cur.cb.fy*100)},cubierta:{estilo:cur.cb.estilo,fx:+cur.cb.fx.toFixed(4),fy:+cur.cb.fy.toFixed(4),zoom:cur.cb.zoom,ov:cur.cb.ov,mov:cur.cb.mov!==false},meta:cur.meta!==false,portada:sel.value||null,titulo:val('eg-t').trim()||null,subtitulo:val('eg-s').trim()||null,fecha:val('eg-f')||null,mensaje:val('eg-m').trim()||null,codigo:val('eg-cod').toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,12)||null,descuento:val('eg-dsc')?Math.min(90,Math.max(1,Math.round(+val('eg-dsc')||0)))||null:null,musicas:[...new Set(musSels.map(x=>x.value).filter(Boolean))],musica:null};
+        const config={...(p.config||{}),paleta:cur.paleta,fuente:cur.fuente,vista:cur.vista,foco:{x:Math.round(cur.cb.fx*100),y:Math.round(cur.cb.fy*100)},cubierta:{estilo:cur.cb.estilo,fx:+cur.cb.fx.toFixed(4),fy:+cur.cb.fy.toFixed(4),zoom:cur.cb.zoom,ov:cur.cb.ov,mov:cur.cb.mov!==false},meta:cur.meta!==false,portada:cur.portada||null,portadasAparte:cur.aparte.filter(id=>EN.arch.some(x=>x.id===id)),titulo:val('eg-t').trim()||null,subtitulo:val('eg-s').trim()||null,fecha:val('eg-f')||null,mensaje:val('eg-m').trim()||null,codigo:val('eg-cod').toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,12)||null,descuento:val('eg-dsc')?Math.min(90,Math.max(1,Math.round(+val('eg-dsc')||0)))||null:null,musicas:[...new Set(musSels.map(x=>x.value).filter(Boolean))],musica:null};
         delete config.estilo;delete config.cinta;return config};
       const dis=sec('Diseño de la galería',el('p',{class:'muted',style:'margin:0;font-size:.88rem'},'Los colores y las letras los eliges tú aquí; el cliente solo recibe el resultado.'),
         el('div',{},el('span',{class:'lab'},'Vista inicial'),vistas),el('div',{},el('span',{class:'lab'},'Colores · claros, oscuros, suaves y con contraste'),pals),
         el('div',{},el('span',{class:'lab'},'Tipografía'),fuentes),
         el('div',{class:'dg2'},f('eg-t','Título de la portada','text',cfg.titulo||p.titulo),f('eg-s','Subtítulo (lugar, tema)','text',cfg.subtitulo)),
-        el('div',{class:'dg2'},f('eg-f','Fecha del evento','date',cfg.fecha),el('label',{class:'dfl'},'Foto de portada (no se repite en la galería)',sel)),
+        el('div',{class:'dg2'},f('eg-f','Fecha del evento','date',cfg.fecha),el('span')),
         f('eg-m','Mensaje sobre el muro (opcional)','area',cfg.mensaje),
         el('div',{class:'dg2'},f('eg-cod','Código de descuento (pestaña flotante; vacío = sin pestaña)','text',cfg.codigo||enGenCod()),f('eg-dsc','Descuento que da el código (%)','number',cfg.descuento||15)),
         el('div',{style:'display:flex;gap:8px;flex-wrap:wrap'},enBtn('Generar otro código','refresh',()=>{D.body.querySelector('#eg-cod').value=enGenCod()})),
         el('div',{},el('span',{class:'lab'},'Música de la galería (hasta 3 canciones)'),el('p',{class:'muted',style:'margin:0 0 6px;font-size:.85rem'},'Súbelas en Archivos y web → Música de las galerías. Suenan en orden y en bucle; el cliente solo puede silenciarlas.'),el('div',{class:'dg2'},...musSels.map((x,n)=>el('label',{class:'dfl'},'Canción '+(n+1),x)))),
         el('label',{class:'wchk',style:'padding:0'},chkEl(cur.meta!==false,v=>{cur.meta=v}),'Mostrar los datos de cámara debajo de las fotos'),
-        el('div',{},el('span',{class:'lab'},'Portada'),prev),
         el('div',{style:'display:flex;gap:8px;flex-wrap:wrap'},enBtn('Guardar diseño','check',async()=>{
           const config=armaCfg();
           if(await enPatch('en_proyectos','proy',pid,{config})){toast('Diseño guardado');pintar();pv.enviar()}},'btn-gold'),
           enBtn('Ver vista previa','image',()=>pv.abrir())));
+      const marcaSel=()=>{pickBtns.forEach(([id,b])=>b.setAttribute('aria-pressed',String(id===cur.portada)));unset.hidden=!!cur.portada};
+      const elegir=a=>{cur.portada=a.id;marcaSel();if(!imgs[a.id]){matEnlace('privado',a.key,true,1).then(u=>{imgs[a.id]=u;pinPrev()}).catch(()=>{})}pinPrev();vivo()};
+      const pickBtns=[];const grid=el('div',{class:'cvfg'});
+      fotos.forEach(a=>{const im=el('img',{alt:'',loading:'lazy'});enMiniatura(a,im);const ap=cur.aparte.includes(a.id);
+        const b=el('button',{type:'button',class:'cvf',title:a.nombre+(ap?' · portada aparte (no sale en la galería)':''),'aria-label':'Usar '+a.nombre+' como portada','aria-pressed':String(a.id===cur.portada),onclick:()=>elegir(a)},im,ap?el('span',{class:'cvt'},'Aparte'):null);
+        pickBtns.push([a.id,b]);grid.append(b)});
+      const unset=el('p',{class:'muted',style:'margin:0;font-size:.85rem'},'Aún no eliges portada: mientras tanto se usa la primera foto de la galería.');
+      const upIn=el('input',{type:'file',accept:'image/*',style:'display:none'});const upMsg=el('small',{class:'muted'});
+      upIn.addEventListener('change',async()=>{const fl=upIn.files[0];upIn.value='';if(!fl)return;
+        const antes=new Set(EN.arch.map(x=>x.id));upMsg.textContent='Subiendo portada…';
+        await enSubirArchivos(p,[fl],()=>{});
+        const nuevo=EN.arch.find(x=>!antes.has(x.id)&&x.proyecto_id===pid);
+        if(!nuevo){upMsg.textContent='';toast('Ya hay un archivo con ese nombre en este proyecto: cámbiale el nombre y vuelve a subirla');return}
+        cur.aparte.push(nuevo.id);cur.portada=nuevo.id;
+        if(await enPatch('en_proyectos','proy',pid,{config:armaCfg()}))guardadoOk('Portada subida y elegida');
+        renderEn();pintar()});
+      const cov=sec('Portada de la galería',el('p',{class:'muted',style:'margin:0;font-size:.88rem'},'A la izquierda eliges el estilo y el encuadre; a la derecha, la foto. Si eliges una foto de la galería, también aparece abajo en su orden. Si subes una aparte, solo sirve de portada.'),
+        el('div',{class:'cvg'},el('div',{style:'min-width:0'},prev),
+          el('div',{class:'cvph'},el('span',{class:'lab',style:'margin:0'},'Foto de portada · '+fotos.filter(x=>!cur.aparte.includes(x.id)).length+' en la galería'),
+            enBtn('Subir una foto solo para la portada','upload',()=>upIn.click()),upIn,upMsg,unset,grid)));
+      marcaSel();D.body.insertBefore(cov,eg2);
       dis.addEventListener('input',pinPrev);der.append(dis);pinPrev();
       /* la vista previa recibe el diseño tal como lo vas armando (sin guardar) */
       pv.usa(armaCfg);let tpv=null;const vivo=()=>{if(!pv.abierta())return;clearTimeout(tpv);tpv=setTimeout(pv.enviar,450)};
@@ -5328,7 +5357,7 @@ function enEditor(pid){
             EN.arch=EN.arch.filter(z=>z.id!==a.id);renderEn();pintar()}},icoEl('trash')),guardaBtn];
       if(gal){
         lista.append(el('div',{class:'fcard'},th||el('div',{class:'th',style:'display:grid;place-items:center;color:var(--muted)'},a.tipo),
-          el('div',{style:'display:flex;gap:6px;align-items:center'},el('span',{class:'tag'},a.tipo),a.version>1?el('span',{class:'tag'},'v'+a.version):null,el('span',{style:'flex:1;min-width:0'},nom)),
+          el('div',{style:'display:flex;gap:6px;align-items:center'},el('span',{class:'tag'},a.tipo),a.version>1?el('span',{class:'tag'},'v'+a.version):null,((p.config&&p.config.portadasAparte)||[]).includes(a.id)?el('span',{class:'tag'},'Portada aparte'):null,el('span',{style:'flex:1;min-width:0'},nom)),
           conFoto?el('div',{class:'mg'},...ins):null,
           el('div',{class:'fa'},...acc)));
         return;
