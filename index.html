@@ -1215,7 +1215,21 @@ section[id]{scroll-margin-top:0}
 .cvx-b:hover{background:var(--oro);color:var(--pizarra);transform:scale(1.08)}
 .cvx-b.prev{left:-8px}.cvx-b.next{right:-8px}
 .cvx-b[disabled]{opacity:.25;pointer-events:none}
-@media (max-width:640px){.cvx-b{display:none}.cv{flex-basis:44vw}}
+@media (max-width:640px){.cvx-b{display:none}.cv{flex-basis:38vw}}
+/* se nota que es un menú deslizable: borde que se difumina donde hay más, la siguiente tarjeta asoma, puntos de posición y una pista */
+.covers{--ml:0px;--mr:0px;-webkit-mask-image:linear-gradient(90deg,transparent 0,#000 var(--ml),#000 calc(100% - var(--mr)),transparent 100%);mask-image:linear-gradient(90deg,transparent 0,#000 var(--ml),#000 calc(100% - var(--mr)),transparent 100%)}
+.cvx.sl .covers{--ml:34px}.cvx.sr .covers{--mr:56px}
+.cvx-foot{display:flex;flex-direction:column;align-items:center;gap:8px;margin-top:2px}
+.cvx-dots{display:flex;gap:7px;align-items:center}
+.cvx-dots button{width:7px;height:7px;padding:0;border:0;border-radius:99px;background:rgba(245,242,238,.3);cursor:pointer;transition:width .35s var(--ease),background .3s}
+.cvx-dots button[aria-selected="true"]{width:22px;background:var(--oro)}
+.cvx-t{font:700 .72rem/1 var(--body);letter-spacing:.14em;text-transform:uppercase;color:var(--oro);opacity:.85;transition:opacity .6s}
+.cvx-t i{display:inline-block;font-style:normal;animation:cvnudge 1.8s ease-in-out infinite}
+.cvx.seen .cvx-t{opacity:.45}.cvx.seen .cvx-t i{animation:none}
+@keyframes cvnudge{0%,100%{transform:translateX(0)}50%{transform:translateX(6px)}}
+@keyframes cvpeek{0%,100%{translate:0}38%{translate:-30px}}
+.cvx.peek .cv{animation:cvpeek 1.1s var(--ease) 1}
+@media (prefers-reduced-motion:reduce){.cvx-t i,.cvx.peek .cv{animation:none}}
 .amp-k small{opacity:.7;font-weight:400;letter-spacing:.04em}
 /* ===== v12 · Biblioteca de recursos ===== */
 #descargas-s .dl-grid{display:block}
@@ -2057,7 +2071,8 @@ html[data-page="academy"] .hero2,html[data-page="music"] .hero2,html[data-page="
         </div>
       </div>
       <h3 class="sub-h" style="margin-top:56px">Discos y producciones</h3>
-      <div class="cvx"><button type="button" class="cvx-b prev" aria-label="Producciones anteriores">‹</button><div class="covers" id="covers"></div><button type="button" class="cvx-b next" aria-label="Más producciones">›</button></div>
+      <div class="cvx sr" id="cvx"><button type="button" class="cvx-b prev" aria-label="Producciones anteriores">‹</button><div class="covers" id="covers"></div><button type="button" class="cvx-b next" aria-label="Más producciones">›</button></div>
+      <div class="cvx-foot" id="cvx-foot"><div class="cvx-dots" id="cvx-dots" role="tablist" aria-label="Discos"></div><small class="cvx-t"><span id="cvx-n">Desliza para ver más</span> <i aria-hidden="true">→</i></small></div>
     </div>
   </section>
 
@@ -3781,7 +3796,15 @@ window.rebuildPortfolio=function(){
   const cov=$('#covers'),amp=$('#amp'),sec=$('#audio');if(!cov||!amp||!sec)return;
   const pv=$('.cvx-b.prev'),nx=$('.cvx-b.next');
   const step=()=>Math.max(220,cov.clientWidth*.8);
-  const upd=()=>{pv.disabled=cov.scrollLeft<8;nx.disabled=cov.scrollLeft+cov.clientWidth>=cov.scrollWidth-8};
+  const wrap=$('#cvx'),dots=$('#cvx-dots'),nTx=$('#cvx-n'),cards=()=>[...cov.children];
+  const build=()=>{dots.textContent='';cards().forEach((c,i)=>{const d=document.createElement('button');d.type='button';d.setAttribute('role','tab');d.setAttribute('aria-label','Ir al disco '+(i+1));d.addEventListener('click',()=>cov.scrollTo({left:c.offsetLeft-cards()[0].offsetLeft,behavior:'smooth'}));dots.appendChild(d)});if(nTx)nTx.textContent='Desliza para ver los '+cards().length+' discos'};
+  build();
+  const upd=()=>{const sl=cov.scrollLeft>8,end=cov.scrollLeft+cov.clientWidth>=cov.scrollWidth-8;pv.disabled=!sl;nx.disabled=end;
+    if(wrap){wrap.classList.toggle('sl',sl);wrap.classList.toggle('sr',!end);if(cov.scrollLeft>24)wrap.classList.add('seen')}
+    const cs=cards(),w=cs.length>1?cs[1].offsetLeft-cs[0].offsetLeft:1,k=end?cs.length-1:Math.round(cov.scrollLeft/w);
+    $$('button',dots).forEach((d,i)=>d.setAttribute('aria-selected',String(i===k)))};
+  /* una sola vez, al llegar a la sección: las tarjetas se mueven un poquito para mostrar que se desliza */
+  if(wrap&&'IntersectionObserver' in window)new IntersectionObserver((es,o)=>{es.forEach(en=>{if(!en.isIntersecting)return;o.disconnect();setTimeout(()=>{if(cov.scrollLeft<8&&!wrap.classList.contains('seen')){wrap.classList.add('peek');setTimeout(()=>wrap.classList.remove('peek'),1300)}},500)})},{threshold:.6}).observe(wrap);
   pv.addEventListener('click',()=>cov.scrollBy({left:-step(),behavior:'smooth'}));
   nx.addEventListener('click',()=>cov.scrollBy({left:step(),behavior:'smooth'}));
   cov.addEventListener('scroll',upd,{passive:true});addEventListener('resize',upd);setTimeout(upd,300);
