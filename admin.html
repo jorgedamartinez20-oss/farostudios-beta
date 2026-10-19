@@ -5212,6 +5212,7 @@ function enEditor(pid){
     const p=EN.proy.find(x=>x.id===pid);if(!p){D.cerrar();return}
     const sy=D.body.scrollTop;D.body.textContent='';D.titulo(p.titulo);
     const A=enArchP(pid);const metaTodas=gal&&!!(p.config&&p.config.metaTodas);
+    const pend=[];let armaDis=null;
     /* --- estado y acción principal --- */
     const top=el('div',{style:'display:flex;gap:8px;align-items:center;flex-wrap:wrap'},el('span',{class:'tag'},EN_TIPOS[c.tipo][0]+' · '+c.nombre));
     if(gal){
@@ -5269,6 +5270,7 @@ function enEditor(pid){
       const armaCfg=()=>{
         const config={...(p.config||{}),paleta:cur.paleta,fuente:cur.fuente,vista:cur.vista,foco:{x:Math.round(cur.cb.fx*100),y:Math.round(cur.cb.fy*100)},cubierta:{estilo:cur.cb.estilo,fx:+cur.cb.fx.toFixed(4),fy:+cur.cb.fy.toFixed(4),zoom:cur.cb.zoom,ov:cur.cb.ov,mov:cur.cb.mov!==false},meta:cur.meta!==false,portada:cur.portada||null,portadasAparte:cur.aparte.filter(id=>EN.arch.some(x=>x.id===id)),titulo:val('eg-t').trim()||null,subtitulo:val('eg-s').trim()||null,fecha:val('eg-f')||null,mensaje:val('eg-m').trim()||null,codigo:val('eg-cod').toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,12)||null,descuento:val('eg-dsc')?Math.min(90,Math.max(1,Math.round(+val('eg-dsc')||0)))||null:null,musicas:[...new Set(musSels.map(x=>x.value).filter(Boolean))],musica:null};
         delete config.estilo;delete config.cinta;return config};
+      armaDis=armaCfg;
       const dis=sec('Diseño de la galería',el('p',{class:'muted',style:'margin:0;font-size:.88rem'},'Los colores y las letras los eliges tú aquí; el cliente solo recibe el resultado.'),
         el('div',{},el('span',{class:'lab'},'Vista inicial'),vistas),el('div',{},el('span',{class:'lab'},'Colores · claros, oscuros, suaves y con contraste'),pals),
         el('div',{},el('span',{class:'lab'},'Tipografía'),fuentes),
@@ -5333,10 +5335,12 @@ function enEditor(pid){
       const nom=el('input',{value:a.nombre,'aria-label':'Nombre del archivo',style:'width:100%'});
       const ins=conFoto?camposF.map(([k,l])=>el('input',{placeholder:l,'aria-label':l+' de '+a.nombre,value:(a.meta||{})[k]||''})):[];
       if(metaTodas)ins.forEach(x=>{x.disabled=true;x.title='Aplicado a todas las fotos'});
-      const guardar=async()=>{
+      const armaB=()=>{
         const b={nombre:nom.value.trim()||a.nombre};
         if(conFoto&&!metaTodas){const meta={};camposF.forEach(([k],n)=>{const v=ins[n].value.trim();if(v)meta[k]=v});b.meta=meta}
-        if(await enPatch('en_archivos','arch',a.id,b))guardadoOk('Guardado')};
+        return b};
+      const guardar=async()=>{if(await enPatch('en_archivos','arch',a.id,armaB()))guardadoOk('Guardado')};
+      if(gal)pend.push(async()=>{const b=armaB();if(b.nombre===a.nombre&&(!b.meta||JSON.stringify(b.meta)===JSON.stringify(a.meta||{})))return true;return enPatch('en_archivos','arch',a.id,b)});
       if(!gal)nom.addEventListener('change',()=>enPatch('en_archivos','arch',a.id,{nombre:nom.value.trim()||a.nombre}));
       const re=el('input',{type:'file',style:'display:none'});re.addEventListener('change',async()=>{const fl=re.files[0];if(!fl)return;toast('Reemplazando…');
         try{const d=EN_TIPOS[c.tipo][2];await matSubir(fl,d,c.slug,null,a.key.split('/').pop());if(conFoto){try{await enDerivadas(fl,a.key);delete EN_TH.url[a.id]}catch(e){}}await enPatch('en_archivos','arch',a.id,{version:a.version+1,estado:'pendiente'});toast('Nueva versión subida');pintar()}catch(e){toast(e.message||'No se pudo reemplazar')}});
@@ -5392,6 +5396,17 @@ function enEditor(pid){
       for(const a of A){try{await fjson('/api/objeto?bucket=privado&key='+encodeURIComponent(a.key),{method:'DELETE'})}catch(e){}}
       const x=await api('/rest/v1/en_proyectos?id=eq.'+pid,{method:'DELETE',headers:{Prefer:'return=minimal'}});if(!x.ok){toast(await errText(x));return}
       EN.proy=EN.proy.filter(z=>z.id!==pid);EN.arch=EN.arch.filter(z=>z.proyecto_id!==pid);enBadge();renderEn();D.cerrar();toast('Proyecto eliminado')})));
+    if(gal&&armaDis){
+      const bt=enBtn('Guardar todos los cambios','check',async()=>{
+        bt.disabled=true;let ok=true;
+        const dat={titulo:val('ep-t').trim()||p.titulo,descripcion:val('ep-d').trim()||null,vence:val('ep-v')||null,config:armaDis()};
+        ok=await enPatch('en_proyectos','proy',pid,dat);
+        for(const f of pend){if(ok)ok=await f()}
+        bt.disabled=false;
+        if(ok){guardadoOk('Cambios guardados');enBadge();renderEn();pintar();pv.enviar()}else toast('No se pudo guardar todo: revisa e intenta de nuevo')},'btn-gold');
+      D.body.append(el('div',{style:'position:sticky;bottom:0;z-index:20;margin:14px -4px 0;padding:10px 12px;display:flex;gap:10px;align-items:center;justify-content:flex-end;flex-wrap:wrap;background:color-mix(in srgb,var(--surface,#fff) 94%,transparent);border-top:1px solid var(--line);backdrop-filter:blur(6px)'},
+        el('small',{class:'muted',style:'flex:1;min-width:180px'},'Guarda de una vez el diseño, la portada, los datos del proyecto y los nombres y datos de cada foto.'),bt));
+    }
     D.body.scrollTop=sy;
   };
   pintar();
