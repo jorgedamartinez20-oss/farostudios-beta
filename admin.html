@@ -1825,7 +1825,7 @@ const SECC=[
   {k:'txt.who1',l:'Quiénes somos · párrafo 1',t:'area'},{k:'txt.who2',l:'Quiénes somos · párrafo 2',t:'area'},
   {k:'txt.lead.presentacion',l:'Conoce lo que hacemos · frase debajo del título',t:'area'},{k:'txt.lead.servicios',l:'Servicios · frase debajo del título',t:'area'},
   {k:'txt.lead.portafolio',l:'Portafolio · frase debajo del título',t:'area'},{k:'txt.lead.catalogo',l:'Catálogo · frase debajo del título',t:'area'},
-  {k:'txt.lead.recursos',l:'Recursos gratis · frase debajo del título',t:'area'},{k:'txt.lead.faq',l:'Preguntas frecuentes · frase debajo del título',t:'area'}]},
+  {k:'txt.title.musica',l:'Producciones musicales · título',t:'text',ph:'Conoce nuestras producciones musicales y locuciones'},{k:'txt.lead.musica',l:'Producciones musicales · descripción debajo del título',t:'area',ph:'Grabación, mezcla y masterización de discos, sencillos, coros y podcasts, y locuciones para spots, videos y radio. Elige una producción y dale play.'},{k:'txt.lead.recursos',l:'Recursos gratis · frase debajo del título',t:'area'},{k:'txt.lead.faq',l:'Preguntas frecuentes · frase debajo del título',t:'area'}]},
  {id:'equipo',c:'landing',t:'Quiénes somos · fichas',i:'users',keys:eqKeys,r:rEquipo},
  {id:'servicios',c:'landing',t:'Servicios',i:'camera',keys:()=>SERV.flatMap(s=>['vid.'+s[0],'img.'+s[0],'sv.'+s[0]+'.t','sv.'+s[0]+'.d']),r:rServicios},
  {id:'portafolio',c:'landing',t:'Portafolio',i:'image',dest:'landing/portafolio',lead:'Cada casilla en un solo espacio: foto, nombre, categoría y video (se reproduce solo, diluido por el color del tablón). Usa ◀ ▶ para moverla de lugar: las primeras 14 ocupan el mosaico de la página, las demás se acomodan debajo. «Agregar casilla» suma una nueva. El orden, nombres y categorías se publican con «Guardar portafolio».',keys:()=>rng('w',14).flatMap(x=>['img.'+x,'vid.'+x]),r:rPfTablones,after:renderPortafolioMgr},
@@ -2208,7 +2208,7 @@ function sitioRow(it,dest){
         v?el('button',{class:'btn btn-red btn-sm',type:'button','aria-label':'Quitar (vuelve al ejemplo)',title:'Quitar (vuelve al ejemplo)',onclick:()=>sitioDel(it.k)},icoEl('trash')):null),fi);
     soltar(tile,fi);return tile;
   }
-  const inp=it.t==='area'?el('textarea',{rows:'3',maxlength:'700'}):el('input',{type:'text',maxlength:'400',placeholder:it.ph||''});
+  const inp=it.t==='area'?el('textarea',{rows:'3',maxlength:'700',placeholder:it.ph||''}):el('input',{type:'text',maxlength:'400',placeholder:it.ph||''});
   inp.value=v;inp.dataset.k=it.k;inp.dataset.orig=v;inp.className='sit-txt';
   return el('div',{class:'field sf',title:it.k},el('label',{},it.l),inp,
     el('div',{class:'acts'},el('button',{class:'btn btn-gold btn-sm',type:'button',onclick:async()=>{await sitioTxt([inp])}},icoEl('check'),' Guardar'),
