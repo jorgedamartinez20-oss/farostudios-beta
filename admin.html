@@ -1920,6 +1920,8 @@ function rPfTablones(card){
     if(bi>=0&&PF_BASE[bi]){
       const b=PF_BASE[bi],o=P.over[id]=P.over[id]||{};
       t=sitioRow({k:'img.'+id,l:'Tablón '+(bi+1),t:'img'},'landing/portafolio');
+      /* casilla con solo video (sin foto): que el recuadro muestre la vista previa del video y no se vea «vacío» */
+      {const v0=sitioVal('vid.'+id);if(v0&&!sitioVal('img.'+id)){const pv=t.querySelector('.stp'),sg=t.querySelector('.stg');if(pv){pv.textContent='';pv.append(pubThumb(v0,true,(P.over[id]||{}).p))}if(sg)sg.textContent='✓ Solo video (sin foto de portada) · la vista previa se ve arriba';t.classList.add('on')}}
       const ck=el('input',{type:'checkbox'});ck.checked=!P.off.includes(id);ck.addEventListener('change',()=>{P.off=P.off.filter(x=>x!==id);if(!ck.checked)P.off.push(id)});
       const nm=el('input',{type:'text',maxlength:'30',placeholder:b[0],'aria-label':'Nombre de la casilla '+(k+1)});nm.value=o.n||'';nm.addEventListener('input',()=>{o.n=nm.value});
       const sb=el('input',{type:'text',maxlength:'40',placeholder:'Subtítulo bajo el nombre (vacío = la categoría)','aria-label':'Subtítulo de la casilla '+(k+1)});sb.value=o.s||'';sb.addEventListener('input',()=>{o.s=sb.value});
