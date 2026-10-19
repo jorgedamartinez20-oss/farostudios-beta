@@ -2298,6 +2298,7 @@ async function matSubirPublico(it,dest,f){
   const r=await matSubir(fo,dest,'',null,it.k.replace(/[^\w]+/g,'-')+'-'+Date.now()+'-'+f.name);
   const url=FILES+'/pub/'+matKey(r.key);
   if(r.bucket==='publico'&&await pubMiniSubir(f,r.key))await pubMinisAdd([url]);
+  if(r.bucket==='publico')pubLitePreparar(url);  /* deja lista la copia ligera para que la vista previa abra al instante */
   return url;
 }
 
@@ -2308,6 +2309,9 @@ async function matSubirPublico(it,dest,f){
 const PUB_IMG=/\.(jpe?g|png|webp|avif)$/i,PUB_VID=/\.(mp4|m4v|mov|webm)$/i,PUB_LADO=1200;
 const pubMiniKey=key=>{const i=key.lastIndexOf('/');return key.slice(0,i+1)+'_mini-'+key.slice(i+1).replace(/\.[^.]+$/,'')+'.jpg'};
 const pubKeyDe=u=>{const b=FILES+'/pub/';return typeof u==='string'&&u.startsWith(b)?decodeURIComponent(u.slice(b.length).split('?')[0].split('#')[0]):''};
+/* copia ligera del video (la crea el servicio desde el mismo R2 la primera vez; el original no se toca) */
+const pubLiteUrl=u=>{const k=pubKeyDe(u);return k&&PUB_VID.test(k)?FILES+'/pub-lite/'+matKey(k):u};
+const pubLitePreparar=u=>{const k=pubKeyDe(u);return k&&PUB_VID.test(k)?fetch(FILES+'/pub-lite/'+matKey(k)+'?preparar=1').catch(()=>{}):Promise.resolve()};
 /* primer cuadro de un video (archivo local o enlace); devuelve una foto JPG reducida */
 /* luminosidad media (0-255) de una imagen/cuadro, para detectar miniaturas negras */
 function pubLuma(src){
@@ -2450,6 +2454,7 @@ async function pubVideosOptimizar(onProg){
         if(fo.size===bl.size&&fo!==bl){await matSubirKey0(fo,'publico',k,null);arreglados++}else mal++;
       }else mal++;
     }catch(e){mal++}
+    await pubLitePreparar(u);
     i++;if(onProg)onProg(i,lista.length);
   };
   if(onProg)onProg(0,lista.length);
@@ -2475,7 +2480,10 @@ async function pubMinisRehacer(onProg){
 let PUB_VCOLA=Promise.resolve();
 function pubElegirCuadro(u){
   const m=$('#modal'),b=$('#mbody');$('#mtl').textContent='Elegir vista previa';m.hidden=false;b.textContent='';
-  const v=el('video',{src:u,controls:'',preload:'metadata',playsinline:''});v.crossOrigin='anonymous';v.muted=true;
+  const lite=pubLiteUrl(u),v=el('video',{src:lite,controls:'',preload:'metadata',playsinline:''});v.crossOrigin='anonymous';v.muted=true;
+  const aviso=el('p',{class:'muted'},'Preparando la vista rápida… solo tarda la primera vez.');
+  v.addEventListener('loadeddata',()=>aviso.remove());
+  v.addEventListener('error',()=>{if(v.getAttribute('src')!==u){v.src=u}});  /* si la copia ligera fallara, usa el original */
   const t=el('span',{class:'muted'},'0.0 s'),r=el('input',{type:'range',min:'0',max:'1',step:'0.05',value:'0','aria-label':'Segundo del video',style:'width:100%'});
   const usar=el('button',{class:'btn btn-gold',type:'button'},icoEl('check'),' Usar este cuadro como vista previa');
   v.addEventListener('loadedmetadata',()=>{r.max=String(Math.max(.1,(v.duration||1)-.05));try{v.currentTime=Math.min(1,v.duration*.1)}catch(e){}});
@@ -2491,7 +2499,7 @@ function pubElegirCuadro(u){
       m.hidden=true;b.textContent='';toast('Vista previa guardada');await loadAc();
     }catch(e){usar.disabled=false;toast(e.message||'No se pudo guardar')}
   });
-  b.append(v,el('div',{style:'display:flex;gap:10px;align-items:center;margin:10px 0'},r,t),el('p',{class:'muted'},'Mueve la barra (o pausa el video) en el segundo que quieres y pulsa el botón.'),usar);
+  b.append(v,aviso,el('div',{style:'display:flex;gap:10px;align-items:center;margin:10px 0'},r,t),el('p',{class:'muted'},'Mueve la barra (o pausa el video) en el segundo que quieres y pulsa el botón.'),usar);
 }
 function pubMinisCard(){
   const c=el('div',{class:'card sgp'});

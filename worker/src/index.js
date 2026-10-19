@@ -278,6 +278,39 @@ export async function derivadasDe(env, filas) {
 // Mismo enlace durante varias horas (se redondea el vencimiento) para que el navegador guarde las fotos en caché.
 const vencimientoEstable = () => (Math.floor(Date.now() / 3600000) + 3) * 3600;
 
+/* ---------- Copia ligera de los videos del landing (vista previa instantánea) ----------
+   El original NO se toca. La primera vez que se pide, Cloudflare Media Transformations crea una copia H.264 de hasta 1280 px
+   (sin audio, hasta 60 s) y la guarda en "_ligeras/<ruta>.mp4" del bucket público; de ahí en adelante se sirve al instante.
+   Si el original cambia (otro ETag) se rehace sola. Si no se puede (pesa más de 100 MB, formato raro), se entrega el original. */
+const LIGERAS = '_ligeras/';
+const MAX_ENTRADA_MEDIA = 100 * MB;
+const RE_VIDEO = /\.(mp4|m4v|mov|webm)$/i;
+async function copiaLigera(request, env, key, { solo = false } = {}) {
+  const orig = await env.PUBLICO.head(key);
+  if (!orig) return err(request, env, 'No existe ese archivo', 404);
+  const lk = LIGERAS + key + '.mp4';
+  let lite = await env.PUBLICO.head(lk);
+  const meta = () => (lite && lite.customMetadata) || {};
+  const vigente = !!lite && meta().src === String(orig.etag);
+  const reintentar = vigente && meta().ok === '0' && meta().g === 'error' && Date.now() - Number(meta().t || 0) > 3600e3;
+  if ((!vigente || reintentar) && env.MEDIA) {
+    const marca = (g) => env.PUBLICO.put(lk, new Uint8Array(0), { customMetadata: { src: String(orig.etag), ok: '0', g, t: String(Date.now()) } });
+    if (orig.size > MAX_ENTRADA_MEDIA) await marca('grande');
+    else {
+      try {
+        const o = await env.PUBLICO.get(key);
+        const res = env.MEDIA.input(o.body).transform({ width: 1280, height: 1280, fit: 'scale-down' }).output({ mode: 'video', duration: '60s', audio: false });
+        await env.PUBLICO.put(lk, await res.media(), { httpMetadata: { contentType: 'video/mp4' }, customMetadata: { src: String(orig.etag), ok: '1' } });
+      } catch (e) { await marca('error'); }
+    }
+    lite = await env.PUBLICO.head(lk);
+  }
+  const ok = !!lite && meta().ok === '1';
+  if (solo) return json(request, env, { ok, key });
+  if (!ok) return entregar(request, env, env.PUBLICO, key, { cache: 'public, max-age=3600' });
+  return entregar(request, env, env.PUBLICO, lk, { cache: 'public, max-age=86400' });
+}
+
 /* ---------- Contador de descargas y vistas (un archivo pequeño en el bucket privado) ---------- */
 const STATS_KEY = '_stats/descargas.json';
 const DIAS_GUARDADOS = 400;
@@ -307,7 +340,7 @@ async function resumenBucket(bucket, areaDeKey, oculto = new Set(), nombre = '')
   do {
     const r = await bucket.list({ cursor, limit: 1000 });
     for (const o of r.objects) {
-      if (o.key.endsWith('/.keep') || o.key.startsWith('_stats/') || o.key.startsWith('_papelera/') || o.key.startsWith('_respaldos/') || oculto.has(nombre + '|' + o.key)) continue;
+      if (o.key.endsWith('/.keep') || o.key.startsWith('_stats/') || o.key.startsWith('_papelera/') || o.key.startsWith('_respaldos/') || o.key.startsWith(LIGERAS) || oculto.has(nombre + '|' + o.key)) continue;
       const a = areas[areaDeKey(o.key)] || (areas[areaDeKey(o.key)] = { n: 0, b: 0, meses: {} });
       a.n++; a.b += o.size;
       const m = new Date(o.uploaded).toISOString().slice(0, 7);
@@ -498,7 +531,7 @@ export async function respaldoPaso(env, { fecha = hoyGT(), nuevo = false } = {})
         const items = []; let cursor, pg = 0, bytes = 0;
         do {
           const r = await b.list({ cursor, limit: 1000 });
-          for (const o of r.objects) { if (o.key.startsWith(RESP)) continue; items.push([o.key, o.size, o.uploaded]); bytes += o.size; }
+          for (const o of r.objects) { if (o.key.startsWith(RESP) || o.key.startsWith(LIGERAS)) continue; items.push([o.key, o.size, o.uploaded]); bytes += o.size; }
           cursor = r.truncated ? r.cursor : undefined;
         } while (cursor && ++pg < 200);
         await rGuardar(env, `${base}archivos-${nom}.json`, { generado: new Date().toISOString(), total: items.length, bytes, completo: !cursor, archivos: items });
@@ -604,6 +637,7 @@ export async function analizarAlmacenamiento(env) {
     if (o.key.endsWith('/.keep')) return;
     const nom = o.key.split('/').pop(), size = o.size;
     tot.n++; tot.b += size; bk[b].n++; bk[b].b += size;
+    if (b === 'publico' && o.key.startsWith(LIGERAS)) { const t = tipos.copias || (tipos.copias = { n: 0, b: 0 }); t.n++; t.b += size; return; }
     const tp = tipoDeArchivo(o.key), enPap = papelera.has(b + '|' + o.key);
     const t = tipos[tp] || (tipos[tp] = { n: 0, b: 0 }); t.n++; t.b += size;
     if (enPap) { pap.n++; pap.b += size; const a = areas.papelera || (areas.papelera = { n: 0, b: 0 }); a.n++; a.b += size; return; }
@@ -669,6 +703,15 @@ export default {
       if (!key.startsWith('landing/') || key.includes('..') || key.endsWith('.keep')) return err(request, env, 'No existe ese archivo', 404);
       if (await enPapelera(env, 'publico', key)) return err(request, env, 'No existe ese archivo', 404);
       return entregar(request, env, env.PUBLICO, key, { cache: 'public, max-age=31536000, immutable' });
+    }
+
+    // Copia ligera de un video del landing (sin sesión; es el mismo contenido público, solo más liviano)
+    if (ruta.startsWith('/pub-lite/')) {
+      const key = decodeURIComponent(ruta.slice(10));
+      if (!key.startsWith('landing/') || key.includes('..') || key.endsWith('.keep') || !RE_VIDEO.test(key)) return err(request, env, 'No existe ese archivo', 404);
+      if (await enPapelera(env, 'publico', key)) return err(request, env, 'No existe ese archivo', 404);
+      try { return await copiaLigera(request, env, key, { solo: url.searchParams.get('preparar') === '1' }); }
+      catch (e) { return entregar(request, env, env.PUBLICO, key, { cache: 'public, max-age=3600' }); }
     }
 
     if (ruta.startsWith('/p/')) { try { return await portal(request, env, ctx, ruta, url); } catch (e) { return err(request, env, 'No se pudo completar la operación', 500); } }
@@ -819,7 +862,7 @@ export default {
         const r = await bucket.list({ prefix, delimiter: '/', limit: 1000, include: ['customMetadata'] });
         const oculto = await clavesPapelera(env);
         return json(request, env, {
-          carpetas: r.delimitedPrefixes.filter((c) => c !== '_stats/' && c !== PAPELERA && c !== RESP),
+          carpetas: r.delimitedPrefixes.filter((c) => c !== '_stats/' && c !== PAPELERA && c !== RESP && c !== LIGERAS),
           archivos: r.objects.filter((o) => !o.key.endsWith('/.keep') && !oculto.has(bucketNombre + '|' + o.key)).map((o) => ({ key: o.key, size: o.size, subido: o.uploaded })),
           nombres: Object.fromEntries(r.objects.filter((o) => o.customMetadata && o.customMetadata.nombre && !oculto.has(bucketNombre + '|' + o.key)).map((o) => [o.key, o.customMetadata.nombre])),
         });

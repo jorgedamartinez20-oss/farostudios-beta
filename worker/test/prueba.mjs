@@ -359,4 +359,31 @@ r = await q('/api/lista?bucket=privado&prefix=' + encodeURIComponent('faro-studi
   r = await worker.fetch(new Request('https://w.test/api/limpiar', { method: 'POST', headers: A, body: JSON.stringify({ que: 'todo' }) }), envA); assert.equal(r.status, 400); ok('limpieza desconocida rechazada');
 }
 
+/* ---- Copia ligera de videos del landing ---- */
+{
+  let llamadas = 0;
+  const MEDIA = { input: () => ({ transform: () => ({ output: () => { llamadas++; return { media: async () => new Blob([new Uint8Array([7, 7])]).stream(), contentType: async () => 'video/mp4' }; } }) }) };
+  const eL = { ...env, PRIVADO: new R2Falso(), PUBLICO: new R2Falso(), MEDIA };
+  await eL.PUBLICO.put('landing/hero/v.mp4', new Uint8Array(1000), { httpMetadata: { contentType: 'video/mp4' } });
+  let r = await worker.fetch(new Request('https://w.test/pub-lite/landing/hero/v.mp4', { headers: { Origin: ORI } }), eL);
+  assert.equal(r.status, 200); assert.equal((await r.arrayBuffer()).byteLength, 2); assert.equal(llamadas, 1); ok('crea la copia ligera la primera vez y la entrega');
+  r = await worker.fetch(new Request('https://w.test/pub-lite/landing/hero/v.mp4', { headers: { Origin: ORI } }), eL);
+  assert.equal(llamadas, 1); assert.equal(r.headers.get('Access-Control-Allow-Origin'), ORI); ok('la segunda vez sale de R2 sin volver a procesar (con CORS)');
+  assert.equal(eL.PUBLICO.m.get('landing/hero/v.mp4').bytes.length, 1000); ok('el original no se toca');
+  r = await worker.fetch(new Request('https://w.test/pub-lite/landing/hero/v.mp4?preparar=1', { headers: { Origin: ORI } }), eL);
+  assert.equal((await r.json()).ok, true); ok('preparar responde ok sin mandar el video');
+  r = await worker.fetch(new Request('https://w.test/pub-lite/faro-studios/x/v.mp4'), eL); assert.equal(r.status, 404); ok('solo videos del landing');
+  r = await worker.fetch(new Request('https://w.test/pub-lite/landing/hero/foto.jpg'), eL); assert.equal(r.status, 404); ok('no procesa fotos');
+  const eF = { ...eL, PUBLICO: new R2Falso(), MEDIA: { input: () => { throw new Error('formato raro'); } } };
+  await eF.PUBLICO.put('landing/hero/h.mov', new Uint8Array(5), { httpMetadata: { contentType: 'video/quicktime' } });
+  r = await worker.fetch(new Request('https://w.test/pub-lite/landing/hero/h.mov'), eF);
+  assert.equal(r.status, 200); assert.equal((await r.arrayBuffer()).byteLength, 5); ok('si no se puede procesar, entrega el original');
+  const eS = { ...eL, PUBLICO: new R2Falso(), MEDIA: undefined };
+  await eS.PUBLICO.put('landing/hero/s.mp4', new Uint8Array(3));
+  r = await worker.fetch(new Request('https://w.test/pub-lite/landing/hero/s.mp4'), eS);
+  assert.equal(r.status, 200); assert.ok(!eS.PUBLICO.m.has('_ligeras/landing/hero/s.mp4.mp4')); ok('sin el servicio de video activo: entrega el original y no deja marcas');
+  const ls = await worker.fetch(new Request('https://w.test/api/lista?bucket=publico&prefix=', { headers: A }), eL);
+  assert.ok(!(await ls.json()).carpetas.includes('_ligeras/')); ok('la carpeta de copias ligeras no aparece en Materiales');
+}
+
 console.log('\nTodo bien: ' + n + ' comprobaciones.');

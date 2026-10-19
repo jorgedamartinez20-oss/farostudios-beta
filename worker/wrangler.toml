@@ -10,6 +10,10 @@ bucket_name = "faro-privado"
 binding = "PUBLICO"
 bucket_name = "faro-publico"
 
+# Copias ligeras de video (Cloudflare Media Transformations): vista previa instantánea sin tocar el original.
+[media]
+binding = "MEDIA"
+
 [vars]
 # La llave "publishable" de Supabase es pública por diseño; no es un secreto.
 SUPABASE_URL = "https://keivqvsgdfhthouzlqxo.supabase.co"
