@@ -2837,27 +2837,27 @@ window.lazySrc=(v,u)=>{if(!LZV){v.preload='metadata';v.src=u;return}v.dataset.ls
 
 /* portafolio en tablones */
 const WORKS=[
- {c:'eventos',n:'Boda',t:'Fotografía y video de boda',g:[1,1,3,4],w:1},
- {c:'corporativo',n:'Marca',t:'Video corporativo en bodega industrial',g:[4,1,2,2],w:2},
- {c:'eventos',n:'XV años',t:'Cobertura de XV años',g:[4,3,2,2],w:3},
- {c:'audio',n:'Auditorio',t:'Sonido en vivo en auditorio',g:[6,1,3,2],w:4},
- {c:'audio',n:'Álbum',t:'Grabación de álbum musical',g:[6,3,3,2],w:5},
- {c:'corporativo',n:'Restaurante',t:'Video para restaurante',g:[1,5,4,2],w:5},
- {c:'audio',n:'Podcast',t:'Grabación de podcast',g:[1,7,2,2],w:4},
- {c:'eventos',n:'Bautizo',t:'Cobertura de bautizo',g:[3,7,2,2],w:3},
- {c:'eventos',n:'Graduación',t:'Graduación',g:[5,5,2,4],w:6},
- {c:'audio',n:'Coro',t:'Grabación de coro',g:[7,5,2,2],w:2},
- {c:'corporativo',n:'Redes',t:'Contenido para redes sociales',g:[7,7,2,2],w:1},
- {c:'eventos',n:'Retratos',t:'Sesión de retratos',g:[1,9,2,3],w:3},
- {c:'corporativo',n:'Conferencia',t:'Video de conferencia',g:[3,9,3,3],w:4},
- {c:'corporativo',n:'Spot',t:'Spot publicitario',g:[6,9,3,3],w:2}
+ {c:'eventos',n:'Boda',g:[1,1,3,4],w:1},
+ {c:'corporativo',n:'Marca',g:[4,1,2,2],w:2},
+ {c:'eventos',n:'XV años',g:[4,3,2,2],w:3},
+ {c:'audio',n:'Auditorio',g:[6,1,3,2],w:4},
+ {c:'audio',n:'Álbum',g:[6,3,3,2],w:5},
+ {c:'corporativo',n:'Restaurante',g:[1,5,4,2],w:5},
+ {c:'audio',n:'Podcast',g:[1,7,2,2],w:4},
+ {c:'eventos',n:'Bautizo',g:[3,7,2,2],w:3},
+ {c:'eventos',n:'Graduación',g:[5,5,2,4],w:6},
+ {c:'audio',n:'Coro',g:[7,5,2,2],w:2},
+ {c:'corporativo',n:'Redes',g:[7,7,2,2],w:1},
+ {c:'eventos',n:'Retratos',g:[1,9,2,3],w:3},
+ {c:'corporativo',n:'Conferencia',g:[3,9,3,3],w:4},
+ {c:'corporativo',n:'Spot',g:[6,9,3,3],w:2}
 ];
 (function(){
   const gal=$('#gallery');
   WORKS.forEach((w,i)=>{
     const b=document.createElement('button');b.type='button';b.className='plank ph'+w.w+' tilt';b.style.cssText=`--c:${w.g[0]};--r:${w.g[1]};--w:${w.g[2]};--h:${w.g[3]}`;b.dataset.c=w.c;
     b.innerHTML=`<div class="ph-img" data-img="w${i+1}"></div><svg class="ico cam"><use href="#i-cam"/></svg><div class="cap"><b>${w.n}</b>${w.c[0].toUpperCase()+w.c.slice(1)}</div>`;
-    b.addEventListener('click',()=>{const u=imgOf('w'+(i+1));const l=$('#lb-img');l.style.backgroundImage=u?'url("'+u+'")':'';l.textContent=u?'':'Aquí va tu foto, con su calidad original';$('#lb-title').textContent=w.n;$('#lb-text').textContent=w.t;$('#dlg-lb').showModal()});
+    b.addEventListener('click',()=>{const u=imgOf('w'+(i+1));const l=$('#lb-img');l.style.backgroundImage=u?'url("'+u+'")':'';l.textContent=u?'':'Aquí va tu foto, con su calidad original';$('#lb-title').textContent=w.n;$('#lb-text').textContent=w.c[0].toUpperCase()+w.c.slice(1);$('#dlg-lb').showModal()});
     gal.appendChild(b);
   });
   $$('#filters .chip').forEach(c=>c.addEventListener('click',()=>{
@@ -3690,7 +3690,7 @@ window.rebuildPortfolio=function(){
     else if(u){const th=miniOf(u),k=l.dataset.k=String(Date.now());l.style.backgroundImage='url("'+(th||u)+'")';
       if(th){const im=new Image();im.onload=()=>{if(l.dataset.k===k)l.style.backgroundImage='url("'+u+'")'};im.src=u}}
     else l.textContent='Aquí va tu foto, con su calidad original';
-    $('#lb-title').textContent=w.n;$('#lb-text').textContent=w.t||'';dg.showModal()};
+    $('#lb-title').textContent=w.n;$('#lb-text').textContent=w.sub||'';dg.showModal()};
   const addV=(b,u)=>{const v=document.createElement('video');v.className='pf-v';v.muted=true;v.loop=true;v.playsInline=true;v.preload='none';v.setAttribute('playsinline','');
     const pm=miniOf(u);if(pm)v.poster=pm;
     b.appendChild(v);const pl=document.createElement('span');pl.className='pf-play';pl.textContent='▶';b.appendChild(pl);
@@ -3704,6 +3704,7 @@ window.rebuildPortfolio=function(){
     const cn=(w.s&&String(w.s).trim())||(base?w.c[0].toUpperCase()+w.c.slice(1):(cats.find(c=>c.id===w.c)||{n:w.c}).n);
     const tu=base?'':(miniOf(iu)||iu||miniOf(vu)),im=base?`<div class="ph-img" data-img="${id}"></div>`:`<div class="ph-img${tu?' has':''}" ${tu?`style="background-image:url('${escH(tu)}')"`:''}></div>`;
     b.innerHTML=`${im}<svg class="ico cam"><use href="#i-${(!base&&vu)?'vid':'cam'}"/></svg><div class="cap"><b>${escH(w.n)}</b>${escH(cn)}</div>`;
+    w.sub=cn;
     const pos=/^\d{1,3}(\.\d+)?% \d{1,3}(\.\d+)?%$/.test(w.p||'')?w.p:'';
     if(pos){const pi=b.querySelector('.ph-img');if(pi)pi.style.backgroundPosition=pos}
     if(vu)addV(b,vu);
