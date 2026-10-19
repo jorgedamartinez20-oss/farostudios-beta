@@ -2280,15 +2280,36 @@ const PUB_IMG=/\.(jpe?g|png|webp|avif)$/i,PUB_VID=/\.(mp4|m4v|mov|webm)$/i,PUB_L
 const pubMiniKey=key=>{const i=key.lastIndexOf('/');return key.slice(0,i+1)+'_mini-'+key.slice(i+1).replace(/\.[^.]+$/,'')+'.jpg'};
 const pubKeyDe=u=>{const b=FILES+'/pub/';return typeof u==='string'&&u.startsWith(b)?decodeURIComponent(u.slice(b.length).split('?')[0].split('#')[0]):''};
 /* primer cuadro de un video (archivo local o enlace); devuelve una foto JPG reducida */
+/* luminosidad media (0-255) de una imagen/cuadro, para detectar miniaturas negras */
+function pubLuma(src){
+  const cv=document.createElement('canvas');cv.width=cv.height=24;const cx=cv.getContext('2d',{willReadFrequently:true});
+  cx.drawImage(src,0,0,24,24);const d=cx.getImageData(0,0,24,24).data;let s=0;
+  for(let i=0;i<d.length;i+=4)s+=.2126*d[i]+.7152*d[i+1]+.0722*d[i+2];
+  return s/(d.length/4);
+}
+/* toma varios cuadros del video y se queda con el más claro (muchos videos empiezan con fundido a negro) */
 function pubPrimerCuadro(src){
   return new Promise((ok,no)=>{
     const remoto=typeof src==='string',url=remoto?src:URL.createObjectURL(src),v=document.createElement('video');
-    v.muted=true;v.playsInline=true;v.preload='metadata';if(remoto)v.crossOrigin='anonymous';
+    v.muted=true;v.playsInline=true;v.preload='auto';if(remoto)v.crossOrigin='anonymous';
     const fin=()=>{clearTimeout(t);if(!remoto)URL.revokeObjectURL(url);v.removeAttribute('src');v.load()};
-    const t=setTimeout(()=>{fin();no(new Error('Se tardó demasiado leyendo el video'))},60000);
+    const t=setTimeout(()=>{fin();no(new Error('Se tardó demasiado leyendo el video'))},90000);
     v.addEventListener('error',()=>{fin();no(new Error('No se pudo leer el video'))});
-    v.addEventListener('loadedmetadata',()=>{try{v.currentTime=Math.min(1,Math.max(.05,(v.duration||1)*.1))}catch(e){}});
-    v.addEventListener('seeked',async()=>{try{if(!v.videoWidth)throw new Error('Video sin imagen');const b=await enImgRedim(v,PUB_LADO,.82);fin();ok(b)}catch(e){fin();no(e)}},{once:true});
+    v.addEventListener('loadedmetadata',async()=>{
+      try{
+        const d=v.duration||2,pts=[.08,.2,.35,.5,.65,.8].map(f=>Math.max(.05,Math.min(d-.1,d*f)));
+        let mejor=null,ml=-1;
+        for(const x of pts){
+          await new Promise(r=>{const h=()=>{v.removeEventListener('seeked',h);r()};v.addEventListener('seeked',h);v.currentTime=x});
+          if(!v.videoWidth)continue;
+          const l=pubLuma(v);
+          if(l>ml){ml=l;if(mejor&&mejor.close)mejor.close();mejor=await createImageBitmap(v)}
+          if(ml>45)break;
+        }
+        if(!mejor)throw new Error('Video sin imagen');
+        const b=await enImgRedim(mejor,PUB_LADO,.82);if(mejor.close)mejor.close();fin();ok(b);
+      }catch(e){fin();no(e)}
+    });
     v.src=url;
   });
 }
@@ -2348,12 +2369,29 @@ function pubThumb(u,esVid,pos){
   if(esVid)return vid();
   const i=el('img',{src:u,alt:'',loading:'lazy',draggable:'false'});i.style.objectPosition=pp;return i;
 }
+/* revisa las copias de videos ya subidas y rehace las que quedaron negras */
+async function pubMinisRehacer(onProg){
+  let cur=[];try{cur=JSON.parse(sitioVal('minis')||'[]')||[]}catch(e){}
+  const vids=cur.filter(u=>PUB_VID.test(u)),cola=[...vids];let rehechas=0,i=0;
+  const uno=async u=>{
+    try{
+      const k=pubKeyDe(u),mu=FILES+'/pub/'+matKey(pubMiniKey(k))+'?r='+Date.now();
+      const bl=await (await fetch(mu,{cache:'no-store'})).blob(),bm=await createImageBitmap(bl);
+      if(pubLuma(bm)<22){const b=await pubPrimerCuadro(u);await matSubirKey0(new File([b],'m.jpg',{type:'image/jpeg'}),'publico',pubMiniKey(k),null);rehechas++}
+    }catch(e){}
+    i++;if(onProg)onProg(i,vids.length);
+  };
+  await Promise.all(Array.from({length:Math.min(2,cola.length)},async()=>{while(cola.length)await uno(cola.shift())}));
+  return rehechas;
+}
 function pubMinisCard(){
   const c=el('div',{class:'card sgp'});
   const pintar=()=>{
     const n=pubMinisPendientes().length;c.textContent='';
     const b=el('button',{class:'btn btn-gold',type:'button'},icoEl('check'),n?' Preparar versiones livianas ('+n+')':' Todo preparado');
     if(!n)b.disabled=true;
+    const rh=el('button',{class:'btn btn-ghost',type:'button',title:'Si alguna vista previa de video se ve negra'},icoEl('check'),' Rehacer miniaturas negras');
+    rh.addEventListener('click',async()=>{rh.disabled=true;try{const r=await pubMinisRehacer((i,t)=>{rh.textContent=' Revisando '+i+' de '+t+'…'});toast(r?'Listo: '+r+' miniatura(s) rehecha(s). Recarga con Cmd+Shift+R.':'Ninguna miniatura estaba negra')}catch(e){toast(e.message||'No se pudo')}pintar()});
     b.addEventListener('click',async()=>{
       b.disabled=true;
       try{const r=await pubMinisPreparar((i,t)=>{b.textContent=' Listos '+i+' de '+t+'…'});
@@ -2363,7 +2401,7 @@ function pubMinisCard(){
     });
     c.append(el('h2',{},'Velocidad de carga del landing'),
       el('p',{class:'muted'},'Para que la página abra rápido, cada foto y video del landing tiene una copia chica que se muestra primero; la original (con su calidad completa, sin comprimir) se abre al verla en grande. Los archivos nuevos la crean solos al subirlos. Aquí se preparan los que ya estaban subidos.'),
-      el('div',{class:'acts'},b));
+      el('div',{class:'acts'},b,rh));
   };
   pintar();return c;
 }
