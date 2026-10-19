@@ -2797,8 +2797,8 @@ const SITE={
 const imgOf=k=>SITE.img[k]||'';
 /* versiones livianas (_mini-nombre.jpg: miniatura de la foto o primer cuadro del video). El Workspace guarda la lista en 'minis';
    solo se usan las que existen, así nunca se pide un archivo que no está. El original no se toca: se abre al ver en grande. */
-SITE.minis=new Set();
-const miniOf=u=>{if(!u||!SITE.minis.has(u)||!/\/pub\/landing\//.test(u))return '';const i=u.lastIndexOf('/');return u.slice(0,i+1)+'_mini-'+u.slice(i+1).replace(/\.[^.]+$/,'')+'.jpg'};
+SITE.minis=new Set();SITE.minisv={};
+const miniOf=u=>{if(!u||!SITE.minis.has(u)||!/\/pub\/landing\//.test(u))return '';const i=u.lastIndexOf('/');return u.slice(0,i+1)+'_mini-'+u.slice(i+1).replace(/\.[^.]+$/,'')+'.jpg'+(SITE.minisv[u]?'?v='+SITE.minisv[u]:'')};
 window.__slow=!!(navigator.connection&&(navigator.connection.saveData||/^(slow-2g|2g|3g)$/.test(navigator.connection.effectiveType||'')));
 /* las fotos se piden cuando están cerca de la pantalla (no todas de golpe) y los videos del portafolio igual */
 const LZI=('IntersectionObserver' in window)?new IntersectionObserver((en,o)=>en.forEach(x=>{if(!x.isIntersecting)return;const n=x.target;o.unobserve(n);const u=n.dataset.lz;if(u){n.style.backgroundImage='url("'+u+'")';n.classList.add('has')}}),{rootMargin:'800px 0px'}):null;
@@ -4133,6 +4133,7 @@ window.rebuildPortfolio&&window.rebuildPortfolio();
       else if(k.startsWith('vid.'))SITE.vid[k.slice(4)]=v;
       else if(k==='portafolio'){try{SITE.pf=JSON.parse(v)}catch(_){}}
       else if(k==='minis'){try{SITE.minis=new Set(JSON.parse(v))}catch(_){}}
+      else if(k==='minisv'){try{SITE.minisv=JSON.parse(v)||{}}catch(_){}}
       else if(k==='equipo'){try{SITE.team=JSON.parse(v)}catch(_){}}
       else if(k==='hero.cortina'){SITE.cortina=parseFloat(v)}
       else if(k==='catalogoPdf')SITE.catalogoPdf=v;
