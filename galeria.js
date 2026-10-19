@@ -102,9 +102,7 @@ async function vistaGaleria(){
     +'<button class="gb" id="gdl" aria-label="Descargar">'+ic('dl')+'<span class="t">Descargar</span></button>'
     +'<button class="gb" id="gay" aria-label="Ayuda">'+ic('help')+'</button>'
     +'<button class="gb" id="gsal" aria-label="Salir">'+ic('out')+'<span class="t">Salir</span></button></header>'
-   +'<section class="gcov" id="gcv"><div class="im" style="'+(pl&&pl.urlVer?'background-image:url(\''+esc(pl.urlVer)+'\');':'')+'--fx:'+(+foco.x||50)+'%;--fy:'+(+foco.y||50)+'%"></div>'
-   +'<div class="tx">'+(fe?'<p class="fe">'+esc(fe)+'</p>':'')+'<h1>'+esc(titulo)+'</h1>'+(sub?'<p class="su">'+esc(sub)+'</p>':'')+'<span class="reg"></span><button class="bt" id="bver">Ver galería</button><p class="priv">Galería privada</p></div>'
-   +'<p class="pie">'+nImg+' fotografías</p></section>'
+   +'<section class="gcov" id="gcv"></section>'
    +'<section class="gmuro" id="gmu"><div class="in">'+(cfg.mensaje?'<p class="cab">'+esc(cfg.mensaje)+'</p>':'')+'<div id="gfl"></div><div id="gcuerpo"></div>'
    +'<div class="gfin" id="gfin"><span class="iso"></span><p>Gracias por dejarnos contar tu historia. Guarda tus favoritas, compártelas con quien quieras y si te gustó, cuéntanos cómo fue.</p><div class="row"><button class="gbtn p" id="gresb">'+ic('star')+' Dejar una reseña</button><button class="gbtn" id="gprb">'+ic('bag')+' Pedir impresiones</button></div></div></div>'
    +'<div class="gcon" id="gcon" hidden></div>'
@@ -112,6 +110,8 @@ async function vistaGaleria(){
    +gCodigoHtml(cfg)
    +'<button class="gbolsa" id="gbolsa" aria-label="Impresiones">'+ic('bag')+'<span class="cnt" id="gbc" hidden></span></button>'
    +'<div class="gmus" id="gmus" hidden><div class="cv" id="gmcv"><span class="iso"></span></div><div class="tx"><b id="gmt"></b><small id="gma"></small></div><button id="gmp" aria-label="Silenciar la música">'+ic('vol')+'</button><i class="eq" aria-hidden="true"><s></s><s></s><s></s></i></div></div>';
+  /* portada: estilo, encuadre, oscuridad y movimiento los elige David en Workspace (config.cubierta) */
+  gPortadaPinta(cfg,{src:pl&&pl.urlVer||'',titulo,fecha:[fe,sub].filter(Boolean).join(' · '),n:nImg,foco});
   const mh=()=>{const t=$('#gtp');if(t)document.documentElement.style.setProperty('--gh',t.offsetHeight+'px')};mh();addEventListener('resize',mh);
   $('#gsal').onclick=gConfirmaSalir;const gv=$('#gvol');if(gv)gv.onclick=()=>inicio();
   $('#bver').onclick=gAbrirMuro;
@@ -131,6 +131,21 @@ async function vistaGaleria(){
   if(window.GCOR)await gPre(pl&&pl.urlVer,6000);
   await gCorFin();
   const g0=document.querySelector('.gal');if(g0)g0.classList.add('go');
+  gPortadaMueve(false);
+}
+/* portada: dibuja el estilo elegido con portada.js (sin capa fija: la oscuridad es la que se eligió) */
+function gPortadaPinta(cfg,d){
+  const cb=cfg.cubierta||{},fx=typeof cb.fx==='number'?cb.fx:(+d.foco.x||50)/100,fy=typeof cb.fy==='number'?cb.fy:(+d.foco.y||50)/100;
+  G.pc={estilo:cb.estilo||'centro',titulo:d.titulo,fecha:d.fecha,src:d.src,fx,fy,zoom:+cb.zoom>=1?+cb.zoom:1,ov:Math.max(0,Math.min(70,+cb.ov||0)),movimiento:cb.mov!==false,pie:d.n+' fotografías · Galería privada'};
+  const box=document.getElementById('gcv');if(!box||!window.FaroPortada)return;
+  G.pcv=FaroPortada.render(box,G.pc,{boton:true,movimiento:false});
+  const m=()=>{const x=box.clientWidth<700;box.classList.toggle('fpph',x)};m();
+  if(G.pcR)removeEventListener('resize',G.pcR);G.pcR=m;addEventListener('resize',m);
+}
+/* zoom out suave: arranca cuando la portada ya se ve (abierta=true: versión corta del encabezado) */
+function gPortadaMueve(abierta){
+  const cv=G.pcv;if(!cv||!G.pc||!G.pc.movimiento)return;
+  cv.classList.remove('fpg','fpa');void cv.offsetWidth;cv.classList.add('fpg');if(abierta)cv.classList.add('fpa');
 }
 const gEspera=ms=>new Promise(r=>setTimeout(r,ms));
 const gPre=(u,ms)=>new Promise(r=>{if(!u)return r();const i=new Image();i.onload=i.onerror=()=>r();i.src=u;setTimeout(r,ms||5000)});
@@ -166,7 +181,7 @@ async function gAbrirMuro(silencio){
     G.finOk=!hayTut;
     const bv=hayTut?gBienvenida():null;
     if(cor)await cor.fin();
-    g.classList.add('go');
+    g.classList.add('go');gPortadaMueve(true);
     b.disabled=false;
     /* orden: bienvenida → tutorial (inmediato) → la galería empieza desde arriba; la reseña va al final */
     if(bv){await bv;await gEspera(150);gTutorial(true)}

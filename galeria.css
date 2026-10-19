@@ -25,32 +25,12 @@ body.g{background:var(--g-bg);color:var(--g-tx);font-family:var(--g-ft2)}
 /* ---------- portada ---------- */
 /* La foto de portada llena siempre todo el espacio (sin franjas negras) y se aleja despacio (zoom out). */
 .gcov{position:relative;height:100vh;height:100svh;min-height:560px;overflow:hidden;color:#fff;display:grid;place-items:center;text-align:center;background:#0e0e10}
-.gcov .im{position:absolute;inset:0;background-size:cover;background-position:var(--fx,50%) var(--fy,50%);transform-origin:var(--fx,50%) var(--fy,50%);transform:scale(1.2);will-change:transform}
-/* zoom out lento y parejo: unos 45 segundos, sin arranque brusco */
-.gal.go .gcov .im{animation:gzo 45s cubic-bezier(.35,.12,.3,1) both}
 @keyframes gzo{from{transform:scale(1.2)}to{transform:scale(1)}}
 @keyframes gzo2{from{transform:scale(1.1)}to{transform:scale(1)}}
-/* capa negra de baja opacidad: da el aspecto premium y asegura que el texto se lea con cualquier foto */
-.gcov::before{content:"";position:absolute;inset:0;z-index:1;background:rgba(0,0,0,.42);box-shadow:inset 0 -140px 120px -70px rgba(0,0,0,.4)}
 .gcov::after{content:"";position:absolute;inset:0;z-index:2;pointer-events:none;opacity:.16;mix-blend-mode:overlay;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
-.gcov .tx{position:relative;z-index:4;padding:0 22px;max-width:960px;display:grid;gap:10px;justify-items:center}
-.gcov .fe{font:700 .82rem var(--g-ft2);letter-spacing:.32em;text-transform:uppercase;color:#EAD9A6;text-shadow:0 2px 14px rgba(0,0,0,.65)}
-.gcov h1{font:400 clamp(2.8rem,9vw,7rem)/.95 var(--g-ft);letter-spacing:var(--g-ls);text-transform:var(--g-up);color:#fff;text-shadow:0 2px 6px rgba(0,0,0,.5),0 8px 34px rgba(0,0,0,.6)}
-.gcov .su{font:400 clamp(.95rem,2.4vw,1.5rem)/1.2 var(--g-ft);letter-spacing:.14em;text-transform:uppercase;color:#EAD9A6;text-shadow:0 2px 14px rgba(0,0,0,.65)}
-.gcov .reg{width:54px;height:1px;background:#EAD9A6;margin:12px 0 4px}
 /* botón con color (borgoña de Faro, borde dorado): contrasta con cualquier foto */
-.gcov .bt{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:56px;padding:0 44px;border:1px solid #D8C48E;background:var(--borgona);color:#fff;font:700 .88rem var(--g-ft2);letter-spacing:.28em;text-transform:uppercase;box-shadow:0 16px 32px rgba(0,0,0,.5),0 0 0 4px rgba(139,26,42,.28);transition:background .25s,transform .25s,box-shadow .25s}
-.gcov .bt:hover{background:#A3202F;transform:translateY(-2px);box-shadow:0 20px 38px rgba(0,0,0,.55),0 0 0 6px rgba(139,26,42,.34)}
-.gcov .priv{font-size:.88rem;color:rgba(255,255,255,.94);text-shadow:0 2px 12px rgba(0,0,0,.7)}
-.gcov .pie{position:absolute;left:0;right:0;bottom:6vh;z-index:4;font-size:.78rem;letter-spacing:.26em;text-transform:uppercase;color:rgba(255,255,255,.88);text-shadow:0 2px 12px rgba(0,0,0,.7)}
 /* ya abierta la galería: la portada queda como foto de encabezado corta. Se mueve con la página (no queda fija). */
 .gal.abierta .gcov{height:46vh;height:46svh;min-height:300px}
-.gal.go.abierta .gcov .im{animation:gzo2 30s cubic-bezier(.35,.12,.3,1) both}
-.gal.abierta .gcov .im{transform:scale(1.1)}
-.gal.abierta .gcov .bt,.gal.abierta .gcov .priv{display:none}
-.gal.abierta .gcov .tx{padding-top:var(--gh,56px)}
-.gal.abierta .gcov h1{font-size:clamp(2.3rem,7vw,5rem)}
-.gal.abierta .gcov .pie{bottom:18px}
 
 /* cortina de carga: el farito se llena (igual que en la web de Faro) */
 #gcor{position:fixed;inset:0;z-index:300;display:grid;place-items:center;background:radial-gradient(60vmax 60vmax at 50% 46%,rgba(139,26,42,.5),transparent 70%),#252528;opacity:0;visibility:hidden;pointer-events:none;transition:opacity .5s ease,visibility 0s .5s}
@@ -84,7 +64,7 @@ body.g{background:var(--g-bg);color:var(--g-tx);font-family:var(--g-ft2)}
 .gal.pre .gcod,.gal.pre .gvista,.gal.pre #glis,.gal.pre #gdl,.gal.pre #gay,.gal.pre #gmu,.gal.pre .gbolsa{display:none}
 .gsp{display:inline-block;width:14px;height:14px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:gspin .8s linear infinite;vertical-align:-2px}
 @keyframes gspin{to{transform:rotate(360deg)}}
-.gcov .bt:disabled{opacity:.8;cursor:progress}
+.gcov .fpb:disabled{opacity:.8;cursor:progress}
 /* cuadrícula con pequeñas diferencias de tamaño */
 .gph.va{aspect-ratio:var(--ar,1/1);min-height:0}
 .gph.va>button.ver{height:100%}
@@ -103,7 +83,7 @@ body.g{background:var(--g-bg);color:var(--g-tx);font-family:var(--g-ft2)}
 .gmus .eq s{display:block;width:3px;height:30%;background:var(--g-ac);border-radius:1px;animation:geq 1s ease-in-out infinite;animation-play-state:paused}
 .gmus.on .eq s{animation-play-state:running}.gmus .eq s:nth-child(2){animation-delay:-.4s}.gmus .eq s:nth-child(3){animation-delay:-.7s}
 @keyframes geq{0%,100%{height:25%}50%{height:100%}}
-@media(prefers-reduced-motion:reduce){.gmus .eq s,#gcor .ld-fill::before,#gcor .ld-fill::after{animation:none}.gal.go .gcov .im,.gal.go.abierta .gcov .im{animation:none}.gcod,.gcod .pn{transition:none}}
+@media(prefers-reduced-motion:reduce){.gmus .eq s,#gcor .ld-fill::before,#gcor .ld-fill::after{animation:none}.gcod,.gcod .pn{transition:none}}
 
 /* ---------- muro ---------- */
 .gmuro{position:relative;padding:0}
@@ -309,7 +289,7 @@ body:has(.glb) .gtop,body:has(.glb) .gcod,body:has(.glb) .gbolsa,body:has(.glb) 
 .gpub .ctit{text-align:center;padding:36px 20px 10px}
 .gpub .ctit h1{font:400 clamp(2.4rem,7vw,4.6rem)/1 var(--g-ft);letter-spacing:var(--g-ls);text-transform:var(--g-up)}
 .gpub .ctit p{letter-spacing:.3em;text-transform:uppercase;font-size:.8rem;opacity:.7;margin-top:10px}
-@media(prefers-reduced-motion:reduce){.gcov .im{animation:none}.gt .pl{animation:none}}
+@media(prefers-reduced-motion:reduce){.gt .pl{animation:none}}
 #gmu{scroll-margin-top:104px}
 
 /* portada: landing completo, sin desplazamiento */
@@ -328,3 +308,16 @@ html:has(.gal.pre),body:has(.gal.pre){overflow:hidden;height:100%;overscroll-beh
 .gmc.carta .cuerpo p{font-size:1.02rem;line-height:1.7;margin:0}
 .gmc.carta .firma{font:400 1.7rem/1 'Bebas Neue',Impact,sans-serif;letter-spacing:.12em;color:var(--borgona);margin-top:4px}
 .gmc.carta .firma small{display:block;font:300 .72rem 'Lato',sans-serif;letter-spacing:.3em;color:#3A3A3A;margin-top:6px}
+
+/* ---------- portada con estilos (portada.js / portada.css) ----------
+   Sin capa negra fija: la oscuridad de la foto es solo la que se elige en Workspace (--ov).
+   El zoom out lo arranca galeria.js con la clase .fpg cuando la portada ya se ve. */
+.gcov{container-type:size}
+.gcov .fpc{position:absolute;inset:0;width:auto;height:auto;--cvft:var(--g-ft);--cvls:var(--g-ls);--cvup:var(--g-up);--cvbg:var(--g-bg);--cvtx:var(--g-tx);--ts:6cqw;--ds:1.35cqw;--bs:1.15cqw;--gap:1.5cqw}
+.gcov.fpph .fpc{--ts:10.5cqw;--ds:3.1cqw;--bs:2.9cqw;--gap:3.4cqw}
+.gcov .fpc .fpb:disabled{opacity:.8;cursor:progress}
+.gcov .fpc .fpb:hover{background:color-mix(in srgb,currentColor 14%,transparent)}
+.gcov .fpc.fpa .fpz{animation-name:gzo2;animation-duration:30s}
+.gal.abierta .gcov .fpc[data-s=centro] .fpx,.gal.abierta .gcov .fpc[data-s=marco] .fpx,.gal.abierta .gcov .fpc[data-s=raya] .fpx{padding-top:var(--gh,56px)}
+.gal.abierta .gcov .fpc{--ts:4.4cqw}
+.gal.abierta .gcov.fpph .fpc{--ts:8.5cqw}
