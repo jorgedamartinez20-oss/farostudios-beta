@@ -1846,7 +1846,7 @@ const secKeys=s=>s.keys?s.keys():(s.items||[]).map(x=>x.k);
 const PF_BASE=[['Boda','eventos'],['Marca','corporativo'],['XV años','eventos'],['Auditorio','audio'],['Álbum','audio'],['Restaurante','corporativo'],['Podcast','audio'],['Bautizo','eventos'],['Graduación','eventos'],['Coro','audio'],['Redes','corporativo'],['Retratos','eventos'],['Conferencia','corporativo'],['Spot','corporativo']];
 const PF_GEO=[[1,1,3,4],[4,1,2,2],[4,3,2,2],[6,1,3,2],[6,3,3,2],[1,5,4,2],[1,7,2,2],[3,7,2,2],[5,5,2,4],[7,5,2,2],[7,7,2,2],[1,9,2,3],[3,9,3,3],[6,9,3,3]];
 const PF_CATS0=[{id:'eventos',n:'Eventos',s:''},{id:'corporativo',n:'Corporativo',s:''},{id:'audio',n:'Audio',s:''}];
-let PFM=null;
+let PFM=null,PF_COLA=Promise.resolve();
 function pfLeer(){let p={};try{p=JSON.parse(sitioVal('portafolio')||'{}')||{}}catch(e){}
   return{cats:(p.cats&&p.cats.length?p.cats:PF_CATS0).map(c=>({...c})),off:[...(p.off||[])],over:JSON.parse(JSON.stringify(p.over||{})),extra:(p.extra||[]).map(x=>({...x})),order:[...(p.order||[])]}}
 const pfSlug=t=>String(t||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,30)||'cat';
@@ -1931,7 +1931,9 @@ function rPfTablones(card){
     }else{
       const x=P.extra.find(z=>z.id===id);if(!x)return;
       const fi=el('input',{type:'file',accept:'image/*,video/*',style:'display:none'});
-      fi.addEventListener('change',async()=>{const f=fi.files[0];if(!f)return;try{toast('Subiendo…');x.src=await pfSubir('pf-'+x.id,f);x.type=/^video\//.test(f.type)?'vid':'img';await pfGuardar()}catch(e){toast(e.message||'No se pudo subir')}});
+      fi.addEventListener('change',async()=>{const f=fi.files[0];if(!f)return;try{toast('Subiendo…');const u=await pfSubir('pf-'+x.id,f),ty=/^video\//.test(f.type)?'vid':'img';
+        /* si se suben varias casillas seguidas, cada una se anota en fila sobre lo último guardado: así ninguna se pierde ni pisa a otra */
+        PF_COLA=PF_COLA.then(async()=>{if(!PFM)PFM=pfLeer();const c=PFM.extra.find(z=>z.id===x.id);if(!c)return;c.src=u;c.type=ty;x.src=u;x.type=ty;await pfGuardar()});await PF_COLA}catch(e){toast(e.message||'No se pudo subir')}});
       const prev=el('div',{class:'stp'},x.src?pubThumb(x.src,x.type==='vid'):icoEl('image'));
       const ck=el('input',{type:'checkbox'});ck.checked=x.on!==false;ck.addEventListener('change',()=>{x.on=ck.checked});
       const nm=el('input',{type:'text',maxlength:'30',placeholder:'Nombre','aria-label':'Nombre de la casilla '+(k+1)});nm.value=x.n||'';nm.addEventListener('input',()=>{x.n=nm.value});
