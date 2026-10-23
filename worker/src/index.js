@@ -934,6 +934,26 @@ export default {
         return json(request, env, { ok: true, papelera: true });
       }
 
+      // Borra una carpeta entera: todo lo que hay dentro, subcarpetas incluidas. Es definitivo.
+      // Se niega a tocar las carpetas principales y las internas (papelera, estadísticas, respaldos, copias livianas).
+      if (ruta === '/api/carpeta' && request.method === 'DELETE') {
+        const prefix = url.searchParams.get('prefix') || '';
+        if (!bucket || !prefix.endsWith('/') || prefix.includes('..') || prefix.startsWith('/') || prefix.startsWith(PAPELERA) || prefix.startsWith('_stats/') || prefix.startsWith(RESP) || prefix.startsWith(LIGERAS)) return err(request, env, 'Carpeta inválida');
+        if (DESTINOS.some((d) => d.bucket === bucketNombre && d.prefijo.startsWith(prefix))) return err(request, env, 'No se pueden borrar las carpetas principales');
+        let n = 0, cursor;
+        do {
+          const r = await bucket.list({ prefix, cursor, limit: 1000 });
+          const claves = r.objects.map((o) => o.key);
+          if (claves.length) {
+            await bucket.delete(claves);
+            for (const k of claves) { if (!k.endsWith('/.keep')) { try { await env.PRIVADO.delete(marcaKey(bucketNombre, k)); } catch (e) { /* sin marca de papelera */ } } }
+            n += claves.filter((k) => !k.endsWith('/.keep')).length;
+          }
+          cursor = r.truncated ? r.cursor : undefined;
+        } while (cursor);
+        return json(request, env, { ok: true, borrados: n });
+      }
+
       // Almacenamiento: cuánto ocupa todo y qué se puede limpiar (con memoria de 5 min; ?fresco=1 recalcula)
       if (ruta === '/api/almacenamiento' && request.method === 'GET') {
         let d = url.searchParams.get('fresco') === '1' ? null : await rLeer(env, ALM_KEY);

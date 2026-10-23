@@ -2417,6 +2417,21 @@ async function fapi(path,o={}){
   return fetch(FILES+path,{method:o.method||'GET',headers:Object.assign({Authorization:'Bearer '+(S&&S.access)},o.headers||{}),body:o.body});
 }
 async function fjson(path,o){const r=await fapi(path,o);let j={};try{j=await r.json()}catch(e){}if(!r.ok)throw new Error(j.error||('Error '+r.status));return j}
+/* Borrar una carpeta entera (con todo lo que tiene dentro). Usa el servicio actualizado; si todavía no está publicado,
+   manda cada archivo a la papelera uno por uno (rápido, en grupos) y avisa que falta publicar el servicio. */
+async function matBorrarCarpeta(bucket,prefijo,onProg){
+  try{const j=await fjson('/api/carpeta?bucket='+bucket+'&prefix='+encodeURIComponent(prefijo),{method:'DELETE'});return{borrados:j.borrados||0,definitivo:true}}
+  catch(e){if(!/no encontrado|404|405/i.test(e.message||''))throw e}
+  const claves=[];
+  const recorre=async pref=>{const j=await fjson('/api/lista?bucket='+bucket+'&prefix='+encodeURIComponent(pref));j.archivos.forEach(a=>claves.push(a.key));for(const c of j.carpetas)await recorre(c)};
+  await recorre(prefijo);
+  let hechos=0;
+  for(let i=0;i<claves.length;i+=6){
+    await Promise.all(claves.slice(i,i+6).map(k=>fjson('/api/objeto?bucket='+bucket+'&key='+encodeURIComponent(k),{method:'DELETE'}).catch(()=>null)));
+    hechos=Math.min(claves.length,i+6);if(onProg)onProg(hechos,claves.length);
+  }
+  return{borrados:claves.length,definitivo:false}
+}
 async function xhrPut(path,headers,body,onProg){
   if(S&&S.exp-60000<Date.now())await refresh();
   return new Promise((res,rej)=>{const x=new XMLHttpRequest();x.open('PUT',FILES+path);x.setRequestHeader('Authorization','Bearer '+(S&&S.access));
@@ -2854,6 +2869,14 @@ async function matInit(){
     if(up&&!SOLO)tools.append(el('button',{class:'btn btn-gold btn-sm',type:'button',onclick:()=>fi.click()},icoEl('upload'),' Subir archivos'));
     if(!SOLO&&nivelEnt&&!d.persona)tools.append(el('button',{class:'btn btn-gold btn-sm',type:'button',onclick:async()=>{const n=prompt('Nombre de la carpeta (persona o empresa)');if(!n||!n.trim())return;try{await crearCarpeta(d,n.trim())}catch(e){toast(e.message)}}},icoEl('plus'),' Nueva carpeta'));
     tools.append(el('button',{class:'btn btn-ghost btn-sm',type:'button',onclick:()=>render()},icoEl('refresh'),' Actualizar'));
+    if(!SOLO&&d&&ruta.length>d.prefijo.length)tools.append(el('button',{class:'btn btn-red btn-sm',type:'button',onclick:async()=>{
+      const nom=nomCarpeta(ruta);
+      if(!confirm('¿Eliminar la carpeta «'+nom+'» con TODO lo que tiene dentro (archivos y subcarpetas)?\n\nEsto no se puede deshacer.'))return;
+      if((prompt('Para confirmar escribe BORRAR (en mayúsculas)')||'').trim()!=='BORRAR'){toast('No se borró nada');return}
+      const pad=ruta.replace(/\/$/,'').split('/').slice(0,-1).join('/')+'/';
+      try{toast('Borrando carpeta…');const r=await matBorrarCarpeta(d.bucket,ruta,(h,t)=>toast('Borrando… '+h+' de '+t));
+        toast(r.borrados+' archivo'+(r.borrados===1?'':'s')+(r.definitivo?' borrados':' enviados a la papelera (publica el servicio de archivos actualizado para borrar carpetas por completo)'));
+        await render(pad)}catch(e){toast(e.message||'No se pudo borrar la carpeta')}}},icoEl('trash'),' Eliminar carpeta'));
     nota.textContent=up?(d.bucket==='publico'?'Público: estos archivos tienen enlace permanente y se usan en la página. Arrastra archivos aquí para subirlos.':'Privado: nadie los abre sin un enlace temporal que genera el administrador. Arrastra archivos aquí para subirlos.'):nivelEnt?'Elige a la persona o empresa (o crea su carpeta). También puedes arrastrar archivos sobre su carpeta.':'Elige una carpeta. También puedes arrastrar archivos sobre una carpeta para subirlos directo.';
     if(SOLO)nota.textContent=d&&d.bucket==='publico'?'Solo lectura. Estos archivos son públicos en la página.':'Solo lectura: abre o descarga. Los enlaces son temporales (1 hora).';
     grid.textContent='';
@@ -4804,9 +4827,26 @@ function renderEn(){
     if(!ps.length)l.append(el('p',{class:'muted',style:'font-size:.85rem;margin:6px 0'},'Aún no tiene proyectos.'));
     card.append(l,el('div',{style:'margin-top:10px;display:flex;gap:6px;flex-wrap:wrap'},
       enBtn('Nuevo proyecto','plus',()=>enNuevoProyecto(c)),enBtn('Ver acceso','key',()=>enVerAcceso(c)),
-      enBtn(c.activo?'Desactivar':'Activar',null,async()=>{if(await enPatchCuenta(c,{activo:!c.activo}))renderEn()})));
+      enBtn(c.activo?'Desactivar':'Activar',null,async()=>{if(await enPatchCuenta(c,{activo:!c.activo}))renderEn()}),
+      enBtn('Eliminar acceso','trash',()=>enEliminarCuenta(c),'btn-red')));
     g.append(card);
   });
+}
+async function enEliminarCuenta(c){
+  const carpeta='faro-'+EN_TIPOS[c.tipo][2]+'/'+c.slug+'/';
+  const np=EN.proy.filter(p=>p.cuenta_id===c.user_id).length;
+  if(!confirm('¿Eliminar el acceso de '+c.nombre+'?\n\nSe borran su usuario ('+c.usuario+'), sus '+np+' proyecto'+(np===1?'':'s')+' y todos sus registros de Entregas. Esto no se puede deshacer y podrás crear el acceso de nuevo desde cero.'))return;
+  const conArchivos=confirm('¿Borrar también sus archivos guardados?\n\nCarpeta: '+carpeta+'\n\nAceptar = borra también los archivos.\nCancelar = elimina solo el acceso y deja los archivos en la carpeta.');
+  try{
+    toast('Eliminando acceso…');
+    const r=await api('/rest/v1/rpc/en_eliminar_cuenta',{method:'POST',body:{p_user:c.user_id}});
+    if(!r.ok){const t=await errText(r);throw new Error(/en_eliminar_cuenta/.test(t)?'Falta correr sql/entregas-eliminar-acceso.sql en Supabase (una sola vez).':t)}
+    let msg='Acceso eliminado';
+    if(conArchivos){try{const b=await matBorrarCarpeta('privado',carpeta,(h,t)=>toast('Borrando archivos… '+h+' de '+t));msg+=' y '+b.borrados+' archivo'+(b.borrados===1?'':'s')+(b.definitivo?' borrados':' enviados a la papelera')}catch(e){msg+='. No se pudieron borrar los archivos: '+(e.message||'error')}}
+    EN.cuentas=EN.cuentas.filter(x=>x.user_id!==c.user_id);EN.proy=EN.proy.filter(p=>p.cuenta_id!==c.user_id);
+    try{const v=vaultGet();delete v[c.user_id];localStorage.setItem('faro_accesos',JSON.stringify(v))}catch(e){}
+    toast(msg);renderEn();try{if(AC.sel&&AC.sel.cl)renderGrp('cl')}catch(e){}
+  }catch(e){toast(e.message||'No se pudo eliminar el acceso')}
 }
 async function enPatchCuenta(c,body){
   const r=await api('/rest/v1/en_cuentas?user_id=eq.'+c.user_id,{method:'PATCH',body,headers:{Prefer:'return=minimal'}});
