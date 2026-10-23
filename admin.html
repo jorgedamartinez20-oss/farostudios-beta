@@ -4730,7 +4730,8 @@ async function enExif(file){
   }catch(e){}
   return out;
 }
-const enUrl=()=>{try{return new URL('entregas.html',location.href).href}catch(e){return 'https://farostudios.net/entregas.html'}};
+/* Enlace que se le manda al cliente: siempre el de la web principal (la vista previa interna sigue usando el entregas.html de este mismo sitio) */
+const enUrl=()=>'https://www.farostudios.net/entregas';
 const enMmss=s=>{s=Math.max(0,Math.floor(s||0));return Math.floor(s/60)+':'+String(s%60).padStart(2,'0')};
 const enTipoArch=n=>MAT_VER.img.test(n)?'imagen':MAT_VER.vid.test(n)?'video':MAT_VER.aud.test(n)?'audio':MAT_VER.pdf.test(n)?'pdf':'otro';
 const enCuenta=id=>EN.cuentas.find(c=>c.user_id===id);
