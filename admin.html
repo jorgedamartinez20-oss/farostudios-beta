@@ -4791,7 +4791,11 @@ function enBandejas(root){
     rs.forEach(x=>c.append(el('div',{class:'prow',style:'cursor:default;flex-wrap:wrap;align-items:flex-start'},
       el('span',{style:'flex:1;min-width:220px'},el('b',{style:'display:block;font-weight:700'},(x.nombre||'Cliente')+' · '+'★'.repeat(x.estrellas)+'☆'.repeat(5-x.estrellas)),el('small',{style:'display:block'},x.texto?'“'+x.texto+'”':'(sin texto)'),el('small',{class:'muted'},(x.sesion||nomProy(x.proyecto_id)))),
       enBtn('Copiar texto','clipboard',()=>{try{navigator.clipboard.writeText('“'+(x.texto||'')+'” — '+(x.nombre||'')+(x.sesion?', '+x.sesion:''));toast('Copiado')}catch(e){toast('No se pudo copiar')}}),
-      enBtn('Publicar','check',async()=>{if(await enPatch('en_resenas','res',x.id,{publicada:true})){enBadge();renderEn();toast('Reseña publicada')}},'btn-gold'),
+      enBtn('Publicar','check',async()=>{if(await enPatch('en_resenas','res',x.id,{publicada:true})){
+        /* también entra a "Lo dicen nuestros clientes" de la web: primer espacio libre de las 6 reseñas */
+        let puesto=0;
+        try{for(let n=1;n<=6&&!puesto;n++)if(!sitioVal('rv.'+n+'.q')){await sitioSet('rv.'+n+'.q',x.texto||'');await sitioSet('rv.'+n+'.n',x.nombre||'Cliente');await sitioSet('rv.'+n+'.r',x.sesion||'');puesto=n}}catch(e){}
+        enBadge();renderEn();toast(puesto?'Reseña publicada · ya está en la web (espacio '+puesto+')':'Reseña marcada como publicada, pero los 6 espacios de la web están ocupados: libera uno en Reseñas')}},'btn-gold'),
       enBtn('Borrar','trash',async()=>{if(!confirm('¿Borrar esta reseña?'))return;const r=await api('/rest/v1/en_resenas?id=eq.'+x.id,{method:'DELETE',headers:{Prefer:'return=minimal'}});if(!r.ok){toast(await errText(r));return}EN.res=EN.res.filter(z=>z.id!==x.id);enBadge();renderEn()}))));
     root.append(c);
   }

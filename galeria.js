@@ -495,7 +495,7 @@ async function gAbrirGuardar(a){
   };
   pinta();
 }
-function gUrlLista(l){return location.origin+location.pathname.replace(/[^/]*$/,'entregas.html')+'?lista='+l.token}
+function gUrlLista(l){return location.origin+location.pathname.replace(/[^/]*$/,'entregas').replace(/\/entregas\.html$/,'/entregas')+'?lista='+l.token}
 async function gCompartir(l){
   const url=gUrlLista(l),txt='Mira estas fotos: '+(l.nombre)+' · Faro Studios';
   if(navigator.share){try{await navigator.share({title:l.nombre,text:txt,url});return}catch(e){if(e&&e.name==='AbortError')return}}
