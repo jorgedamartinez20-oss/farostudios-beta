@@ -884,6 +884,7 @@ export default {
         if (!largo) return err(request, env, 'Falta el tamaño del archivo');
         if (largo > UMBRAL_SIMPLE) return err(request, env, 'Archivo grande: se sube por partes', 413);
         await bucket.put(key, request.body, { httpMetadata: { contentType: request.headers.get('Content-Type') || 'application/octet-stream' } });
+        await env.PRIVADO.delete(marcaKey(bucketNombre, key)); // si antes estuvo en la papelera, volver a subirlo lo "revive"
         return json(request, env, { ok: true, key });
       }
 
@@ -907,6 +908,7 @@ export default {
         if (!Array.isArray(b.partes) || !b.partes.length) return err(request, env, 'Faltan las partes');
         const mp = bucket.resumeMultipartUpload(key, url.searchParams.get('uploadId') || '');
         const o = await mp.complete(b.partes.map((p) => ({ partNumber: p.partNumber, etag: p.etag })));
+        await env.PRIVADO.delete(marcaKey(bucketNombre, key));
         return json(request, env, { ok: true, key, size: o.size });
       }
       if (ruta === '/api/multipart/cancelar' && request.method === 'POST') {
