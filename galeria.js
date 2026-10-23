@@ -179,7 +179,7 @@ async function gAbrirMuro(silencio){
     /* la portada queda como encabezado corto, arriba */
     window.scrollTo(0,0);if(G.onScroll)G.onScroll();
     /* primera vez: la carta de bienvenida ya está lista debajo de la cortina; se ve en cuanto ésta se abre */
-    const hayTut=!PREVIA&&!gLS(gKey('faro_tut'));
+    const hayTut=PREVIA?silencio!==true:!gLS(gKey('faro_tut')); /* en la vista previa siempre sale (no se guarda), para que lo revises */
     G.finOk=!hayTut;
     const bv=hayTut?gBienvenida():null;
     if(cor)await cor.fin();
@@ -228,7 +228,7 @@ function gCodigoHtml(cfg){
   const cod=String(cfg.codigo||'').toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,12);if(!cod)return '';
   const n=+cfg.descuento,dt=n>0?n+'% de descuento':'tu descuento';
   return '<aside class="gcod" id="gcod" aria-label="Código de descuento"><button class="tb" id="gcodb" aria-expanded="false" aria-controls="gcodp">'+ic('gift')+'<span class="vt">Tu código</span></button>'
-    +'<div class="pn" id="gcodp"><div class="in2"><small>DESCUENTO PARA TI</small><b class="cdg">'+esc(cod)+'</b>'
+    +'<div class="pn" id="gcodp"><div class="in2"><button class="gcx" id="gcodx" type="button" aria-label="Cerrar">'+ic('x')+'</button><small>DESCUENTO PARA TI</small><b class="cdg">'+esc(cod)+'</b>'
     +'<p>Menciona este código al reservar tu próxima sesión y recibe <b>'+esc(dt)+'</b>.</p>'
     +'<div class="row"><button class="gbtn p" id="gcodc">'+ic('copy')+' Copiar</button><button class="gbtn" id="gcodw">'+ic('wa')+' Usarlo</button></div></div></div></aside>';
 }
@@ -236,6 +236,7 @@ function gCodigoLiga(){
   const c=$('#gcod');if(!c)return;
   const cod=c.querySelector('.cdg').textContent,set=v=>{c.classList.toggle('abre',v);$('#gcodb').setAttribute('aria-expanded',String(v))};
   $('#gcodb').onclick=()=>set(!c.classList.contains('abre'));
+  $('#gcodx').onclick=()=>{set(false);$('#gcodb').focus()};
   $('#gcodc').onclick=async()=>{try{await navigator.clipboard.writeText(cod);toast('Código copiado: '+cod)}catch(e){toast('Tu código es '+cod)}};
   $('#gcodw').onclick=()=>window.open(WA+'?text='+encodeURIComponent('Hola, quiero usar mi código de descuento '+cod),'_blank','noopener');
   if(!G.hookCod){G.hookCod=1;
@@ -745,7 +746,7 @@ function gTutorial(primera){
   let k=0;
   const portada=ST.arch.find(a=>a.id===G.cfg.portada)||gImgs()[0];
   const fin=pr=>{G.finOk=true;t.remove();document.body.classList.remove('gtut');if(!document.querySelector('.gm,.glb,.gdr'))document.body.style.overflow='';removeEventListener('resize',pos);removeEventListener('scroll',pos);clearInterval(iv);removeEventListener('keydown',tec);
-    if(primera){gLS(gKey('faro_tut'),'1');window.scrollTo(0,0);if(G.onScroll)G.onScroll()}};
+    if(primera){if(!PREVIA)gLS(gKey('faro_tut'),'1');window.scrollTo(0,0);if(G.onScroll)G.onScroll()}};
   const tec=e=>{if(e.key==='Escape')fin(false)};addEventListener('keydown',tec);
   const pos=()=>{
     const p=pasos[k],el=document.querySelector(p.s);
