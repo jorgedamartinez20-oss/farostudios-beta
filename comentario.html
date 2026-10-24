@@ -88,6 +88,9 @@ body::after{width:380px;height:380px;right:-120px;bottom:-60px;background:rgba(1
 /* campos */
 .fld{display:grid;gap:7px}
 .fld label{font-size:.78rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.lbl{display:block;margin-bottom:10px;font-size:.78rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.fld select{width:100%;min-height:56px;padding:0 16px;border:1.5px solid var(--line);border-radius:14px;background:#fff;box-shadow:inset 0 2px 4px rgba(37,37,40,.06);font-size:1.05rem;transition:border-color .2s,box-shadow .2s}
+.fld select:focus{outline:0;border-color:var(--borg);box-shadow:0 0 0 4px rgba(139,26,42,.13)}
 .fld input,.fld textarea{width:100%;padding:15px 16px;border:1.5px solid var(--line);border-radius:14px;background:#fff;box-shadow:inset 0 2px 4px rgba(37,37,40,.06);font-size:1.05rem;transition:border-color .2s,box-shadow .2s,transform .2s var(--ease)}
 .fld input{min-height:56px}
 .fld textarea{min-height:150px;resize:vertical;line-height:1.55}
@@ -192,9 +195,11 @@ body::after{width:380px;height:380px;right:-120px;bottom:-60px;background:rgba(1
 const U='https://keivqvsgdfhthouzlqxo.supabase.co',K='sb_publishable_5nj3M7rjQs3phGU6u2uNqw_3tjTL6PE';
 const WA='https://wa.me/50252695592';
 const SERV={
-  individual:['Boda','XV años','Graduación','Sesión familiar o retrato','Evento social','Fotografía para negocio','Sonido en vivo','Grabación o producción musical','Otro'],
-  empresa:['Video corporativo o de marca','Cobertura de evento','Fotografía de producto o negocio','Sonido en vivo','Producción de audio o spot','Contenido para redes','Otro']
+  individual:['Boda','XV años','Graduación','Sesión familiar o retrato','Evento social','Fotografía para negocio','Producción musical','Otro'],
+  empresa:['Producciones de audio','Streaming','Podcast','Locuciones comerciales','Material sonoro de radio','Contenido para TV','Coberturas','Activaciones','Fotografía de producto','Inmobiliaria','Video corporativo o de marca','Contenido para redes','Otro']
 };
+const SUB=['Banda','Iglesia','Agrupación','Solista','Sonido en vivo'];
+const PAISES=['Guatemala','México','Belice','El Salvador','Honduras','Nicaragua','Costa Rica','Panamá'];
 const ETI=['','Podemos mejorar','Regular','Buena','Muy buena','Excelente'];
 const $=(s,r)=>(r||document).querySelector(s);
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -206,7 +211,7 @@ const rpc=async(fn,args)=>{const r=await fetch(U+'/rest/v1/rpc/'+fn,{method:'POS
 const ls=(k,v)=>{try{if(v===undefined)return JSON.parse(localStorage.getItem(k)||'null');if(v===null)localStorage.removeItem(k);else localStorage.setItem(k,JSON.stringify(v))}catch(e){return null}};
 
 let F,INFO={descuento:'',condicion:'',meses:'5'};
-const fresh=()=>({tipo:'',empresa:'',nombre:'',servicio:'',otro:'',estrellas:0,texto:'',mejora:''});
+const fresh=()=>({tipo:'',empresa:'',pais:'Guatemala',nombre:'',servicio:'',sub:'',otro:'',estrellas:0,texto:'',mejora:''});
 const fvence=v=>{try{return new Date(v+'T12:00:00').toLocaleDateString('es-GT',{day:'numeric',month:'long',year:'numeric'})}catch(e){return v}};
 
 function vistaForm(){
@@ -227,18 +232,19 @@ const $$=(s,r)=>[...(r||document).querySelectorAll(s)];
 
 function elegir(t){
   const cambio=F.tipo&&F.tipo!==t;
-  F.tipo=t;F.servicio='';F.otro='';
+  F.tipo=t;F.servicio='';F.sub='';F.otro='';
   $$('.tile').forEach(x=>x.setAttribute('aria-pressed',String(x.dataset.t===t)));$('#e1').textContent='';
   const n=parseFloat(INFO.descuento),emp=t==='empresa';
   const prev=cambio?{nombre:F.nombre,texto:F.texto,mejora:F.mejora,estrellas:F.estrellas,empresa:F.empresa}:null;
   $('#resto-in').innerHTML=`
   ${!emp&&n>0?`<section class="sec"><div class="gift"><svg class="ico" viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13M19 12v9H5v-9M7.5 8a2.5 2.5 0 0 1 0-5C11 3 12 8 12 8s1-5 4.5-5a2.5 2.5 0 0 1 0 5"/></svg><span>Como gracias recibes ${n}% de descuento: uno para ti y otro para un amigo</span></div></section>`:''}
   <section class="sec"><div class="sh"><span class="n">02</span><div><h2>${emp?'Tu empresa y tu nombre':'Tu nombre'}</h2></div></div>
-    <div class="two">${emp?`<div class="fld"><label for="f-emp">Nombre de la empresa</label><input id="f-emp" maxlength="80" autocomplete="organization" placeholder="Ej. Café Aurora"></div>`:''}
+    <div class="two">${emp?`<div class="fld"><label for="f-emp">Nombre de la empresa</label><input id="f-emp" maxlength="80" autocomplete="organization" placeholder="Ej. Café Aurora"></div><div class="fld"><label for="f-pais">País</label><select id="f-pais">${PAISES.map(x=>`<option${x===F.pais?' selected':''}>${esc(x)}</option>`).join('')}</select></div>`:''}
     <div class="fld">${emp?`<label for="f-nom">Tu nombre y cargo</label>`:''}<input id="f-nom" maxlength="80" autocomplete="name" placeholder="${emp?'Ej. Ana López, gerente':'Nombre y apellido'}" aria-label="Tu nombre"></div></div><p class="err" id="e2"></p></section>
   <section class="sec"><div class="sh"><span class="n">03</span><div><h2>${emp?'¿Qué producción cubrimos?':'¿Qué hicimos juntos?'}</h2></div></div>
     <div class="chips" role="group" aria-label="${emp?'Producción':'Trabajo realizado'}">${SERV[t].map(s=>`<button type="button" class="chip" aria-pressed="false" data-s="${esc(s)}">${esc(s)}</button>`).join('')}</div>
     <div class="reveal sm" id="rv-otro"><div><div class="in fld"><label for="f-otro">Cuéntanos qué fue</label><input id="f-otro" maxlength="60" placeholder="${emp?'Ej. Lanzamiento de producto':'Ej. Cobertura de aniversario'}"></div></div></div>
+    <div class="reveal sm" id="rv-sub"><div><div class="in"><label class="lbl">¿Para qué tipo de proyecto musical?</label><div class="chips" role="group" aria-label="Tipo de proyecto musical">${SUB.map(x=>`<button type="button" class="chip" aria-pressed="false" data-u="${esc(x)}">${esc(x)}</button>`).join('')}</div></div></div></div>
     <p class="err" id="e3"></p></section>
   <section class="sec"><div class="sh"><span class="n">04</span><div><h2>¿Cómo fue la experiencia?</h2></div></div>
     <div class="stars" role="radiogroup" aria-label="Puntuación">${[1,2,3,4,5].map(i=>`<button type="button" class="star" role="radio" aria-checked="false" aria-label="${i} de 5 estrellas" data-n="${i}">${STAR}</button>`).join('')}</div>
@@ -265,7 +271,10 @@ function ligar(){
   const chips=$$('.chip');stars=$$('.star');
   const fe=$('#f-emp');if(fe)fe.oninput=e=>{F.empresa=e.target.value;$('#e2').textContent=''};
   $('#f-nom').oninput=e=>{F.nombre=e.target.value;$('#e2').textContent=''};
-  chips.forEach(b=>b.onclick=()=>{F.servicio=b.dataset.s;chips.forEach(x=>x.setAttribute('aria-pressed',String(x===b)));$('#rv-otro').classList.toggle('on',F.servicio==='Otro');$('#e3').textContent='';if(F.servicio==='Otro')setTimeout(()=>$('#f-otro').focus({preventScroll:true}),400)});
+  const fp=$('#f-pais');if(fp)fp.onchange=e=>{F.pais=e.target.value};
+  const cs=chips.filter(x=>x.dataset.s),us=chips.filter(x=>x.dataset.u);
+  cs.forEach(b=>b.onclick=()=>{F.servicio=b.dataset.s;cs.forEach(x=>x.setAttribute('aria-pressed',String(x===b)));$('#rv-otro').classList.toggle('on',F.servicio==='Otro');const mus=F.servicio==='Producción musical';$('#rv-sub').classList.toggle('on',mus);if(!mus){F.sub='';us.forEach(x=>x.setAttribute('aria-pressed','false'))}$('#e3').textContent='';if(F.servicio==='Otro')setTimeout(()=>$('#f-otro').focus({preventScroll:true}),400)});
+  us.forEach(b=>b.onclick=()=>{F.sub=b.dataset.u;us.forEach(x=>x.setAttribute('aria-pressed',String(x===b)));$('#e3').textContent=''});
   $('#f-otro').oninput=e=>{F.otro=e.target.value};
   stars.forEach((s,i)=>{
     s.onclick=()=>{F.estrellas=i+1;pintaE(F.estrellas);$('#e4').textContent='';stars.forEach(x=>x.classList.remove('pop'));void s.offsetWidth;s.classList.add('pop')};
@@ -285,6 +294,7 @@ function validar(){
   if(F.tipo==='empresa'&&F.empresa.trim().length<1)e.e2='Escribe el nombre de la empresa.';
   else if(F.nombre.trim().length<2)e.e2='Escribe tu nombre.';
   if(!F.servicio)e.e3=F.tipo==='empresa'?'Elige qué producción cubrimos.':'Elige el trabajo que hicimos juntos.';
+  else if(F.servicio==='Producción musical'&&!F.sub)e.e3='Elige el tipo de proyecto musical.';
   if(!F.estrellas)e.e4='Toca las estrellas para puntuarnos.';
   if(F.texto.trim().length<10)e.e5='Cuéntanos un poco más (al menos una frase).';
   return e;
@@ -297,7 +307,7 @@ async function enviar(){
   const b=$('#send');b.disabled=true;b.querySelector('span').textContent='ENVIANDO…';$('#te').innerHTML='';
   const ser=F.servicio==='Otro'&&F.otro.trim()?F.otro.trim().slice(0,60):F.servicio;
   try{
-    const r=await rpc('rs_enviar_publico',{p_tipo:F.tipo,p_empresa:F.tipo==='empresa'?F.empresa.trim():'',p_nombre:F.nombre.trim(),p_servicio:ser,p_estrellas:F.estrellas,p_texto:F.texto.trim(),p_mejora:F.mejora.trim()});
+    const r=await rpc('rs_enviar_publico',{p_tipo:F.tipo,p_empresa:F.tipo==='empresa'?F.empresa.trim():'',p_nombre:F.nombre.trim(),p_servicio:ser,p_estrellas:F.estrellas,p_texto:F.texto.trim(),p_mejora:F.mejora.trim(),p_categoria:F.servicio,p_subtipo:F.sub,p_pais:F.tipo==='empresa'?F.pais:''});
     if(r&&r.ok){const d={tipo:F.tipo,codigo:r.codigo||'',descuento:r.descuento||'',condicion:r.condicion||'',vence:r.vence||'',nombre:F.nombre.trim().split(/\s+/)[0]};ls(LSK,d);vistaGracias(d,true);return}
     const msg={limite:'Hay muchos comentarios llegando en este momento. Inténtalo de nuevo en unos minutos.',repetido:'Ya recibimos este mismo comentario. ¡Gracias!'}[r&&r.error];
     if(msg){b.disabled=false;b.querySelector('span').textContent='ENVIAR MI COMENTARIO';$('#te').innerHTML='<div class="top-err">'+msg+'</div>';return}

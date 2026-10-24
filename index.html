@@ -817,13 +817,20 @@ dialog.bkz::backdrop{background:#000}
 .tm-slide b{display:block;font:700 1rem/1.2 var(--body)}
 .tm-slide small{color:var(--muted)}
 .tm-st{color:var(--oro);letter-spacing:.2em;margin-bottom:12px;font-size:1.05rem}
+.tm-tabs[hidden]{display:none}
 .tm-tabs{display:inline-flex;gap:6px;padding:5px;margin:0 auto 26px;border-radius:999px;background:rgba(37,37,40,.07);position:relative;left:50%;transform:translateX(-50%)}
 .tm-tabs button{position:relative;overflow:hidden;border:0;background:transparent;font:700 .95rem/1 var(--body,'Lato',sans-serif);letter-spacing:.06em;color:var(--ink,#252528);padding:13px 24px;border-radius:999px;cursor:pointer;display:inline-flex;align-items:center;gap:9px;transition:background .3s,color .3s,transform .25s var(--ease)}
 .tm-tabs button:hover{transform:translateY(-1px)}
 .tm-tabs button span{font-size:.75rem;padding:2px 8px;border-radius:999px;background:rgba(37,37,40,.1)}
 .tm-tabs button[aria-selected="true"]{background:var(--hi);color:#fff;box-shadow:0 8px 18px -8px rgba(139,26,42,.7)}
 .tm-tabs button[aria-selected="true"] span{background:rgba(255,255,255,.22)}
-.tm-tabs+div:not([hidden]){animation:tmIn .5s var(--ease)}
+.tm-cats{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:0 auto 26px;max-width:880px}
+.tm-cat{border:1.5px solid var(--line);background:transparent;color:var(--ink);font:700 .86rem/1 var(--body,'Lato',sans-serif);letter-spacing:.04em;padding:10px 16px;border-radius:999px;cursor:pointer;display:inline-flex;gap:8px;align-items:center;transition:background .25s,color .25s,border-color .25s,transform .25s var(--ease)}
+.tm-cat span{font-size:.72rem;opacity:.65}
+.tm-cat:hover:not([disabled]){transform:translateY(-2px);border-color:var(--hi)}
+.tm-cat[aria-pressed="true"]{background:var(--hi);border-color:var(--hi);color:#fff}
+.tm-cat[disabled]{opacity:.38;cursor:default}
+#tm-box>div{animation:tmIn .5s var(--ease)}
 @keyframes tmIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
 .tm-dots{display:flex;gap:10px;margin-top:22px}
 .tm-dots button{width:34px;height:6px;border-radius:6px;border:0;background:var(--line);cursor:pointer;transition:background .3s,width .4s var(--ease)}
@@ -4177,17 +4184,29 @@ window.rebuildPortfolio&&window.rebuildPortfolio();
       if(t)a[0]=t;const g=X['ag.'+n];if(ar||y||g)a[1]=[ar||a[1].split(' · ')[0],y,g].filter(Boolean).join(' · ');if(s)a[3]=s});
     $$('#covers .cv').forEach((b,i)=>{const bb=$('b',b),sm=$('small',b);if(bb&&ALB[i])bb.textContent=ALB[i][0];if(sm&&ALB[i])sm.textContent=ALB[i][1]});
     window.ampRefresh&&window.ampRefresh();
-    const gr={per:[],emp:[]};for(let n=1;n<=12;n++){const q=X['rv.'+n+'.q'];if(q)gr[n>6?'emp':'per'].push({k:'t'+n,q:escH(q),n:escH(X['rv.'+n+'.n']||'Cliente'),r:escH(X['rv.'+n+'.r']||''),s:Math.min(5,Math.max(1,parseInt(X['rv.'+n+'.s'],10)||5)),p:X['rv.'+n+'.p']||''})}
+    const gr={per:[],emp:[]};
+    Object.keys(X).map(k=>/^rv\.(\d+)\.q$/.exec(k)).filter(Boolean).map(m=>+m[1]).sort((a,b)=>a-b).forEach(n=>{const q=X['rv.'+n+'.q'];if(q)gr[X['rv.'+n+'.g']==='emp'?'emp':'per'].push({k:'t'+n,q:escH(q),n:escH(X['rv.'+n+'.n']||'Cliente'),r:escH(X['rv.'+n+'.r']||''),s:Math.min(5,Math.max(1,parseInt(X['rv.'+n+'.s'],10)||5)),p:X['rv.'+n+'.p']||'',c:X['rv.'+n+'.c']||''})});
     const h=$('#testi-s');
     if(h&&(gr.per.length||gr.emp.length)){
-      if(!gr.per.length||!gr.emp.length){mountTesti(h,gr.per.length?gr.per:gr.emp,gr.per.length?'tu cliente':'tu empresa')}
-      else{
-        h.innerHTML='<div class="tm-tabs" role="tablist" aria-label="Tipo de cliente"><button type="button" role="tab" id="tmt-per" aria-selected="true" aria-controls="tm-per">Personas<span>'+gr.per.length+'</span></button><button type="button" role="tab" id="tmt-emp" aria-selected="false" aria-controls="tm-emp">Empresas<span>'+gr.emp.length+'</span></button></div><div id="tm-per" role="tabpanel" aria-labelledby="tmt-per"></div><div id="tm-emp" role="tabpanel" aria-labelledby="tmt-emp" hidden></div>';
-        mountTesti($('#tm-per',h),gr.per,'tu cliente');mountTesti($('#tm-emp',h),gr.emp,'tu empresa');
-        const tabs=$$('.tm-tabs button',h);
-        const ir=k=>{tabs.forEach(b=>b.setAttribute('aria-selected',String(b.id==='tmt-'+k)));$('#tm-per',h).hidden=k!=='per';$('#tm-emp',h).hidden=k!=='emp'};
-        tabs.forEach(b=>{b.addEventListener('click',()=>ir(b.id.slice(4)));b.addEventListener('keydown',e=>{if(e.key==='ArrowRight'||e.key==='ArrowLeft'){const o=tabs.find(x=>x!==b);o.focus();ir(o.id.slice(4));e.preventDefault()}})});
-      }
+      const CAT={per:['Boda','XV años','Graduación','Sesión familiar o retrato','Evento social','Fotografía para negocio','Producción musical','Otro'],emp:['Producciones de audio','Streaming','Podcast','Locuciones comerciales','Material sonoro de radio','Contenido para TV','Coberturas','Activaciones','Fotografía de producto','Inmobiliaria','Video corporativo o de marca','Contenido para redes','Otro']};
+      const ST={g:gr.per.length?'per':'emp',c:''};
+      h.innerHTML='<div class="tm-tabs" id="tm-gr" role="tablist" aria-label="Tipo de cliente"></div><div class="tm-cats" id="tm-cats" role="group" aria-label="Categoría"></div><div id="tm-box"></div>';
+      const bx=$('#tm-box',h);
+      const pintar=()=>{
+        const tg=$('#tm-gr',h),cs=$('#tm-cats',h);
+        const grupos=[['per','Personas'],['emp','Empresas']].filter(x=>gr[x[0]].length);
+        tg.hidden=grupos.length<2;tg.innerHTML=grupos.map(x=>`<button type="button" role="tab" data-g="${x[0]}" aria-selected="${x[0]===ST.g}">${x[1]}<span>${gr[x[0]].length}</span></button>`).join('');
+        const its=gr[ST.g],cnt=c=>its.filter(i=>i.c===c).length;
+        const extra=[...new Set(its.map(i=>i.c).filter(c=>c&&!CAT[ST.g].includes(c)))];
+        const lista=[...CAT[ST.g],...extra];
+        cs.innerHTML=`<button type="button" class="tm-cat" data-c="" aria-pressed="${!ST.c}">Todas<span>${its.length}</span></button>`+lista.map(c=>{const k=cnt(c);return `<button type="button" class="tm-cat" data-c="${escH(c)}" aria-pressed="${ST.c===c}"${k?'':' disabled'}>${escH(c)}<span>${k}</span></button>`}).join('');
+        const vis=ST.c?its.filter(i=>i.c===ST.c):its;
+        const nb=document.createElement('div');bx.textContent='';bx.append(nb);
+        mountTesti(nb,vis,ST.g==='emp'?'tu empresa':'tu cliente');
+      };
+      h.addEventListener('click',e=>{const t=e.target.closest('[data-g]'),c=e.target.closest('.tm-cat');
+        if(t){ST.g=t.dataset.g;ST.c='';pintar()}else if(c&&!c.disabled){ST.c=c.dataset.c;pintar()}});
+      pintar();
     }
   };})();
 

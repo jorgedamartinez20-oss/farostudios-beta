@@ -1866,7 +1866,7 @@ const SECC=[
  {id:'discos',c:'landing',t:'Discos',i:'music',keys:()=>rng('',8).flatMap(n=>['img.alb'+n,'audio.alb'+n,'at.'+n,'aa.'+n,'ay.'+n,'ag.'+n,'as.'+n,'pv.'+n]),r:rDiscos},
  {id:'catalogo',c:'landing',t:'Catálogo',i:'book',keys:()=>['catalogoPdf',...CAT_PAGS.flatMap((_,i)=>['cat.'+i+'.h','cat.'+i+'.p'])],r:rCatalogo},
  {id:'recursos',c:'landing',t:'Recursos gratis',i:'pdf',keys:()=>RECS.flatMap(r=>['pdf.'+r.id,'rt.'+r.id,'rd.'+r.id]),r:rRecursos},
- {id:'resenas',c:'landing',t:'Reseñas',i:'star',keys:()=>rng('',12).flatMap(n=>['rv.'+n+'.q','rv.'+n+'.n','rv.'+n+'.r','img.t'+n]),r:rResenas},
+ {id:'resenas',c:'landing',t:'Reseñas',i:'star',keys:()=>rng('',rvN()).flatMap(n=>['rv.'+n+'.q','rv.'+n+'.n','rv.'+n+'.r','rv.'+n+'.g','rv.'+n+'.c','img.t'+n]),r:rResenas},
  {id:'promo',c:'landing',t:'Promoción (ventana de inicio)',i:'star',dest:'landing/fotos-studios',lead:'La ventana que aparece un momento después de abrir la página, una vez al día por persona. Si no subes imagen, se dibuja con el porcentaje del título. Para quitarla pon 0 en «Mostrar».',items:[TX('promo.on','Mostrar la ventana (1 = sí, 0 = no)','1'),TX('promo.t','Título grande (el porcentaje sale en la imagen)','15% de descuento'),{k:'promo.d',l:'Texto de apoyo',t:'area'},TX('promo.b','Texto del botón','Agendar mi graduación'),TX('promo.hasta','Mostrar hasta el día (AAAA-MM-DD, opcional)','2026-10-31'),{k:'img.promo',l:'Imagen de la ventana (opcional)',t:'img'}]},
  {id:'pagos',c:'landing',t:'Logos de pago',i:'card',dest:'landing/logos',lead:'Los logos que van junto a las preguntas frecuentes. Si dejas uno vacío, la página muestra el cuadro de ejemplo.',items:[{k:'img.logo-visa',l:'Logo Visa',t:'img'},{k:'img.logo-mc',l:'Logo Mastercard',t:'img'},{k:'img.logo-bi',l:'Logo Banco Industrial',t:'img'}]},
  {id:'m-fotos',c:'musica',t:'Fotos',i:'camera',dest:'landing/academy-fotos',items:[{k:'img.music-t1',l:'Foto testimonio Música',t:'img'},...INST.map(i=>({k:'img.music-'+i[0],l:'Foto de '+i[1],t:'img'}))]},
@@ -2188,10 +2188,12 @@ function rRecursos(card){
 }
 
 /* --- Reseñas: una ficha por cliente --- */
+const RV_CATS={per:['Boda','XV años','Graduación','Sesión familiar o retrato','Evento social','Fotografía para negocio','Producción musical','Otro'],emp:['Producciones de audio','Streaming','Podcast','Locuciones comerciales','Material sonoro de radio','Contenido para TV','Coberturas','Activaciones','Fotografía de producto','Inmobiliaria','Video corporativo o de marca','Contenido para redes','Otro']};
+function rvN(){let m=0;Object.keys(AC.cfg||{}).forEach(k=>{const x=/^rv\.(\d+)\./.exec(k);if(x&&AC.cfg[k])m=Math.max(m,+x[1])});return Math.max(12,m+1)}
 function rResenas(card){
-  const sel=selDe('resenas',12),n=sel+1;
-  card.append(el('p',{class:'muted'},'Toca una reseña para cargar la foto del cliente, su opinión, su nombre y su empresa o evento. Los espacios 1–6 son de Personas y los 7–12 de Empresas. Para que el cliente escriba su comentario con el enlace público, usa Clientes → Reseñas.'));
-  card.append(mdChips(rng('',12).map(x=>({l:sitioVal('rv.'+x+'.n')||(x>6?'Empresa '+(x-6):'Persona '+x),s:sitioVal('rv.'+x+'.r')||(sitioVal('rv.'+x+'.q')?'Con opinión':'Vacía'),img:sitioVal('img.t'+x),on:!!sitioVal('rv.'+x+'.q'),i:'user'})),sel,i=>{SIT.sel.resenas=i;renderSitio()}));
+  const N=rvN(),sel=selDe('resenas',N),n=sel+1;
+  card.append(el('p',{class:'muted'},'Toca una reseña para cargar la foto del cliente, su opinión, su nombre y su empresa o evento. No hay límite de espacios: al llenar el último aparece otro. Elige si es de Personas o de Empresas y su categoría para que la web lo filtre. Para publicar desde los comentarios que llegan por el enlace público, usa Clientes → Reseñas.'));
+  card.append(mdChips(rng('',N).map(x=>({l:sitioVal('rv.'+x+'.n')||'Espacio '+x,s:sitioVal('rv.'+x+'.r')||(sitioVal('rv.'+x+'.q')?'Con opinión':'Vacía'),img:sitioVal('img.t'+x),on:!!sitioVal('rv.'+x+'.q'),i:'user'})),sel,i=>{SIT.sel.resenas=i;renderSitio()}));
   const url=sitioVal('img.t'+n);
   const enc=FaroResenas.encuadre({url,pos:sitioVal('rv.'+n+'.p')||'',size:210});
   const previa=el('div',{class:'mdp'},el('h4',{style:'margin:0 0 8px'},'Encuadre de la foto'),url?enc.el:el('p',{class:'muted'},'Sube la foto y podrás moverla dentro del círculo para que quede bien centrada.'));
@@ -2200,7 +2202,12 @@ function rResenas(card){
   card.append(detalle({titulo:'Reseña '+n,dest:'landing/resenas',previa,archivos:[{k:'img.t'+n,l:'Foto del cliente',t:'img'}],
     textos:[TX('rv.'+n+'.q','Opinión','Lo que dijo el cliente','area'),TX('rv.'+n+'.n','Nombre del cliente','Nombre'),TX('rv.'+n+'.r','Empresa o evento','Ej. Boda de Ana y Luis')],
     extra:[el('button',{class:'btn btn-gold',type:'button',onclick:async()=>{if(!url){toast('Primero sube la foto');return}try{await sitioSet('rv.'+n+'.p',enc.get());toast('Encuadre guardado');await loadAc()}catch(e){toast(e.message||'No se pudo guardar')}}},icoEl('check'),' Guardar encuadre'),
-      el('label',{class:'muted',style:'display:inline-flex;align-items:center;gap:8px'},'Estrellas',st)]}));
+      el('label',{class:'muted',style:'display:inline-flex;align-items:center;gap:8px'},'Estrellas',st),
+      (()=>{const g=el('select',{'aria-label':'Grupo'},el('option',{value:'per'},'Personas'),el('option',{value:'emp'},'Empresas'));g.value=sitioVal('rv.'+n+'.g')==='emp'?'emp':'per';
+        const c=el('select',{'aria-label':'Categoría'});const pc=()=>{c.textContent='';c.append(el('option',{value:''},'Sin categoría'));RV_CATS[g.value].forEach(x=>c.append(el('option',{value:x},x)));c.value=sitioVal('rv.'+n+'.c')||''};pc();
+        g.addEventListener('change',async()=>{try{await sitioSet('rv.'+n+'.g',g.value);await sitioSet('rv.'+n+'.c','');pc();toast('Grupo guardado')}catch(e){toast(e.message||'No se pudo guardar')}});
+        c.addEventListener('change',async()=>{try{await sitioSet('rv.'+n+'.c',c.value);toast('Categoría guardada')}catch(e){toast(e.message||'No se pudo guardar')}});
+        return el('label',{class:'muted',style:'display:inline-flex;align-items:center;gap:8px;flex-wrap:wrap'},'Aparece en',g,c)})()]}));
 }
 
 function renderSitio(){

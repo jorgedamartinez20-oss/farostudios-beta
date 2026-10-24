@@ -95,7 +95,7 @@
   const S = { cargando: false, falta: false, enlaces: [], res: [], cfg: {}, sel: null, ed: null, filtro: 'todas', nuevoEnlace: null, ajustes: false, ocupado: false };
   const cfgGet = (k, d) => (S.cfg[k] != null && S.cfg[k] !== '' ? S.cfg[k] : d);
   const get = async (t, ord) => { const r = await ctx.api('/rest/v1/' + t + '?select=*' + (ord ? '&order=' + ord : '')); if (!r.ok) { const e = new Error(await ctx.errText(r)); e.status = r.status; throw e; } return r.json(); };
-  const linea = r => r.tipo === 'empresa' && r.empresa ? (r.servicio ? r.empresa + ' · ' + r.servicio : r.empresa) : (r.servicio || '');
+  const linea = r => r.tipo === 'empresa' ? [r.empresa, r.servicio, r.pais].filter(Boolean).join(' · ') : [r.servicio, r.subtipo].filter(Boolean).join(' · ');
   const fdate = iso => { try { return new Date(iso).toLocaleDateString('es-GT', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'America/Guatemala' }); } catch (e) { return ''; } };
   const estrellas = n => '★'.repeat(n) + '☆'.repeat(5 - n);
 
@@ -111,18 +111,24 @@
   function badge() { const n = S.res.filter(r => r.estado === 'nueva').length, b = $('#nrsn'); if (b) { b.textContent = n; b.hidden = !n; } }
 
   /* ---------- web: los 6 espacios de «Lo dicen nuestros clientes» ---------- */
-  const W = n => { const c = ctx.cfg(); return { n, q: c['rv.' + n + '.q'] || '', nombre: c['rv.' + n + '.n'] || '', linea: c['rv.' + n + '.r'] || '', est: parseInt(c['rv.' + n + '.s'], 10) || 5, pos: c['rv.' + n + '.p'] || '', foto: c['img.t' + n] || '' }; };
-  const etqSlot = n => n > 6 ? 'Empresas ' + (n - 6) : 'Personas ' + n;
-  const slots = () => [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(W);
+  const W = n => { const c = ctx.cfg(); return { n, g: c['rv.' + n + '.g'] === 'emp' ? 'emp' : 'per', cat: c['rv.' + n + '.c'] || '', q: c['rv.' + n + '.q'] || '', nombre: c['rv.' + n + '.n'] || '', linea: c['rv.' + n + '.r'] || '', est: parseInt(c['rv.' + n + '.s'], 10) || 5, pos: c['rv.' + n + '.p'] || '', foto: c['img.t' + n] || '' }; };
+  /* espacios de la web: sin límite. Cada uno es de Personas ('per') o de Empresas ('emp') */
+  const nums = () => { const c = ctx.cfg(), set = new Set(); Object.keys(c).forEach(k => { const m = /^rv\.(\d+)\.q$/.exec(k); if (m && c[k]) set.add(+m[1]); }); S.res.forEach(r => { if (r.slot) set.add(r.slot); }); return [...set].sort((x, y) => x - y); };
+  const slots = () => nums().map(W);
+  const sigSlot = () => Math.max(0, ...nums(), ...S.res.map(r => r.slot || 0)) + 1;
+  const etqSlot = n => (W(n).g === 'emp' ? 'Empresas' : 'Personas') + ' · espacio ' + n;
+  const CATS = { individual: ['Boda', 'XV años', 'Graduación', 'Sesión familiar o retrato', 'Evento social', 'Fotografía para negocio', 'Producción musical', 'Otro'], empresa: ['Producciones de audio', 'Streaming', 'Podcast', 'Locuciones comerciales', 'Material sonoro de radio', 'Contenido para TV', 'Coberturas', 'Activaciones', 'Fotografía de producto', 'Inmobiliaria', 'Video corporativo o de marca', 'Contenido para redes', 'Otro'] };
+  const SUBS = ['Banda', 'Iglesia', 'Agrupación', 'Solista', 'Sonido en vivo'];
+  const PAISES = ['Guatemala', 'México', 'Belice', 'El Salvador', 'Honduras', 'Nicaragua', 'Costa Rica', 'Panamá'];
   async function setCfg(k, v) {
     if (v) { const r = await ctx.api('/rest/v1/sitio_config?on_conflict=clave', { method: 'POST', body: { clave: k, valor: v, actualizado: new Date().toISOString() }, headers: { Prefer: 'resolution=merge-duplicates,return=minimal' } }); if (!r.ok) throw new Error(await ctx.errText(r)); }
     else { const r = await ctx.api('/rest/v1/sitio_config?clave=eq.' + encodeURIComponent(k), { method: 'DELETE', headers: { Prefer: 'return=minimal' } }); if (!r.ok) throw new Error(await ctx.errText(r)); }
   }
   async function aWeb(r, n) {
     await setCfg('rv.' + n + '.q', r.texto); await setCfg('rv.' + n + '.n', r.nombre); await setCfg('rv.' + n + '.r', linea(r));
-    await setCfg('rv.' + n + '.s', String(r.estrellas)); await setCfg('rv.' + n + '.p', r.foto_pos || POS0); await setCfg('img.t' + n, r.foto || '');
+    await setCfg('rv.' + n + '.s', String(r.estrellas)); await setCfg('rv.' + n + '.g', r.tipo === 'empresa' ? 'emp' : 'per'); await setCfg('rv.' + n + '.c', r.categoria || r.servicio || ''); await setCfg('rv.' + n + '.p', r.foto_pos || POS0); await setCfg('img.t' + n, r.foto || '');
   }
-  async function quitarDeWeb(n) { for (const k of ['rv.' + n + '.q', 'rv.' + n + '.n', 'rv.' + n + '.r', 'rv.' + n + '.s', 'rv.' + n + '.p', 'img.t' + n]) await setCfg(k, ''); }
+  async function quitarDeWeb(n) { for (const k of ['rv.' + n + '.q', 'rv.' + n + '.n', 'rv.' + n + '.r', 'rv.' + n + '.s', 'rv.' + n + '.p', 'rv.' + n + '.g', 'rv.' + n + '.c', 'img.t' + n]) await setCfg(k, ''); }
   const patch = async (id, body) => { const r = await ctx.api('/rest/v1/rs_resenas?id=eq.' + id, { method: 'PATCH', body, headers: { Prefer: 'return=representation' } }); if (!r.ok) throw new Error(await ctx.errText(r)); const j = await r.json(); return j[0]; };
 
   /* ---------- enlace único ---------- */
@@ -146,7 +152,7 @@
   function vCabecera() {
     const n = S.res.filter(r => r.estado === 'nueva').length, pub = slots().filter(s => s.q).length;
     return el('div', { class: 'card rs-cab' }, el('div', {}, el('h2', {}, ico('star'), ' Reseñas'), el('p', { class: 'muted' }, 'Comparte un solo enlace con todos tus clientes, recibe sus comentarios, edítalos, ponles foto y publícalos en la web (Personas o Empresas). También puedes exportarlos como imagen para Instagram.')),
-      el('div', { class: 'rs-kp' }, el('b', {}, String(S.res.length)), el('small', {}, 'recibidas'), el('b', {}, String(n)), el('small', {}, 'nuevas'), el('b', {}, pub + '/12'), el('small', {}, 'en la web')));
+      el('div', { class: 'rs-kp' }, el('b', {}, String(S.res.length)), el('small', {}, 'recibidas'), el('b', {}, String(n)), el('small', {}, 'nuevas'), el('b', {}, pub), el('small', {}, 'en la web')));
   }
   function vEnlaces() {
     const c = el('div', { class: 'card rs-sec' });
@@ -217,12 +223,20 @@
     const est = el('div', { class: 'rs-est', role: 'radiogroup', 'aria-label': 'Estrellas' });
     const pintaEst = () => { est.textContent = ''; for (let i = 1; i <= 5; i++) est.append(el('button', { type: 'button', class: 'rs-star' + (i <= E.estrellas ? ' on' : ''), 'aria-label': i + ' estrellas', onclick: () => { E.estrellas = i; pintaEst(); } }, '★')); };
     pintaEst();
+    const cat = el('select', { 'aria-label': 'Categoría' });
+    const subS = el('select', { 'aria-label': 'Tipo de proyecto musical' }, el('option', { value: '' }, '—'), SUBS.map(x => el('option', { value: x }, x)));
+    const paisS = el('select', { 'aria-label': 'País' }, el('option', { value: '' }, '—'), PAISES.map(x => el('option', { value: x }, x)));
+    const pintaCat = () => { cat.textContent = ''; cat.append(el('option', { value: '' }, 'Sin categoría')); (CATS[E.tipo] || []).forEach(x => cat.append(el('option', { value: x }, x))); if (E.categoria && !(CATS[E.tipo] || []).includes(E.categoria)) cat.append(el('option', { value: E.categoria }, E.categoria)); cat.value = E.categoria || ''; };
+    const rowSub = el('div', { class: 'field' }, el('label', {}, 'Tipo de proyecto musical'), subS), rowPais = el('div', { class: 'field' }, el('label', {}, 'País'), paisS);
+    const vis = () => { rowSub.hidden = !(E.tipo === 'individual' && E.categoria === 'Producción musical'); rowPais.hidden = E.tipo !== 'empresa'; };
+    subS.value = E.subtipo || ''; paisS.value = E.pais || ''; pintaCat(); vis();
+    cat.addEventListener('change', () => { E.categoria = cat.value; vis(); }); subS.addEventListener('change', () => { E.subtipo = subS.value; }); paisS.addEventListener('change', () => { E.pais = paisS.value; });
     const rowEmp = el('div', { class: 'field' }, el('label', {}, 'Nombre de la empresa'), emp);
-    tipo.addEventListener('change', () => { E.tipo = tipo.value; rowEmp.hidden = E.tipo !== 'empresa'; }); rowEmp.hidden = E.tipo !== 'empresa';
+    tipo.addEventListener('change', () => { E.tipo = tipo.value; rowEmp.hidden = E.tipo !== 'empresa'; pintaCat(); vis(); }); rowEmp.hidden = E.tipo !== 'empresa';
     emp.addEventListener('input', () => { E.empresa = emp.value; }); nom.addEventListener('input', () => { E.nombre = nom.value; }); ser.addEventListener('input', () => { E.servicio = ser.value; }); txt.addEventListener('input', () => { E.texto = txt.value; });
     const der = el('div', { class: 'rs-campos' },
       el('div', { class: 'field' }, el('label', {}, 'Tipo de cliente'), tipo), rowEmp,
-      el('div', { class: 'field' }, el('label', {}, 'Nombre'), nom), el('div', { class: 'field' }, el('label', {}, 'Trabajo realizado'), ser, dl),
+      el('div', { class: 'field' }, el('label', {}, 'Nombre'), nom), el('div', { class: 'field' }, el('label', {}, 'Categoría (para filtrar en la web)'), cat), rowSub, rowPais, el('div', { class: 'field' }, el('label', {}, 'Trabajo realizado (texto que se ve)'), ser, dl),
       el('div', { class: 'field' }, el('label', {}, 'Estrellas'), est), el('div', { class: 'field' }, el('label', {}, 'Opinión'), txt));
     box.append(el('div', { class: 'rs-cols' }, izq, der));
     if (r.mejora) box.append(el('div', { class: 'rs-mej' }, el('b', {}, '🔒 Qué podríamos mejorar (privado, no se publica)'), el('p', {}, r.mejora)));
@@ -233,19 +247,19 @@
     const guardar = async (silencio) => {
       if (E.nombre.trim().length < 1 || E.texto.trim().length < 1) { ctx.toast('El nombre y la opinión no pueden quedar vacíos'); return null; }
       if (E.tipo === 'individual') E.empresa = '';
-      const n = await patch(r.id, { tipo: E.tipo, empresa: E.empresa.trim(), nombre: E.nombre.trim(), servicio: E.servicio.trim(), estrellas: E.estrellas, texto: E.texto.trim(), foto: E.foto || '', foto_pos: E.foto_pos || POS0, estado: r.estado === 'nueva' ? 'revisada' : r.estado });
+      const n = await patch(r.id, { tipo: E.tipo, empresa: E.empresa.trim(), nombre: E.nombre.trim(), servicio: E.servicio.trim(), categoria: E.categoria || '', subtipo: E.tipo === 'individual' && E.categoria === 'Producción musical' ? (E.subtipo || '') : '', pais: E.tipo === 'empresa' ? (E.pais || '') : '', estrellas: E.estrellas, texto: E.texto.trim(), foto: E.foto || '', foto_pos: E.foto_pos || POS0, estado: r.estado === 'nueva' ? 'revisada' : r.estado });
       Object.assign(r, n); S.ed = { ...r };
       if (r.slot) { await aWeb(r, r.slot); await ctx.recargar(); if (!silencio) ctx.toast('Guardada y actualizada en la web'); } else if (!silencio) ctx.toast('Guardada');
       badge(); return n;
     };
     const acts = el('div', { class: 'acts rs-pub' }, btn('Guardar cambios', 'check', async () => { try { await guardar(); pintar(); } catch (e) { ctx.toast(e.message || 'No se pudo guardar'); } }, 'btn-gold'));
     /* publicar en un espacio */
-    const sl = slots(), selS = el('select', { 'aria-label': 'Espacio de la web' });
-    const libre = sl.find(s => (r.tipo === 'empresa' ? s.n > 6 : s.n <= 6) && !s.q && !S.res.some(x => x.slot === s.n && x.id !== r.id));
-    sl.forEach(s => { const ocupa = S.res.find(x => x.slot === s.n); selS.append(el('option', { value: String(s.n) }, (s.n > 6 ? 'Empresas ' + (s.n - 6) : 'Personas ' + s.n) + (s.q ? (ocupa && ocupa.id === r.id ? ' · esta reseña' : ' · ocupado por ' + (s.nombre || 'otra reseña')) : ' · libre'))); });
-    selS.value = String(r.slot || (libre ? libre.n : 1));
+    const selS = el('select', { 'aria-label': 'Espacio de la web' });
+    const grupo = () => (E.tipo === 'empresa' ? 'emp' : 'per');
+    const pintaSel = () => { selS.textContent = ''; selS.append(el('option', { value: 'nuevo' }, 'Espacio nuevo (al final de ' + (grupo() === 'emp' ? 'Empresas' : 'Personas') + ')')); slots().filter(x => x.g === grupo()).forEach(x => selS.append(el('option', { value: String(x.n) }, 'Reemplazar espacio ' + x.n + (S.res.find(z => z.slot === x.n && z.id === r.id) ? ' · esta reseña' : ' · ' + (x.nombre || 'otra reseña'))))); selS.value = r.slot ? String(r.slot) : 'nuevo'; };
+    pintaSel(); tipo.addEventListener('change', pintaSel);
     acts.append(el('span', { class: 'rs-sp' }), selS, btn(r.slot ? 'Actualizar en la web' : 'Publicar en la web', 'globe', async () => {
-      const n = parseInt(selS.value, 10), cur = W(n);
+      const n = selS.value === 'nuevo' ? sigSlot() : parseInt(selS.value, 10), cur = selS.value === 'nuevo' ? { q: '' } : W(n);
       if (cur.q && (!r.slot || r.slot !== n) && !confirm('El espacio ' + etqSlot(n) + ' ya tiene la reseña de «' + (cur.nombre || 'otro cliente') + '». ¿Reemplazarla?')) return;
       try {
         if (!(await guardar(true))) return;
@@ -268,13 +282,13 @@
 
   function vWeb() {
     const c = el('div', { class: 'card rs-sec' });
-    c.append(el('h3', {}, ico('globe'), ' En la web ahora'), el('p', { class: 'muted' }, 'Los 12 espacios de «Lo dicen nuestros clientes» (6 Personas y 6 Empresas). Aquí también exportas cualquiera como imagen, aunque la hayas cargado a mano en Sitio web.'));
+    c.append(el('h3', {}, ico('globe'), ' En la web ahora'), el('p', { class: 'muted' }, 'Lo que se ve en «Lo dicen nuestros clientes». No hay límite: cada comentario que publiques abre un espacio nuevo, de Personas o de Empresas, y la web los separa por categoría. Aquí también exportas cualquiera como imagen, aunque la hayas cargado a mano en Sitio web.'));
     const g = el('div', { class: 'rs-wg' });
     slots().forEach(s => {
       const ph = el('div', { class: 'rs-ph' }); if (s.foto) { aplicarFondo(ph, s.foto, s.pos || POS0, null); natSize(s.foto).then(n => aplicarFondo(ph, s.foto, s.pos || POS0, n)); } else ph.append(ico('user'));
       const r = S.res.find(x => x.slot === s.n);
       g.append(el('div', { class: 'rs-w' + (s.q ? '' : ' vacio') }, el('small', { class: 'muted' }, etqSlot(s.n)), ph,
-        s.q ? [el('b', {}, s.nombre || 'Cliente'), el('small', { class: 'rs-wl' }, s.linea), el('span', { class: 'rs-wst' }, estrellas(s.est)),
+        s.q ? [el('b', {}, s.nombre || 'Cliente'), el('small', { class: 'rs-wl' }, s.linea), s.cat ? el('small', { class: 'tag pendiente' }, s.cat) : null, el('span', { class: 'rs-wst' }, estrellas(s.est)),
           el('div', { class: 'acts' }, btn('PNG', 'download', () => abrirExport({ nombre: s.nombre || 'Cliente', linea: s.linea, texto: s.q, estrellas: s.est, foto: s.foto, pos: s.pos || POS0 }), 'btn-gold'),
             r ? btn('Editar', null, () => { S.sel = r.id; S.ed = null; pintar(); setTimeout(() => { const t = $('.rs-ed', host); t && t.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50); }) : null,
             btn('', 'x', async () => { if (!confirm('¿Quitar de ' + etqSlot(s.n) + '?')) return; try { await quitarDeWeb(s.n); if (r) { const n = await patch(r.id, { slot: null }); Object.assign(r, n); } await ctx.recargar(); pintar(); ctx.toast('Quitada'); } catch (e) { ctx.toast(e.message); } }, 'btn-red'))]
