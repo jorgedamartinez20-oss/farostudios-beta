@@ -129,7 +129,7 @@
   const linkDe = e => baseLink() + '?c=' + e.token;
   const mensaje = e => {
     const pct = parseFloat(cfgGet('descuento', '10')), hola = (e.etiqueta || '').split(/[·\-–]/)[0].trim().split(/\s+/)[0];
-    return 'Hola' + (hola ? ' ' + hola : '') + ', gracias por confiar en Faro Studios 🤍 Nos encantaría conocer tu opinión: toma menos de un minuto' + (pct > 0 ? ' y como agradecimiento recibes ' + pct + '% de descuento en tu próxima sesión' : '') + '. Aquí está tu enlace personal:\n' + linkDe(e);
+    return 'Hola' + (hola ? ' ' + hola : '') + ', gracias por confiar en Faro Studios 🤍 Nos encantaría conocer tu opinión: toma menos de un minuto' + (pct > 0 ? ' y como agradecimiento recibes ' + pct + '% de descuento en tu próxima sesión (vale ' + cfgGet('vigencia_meses', '5') + ' meses)' : '') + '. Aquí está tu enlace personal:\n' + linkDe(e);
   };
   const copiar = async (t, ok) => { try { await navigator.clipboard.writeText(t); ctx.toast(ok || 'Copiado'); } catch (e) { const ta = el('textarea', { style: 'position:fixed;opacity:0' }); ta.value = t; document.body.append(ta); ta.select(); try { document.execCommand('copy'); ctx.toast(ok || 'Copiado'); } catch (x) { ctx.toast('No se pudo copiar'); } ta.remove(); } };
   async function crearEnlace(etq) {
@@ -273,8 +273,7 @@
     if (r.slot) acts.append(btn('Quitar de la web', 'x', async () => { if (!confirm('¿Quitar esta reseña de la web? Se queda guardada aquí.')) return; try { await quitarDeWeb(r.slot); const nr = await patch(r.id, { slot: null }); Object.assign(r, nr); await ctx.recargar(); ctx.toast('Quitada de la web'); pintar(); } catch (e) { ctx.toast(e.message || 'No se pudo quitar'); } }, 'btn-red'));
     box.append(acts);
     const acts2 = el('div', { class: 'acts' }, btn('Exportar como imagen (PNG)', 'download', () => abrirExport({ nombre: E.nombre, linea: linea({ ...E }), texto: E.texto, estrellas: E.estrellas, foto: E.foto, pos: E.foto_pos }), 'btn-gold'));
-    const cj = el('label', { class: 'rs-chk' }, el('input', { type: 'checkbox' }), ' Ya usó su código ' + (r.codigo || ''));
-    cj.firstChild.checked = !!r.canjeado; cj.firstChild.addEventListener('change', async () => { try { const n = await patch(r.id, { canjeado: cj.firstChild.checked }); Object.assign(r, n); ctx.toast(r.canjeado ? 'Código marcado como usado' : 'Código disponible'); } catch (e) { ctx.toast(e.message); } });
+    const cj = r.codigo ? el('div', { class: 'rs-chk' }, el('span', {}, 'Código ' + r.codigo), btn('Ver y canjear en Cupones', 'gift', () => { try { window.FaroCupones.abrirCodigo(r.codigo); } catch (e) { } if (window.showTab) window.showTab('cup'); })) : el('span', { class: 'muted' }, 'Sin código de descuento');
     acts2.append(cj, el('span', { class: 'rs-sp' }),
       r.estado !== 'archivada' ? btn('Archivar', null, async () => { try { if (r.slot) { await quitarDeWeb(r.slot); await ctx.recargar(); } const n = await patch(r.id, { estado: 'archivada', slot: null }); Object.assign(r, n); S.sel = null; S.ed = null; pintar(); ctx.toast('Archivada'); } catch (e) { ctx.toast(e.message); } }) : btn('Desarchivar', null, async () => { const n = await patch(r.id, { estado: 'revisada' }); Object.assign(r, n); pintar(); }),
       btn('Borrar', 'trash', async () => { if (!confirm('¿Borrar esta reseña para siempre?' + (r.slot ? ' También se quita de la web.' : ''))) return; try { if (r.slot) { await quitarDeWeb(r.slot); await ctx.recargar(); } const x = await ctx.api('/rest/v1/rs_resenas?id=eq.' + r.id, { method: 'DELETE', headers: { Prefer: 'return=minimal' } }); if (!x.ok) throw new Error(await ctx.errText(x)); S.res = S.res.filter(z => z.id !== r.id); S.sel = null; S.ed = null; badge(); pintar(); } catch (e) { ctx.toast(e.message); } }, 'btn-red'));

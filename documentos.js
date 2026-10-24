@@ -136,7 +136,7 @@ td.n{width:14mm}td.q{width:26mm}td.t{width:34mm;white-space:nowrap}
     let tot = r1('Subtotal', money(c.sub, mon));
     if (rec) { if (c.dep > 0) tot += r1(d.depLabel || 'Depositado previamente', money(c.dep, mon)); }
     else {
-      if (c.desc > 0) tot += r1('Descuento' + (d.descTipo === 'Q' ? '' : ' (' + num(d.desc) + '%)'), money(-c.desc, mon));
+      if (c.desc > 0) tot += r1('Descuento' + (d.descTipo === 'Q' ? '' : ' (' + num(d.desc) + '%)') + (d.cupon ? ' · cupón ' + d.cupon : ''), money(-c.desc, mon));
       if (c.ant > 0) tot += r1('Anticipo (' + num(d.anticipoPct) + '%)', money(c.ant, mon));
       if ((d.notaLabel || '').trim() && isFinite(num(d.notaMonto))) tot += r1(d.notaLabel, money(num(d.notaMonto), mon));
     }
@@ -249,7 +249,7 @@ td.n{width:14mm}td.q{width:26mm}td.t{width:34mm;white-space:nowrap}
       condiciones: COND[tipo], formaPago: PAGO, estado: 'emitido'
     };
     if (base) {
-      ['moneda', 'cliente', 'tel', 'nit', 'correo', 'direccion', 'servicio', 'fecha', 'horaIni', 'horaFin', 'ubicacion', 'desc', 'descTipo', 'anticipoPct'].forEach(k => { if (base[k] != null && base[k] !== '') d[k] = base[k]; });
+      ['moneda', 'cliente', 'tel', 'nit', 'correo', 'direccion', 'servicio', 'fecha', 'horaIni', 'horaFin', 'ubicacion', 'desc', 'descTipo', 'anticipoPct', 'cupon'].forEach(k => { if (base[k] != null && base[k] !== '') d[k] = base[k]; });
       if (tipo === 'recibo') { d.anticipoPct = ''; d.desc = ''; if (base.ubicacion) d.ubicacion = base.ubicacion; d.fecha = hoy(); d.servicio = base.servicio || ''; }
       d.items = (base.items || []).map(i => ({ desc: i.desc, cant: tipo === 'recibo' ? '' : (i.cant || '1'), precio: i.precio, antes: false }));
       if (!d.items.length) d.items = [{ desc: '', cant: '1', precio: '', antes: false }];
@@ -425,6 +425,29 @@ td.n{width:14mm}td.q{width:26mm}td.t{width:34mm;white-space:nowrap}
       const tp = h('select'); [['%', 'Descuento en %'], ['Q', 'Descuento en monto']].forEach(([v, t]) => { const o = h('option', { value: v }, t); if (d.descTipo === v) o.selected = true; tp.append(o); });
       tp.disabled = lock; tp.addEventListener('change', () => { d.descTipo = tp.value; refrescar(); });
       gl.append(h('div', { class: 'fd-g3' }, h('div', { class: 'field' }, h('label', {}, 'Tipo de descuento'), tp), fld('Descuento', 'desc', { im: 'decimal', ph: '0' }), fld('Anticipo (%)', 'anticipoPct', { im: 'decimal', ph: 'Sin anticipo' })));
+      /* cupón: si el cliente escribió un código en la cotización (o te lo dice después), aquí se verifica y se aplica su % */
+      const cpIn = h('input', { type: 'text', placeholder: 'Ej. FARO-7K2M9Q', autocapitalize: 'characters', spellcheck: 'false' }); cpIn.value = d.cupon || ''; cpIn.disabled = lock;
+      const cpMsg = h('small', { class: 'muted', style: 'display:block;margin-top:6px' }, d.cupon ? 'Cupón aplicado: ' + d.cupon + '. Cuando se confirme la sesión, márcalo como canjeado en Clientes → Cupones.' : 'Opcional. Se verifica en Cupones: que exista, que no haya vencido y que no se haya usado.');
+      const cpOk = (m) => { cpMsg.style.color = ''; cpMsg.textContent = m; }, cpNo = (m) => { cpMsg.style.color = 'var(--red-t)'; cpMsg.textContent = m; };
+      const cpGo = btn('check', 'Verificar y aplicar', async () => {
+        const k = (cpIn.value || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+        if (!k) { d.cupon = ''; cpOk('Sin cupón. El descuento queda como lo pongas a mano.'); refrescar(); return; }
+        try {
+          const r = await ctx.api('/rest/v1/cupones?select=codigo,nombre,porcentaje,usos,usos_max,vence,estado&clave=eq.' + k);
+          if (!r.ok) { cpNo(await ctx.errText(r) + ' (¿ya corriste sql/cupones.sql?)'); return; }
+          const c = (await r.json())[0];
+          if (!c) { cpNo('Ese código no existe en tus registros. No lo apliques.'); return; }
+          if (c.estado !== 'activo') { cpNo('Ese código está invalidado.'); return; }
+          if (c.usos >= c.usos_max) { cpNo('Ese código ya se usó' + (c.usos_max > 1 ? ' todas sus veces.' : '.')); return; }
+          if (c.vence < hoy()) { cpNo('Ese código venció el ' + c.vence + '.'); return; }
+          const p = String(parseFloat(c.porcentaje));
+          d.cupon = c.codigo; d.descTipo = '%'; d.desc = p; tp.value = '%'; if (ins.desc) ins.desc.value = p;
+          cpOk('✓ ' + c.codigo + (c.nombre ? ' · ' + c.nombre : '') + ' · ' + p + '% hasta el ' + c.vence + '. Cuando se confirme la sesión, márcalo como canjeado en Clientes → Cupones.');
+          refrescar();
+        } catch (e) { if (!e || e.message !== 'sesion') cpNo('No se pudo verificar. Revisa tu conexión.'); }
+      });
+      cpGo.disabled = lock;
+      gl.append(h('div', { class: 'field' }, h('label', {}, 'Cupón de descuento'), h('div', { style: 'display:flex;gap:8px;flex-wrap:wrap' }, cpIn, cpGo), cpMsg));
       if (q) gl.append(h('div', { class: 'fd-g2' }, fld('Dato informativo (opcional)', 'notaLabel', { ph: 'Ej. Pago por clase' }), fld('Monto del dato', 'notaMonto', { im: 'decimal' })));
     } else gl.append(fld('Texto de la línea “depositado”', 'depLabel', { ph: 'Ej. Depositado por activación de snacks.' }));
     card.append(gl);

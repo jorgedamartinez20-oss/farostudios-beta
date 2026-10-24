@@ -318,3 +318,5 @@ html:has(.gal.pre),body:has(.gal.pre){overflow:hidden;height:100%;overscroll-beh
 .gal.abierta .gcov .fpc[data-s=centro] .fpx,.gal.abierta .gcov .fpc[data-s=marco] .fpx,.gal.abierta .gcov .fpc[data-s=raya] .fpx{padding-top:var(--gh,56px)}
 .gal.abierta .gcov .fpc{--ts:4.4cqw}
 .gal.abierta .gcov.fpph .fpc{--ts:8.5cqw}
+
+.gcod .gvig{margin:6px 0 0;font-size:.82rem;opacity:.8}

@@ -2324,6 +2324,7 @@ html[data-page="academy"] .hero2,html[data-page="music"] .hero2,html[data-page="
         <div class="field"><label for="qt-fecha">Fecha tentativa</label><input id="qt-fecha" type="date"><label class="nof"><input type="checkbox" id="qt-nof">Todavía no tengo fecha</label></div>
         <div class="field"><label for="qt-det">Cuéntanos de tu proyecto</label><textarea id="qt-det" maxlength="2000" placeholder="Qué evento o producción es, cuántas personas, duración aproximada, lugar, ideas de referencia…"></textarea></div>
         <div class="field"><label for="qt-src">¿Cómo nos conociste?</label><select id="qt-src"><option value="">Elige una opción</option><option>Instagram</option><option>Recomendación</option><option>Mi iglesia o institución</option><option>Google</option><option>Faro Academy</option><option>Otro</option></select></div>
+        <div class="field"><label for="qt-cup">¿Tienes un código de descuento? <span style="opacity:.7;font-weight:400">(opcional)</span></label><input id="qt-cup" type="text" maxlength="30" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="Ej. FARO-7K2M9Q" aria-describedby="qt-cupm"><small id="qt-cupm" aria-live="polite" style="display:block;margin-top:6px;min-height:1.2em"></small></div>
         <div class="hp" aria-hidden="true"><label>No llenar<input id="qt-hp" tabindex="-1" autocomplete="off"></label></div>
         <div id="qt-err" class="rv-err" role="alert" hidden></div>
         <button class="btn btn-solid rv-submit" id="qt-send" type="button">Enviar cotización</button>
@@ -3639,7 +3640,7 @@ try{window.setBrowserColor((PAGES[current]&&(PAGES[current].side||lastSide))==='
   $('#qt-fecha').min=todayISO();
   $('#qt-nof').addEventListener('change',e=>{const d=$('#qt-fecha');d.disabled=e.target.checked;if(e.target.checked)d.value=''});
   const val=id=>$(id).value.trim();
-  function getData(){return{cat:(f.querySelector('input[name=qcat]:checked')||{}).value||'',nombre:val('#qt-nombre'),wa:((($('#qt-cc')||{}).selectedOptions||[{}])[0].dataset.d?'+'+$('#qt-cc').selectedOptions[0].dataset.d+' ':'')+val('#qt-wa'),mail:val('#qt-mail'),org:val('#qt-org'),ciudad:val('#qt-ciudad'),fecha:val('#qt-fecha'),det:val('#qt-det'),src:val('#qt-src')}}
+  function getData(){return{cat:(f.querySelector('input[name=qcat]:checked')||{}).value||'',nombre:val('#qt-nombre'),wa:((($('#qt-cc')||{}).selectedOptions||[{}])[0].dataset.d?'+'+$('#qt-cc').selectedOptions[0].dataset.d+' ':'')+val('#qt-wa'),mail:val('#qt-mail'),org:val('#qt-org'),ciudad:val('#qt-ciudad'),fecha:val('#qt-fecha'),det:val('#qt-det'),src:val('#qt-src'),cupon:val('#qt-cup')}}
   function bad(m,sel){rvShowErr(m,err);const el=sel&&$(sel);if(el&&el.focus)el.focus()}
   function check(d){
     if(!d.cat){bad('Elige qué servicio necesitas.');return false}
@@ -3649,13 +3650,13 @@ try{window.setBrowserColor((PAGES[current]&&(PAGES[current].side||lastSide))==='
     if(d.fecha&&d.fecha<todayISO()){bad('La fecha tentativa ya pasó. Elige otra o marca que aún no tienes fecha.','#qt-fecha');return false}
     return true;
   }
-  function msg(d,ref){return 'Hola, quiero cotizar con Faro Studios'+(ref?' (código '+ref+')':'')+'.\nServicio: '+d.cat+'\nNombre: '+d.nombre+(d.org?'\nOrganización: '+d.org:'')+(d.ciudad?'\nCiudad: '+d.ciudad:'')+(d.fecha?'\nFecha tentativa: '+d.fecha:'')+(d.det?'\nProyecto: '+d.det:'')}
+  function msg(d,ref){return 'Hola, quiero cotizar con Faro Studios'+(ref?' (código '+ref+')':'')+'.\nServicio: '+d.cat+'\nNombre: '+d.nombre+(d.org?'\nOrganización: '+d.org:'')+(d.ciudad?'\nCiudad: '+d.ciudad:'')+(d.fecha?'\nFecha tentativa: '+d.fecha:'')+(d.cupon?'\nCódigo de descuento: '+d.cupon.toUpperCase():'')+(d.det?'\nProyecto: '+d.det:'')}
   async function submit(){
     if(send.disabled)return;err.hidden=true;const d=getData();if(!check(d))return;
     const ref='COT-'+rvUuid().slice(0,6).toUpperCase();send.disabled=true;send.textContent='Enviando…';
     try{
       if($('#qt-hp').value){done(ref,d);return}
-      const r=await rvRpc('crear_cotizacion',{p_ref:ref,p_categoria:d.cat,p_nombre:d.nombre,p_whatsapp:d.wa,p_correo:d.mail,p_organizacion:d.org,p_ciudad:d.ciudad,p_fecha:d.fecha||null,p_descripcion:d.det,p_fuente:d.src});
+      const r=await rvRpc('crear_cotizacion',{p_ref:ref,p_categoria:d.cat,p_nombre:d.nombre,p_whatsapp:d.wa,p_correo:d.mail,p_organizacion:d.org,p_ciudad:d.ciudad,p_fecha:d.fecha||null,p_descripcion:d.det,p_fuente:d.src,...(d.cupon?{p_cupon:d.cupon}:{})});
       if(!r.ok){const m=await rvMsg(r);if(m==='limite'){bad('Ya recibimos varias solicitudes tuyas. Te responderemos pronto, o escríbenos por WhatsApp.')}else if(m==='datos'){bad('Revisa tus datos e inténtalo otra vez.')}else{bad('No pudimos enviar tu solicitud. Inténtalo otra vez o escríbenos por WhatsApp.')}return}
       done(ref,d);
     }catch(e){bad('No hay conexión con el servidor. Revisa tu internet e inténtalo otra vez, o escríbenos por WhatsApp.')}
@@ -3665,8 +3666,24 @@ try{window.setBrowserColor((PAGES[current]&&(PAGES[current].side||lastSide))==='
     $('#qt-code').textContent=ref;$('#qt-wa2').href=WA+encodeURIComponent(msg(d,ref));
     f.hidden=true;$('#qt-ok').hidden=false;$('#qt-card').scrollIntoView({block:'start',behavior:reduce?'auto':'smooth'});
   }
+  /* código de descuento: se comprueba en la base (solo dice si sirve y cuánto da, nunca de quién es) */
+  const cup=$('#qt-cup'),cupm=$('#qt-cupm');let cupT=0;
+  const cupDia=v=>{try{return new Date(v+'T12:00:00').toLocaleDateString('es-GT',{day:'numeric',month:'long',year:'numeric'})}catch(e){return v}};
+  async function cupCheck(){
+    const v=cup.value.trim();const my=++cupT;cupm.style.color='';
+    if(!v){cupm.textContent='';return}
+    cupm.textContent='Comprobando…';
+    try{
+      const r=await rvRpc('cp_consultar',{p_codigo:v});if(my!==cupT)return;
+      const j=r.ok?await r.json():null;
+      if(j&&j.ok){const p=parseFloat(j.porcentaje);cupm.style.color='#2f7d4a';cupm.textContent='✓ Código válido: '+(Math.round(p*100)/100)+'% de descuento, hasta el '+cupDia(j.vence)+'.'}
+      else{cupm.style.color='#b3261e';cupm.textContent='Ese código no es válido o ya venció. Puedes enviar tu cotización sin él o escribirnos por WhatsApp.'}
+    }catch(e){if(my===cupT){cupm.textContent=''}}
+  }
+  cup.addEventListener('blur',cupCheck);
+  cup.addEventListener('input',()=>{cupT++;cupm.textContent='';cupm.style.color=''});
   send.addEventListener('click',submit);
-  $('#qt-new').addEventListener('click',()=>{f.reset();window.qtCountry&&window.qtCountry();$('#qt-fecha').disabled=false;err.hidden=true;$('#qt-ok').hidden=true;f.hidden=false;$('#qt-card').scrollIntoView({block:'start'})});
+  $('#qt-new').addEventListener('click',()=>{f.reset();cupm.textContent='';window.qtCountry&&window.qtCountry();$('#qt-fecha').disabled=false;err.hidden=true;$('#qt-ok').hidden=true;f.hidden=false;$('#qt-card').scrollIntoView({block:'start'})});
 })();
 
 </script>
