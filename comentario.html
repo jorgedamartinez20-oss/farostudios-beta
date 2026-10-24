@@ -195,7 +195,7 @@ body::after{width:380px;height:380px;right:-120px;bottom:-60px;background:rgba(1
 const U='https://keivqvsgdfhthouzlqxo.supabase.co',K='sb_publishable_5nj3M7rjQs3phGU6u2uNqw_3tjTL6PE';
 const WA='https://wa.me/50252695592';
 const SERV={
-  individual:['Boda','XV años','Graduación','Sesión familiar o retrato','Evento social','Fotografía para negocio','Producción musical','Otro'],
+  individual:['Boda','XV años','Graduación','Sesión familiar o retrato','Evento social','Producción musical','Otro'],
   empresa:['Producciones de audio','Streaming','Podcast','Locuciones comerciales','Material sonoro de radio','Contenido para TV','Coberturas','Activaciones','Fotografía de producto','Inmobiliaria','Video corporativo o de marca','Contenido para redes','Otro']
 };
 const SUB=['Banda','Iglesia','Agrupación','Solista','Sonido en vivo'];
@@ -211,7 +211,7 @@ const rpc=async(fn,args)=>{const r=await fetch(U+'/rest/v1/rpc/'+fn,{method:'POS
 const ls=(k,v)=>{try{if(v===undefined)return JSON.parse(localStorage.getItem(k)||'null');if(v===null)localStorage.removeItem(k);else localStorage.setItem(k,JSON.stringify(v))}catch(e){return null}};
 
 let F,INFO={descuento:'',condicion:'',meses:'5'};
-const fresh=()=>({tipo:'',empresa:'',pais:'Guatemala',nombre:'',servicio:'',sub:'',otro:'',estrellas:0,texto:'',mejora:''});
+const fresh=()=>({tipo:'',empresa:'',pais:'Guatemala',cargo:'',multi:[],nombre:'',servicio:'',sub:'',otro:'',estrellas:0,texto:'',mejora:''});
 const fvence=v=>{try{return new Date(v+'T12:00:00').toLocaleDateString('es-GT',{day:'numeric',month:'long',year:'numeric'})}catch(e){return v}};
 
 function vistaForm(){
@@ -232,7 +232,7 @@ const $$=(s,r)=>[...(r||document).querySelectorAll(s)];
 
 function elegir(t){
   const cambio=F.tipo&&F.tipo!==t;
-  F.tipo=t;F.servicio='';F.sub='';F.otro='';
+  F.tipo=t;F.servicio='';F.multi=[];F.sub='';F.otro='';
   $$('.tile').forEach(x=>x.setAttribute('aria-pressed',String(x.dataset.t===t)));$('#e1').textContent='';
   const n=parseFloat(INFO.descuento),emp=t==='empresa';
   const prev=cambio?{nombre:F.nombre,texto:F.texto,mejora:F.mejora,estrellas:F.estrellas,empresa:F.empresa}:null;
@@ -240,8 +240,8 @@ function elegir(t){
   ${!emp&&n>0?`<section class="sec"><div class="gift"><svg class="ico" viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13M19 12v9H5v-9M7.5 8a2.5 2.5 0 0 1 0-5C11 3 12 8 12 8s1-5 4.5-5a2.5 2.5 0 0 1 0 5"/></svg><span>Como gracias recibes ${n}% de descuento: uno para ti y otro para un amigo</span></div></section>`:''}
   <section class="sec"><div class="sh"><span class="n">02</span><div><h2>${emp?'Tu empresa y tu nombre':'Tu nombre'}</h2></div></div>
     <div class="two">${emp?`<div class="fld"><label for="f-emp">Nombre de la empresa</label><input id="f-emp" maxlength="80" autocomplete="organization" placeholder="Ej. Café Aurora"></div><div class="fld"><label for="f-pais">País</label><select id="f-pais">${PAISES.map(x=>`<option${x===F.pais?' selected':''}>${esc(x)}</option>`).join('')}</select></div>`:''}
-    <div class="fld">${emp?`<label for="f-nom">Tu nombre y cargo</label>`:''}<input id="f-nom" maxlength="80" autocomplete="name" placeholder="${emp?'Ej. Ana López, gerente':'Nombre y apellido'}" aria-label="Tu nombre"></div></div><p class="err" id="e2"></p></section>
-  <section class="sec"><div class="sh"><span class="n">03</span><div><h2>${emp?'¿Qué producción cubrimos?':'¿Qué hicimos juntos?'}</h2></div></div>
+    <div class="fld">${emp?`<label for="f-nom">Tu nombre</label>`:''}<input id="f-nom" maxlength="80" autocomplete="name" placeholder="Nombre y apellido" aria-label="Tu nombre"></div>${emp?`<div class="fld"><label for="f-cargo">Tu cargo <span style="text-transform:none;letter-spacing:0;font-weight:400">(opcional)</span></label><input id="f-cargo" maxlength="80" autocomplete="organization-title" placeholder="Ej. Gerente de marketing"></div>`:''}</div><p class="err" id="e2"></p></section>
+  <section class="sec"><div class="sh"><span class="n">03</span><div><h2>${emp?'¿Qué producción cubrimos?':'¿Qué hicimos juntos?'}</h2>${emp?'<small>Puedes marcar varias</small>':''}</div></div>
     <div class="chips" role="group" aria-label="${emp?'Producción':'Trabajo realizado'}">${SERV[t].map(s=>`<button type="button" class="chip" aria-pressed="false" data-s="${esc(s)}">${esc(s)}</button>`).join('')}</div>
     <div class="reveal sm" id="rv-otro"><div><div class="in fld"><label for="f-otro">Cuéntanos qué fue</label><input id="f-otro" maxlength="60" placeholder="${emp?'Ej. Lanzamiento de producto':'Ej. Cobertura de aniversario'}"></div></div></div>
     <div class="reveal sm" id="rv-sub"><div><div class="in"><label class="lbl">¿Para qué tipo de proyecto musical?</label><div class="chips" role="group" aria-label="Tipo de proyecto musical">${SUB.map(x=>`<button type="button" class="chip" aria-pressed="false" data-u="${esc(x)}">${esc(x)}</button>`).join('')}</div></div></div></div>
@@ -269,11 +269,14 @@ let stars=[];
 function pintaE(n){stars.forEach((s,i)=>{s.classList.toggle('on',i<n);s.setAttribute('aria-checked',String(i+1===F.estrellas))});$('#slab').textContent=ETI[n]||''}
 function ligar(){
   const chips=$$('.chip');stars=$$('.star');
+  const fc=$('#f-cargo');if(fc)fc.oninput=e=>{F.cargo=e.target.value};
   const fe=$('#f-emp');if(fe)fe.oninput=e=>{F.empresa=e.target.value;$('#e2').textContent=''};
   $('#f-nom').oninput=e=>{F.nombre=e.target.value;$('#e2').textContent=''};
   const fp=$('#f-pais');if(fp)fp.onchange=e=>{F.pais=e.target.value};
   const cs=chips.filter(x=>x.dataset.s),us=chips.filter(x=>x.dataset.u);
-  cs.forEach(b=>b.onclick=()=>{F.servicio=b.dataset.s;cs.forEach(x=>x.setAttribute('aria-pressed',String(x===b)));$('#rv-otro').classList.toggle('on',F.servicio==='Otro');const mus=F.servicio==='Producción musical';$('#rv-sub').classList.toggle('on',mus);if(!mus){F.sub='';us.forEach(x=>x.setAttribute('aria-pressed','false'))}$('#e3').textContent='';if(F.servicio==='Otro')setTimeout(()=>$('#f-otro').focus({preventScroll:true}),400)});
+  cs.forEach(b=>b.onclick=()=>{
+    if(F.tipo==='empresa'){const v=b.dataset.s,i=F.multi.indexOf(v);if(i<0)F.multi.push(v);else F.multi.splice(i,1);b.setAttribute('aria-pressed',String(i<0));F.servicio=F.multi.join(', ');$('#rv-otro').classList.toggle('on',F.multi.includes('Otro'));$('#e3').textContent='';if(i<0&&v==='Otro')setTimeout(()=>$('#f-otro').focus({preventScroll:true}),400);return}
+    F.servicio=b.dataset.s;cs.forEach(x=>x.setAttribute('aria-pressed',String(x===b)));$('#rv-otro').classList.toggle('on',F.servicio==='Otro');const mus=F.servicio==='Producción musical';$('#rv-sub').classList.toggle('on',mus);if(!mus){F.sub='';us.forEach(x=>x.setAttribute('aria-pressed','false'))}$('#e3').textContent='';if(F.servicio==='Otro')setTimeout(()=>$('#f-otro').focus({preventScroll:true}),400)});
   us.forEach(b=>b.onclick=()=>{F.sub=b.dataset.u;us.forEach(x=>x.setAttribute('aria-pressed',String(x===b)));$('#e3').textContent=''});
   $('#f-otro').oninput=e=>{F.otro=e.target.value};
   stars.forEach((s,i)=>{
@@ -293,7 +296,7 @@ function validar(){
   if(!F.tipo)e.e1='Elige cómo trabajaste con nosotros.';
   if(F.tipo==='empresa'&&F.empresa.trim().length<1)e.e2='Escribe el nombre de la empresa.';
   else if(F.nombre.trim().length<2)e.e2='Escribe tu nombre.';
-  if(!F.servicio)e.e3=F.tipo==='empresa'?'Elige qué producción cubrimos.':'Elige el trabajo que hicimos juntos.';
+  if(F.tipo==='empresa'?!F.multi.length:!F.servicio)e.e3=F.tipo==='empresa'?'Elige qué producción cubrimos.':'Elige el trabajo que hicimos juntos.';
   else if(F.servicio==='Producción musical'&&!F.sub)e.e3='Elige el tipo de proyecto musical.';
   if(!F.estrellas)e.e4='Toca las estrellas para puntuarnos.';
   if(F.texto.trim().length<10)e.e5='Cuéntanos un poco más (al menos una frase).';
@@ -305,9 +308,11 @@ async function enviar(){
   const prim=Object.keys(er)[0];
   if(prim){$('#'+prim).closest('.sec').scrollIntoView({behavior:reduce?'auto':'smooth',block:'center'});return}
   const b=$('#send');b.disabled=true;b.querySelector('span').textContent='ENVIANDO…';$('#te').innerHTML='';
-  const ser=F.servicio==='Otro'&&F.otro.trim()?F.otro.trim().slice(0,60):F.servicio;
+  const emp=F.tipo==='empresa',otro=F.otro.trim().slice(0,60);
+  const ser=emp?F.multi.map(x=>x==='Otro'&&otro?otro:x).join(', '):(F.servicio==='Otro'&&otro?otro:F.servicio);
+  const cat=emp?F.multi.join('|'):F.servicio;
   try{
-    const r=await rpc('rs_enviar_publico',{p_tipo:F.tipo,p_empresa:F.tipo==='empresa'?F.empresa.trim():'',p_nombre:F.nombre.trim(),p_servicio:ser,p_estrellas:F.estrellas,p_texto:F.texto.trim(),p_mejora:F.mejora.trim(),p_categoria:F.servicio,p_subtipo:F.sub,p_pais:F.tipo==='empresa'?F.pais:''});
+    const r=await rpc('rs_enviar_publico',{p_tipo:F.tipo,p_empresa:F.tipo==='empresa'?F.empresa.trim():'',p_nombre:F.nombre.trim(),p_servicio:ser,p_estrellas:F.estrellas,p_texto:F.texto.trim(),p_mejora:F.mejora.trim(),p_categoria:cat,p_subtipo:F.sub,p_pais:emp?F.pais:'',p_cargo:emp?F.cargo.trim():''});
     if(r&&r.ok){const d={tipo:F.tipo,codigo:r.codigo||'',descuento:r.descuento||'',condicion:r.condicion||'',vence:r.vence||'',nombre:F.nombre.trim().split(/\s+/)[0]};ls(LSK,d);vistaGracias(d,true);return}
     const msg={limite:'Hay muchos comentarios llegando en este momento. Inténtalo de nuevo en unos minutos.',repetido:'Ya recibimos este mismo comentario. ¡Gracias!'}[r&&r.error];
     if(msg){b.disabled=false;b.querySelector('span').textContent='ENVIAR MI COMENTARIO';$('#te').innerHTML='<div class="top-err">'+msg+'</div>';return}

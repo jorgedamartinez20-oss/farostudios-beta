@@ -65,7 +65,10 @@ create unique index if not exists cupon_usos_quien_uq on public.cupon_usos(cupon
 
 -- 1b) Comentarios: «qué podríamos mejorar» (privado), categoría, subtipo, país, y espacios de la web sin límite
 alter table public.rs_resenas add column if not exists mejora text not null default '' check (char_length(mejora) <= 1000);
-alter table public.rs_resenas add column if not exists categoria text not null default '' check (char_length(categoria) <= 80);
+alter table public.rs_resenas add column if not exists categoria text not null default '' check (char_length(categoria) <= 400);
+alter table public.rs_resenas add column if not exists cargo text not null default '' check (char_length(cargo) <= 80);
+alter table public.rs_resenas drop constraint if exists rs_resenas_servicio_check;
+alter table public.rs_resenas add constraint rs_resenas_servicio_check check (char_length(servicio) <= 400);
 alter table public.rs_resenas add column if not exists subtipo text not null default '' check (char_length(subtipo) <= 60);
 alter table public.rs_resenas add column if not exists pais text not null default '' check (char_length(pais) <= 60);
 alter table public.rs_resenas drop constraint if exists rs_resenas_slot_check;
@@ -215,9 +218,10 @@ grant execute on function public.rs_info() to anon, authenticated;
 -- La persona escribe su comentario. Si es individual, la base le genera su código único (2 usos: cliente y amigo) y lo guarda
 -- en Cupones. Si es empresa, solo se guarda el comentario. Todo o nada.
 drop function if exists public.rs_enviar_publico(text, text, text, text, int, text, text);
+drop function if exists public.rs_enviar_publico(text, text, text, text, int, text, text, text, text, text);
 create or replace function public.rs_enviar_publico(
   p_tipo text, p_empresa text, p_nombre text, p_servicio text, p_estrellas int, p_texto text, p_mejora text default '',
-  p_categoria text default '', p_subtipo text default '', p_pais text default ''
+  p_categoria text default '', p_subtipo text default '', p_pais text default '', p_cargo text default ''
 ) returns jsonb
 language plpgsql security definer set search_path = public as $$
 declare
@@ -227,7 +231,8 @@ declare
   ser text := btrim(coalesce(p_servicio, ''));
   txt text := btrim(coalesce(p_texto, ''));
   mej text := left(btrim(coalesce(p_mejora, '')), 1000);
-  cat text := left(btrim(coalesce(p_categoria, '')), 80);
+  cat text := left(btrim(coalesce(p_categoria, '')), 400);
+  car text := case when p_tipo = 'empresa' then left(btrim(coalesce(p_cargo, '')), 80) else '' end;
   sub text := left(btrim(coalesce(p_subtipo, '')), 60);
   pai text := case when p_tipo = 'empresa' then left(btrim(coalesce(p_pais, '')), 60) else '' end;
   pref text; pct text; cond text; mes text; cod text := null; pn numeric; mm int; vence date;
@@ -236,7 +241,7 @@ begin
   if char_length(nom) not between 1 and 80 then return jsonb_build_object('ok', false, 'error', 'nombre'); end if;
   if p_tipo = 'empresa' and char_length(emp) not between 1 and 80 then return jsonb_build_object('ok', false, 'error', 'empresa'); end if;
   if p_tipo = 'individual' then emp := ''; end if;
-  if char_length(ser) > 80 then ser := left(ser, 80); end if;
+  if char_length(ser) > 400 then ser := left(ser, 400); end if;
   if p_estrellas is null or p_estrellas not between 1 and 5 then return jsonb_build_object('ok', false, 'error', 'estrellas'); end if;
   if char_length(txt) not between 10 and 1500 then return jsonb_build_object('ok', false, 'error', 'texto'); end if;
 
@@ -256,9 +261,9 @@ begin
 
   if p_tipo = 'individual' and pn > 0 then cod := public.cp_codigo_nuevo(pref); end if;
 
-  insert into public.rs_resenas(tipo, empresa, nombre, servicio, categoria, subtipo, pais, estrellas, texto, mejora, original, codigo)
-  values (p_tipo, emp, nom, ser, cat, sub, pai, p_estrellas, txt, mej,
-          jsonb_build_object('tipo', p_tipo, 'empresa', emp, 'nombre', nom, 'servicio', ser, 'categoria', cat, 'subtipo', sub, 'pais', pai, 'estrellas', p_estrellas, 'texto', txt, 'mejora', mej), cod)
+  insert into public.rs_resenas(tipo, empresa, nombre, cargo, servicio, categoria, subtipo, pais, estrellas, texto, mejora, original, codigo)
+  values (p_tipo, emp, nom, car, ser, cat, sub, pai, p_estrellas, txt, mej,
+          jsonb_build_object('tipo', p_tipo, 'empresa', emp, 'nombre', nom, 'servicio', ser, 'cargo', car, 'categoria', cat, 'subtipo', sub, 'pais', pai, 'estrellas', p_estrellas, 'texto', txt, 'mejora', mej), cod)
   returning id into rid;
 
   if cod is not null then
@@ -270,7 +275,7 @@ begin
                             'condicion', case when cod is null then '' else coalesce(cond, '') end,
                             'vence', case when cod is null then null else vence end, 'meses', mm);
 end $$;
-grant execute on function public.rs_enviar_publico(text, text, text, text, int, text, text, text, text, text) to anon, authenticated;
+grant execute on function public.rs_enviar_publico(text, text, text, text, int, text, text, text, text, text, text) to anon, authenticated;
 
 -- 10) Galerías de Entregas: el código que pones en el diseño de la galería queda registrado aquí automáticamente (2 usos: cliente y amigo)
 create or replace function public.cp_sync_galeria() returns trigger

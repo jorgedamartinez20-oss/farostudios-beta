@@ -95,7 +95,7 @@
   const S = { cargando: false, falta: false, enlaces: [], res: [], cfg: {}, sel: null, ed: null, filtro: 'todas', nuevoEnlace: null, ajustes: false, ocupado: false };
   const cfgGet = (k, d) => (S.cfg[k] != null && S.cfg[k] !== '' ? S.cfg[k] : d);
   const get = async (t, ord) => { const r = await ctx.api('/rest/v1/' + t + '?select=*' + (ord ? '&order=' + ord : '')); if (!r.ok) { const e = new Error(await ctx.errText(r)); e.status = r.status; throw e; } return r.json(); };
-  const linea = r => r.tipo === 'empresa' ? [r.empresa, r.servicio, r.pais].filter(Boolean).join(' · ') : [r.servicio, r.subtipo].filter(Boolean).join(' · ');
+  const linea = r => r.tipo === 'empresa' ? [r.cargo && r.empresa ? r.cargo + ', ' + r.empresa : r.empresa, r.servicio, r.pais].filter(Boolean).join(' · ') : [r.servicio, r.subtipo].filter(Boolean).join(' · ');
   const fdate = iso => { try { return new Date(iso).toLocaleDateString('es-GT', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'America/Guatemala' }); } catch (e) { return ''; } };
   const estrellas = n => '★'.repeat(n) + '☆'.repeat(5 - n);
 
@@ -117,7 +117,7 @@
   const slots = () => nums().map(W);
   const sigSlot = () => Math.max(0, ...nums(), ...S.res.map(r => r.slot || 0)) + 1;
   const etqSlot = n => (W(n).g === 'emp' ? 'Empresas' : 'Personas') + ' · espacio ' + n;
-  const CATS = { individual: ['Boda', 'XV años', 'Graduación', 'Sesión familiar o retrato', 'Evento social', 'Fotografía para negocio', 'Producción musical', 'Otro'], empresa: ['Producciones de audio', 'Streaming', 'Podcast', 'Locuciones comerciales', 'Material sonoro de radio', 'Contenido para TV', 'Coberturas', 'Activaciones', 'Fotografía de producto', 'Inmobiliaria', 'Video corporativo o de marca', 'Contenido para redes', 'Otro'] };
+  const CATS = { individual: ['Boda', 'XV años', 'Graduación', 'Sesión familiar o retrato', 'Evento social', 'Producción musical', 'Otro'], empresa: ['Producciones de audio', 'Streaming', 'Podcast', 'Locuciones comerciales', 'Material sonoro de radio', 'Contenido para TV', 'Coberturas', 'Activaciones', 'Fotografía de producto', 'Inmobiliaria', 'Video corporativo o de marca', 'Contenido para redes', 'Otro'] };
   const SUBS = ['Banda', 'Iglesia', 'Agrupación', 'Solista', 'Sonido en vivo'];
   const PAISES = ['Guatemala', 'México', 'Belice', 'El Salvador', 'Honduras', 'Nicaragua', 'Costa Rica', 'Panamá'];
   async function setCfg(k, v) {
@@ -217,6 +217,7 @@
     const tipo = el('select', { 'aria-label': 'Tipo de cliente' }, el('option', { value: 'individual' }, 'Cliente individual'), el('option', { value: 'empresa' }, 'Empresa')); tipo.value = E.tipo;
     const emp = el('input', { type: 'text', maxlength: '80', value: E.empresa, 'aria-label': 'Empresa' });
     const nom = el('input', { type: 'text', maxlength: '80', value: E.nombre, 'aria-label': 'Nombre' });
+    const cargo = el('input', { type: 'text', maxlength: '80', value: E.cargo || '', 'aria-label': 'Cargo' });
     const ser = el('input', { type: 'text', maxlength: '80', value: E.servicio, list: 'rs-serv', 'aria-label': 'Trabajo realizado' });
     const dl = el('datalist', { id: 'rs-serv' }, SERV.map(s => el('option', { value: s })));
     const txt = el('textarea', { rows: '5', maxlength: '1500', 'aria-label': 'Opinión' }); txt.value = E.texto;
@@ -226,17 +227,18 @@
     const cat = el('select', { 'aria-label': 'Categoría' });
     const subS = el('select', { 'aria-label': 'Tipo de proyecto musical' }, el('option', { value: '' }, '—'), SUBS.map(x => el('option', { value: x }, x)));
     const paisS = el('select', { 'aria-label': 'País' }, el('option', { value: '' }, '—'), PAISES.map(x => el('option', { value: x }, x)));
-    const pintaCat = () => { cat.textContent = ''; cat.append(el('option', { value: '' }, 'Sin categoría')); (CATS[E.tipo] || []).forEach(x => cat.append(el('option', { value: x }, x))); if (E.categoria && !(CATS[E.tipo] || []).includes(E.categoria)) cat.append(el('option', { value: E.categoria }, E.categoria)); cat.value = E.categoria || ''; };
+    const pintaCat = () => { const mu = E.tipo === 'empresa', sel = (E.categoria || '').split('|').filter(Boolean); cat.textContent = ''; cat.multiple = mu; cat.size = mu ? 6 : 1; if (!mu) cat.append(el('option', { value: '' }, 'Sin categoría')); (CATS[E.tipo] || []).forEach(x => cat.append(el('option', { value: x, selected: sel.includes(x) ? '' : null }, x))); if (!mu) cat.value = sel[0] && (CATS[E.tipo] || []).includes(sel[0]) ? sel[0] : ''; if (!mu && sel[0] && !(CATS[E.tipo] || []).includes(sel[0])) { cat.append(el('option', { value: sel[0] }, sel[0])); cat.value = sel[0]; } };
     const rowSub = el('div', { class: 'field' }, el('label', {}, 'Tipo de proyecto musical'), subS), rowPais = el('div', { class: 'field' }, el('label', {}, 'País'), paisS);
     const vis = () => { rowSub.hidden = !(E.tipo === 'individual' && E.categoria === 'Producción musical'); rowPais.hidden = E.tipo !== 'empresa'; };
     subS.value = E.subtipo || ''; paisS.value = E.pais || ''; pintaCat(); vis();
-    cat.addEventListener('change', () => { E.categoria = cat.value; vis(); }); subS.addEventListener('change', () => { E.subtipo = subS.value; }); paisS.addEventListener('change', () => { E.pais = paisS.value; });
+    cat.addEventListener('change', () => { E.categoria = [...cat.selectedOptions].map(o => o.value).filter(Boolean).join('|'); vis(); }); subS.addEventListener('change', () => { E.subtipo = subS.value; }); paisS.addEventListener('change', () => { E.pais = paisS.value; });
     const rowEmp = el('div', { class: 'field' }, el('label', {}, 'Nombre de la empresa'), emp);
-    tipo.addEventListener('change', () => { E.tipo = tipo.value; rowEmp.hidden = E.tipo !== 'empresa'; pintaCat(); vis(); }); rowEmp.hidden = E.tipo !== 'empresa';
+    const rowCargo = el('div', { class: 'field' }, el('label', {}, 'Cargo (opcional)'), cargo); rowCargo.hidden = E.tipo !== 'empresa'; cargo.addEventListener('input', () => { E.cargo = cargo.value; });
+    tipo.addEventListener('change', () => { E.tipo = tipo.value; rowEmp.hidden = E.tipo !== 'empresa'; rowCargo.hidden = E.tipo !== 'empresa'; pintaCat(); vis(); }); rowEmp.hidden = E.tipo !== 'empresa';
     emp.addEventListener('input', () => { E.empresa = emp.value; }); nom.addEventListener('input', () => { E.nombre = nom.value; }); ser.addEventListener('input', () => { E.servicio = ser.value; }); txt.addEventListener('input', () => { E.texto = txt.value; });
     const der = el('div', { class: 'rs-campos' },
       el('div', { class: 'field' }, el('label', {}, 'Tipo de cliente'), tipo), rowEmp,
-      el('div', { class: 'field' }, el('label', {}, 'Nombre'), nom), el('div', { class: 'field' }, el('label', {}, 'Categoría (para filtrar en la web)'), cat), rowSub, rowPais, el('div', { class: 'field' }, el('label', {}, 'Trabajo realizado (texto que se ve)'), ser, dl),
+      el('div', { class: 'field' }, el('label', {}, 'Nombre'), nom), rowCargo, el('div', { class: 'field' }, el('label', {}, E.tipo === 'empresa' ? 'Categorías (marca varias con Ctrl o ⌘)' : 'Categoría (para filtrar en la web)'), cat), rowSub, rowPais, el('div', { class: 'field' }, el('label', {}, 'Trabajo realizado (texto que se ve)'), ser, dl),
       el('div', { class: 'field' }, el('label', {}, 'Estrellas'), est), el('div', { class: 'field' }, el('label', {}, 'Opinión'), txt));
     box.append(el('div', { class: 'rs-cols' }, izq, der));
     if (r.mejora) box.append(el('div', { class: 'rs-mej' }, el('b', {}, '🔒 Qué podríamos mejorar (privado, no se publica)'), el('p', {}, r.mejora)));
@@ -247,7 +249,7 @@
     const guardar = async (silencio) => {
       if (E.nombre.trim().length < 1 || E.texto.trim().length < 1) { ctx.toast('El nombre y la opinión no pueden quedar vacíos'); return null; }
       if (E.tipo === 'individual') E.empresa = '';
-      const n = await patch(r.id, { tipo: E.tipo, empresa: E.empresa.trim(), nombre: E.nombre.trim(), servicio: E.servicio.trim(), categoria: E.categoria || '', subtipo: E.tipo === 'individual' && E.categoria === 'Producción musical' ? (E.subtipo || '') : '', pais: E.tipo === 'empresa' ? (E.pais || '') : '', estrellas: E.estrellas, texto: E.texto.trim(), foto: E.foto || '', foto_pos: E.foto_pos || POS0, estado: r.estado === 'nueva' ? 'revisada' : r.estado });
+      const n = await patch(r.id, { tipo: E.tipo, empresa: E.empresa.trim(), nombre: E.nombre.trim(), servicio: E.servicio.trim(), cargo: E.tipo === 'empresa' ? (E.cargo || '').trim() : '', categoria: E.categoria || '', subtipo: E.tipo === 'individual' && E.categoria === 'Producción musical' ? (E.subtipo || '') : '', pais: E.tipo === 'empresa' ? (E.pais || '') : '', estrellas: E.estrellas, texto: E.texto.trim(), foto: E.foto || '', foto_pos: E.foto_pos || POS0, estado: r.estado === 'nueva' ? 'revisada' : r.estado });
       Object.assign(r, n); S.ed = { ...r };
       if (r.slot) { await aWeb(r, r.slot); await ctx.recargar(); if (!silencio) ctx.toast('Guardada y actualizada en la web'); } else if (!silencio) ctx.toast('Guardada');
       badge(); return n;
@@ -295,6 +297,10 @@
           : el('small', { class: 'muted' }, 'Libre')));
     });
     c.append(g);
+    const mas = el('input', { type: 'number', min: '0', max: '9999', step: '1', value: ctx.cfg()['rv.mas'] || '', placeholder: '0', 'aria-label': 'Reseñas adicionales' });
+    c.append(el('div', { class: 'field' }, el('label', {}, 'Contador «+N reseñas» debajo del carrusel (opcional, no se puede tocar en la web)'), mas,
+      el('p', { class: 'muted' }, 'Pon aquí el número de reseñas reales que tienes recibidas y no estás mostrando. Déjalo vacío para ocultarlo.')),
+      btn('Guardar contador', 'check', async () => { try { const v = parseInt(mas.value, 10); await setCfg('rv.mas', v > 0 ? String(v) : ''); await ctx.recargar(); ctx.toast(v > 0 ? 'Contador guardado' : 'Contador oculto'); } catch (e) { ctx.toast(e.message || 'No se pudo guardar'); } }, 'btn-gold'));
     return c;
   }
 

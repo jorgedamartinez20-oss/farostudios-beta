@@ -830,6 +830,8 @@ dialog.bkz::backdrop{background:#000}
 .tm-cat:hover:not([disabled]){transform:translateY(-2px);border-color:var(--hi)}
 .tm-cat[aria-pressed="true"]{background:var(--hi);border-color:var(--hi);color:#fff}
 .tm-cat[disabled]{opacity:.38;cursor:default}
+.tm-mas{width:max-content;margin:34px auto 0;padding:11px 22px;border-radius:999px;border:1.5px dashed var(--line);color:var(--muted);font:700 .92rem/1 var(--body,'Lato',sans-serif);letter-spacing:.08em;user-select:none;cursor:default}
+.tm-mas[hidden]{display:none}
 #tm-box>div{animation:tmIn .5s var(--ease)}
 @keyframes tmIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
 .tm-dots{display:flex;gap:10px;margin-top:22px}
@@ -4188,19 +4190,20 @@ window.rebuildPortfolio&&window.rebuildPortfolio();
     Object.keys(X).map(k=>/^rv\.(\d+)\.q$/.exec(k)).filter(Boolean).map(m=>+m[1]).sort((a,b)=>a-b).forEach(n=>{const q=X['rv.'+n+'.q'];if(q)gr[X['rv.'+n+'.g']==='emp'?'emp':'per'].push({k:'t'+n,q:escH(q),n:escH(X['rv.'+n+'.n']||'Cliente'),r:escH(X['rv.'+n+'.r']||''),s:Math.min(5,Math.max(1,parseInt(X['rv.'+n+'.s'],10)||5)),p:X['rv.'+n+'.p']||'',c:X['rv.'+n+'.c']||''})});
     const h=$('#testi-s');
     if(h&&(gr.per.length||gr.emp.length)){
-      const CAT={per:['Boda','XV años','Graduación','Sesión familiar o retrato','Evento social','Fotografía para negocio','Producción musical','Otro'],emp:['Producciones de audio','Streaming','Podcast','Locuciones comerciales','Material sonoro de radio','Contenido para TV','Coberturas','Activaciones','Fotografía de producto','Inmobiliaria','Video corporativo o de marca','Contenido para redes','Otro']};
+      const CAT={per:['Boda','XV años','Graduación','Sesión familiar o retrato','Evento social','Producción musical','Otro'],emp:['Producciones de audio','Streaming','Podcast','Locuciones comerciales','Material sonoro de radio','Contenido para TV','Coberturas','Activaciones','Fotografía de producto','Inmobiliaria','Video corporativo o de marca','Contenido para redes','Otro']};
       const ST={g:gr.per.length?'per':'emp',c:''};
-      h.innerHTML='<div class="tm-tabs" id="tm-gr" role="tablist" aria-label="Tipo de cliente"></div><div class="tm-cats" id="tm-cats" role="group" aria-label="Categoría"></div><div id="tm-box"></div>';
+      h.innerHTML='<div class="tm-tabs" id="tm-gr" role="tablist" aria-label="Tipo de cliente"></div><div class="tm-cats" id="tm-cats" role="group" aria-label="Categoría"></div><div id="tm-box"></div><div class="tm-mas" id="tm-mas" hidden></div>';
       const bx=$('#tm-box',h);
+      const mas=parseInt(X['rv.mas'],10);if(mas>0){const m=$('#tm-mas',h);m.textContent='+'+mas+' reseñas';m.hidden=false}
       const pintar=()=>{
         const tg=$('#tm-gr',h),cs=$('#tm-cats',h);
         const grupos=[['per','Personas'],['emp','Empresas']].filter(x=>gr[x[0]].length);
         tg.hidden=grupos.length<2;tg.innerHTML=grupos.map(x=>`<button type="button" role="tab" data-g="${x[0]}" aria-selected="${x[0]===ST.g}">${x[1]}<span>${gr[x[0]].length}</span></button>`).join('');
-        const its=gr[ST.g],cnt=c=>its.filter(i=>i.c===c).length;
-        const extra=[...new Set(its.map(i=>i.c).filter(c=>c&&!CAT[ST.g].includes(c)))];
+        const cl=i=>(i.c||'').split('|').filter(Boolean),its=gr[ST.g],cnt=c=>its.filter(i=>cl(i).includes(c)).length;
+        const extra=[...new Set(its.flatMap(cl).filter(c=>!CAT[ST.g].includes(c)))];
         const lista=[...CAT[ST.g],...extra];
         cs.innerHTML=`<button type="button" class="tm-cat" data-c="" aria-pressed="${!ST.c}">Todas<span>${its.length}</span></button>`+lista.map(c=>{const k=cnt(c);return `<button type="button" class="tm-cat" data-c="${escH(c)}" aria-pressed="${ST.c===c}"${k?'':' disabled'}>${escH(c)}<span>${k}</span></button>`}).join('');
-        const vis=ST.c?its.filter(i=>i.c===ST.c):its;
+        const vis=ST.c?its.filter(i=>cl(i).includes(ST.c)):its;
         const nb=document.createElement('div');bx.textContent='';bx.append(nb);
         mountTesti(nb,vis,ST.g==='emp'?'tu empresa':'tu cliente');
       };
