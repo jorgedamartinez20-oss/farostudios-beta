@@ -26,7 +26,7 @@
   const ico = k => { const s = el('span', { class: 'cp-i' }); s.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (IC[k] || '') + '</svg>'; return s; };
   const btn = (txt, k, fn, cls) => el('button', { type: 'button', class: 'btn btn-sm ' + (cls || 'btn-ghost'), onclick: fn }, k ? ico(k) : null, txt ? ' ' + txt : null);
 
-  const ORIGEN = { resena: 'Reseña con enlace', galeria: 'Galería de Entregas', manual: 'Creado por ti' };
+  const ORIGEN = { resena: 'Comentario en la web', galeria: 'Galería de Entregas', manual: 'Creado por ti' };
   const S = { lista: [], usos: [], cots: [], filtro: 'disponible', tipo: 'todos', q: '', sel: null, falta: false, error: '', cargando: false, nuevo: false, ver: '', vigMeses: '5', ajustes: false };
   let host = null, ctx = null, css1 = false;
 
@@ -42,7 +42,7 @@
     if (c.estado === 'invalidado') return { k: 'invalidado', t: 'Invalidado', tag: 'cancelada' };
     if (c.usos >= c.usos_max) return c.usos_max > 1 ? { k: 'canjeado', t: 'Agotado', tag: 'completada' } : { k: 'canjeado', t: 'Canjeado', tag: 'completada' };
     if (c.vence < hoy()) return { k: 'vencido', t: 'Vencido', tag: 'pendiente' };
-    return { k: 'disponible', t: c.usos_max > 1 ? 'Disponible · ' + (c.usos_max - c.usos) + ' de ' + c.usos_max : 'Disponible', tag: 'confirmada' };
+    return { k: 'disponible', t: c.amigo ? 'Disponible · ' + (c.usos_max - c.usos) + ' de 2' : c.usos_max > 1 ? 'Disponible · ' + (c.usos_max - c.usos) + ' de ' + c.usos_max : 'Disponible', tag: 'confirmada' };
   }
   const diasPara = v => Math.round((new Date(v + 'T12:00:00') - new Date(hoy() + 'T12:00:00')) / 864e5);
 
@@ -129,19 +129,25 @@
         el('div', {}, el('dt', {}, 'Origen'), el('dd', {}, ORIGEN[c.origen] || c.origen)),
         el('div', {}, el('dt', {}, 'Emitido'), el('dd', {}, fd(c.creado))),
         el('div', {}, el('dt', {}, 'Vale hasta'), el('dd', {}, fd(c.vence) + (e.k === 'disponible' && diasPara(c.vence) <= 15 ? ' (quedan ' + diasPara(c.vence) + ' días)' : ''))),
-        el('div', {}, el('dt', {}, 'Usos'), el('dd', {}, c.usos + ' de ' + c.usos_max)),
+        el('div', {}, el('dt', {}, 'Usos'), el('dd', {}, c.amigo ? 'Cliente: ' + (usos.some(u => u.quien === 'cliente') ? 'canjeado ✓' : 'sin usar') + ' · Amigo: ' + (usos.some(u => u.quien === 'amigo') ? 'canjeado ✓' : 'sin usar') : c.usos + ' de ' + c.usos_max)),
         c.nota ? el('div', {}, el('dt', {}, 'Nota'), el('dd', {}, c.nota)) : null));
     if (e.k === 'disponible') {
-      box.append(el('div', { class: 'cp-canje' }, ref, btn(c.usos_max > 1 ? 'Canjear 1 uso' : 'Marcar como canjeado', 'check', async () => {
-        if (!confirm('¿Aplicar el descuento de ' + pct(c.porcentaje) + (c.nombre ? ' a ' + c.nombre : '') + '? Después de canjearlo' + (c.usos_max > 1 ? ' le queda un uso menos.' : ' ya no se podrá usar otra vez.'))) return;
-        try { const r = await rpc('cp_canjear', { p_id: c.id, p_nota: '', p_cotizacion: ref.value.trim() || null }); if (!r.ok) { ctx.toast('No se pudo canjear: ' + r.error); await cargar(true); return; } ctx.toast('Canjeado ✓'); await cargar(true); } catch (x) { ctx.toast(x.message); }
-      }, 'btn-gold')));
+      const canjear = async quien => {
+        const lbl = quien === 'cliente' ? 'el cliente' : quien === 'amigo' ? 'un amigo' : null;
+        if (!confirm('¿Aplicar el descuento de ' + pct(c.porcentaje) + (lbl ? ' para ' + lbl : '') + (c.nombre ? ' (' + c.nombre + ')' : '') + '? Después de canjearlo' + (c.usos_max > 1 ? ' ese uso ya no se podrá volver a usar.' : ' ya no se podrá usar otra vez.'))) return;
+        try { const r = await rpc('cp_canjear', { p_id: c.id, p_nota: '', p_cotizacion: ref.value.trim() || null, p_quien: quien || null }); if (!r.ok) { ctx.toast('No se pudo canjear: ' + r.error); await cargar(true); return; } ctx.toast('Canjeado ✓'); await cargar(true); } catch (x) { ctx.toast(x.message); }
+      };
+      if (c.amigo) {
+        const fila = (q, t) => { const u = usos.find(x => x.quien === q); return el('div', { class: 'cp-slot' + (u ? ' on' : '') }, el('b', {}, t), el('small', { class: 'muted' }, u ? 'Canjeado ' + fdh(u.usado_en) : 'Sin usar'), u ? null : btn('Canjear', 'check', () => canjear(q), 'btn-gold')); };
+        box.append(el('div', { class: 'cp-canje cp-canje2' }, ref, el('div', { class: 'cp-slots' }, fila('cliente', 'Uso del cliente'), fila('amigo', 'Uso del amigo'))));
+      } else
+      box.append(el('div', { class: 'cp-canje' }, ref, btn(c.usos_max > 1 ? 'Canjear 1 uso' : 'Marcar como canjeado', 'check', () => canjear(null), 'btn-gold')));
     } else if (e.k === 'canjeado') box.append(el('p', { class: 'cp-nota' }, c.usos_max > 1 ? 'Este código ya no tiene usos disponibles.' : 'Este código ya fue usado. No lo apliques otra vez.'));
     else if (e.k === 'vencido') box.append(el('p', { class: 'cp-nota' }, 'Venció el ' + fd(c.vence) + '. Si decides respetarlo, puedes ampliar la fecha abajo.'));
     else box.append(el('p', { class: 'cp-nota cp-nota-r' }, 'Este código está invalidado. No lo apliques. Puedes reactivarlo si fue un error.'));
     if (usos.length || cots.length) {
       box.append(el('div', { class: 'cp-hist' }, el('h4', {}, 'Historial'),
-        usos.map(u => el('p', {}, '✓ Canjeado ' + fdh(u.usado_en) + (u.cotizacion ? ' · ' + u.cotizacion : '') + (u.nota ? ' · ' + u.nota : ''))),
+        usos.map(u => el('p', {}, '✓ Canjeado' + (u.quien ? ' (' + (u.quien === 'amigo' ? 'amigo' : 'cliente') + ')' : '') + ' ' + fdh(u.usado_en) + (u.cotizacion ? ' · ' + u.cotizacion : '') + (u.nota ? ' · ' + u.nota : ''))),
         cots.map(x => el('p', { class: 'muted' }, '☆ Escrito en la cotización ' + x.ref + ' de ' + x.nombre + ' (' + fdh(x.creado) + ') con ' + pct(x.cupon_pct) + ' de descuento'))));
     }
     /* editar */
@@ -173,7 +179,11 @@
       acts.append(btn('Copiar mensaje para compartir', 'copy', () => copiar(c.tipo === 'campana' ? MSG.campana(c) : MSG.recordar(c), 'Mensaje copiado')),
         el('a', { class: 'btn btn-sm btn-ghost', target: '_blank', rel: 'noopener', href: 'https://wa.me/?text=' + encodeURIComponent(c.tipo === 'campana' ? MSG.campana(c) : MSG.recordar(c)) }, ico('wa'), ' WhatsApp'));
     }
-    if (usos.length) acts.append(btn('Deshacer el último canje', 'undo', async () => {
+    if (c.amigo) usos.filter(u => u.quien).forEach(u => acts.append(btn('Deshacer canje del ' + (u.quien === 'amigo' ? 'amigo' : 'cliente'), 'undo', async () => {
+      if (!confirm('¿Deshacer el canje del ' + (u.quien === 'amigo' ? 'amigo' : 'cliente') + ' de ' + c.codigo + '? Ese uso volverá a quedar disponible.')) return;
+      try { const r = await rpc('cp_deshacer', { p_id: c.id, p_quien: u.quien }); if (!r.ok) { ctx.toast('No se pudo: ' + r.error); return; } ctx.toast('Canje deshecho'); await cargar(true); } catch (x) { ctx.toast(x.message); }
+    })));
+    else if (usos.length) acts.append(btn('Deshacer el último canje', 'undo', async () => {
       if (!confirm('¿Deshacer el último canje de ' + c.codigo + '? El código volverá a quedar disponible.')) return;
       try { const r = await rpc('cp_deshacer', { p_id: c.id }); if (!r.ok) { ctx.toast('No se pudo: ' + r.error); return; } ctx.toast('Canje deshecho'); await cargar(true); } catch (x) { ctx.toast(x.message); }
     }));
@@ -202,21 +212,22 @@
     const ve = el('input', { type: 'date', value: sumar(hoy(), parseInt(S.vigMeses, 10) || 5), min: hoy() });
     const no = el('input', { type: 'text', maxlength: '300', placeholder: 'Opcional, solo para ti' });
     const pu = el('input', { type: 'checkbox' });
+    const am = el('input', { type: 'checkbox' }); const gAm = el('label', { class: 'cp-chk' }, am, ' Incluye un uso para un amigo (2 usos: cliente y amigo)');
     const gUs = f('Cuántas personas pueden usarlo', us);
     const lbN = el('label', {}, 'Nombre de la campaña'); const gN = el('div', { class: 'field' }, lbN, nom);
     const seg = el('div', { class: 'cp-seg', role: 'group', 'aria-label': 'Tipo de código' });
     const bC = el('button', { type: 'button', 'aria-pressed': 'true' }, 'Campaña (varias personas)'), bP = el('button', { type: 'button', 'aria-pressed': 'false' }, 'Para una persona');
-    const set = t => { tipo = t; bC.setAttribute('aria-pressed', String(t === 'campana')); bP.setAttribute('aria-pressed', String(t === 'personal')); gUs.hidden = t === 'personal'; lbN.textContent = t === 'campana' ? 'Nombre de la campaña' : 'A quién se lo das'; nom.placeholder = t === 'campana' ? 'Ej. Descuento de noviembre en Instagram' : 'Ej. Mirna · graduación'; };
+    const set = t => { tipo = t; bC.setAttribute('aria-pressed', String(t === 'campana')); bP.setAttribute('aria-pressed', String(t === 'personal')); gUs.hidden = t === 'personal'; gAm.hidden = t !== 'personal'; lbN.textContent = t === 'campana' ? 'Nombre de la campaña' : 'A quién se lo das'; nom.placeholder = t === 'campana' ? 'Ej. Descuento de noviembre en Instagram' : 'Ej. Mirna · graduación'; };
     bC.addEventListener('click', () => set('campana')); bP.addEventListener('click', () => set('personal')); seg.append(bC, bP); set('campana');
     c.append(el('h3', {}, ico('gift'), ' Crear un código'), el('p', { class: 'muted' }, 'Para una campaña (por ejemplo 5 descuentos en redes) o para regalarle un código a una sola persona. Cada código se gasta solo las veces que indiques.'), seg, gN,
       el('div', { class: 'cp-g' }, f('Descuento (%)', p), gUs, f('Vale hasta', ve)), f('Código (opcional)', cod), f('Nota para ti', no),
-      el('label', { class: 'cp-chk' }, pu, ' Ya lo voy a publicar o compartir ahora'),
+      gAm, el('label', { class: 'cp-chk' }, pu, ' Ya lo voy a publicar o compartir ahora'),
       el('div', { class: 'cp-acts' }, btn('Crear código', 'plus', async () => {
         const n = parseFloat(p.value); if (!(n >= 1 && n <= 90)) { ctx.toast('El descuento debe estar entre 1 y 90'); return; }
         if (!ve.value || ve.value < hoy()) { ctx.toast('Elige una fecha de vencimiento que no haya pasado'); return; }
         const u = tipo === 'personal' ? 1 : parseInt(us.value, 10); if (!(u >= 1)) { ctx.toast('Indica cuántas personas pueden usarlo'); return; }
         try {
-          const r = await rpc('cp_crear', { p_tipo: tipo, p_nombre: nom.value.trim(), p_codigo: cod.value.trim(), p_porcentaje: n, p_usos_max: u, p_vence: ve.value, p_nota: no.value.trim(), p_publicado: pu.checked });
+          const r = await rpc('cp_crear', { p_tipo: tipo, p_nombre: nom.value.trim(), p_codigo: cod.value.trim(), p_porcentaje: n, p_usos_max: u, p_vence: ve.value, p_nota: no.value.trim(), p_publicado: pu.checked, p_amigo: tipo === 'personal' && am.checked });
           if (!r.ok) { ctx.toast({ repetido: 'Ese código ya existe, elige otro', codigo: 'El código es muy corto (mínimo 3 letras o números)', vence: 'La fecha ya pasó', porcentaje: 'El descuento debe estar entre 1 y 90' }[r.error] || 'No se pudo crear (' + r.error + ')'); return; }
           S.nuevo = false; S.filtro = 'todos'; await cargar(true); S.sel = r.id; copiar(r.codigo, 'Código ' + r.codigo + ' creado y copiado'); pintarFicha();
         } catch (x) { ctx.toast(x.message); }
@@ -277,6 +288,7 @@
 .cp-cod{display:block;font-size:clamp(1.5rem,5vw,2.2rem);letter-spacing:.08em;color:var(--oro-t);word-break:break-all}
 .cp-fr{display:flex;gap:12px;align-items:center}.cp-pct{font-size:1.8rem}.cp-x{border:0;background:none;color:var(--muted);cursor:pointer;padding:4px}
 .cp-dl{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px 18px;margin:14px 0}.cp-dl dt{font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}.cp-dl dd{margin:2px 0 0;font-weight:600}
+.cp-slots{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%}.cp-slot{display:grid;gap:4px;align-content:start;padding:12px 14px;border-radius:14px;border:1px solid var(--line,rgba(0,0,0,.15))}.cp-slot.on{opacity:.65}.cp-slot .btn{justify-self:start;margin-top:6px}@media(max-width:560px){.cp-slots{grid-template-columns:1fr}}
 .cp-canje{display:flex;gap:10px;flex-wrap:wrap;margin:6px 0 10px}.cp-canje input{flex:1;min-width:220px}
 .cp-nota{margin:6px 0 10px;padding:10px 14px;border-radius:12px;background:var(--soft);border:1px solid var(--line)}.cp-nota-r{border-color:rgba(217,90,106,.5)}
 .cp-hist{margin:12px 0;border-top:1px solid var(--line);padding-top:10px}.cp-hist h4{margin:0 0 6px;font-size:.78rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}.cp-hist p{margin:4px 0;font-size:.92rem}

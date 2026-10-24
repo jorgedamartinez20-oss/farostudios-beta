@@ -1,5 +1,5 @@
 /* Faro Workspace · Reseñas
- * · Enlaces privados de un solo uso para que cada cliente deje su reseña (farostudios.net/resenas?c=…) y reciba un código de descuento.
+ * · Un solo enlace público (farostudios.net/comentario) para todos: cada persona escribe su nombre y recibe su código único (cliente + amigo). Empresas: sin código.
  * · Bandeja de reseñas recibidas: editar, cargar la foto, encuadrarla, publicar en la web y exportar en PNG transparente.
  * · Encuadre de foto reutilizable (también lo usa Sitio web → Reseñas).
  * Base de datos: sql/resenas-publicas.sql. Uso desde admin.html:
@@ -10,7 +10,7 @@
 (function () {
   'use strict';
   const PHI = 1.618;
-  const SERV = ['Boda', 'XV años', 'Graduación', 'Sesión familiar o retrato', 'Evento social', 'Video corporativo o de marca', 'Fotografía para negocio', 'Sonido en vivo', 'Grabación o producción musical', 'Otro'];
+  const SERV = ['Boda', 'XV años', 'Graduación', 'Sesión familiar o retrato', 'Evento social', 'Video corporativo o de marca', 'Fotografía para negocio', 'Sonido en vivo', 'Grabación o producción musical', 'Cobertura de evento', 'Producción de audio o spot', 'Contenido para redes', 'Otro'];
   const POS0 = '50,35,1';
   const FORMATOS = { '16:9': [1920, 1080, 'Horizontal 16:9'], '9:16': [1080, 1920, 'Historia 9:16'], '1:1': [1080, 1080, 'Cuadrado 1:1'] };
   const TEMAS = {
@@ -102,8 +102,8 @@
   async function cargar() {
     S.cargando = true; pintar();
     try {
-      const [a, b, c] = await Promise.all([get('rs_enlaces', 'creado.desc'), get('rs_resenas', 'creado.desc'), get('rs_config')]);
-      S.enlaces = a; S.res = b; S.cfg = {}; c.forEach(x => { S.cfg[x.clave] = x.valor; }); S.falta = false;
+      const [b, c] = await Promise.all([get('rs_resenas', 'creado.desc'), get('rs_config')]);
+      S.res = b; S.cfg = {}; c.forEach(x => { S.cfg[x.clave] = x.valor; }); S.falta = false;
       if (S.sel && !S.res.some(x => x.id === S.sel)) { S.sel = null; S.ed = null; }
     } catch (e) { S.falta = true; S.error = e.message; }
     S.cargando = false; badge(); pintar();
@@ -112,7 +112,8 @@
 
   /* ---------- web: los 6 espacios de «Lo dicen nuestros clientes» ---------- */
   const W = n => { const c = ctx.cfg(); return { n, q: c['rv.' + n + '.q'] || '', nombre: c['rv.' + n + '.n'] || '', linea: c['rv.' + n + '.r'] || '', est: parseInt(c['rv.' + n + '.s'], 10) || 5, pos: c['rv.' + n + '.p'] || '', foto: c['img.t' + n] || '' }; };
-  const slots = () => [1, 2, 3, 4, 5, 6].map(W);
+  const etqSlot = n => n > 6 ? 'Empresas ' + (n - 6) : 'Personas ' + n;
+  const slots = () => [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(W);
   async function setCfg(k, v) {
     if (v) { const r = await ctx.api('/rest/v1/sitio_config?on_conflict=clave', { method: 'POST', body: { clave: k, valor: v, actualizado: new Date().toISOString() }, headers: { Prefer: 'resolution=merge-duplicates,return=minimal' } }); if (!r.ok) throw new Error(await ctx.errText(r)); }
     else { const r = await ctx.api('/rest/v1/sitio_config?clave=eq.' + encodeURIComponent(k), { method: 'DELETE', headers: { Prefer: 'return=minimal' } }); if (!r.ok) throw new Error(await ctx.errText(r)); }
@@ -124,67 +125,50 @@
   async function quitarDeWeb(n) { for (const k of ['rv.' + n + '.q', 'rv.' + n + '.n', 'rv.' + n + '.r', 'rv.' + n + '.s', 'rv.' + n + '.p', 'img.t' + n]) await setCfg(k, ''); }
   const patch = async (id, body) => { const r = await ctx.api('/rest/v1/rs_resenas?id=eq.' + id, { method: 'PATCH', body, headers: { Prefer: 'return=representation' } }); if (!r.ok) throw new Error(await ctx.errText(r)); const j = await r.json(); return j[0]; };
 
-  /* ---------- enlaces ---------- */
-  const baseLink = () => (ctx.base ? ctx.base() : 'https://farostudios.net/resenas');
-  const linkDe = e => baseLink() + '?c=' + e.token;
-  const mensaje = e => {
-    const pct = parseFloat(cfgGet('descuento', '10')), hola = (e.etiqueta || '').split(/[·\-–]/)[0].trim().split(/\s+/)[0];
-    return 'Hola' + (hola ? ' ' + hola : '') + ', gracias por confiar en Faro Studios 🤍 Nos encantaría conocer tu opinión: toma menos de un minuto' + (pct > 0 ? ' y como agradecimiento recibes ' + pct + '% de descuento en tu próxima sesión (vale ' + cfgGet('vigencia_meses', '5') + ' meses)' : '') + '. Aquí está tu enlace personal:\n' + linkDe(e);
+  /* ---------- enlace único ---------- */
+  const baseLink = () => (ctx.base ? ctx.base() : 'https://www.farostudios.net/comentario');
+  const mensaje = () => {
+    const pct = parseFloat(cfgGet('descuento', '10'));
+    return 'Hola, gracias por confiar en Faro Studios 🤍 Nos encantaría conocer tu comentario: toma menos de un minuto' + (pct > 0 ? ' y como agradecimiento recibes ' + pct + '% de descuento en tu próxima sesión, con un uso para ti y otro para un amigo (vale ' + cfgGet('vigencia_meses', '5') + ' meses)' : '') + '. Aquí puedes dejarlo:\n' + baseLink();
   };
   const copiar = async (t, ok) => { try { await navigator.clipboard.writeText(t); ctx.toast(ok || 'Copiado'); } catch (e) { const ta = el('textarea', { style: 'position:fixed;opacity:0' }); ta.value = t; document.body.append(ta); ta.select(); try { document.execCommand('copy'); ctx.toast(ok || 'Copiado'); } catch (x) { ctx.toast('No se pudo copiar'); } ta.remove(); } };
-  async function crearEnlace(etq) {
-    const r = await ctx.api('/rest/v1/rs_enlaces', { method: 'POST', body: { etiqueta: etq.trim().slice(0, 80) }, headers: { Prefer: 'return=representation' } });
-    if (!r.ok) { ctx.toast(await ctx.errText(r)); return; }
-    const e = (await r.json())[0]; S.enlaces.unshift(e); S.nuevoEnlace = e.id; pintar(); copiar(linkDe(e), 'Enlace creado y copiado');
-  }
 
   /* ---------- vistas ---------- */
   function pintar() {
     if (!host) return; const keep = host.scrollTop;
     host.textContent = '';
     host.append(vCabecera());
-    if (S.cargando && !S.enlaces.length && !S.res.length) { host.append(el('p', { class: 'muted' }, 'Cargando…')); return; }
-    if (S.falta) { host.append(el('div', { class: 'card rs-aviso' }, el('h3', {}, 'Falta activar las reseñas con enlace'), el('p', {}, 'En Supabase abre SQL Editor, pega el contenido de sql/resenas-publicas.sql y dale Run. Después vuelve a esta pestaña.'), el('p', { class: 'muted' }, S.error || ''), btn('Reintentar', null, cargar, 'btn-gold'))); return; }
+    if (S.cargando && !S.res.length) { host.append(el('p', { class: 'muted' }, 'Cargando…')); return; }
+    if (S.falta) { host.append(el('div', { class: 'card rs-aviso' }, el('h3', {}, 'Falta activar los comentarios'), el('p', {}, 'En Supabase abre SQL Editor, pega el contenido de sql/cupones.sql y dale Run. Después vuelve a esta pestaña.'), el('p', { class: 'muted' }, S.error || ''), btn('Reintentar', null, cargar, 'btn-gold'))); return; }
     host.append(vEnlaces(), vBandeja(), vWeb());
     host.scrollTop = keep;
   }
   function vCabecera() {
     const n = S.res.filter(r => r.estado === 'nueva').length, pub = slots().filter(s => s.q).length;
-    return el('div', { class: 'card rs-cab' }, el('div', {}, el('h2', {}, ico('star'), ' Reseñas'), el('p', { class: 'muted' }, 'Envía un enlace privado a tu cliente, recibe su opinión, edítala, ponle foto y publícala en la web. También puedes exportarla como imagen para Instagram.')),
-      el('div', { class: 'rs-kp' }, el('b', {}, String(S.res.length)), el('small', {}, 'recibidas'), el('b', {}, String(n)), el('small', {}, 'nuevas'), el('b', {}, pub + '/6'), el('small', {}, 'en la web')));
+    return el('div', { class: 'card rs-cab' }, el('div', {}, el('h2', {}, ico('star'), ' Reseñas'), el('p', { class: 'muted' }, 'Comparte un solo enlace con todos tus clientes, recibe sus comentarios, edítalos, ponles foto y publícalos en la web (Personas o Empresas). También puedes exportarlos como imagen para Instagram.')),
+      el('div', { class: 'rs-kp' }, el('b', {}, String(S.res.length)), el('small', {}, 'recibidas'), el('b', {}, String(n)), el('small', {}, 'nuevas'), el('b', {}, pub + '/12'), el('small', {}, 'en la web')));
   }
   function vEnlaces() {
     const c = el('div', { class: 'card rs-sec' });
-    c.append(el('h3', {}, ico('link'), ' Enlaces para tus clientes'), el('p', { class: 'muted' }, 'Cada enlace sirve una sola vez y es solo de esa persona. El cliente solo escribe su nombre, qué trabajo hicieron, estrellas y su opinión; al enviar recibe su código de descuento.'));
-    const inp = el('input', { type: 'text', maxlength: '80', placeholder: 'Para quién es (solo lo ves tú). Ej. Mirna · graduación', 'aria-label': 'Para quién es el enlace' });
-    const ir = () => { crearEnlace(inp.value); inp.value = ''; };
-    inp.addEventListener('keydown', e => { if (e.key === 'Enter') ir(); });
-    c.append(el('div', { class: 'rs-new' }, inp, btn('Crear enlace', 'plus', ir, 'btn-gold')));
-    const lista = el('div', { class: 'rs-links' });
-    S.enlaces.slice(0, 40).forEach(e => {
-      const resena = S.res.find(r => r.enlace_id === e.id);
-      lista.append(el('div', { class: 'rs-link' + (e.id === S.nuevoEnlace ? ' nuevo' : '') },
-        el('div', { class: 'rs-lt' }, el('b', {}, e.etiqueta || 'Sin nombre'), el('small', { class: 'muted' }, (e.usado ? 'Usado ' + fdate(e.usado_en) : 'Pendiente · creado ' + fdate(e.creado)) + (resena ? ' · ' + resena.nombre : ''))),
-        el('span', { class: 'tag ' + (e.usado ? 'confirmada' : 'pendiente') }, e.usado ? 'Usado' : 'Pendiente'),
-        el('div', { class: 'acts' },
-          e.usado ? (resena ? btn('Abrir reseña', null, () => { S.sel = resena.id; S.ed = null; pintar(); setTimeout(() => { const t = $('.rs-ed', host); t && t.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50); }) : null)
-            : [btn('Copiar enlace', 'copy', () => copiar(linkDe(e), 'Enlace copiado')), btn('Copiar mensaje', 'copy', () => copiar(mensaje(e), 'Mensaje copiado')),
-              el('a', { class: 'btn btn-sm btn-ghost', target: '_blank', rel: 'noopener', href: 'https://wa.me/?text=' + encodeURIComponent(mensaje(e)) }, ico('wa'), ' WhatsApp')],
-          btn('', 'trash', async () => { if (!confirm(e.usado ? '¿Quitar este enlace de la lista? La reseña recibida no se borra.' : '¿Borrar este enlace? Dejará de funcionar.')) return; const r = await ctx.api('/rest/v1/rs_enlaces?id=eq.' + e.id, { method: 'DELETE', headers: { Prefer: 'return=minimal' } }); if (!r.ok) { ctx.toast(await ctx.errText(r)); return; } S.enlaces = S.enlaces.filter(x => x.id !== e.id); pintar(); }, 'btn-red'))));
-    });
-    if (!S.enlaces.length) lista.append(el('p', { class: 'muted' }, 'Aún no has creado enlaces.'));
-    c.append(lista, vAjustes());
+    c.append(el('h3', {}, ico('link'), ' Tu enlace para comentarios'),
+      el('p', { class: 'muted' }, 'Es el mismo enlace para todos. Cada persona escribe su nombre, y al enviar el sistema le genera su código único (un uso para ella y otro para un amigo) y lo guarda en Cupones. Las empresas dejan su comentario sin código.'));
+    const u = baseLink();
+    c.append(el('div', { class: 'rs-link' }, el('div', { class: 'rs-lt' }, el('b', {}, u.replace(/^https?:\/\//, '')), el('small', { class: 'muted' }, 'Publícalo en tu bio, envíalo por WhatsApp o ponlo en un QR.')),
+      el('div', { class: 'acts' }, btn('Copiar enlace', 'copy', () => copiar(u, 'Enlace copiado')), btn('Copiar mensaje', 'copy', () => copiar(mensaje(), 'Mensaje copiado')),
+        el('a', { class: 'btn btn-sm btn-ghost', target: '_blank', rel: 'noopener', href: 'https://wa.me/?text=' + encodeURIComponent(mensaje()) }, ico('wa'), ' WhatsApp'),
+        el('a', { class: 'btn btn-sm btn-ghost', target: '_blank', rel: 'noopener', href: u }, ico('globe'), ' Ver página'))));
+    c.append(vAjustes());
     return c;
   }
   function vAjustes() {
-    const d = el('details', { class: 'rs-aj', open: S.ajustes ? '' : null }, el('summary', {}, ico('gift'), ' Regalo para quien deja su reseña'));
+    const d = el('details', { class: 'rs-aj', open: S.ajustes ? '' : null }, el('summary', {}, ico('gift'), ' Regalo para quien deja su comentario'));
     d.addEventListener('toggle', () => { S.ajustes = d.open; });
     const pct = el('input', { type: 'number', min: '0', max: '100', step: '1', value: cfgGet('descuento', '10'), 'aria-label': 'Porcentaje de descuento' });
     const pre = el('input', { type: 'text', maxlength: '10', value: cfgGet('prefijo', 'FARO'), 'aria-label': 'Prefijo del código' });
     const con = el('textarea', { rows: '2', maxlength: '200' }); con.value = cfgGet('condicion', '');
     d.append(el('div', { class: 'rs-g3' }, el('div', { class: 'field' }, el('label', {}, '% de descuento'), pct), el('div', { class: 'field' }, el('label', {}, 'Prefijo del código'), pre)),
       el('div', { class: 'field' }, el('label', {}, 'Condición que ve el cliente'), con),
-      el('p', { class: 'muted' }, 'Cada cliente recibe un código único, por ejemplo ' + (pre.value || 'FARO').toUpperCase().replace(/[^A-Z0-9]/g, '') + '-7K2M9Q. Si pones 0, solo se le agradece, sin descuento.'),
+      el('p', { class: 'muted' }, 'Cada persona (no empresa) recibe un código único con 2 usos, cliente y amigo, por ejemplo ' + (pre.value || 'FARO').toUpperCase().replace(/[^A-Z0-9]/g, '') + '-7K2M9Q. Si pones 0, solo se le agradece, sin descuento.'),
       btn('Guardar regalo', 'check', async () => {
         const v = Math.max(0, Math.min(100, parseInt(pct.value, 10) || 0));
         const rows = [{ clave: 'descuento', valor: String(v) }, { clave: 'prefijo', valor: (pre.value || 'FARO').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 10) || 'FARO' }, { clave: 'condicion', valor: con.value.trim().slice(0, 200) }];
@@ -214,7 +198,7 @@
   function vEditor(r) {
     if (!S.ed || S.ed.id !== r.id) S.ed = { ...r };
     const E = S.ed, box = el('div', { class: 'rs-ed' });
-    box.append(el('h3', {}, 'Reseña de ' + r.nombre), el('p', { class: 'muted' }, 'Recibida ' + fdate(r.creado) + ' · Código ' + (r.codigo || '—')));
+    box.append(el('h3', {}, 'Reseña de ' + r.nombre), el('p', { class: 'muted' }, 'Recibida ' + fdate(r.creado) + (r.tipo === 'empresa' ? ' · Empresa (sin código)' : ' · Código ' + (r.codigo || '—'))));
     /* foto + encuadre */
     const enc = encuadre({ url: E.foto, pos: E.foto_pos, size: 230, onChange: p => { E.foto_pos = p; } });
     const fi = el('input', { type: 'file', accept: 'image/*', style: 'display:none' });
@@ -241,6 +225,7 @@
       el('div', { class: 'field' }, el('label', {}, 'Nombre'), nom), el('div', { class: 'field' }, el('label', {}, 'Trabajo realizado'), ser, dl),
       el('div', { class: 'field' }, el('label', {}, 'Estrellas'), est), el('div', { class: 'field' }, el('label', {}, 'Opinión'), txt));
     box.append(el('div', { class: 'rs-cols' }, izq, der));
+    if (r.mejora) box.append(el('div', { class: 'rs-mej' }, el('b', {}, '🔒 Qué podríamos mejorar (privado, no se publica)'), el('p', {}, r.mejora)));
     /* original */
     const o = r.original || {};
     if (o.texto && (o.texto !== E.texto || o.nombre !== E.nombre)) box.append(el('details', { class: 'rs-orig' }, el('summary', {}, 'Ver lo que escribió el cliente'), el('p', {}, o.texto), btn('Restaurar texto original', null, () => { E.texto = o.texto; E.nombre = o.nombre || E.nombre; E.servicio = o.servicio != null ? o.servicio : E.servicio; pintar(); })));
@@ -256,24 +241,24 @@
     const acts = el('div', { class: 'acts rs-pub' }, btn('Guardar cambios', 'check', async () => { try { await guardar(); pintar(); } catch (e) { ctx.toast(e.message || 'No se pudo guardar'); } }, 'btn-gold'));
     /* publicar en un espacio */
     const sl = slots(), selS = el('select', { 'aria-label': 'Espacio de la web' });
-    const libre = sl.find(s => !s.q && !S.res.some(x => x.slot === s.n && x.id !== r.id));
-    sl.forEach(s => { const ocupa = S.res.find(x => x.slot === s.n); selS.append(el('option', { value: String(s.n) }, 'Espacio ' + s.n + (s.q ? (ocupa && ocupa.id === r.id ? ' · esta reseña' : ' · ocupado por ' + (s.nombre || 'otra reseña')) : ' · libre'))); });
+    const libre = sl.find(s => (r.tipo === 'empresa' ? s.n > 6 : s.n <= 6) && !s.q && !S.res.some(x => x.slot === s.n && x.id !== r.id));
+    sl.forEach(s => { const ocupa = S.res.find(x => x.slot === s.n); selS.append(el('option', { value: String(s.n) }, (s.n > 6 ? 'Empresas ' + (s.n - 6) : 'Personas ' + s.n) + (s.q ? (ocupa && ocupa.id === r.id ? ' · esta reseña' : ' · ocupado por ' + (s.nombre || 'otra reseña')) : ' · libre'))); });
     selS.value = String(r.slot || (libre ? libre.n : 1));
     acts.append(el('span', { class: 'rs-sp' }), selS, btn(r.slot ? 'Actualizar en la web' : 'Publicar en la web', 'globe', async () => {
       const n = parseInt(selS.value, 10), cur = W(n);
-      if (cur.q && (!r.slot || r.slot !== n) && !confirm('El espacio ' + n + ' ya tiene la reseña de «' + (cur.nombre || 'otro cliente') + '». ¿Reemplazarla?')) return;
+      if (cur.q && (!r.slot || r.slot !== n) && !confirm('El espacio ' + etqSlot(n) + ' ya tiene la reseña de «' + (cur.nombre || 'otro cliente') + '». ¿Reemplazarla?')) return;
       try {
         if (!(await guardar(true))) return;
         const otro = S.res.find(x => x.slot === n && x.id !== r.id); if (otro) { await patch(otro.id, { slot: null }); otro.slot = null; }
         if (r.slot && r.slot !== n) await quitarDeWeb(r.slot);
         await aWeb(r, n); const nr = await patch(r.id, { slot: n, estado: 'revisada' }); Object.assign(r, nr); S.ed = { ...r };
-        await ctx.recargar(); ctx.toast('Publicada en la web (espacio ' + n + ')'); pintar();
+        await ctx.recargar(); ctx.toast('Publicada en la web (' + etqSlot(n) + ')'); pintar();
       } catch (e) { ctx.toast(e.message || 'No se pudo publicar'); }
     }, 'btn-gold'));
     if (r.slot) acts.append(btn('Quitar de la web', 'x', async () => { if (!confirm('¿Quitar esta reseña de la web? Se queda guardada aquí.')) return; try { await quitarDeWeb(r.slot); const nr = await patch(r.id, { slot: null }); Object.assign(r, nr); await ctx.recargar(); ctx.toast('Quitada de la web'); pintar(); } catch (e) { ctx.toast(e.message || 'No se pudo quitar'); } }, 'btn-red'));
     box.append(acts);
     const acts2 = el('div', { class: 'acts' }, btn('Exportar como imagen (PNG)', 'download', () => abrirExport({ nombre: E.nombre, linea: linea({ ...E }), texto: E.texto, estrellas: E.estrellas, foto: E.foto, pos: E.foto_pos }), 'btn-gold'));
-    const cj = r.codigo ? el('div', { class: 'rs-chk' }, el('span', {}, 'Código ' + r.codigo), btn('Ver y canjear en Cupones', 'gift', () => { try { window.FaroCupones.abrirCodigo(r.codigo); } catch (e) { } if (window.showTab) window.showTab('cup'); })) : el('span', { class: 'muted' }, 'Sin código de descuento');
+    const cj = r.codigo ? el('div', { class: 'rs-chk' }, el('span', {}, 'Código ' + r.codigo), btn('Ver y canjear en Cupones', 'gift', () => { try { window.FaroCupones.abrirCodigo(r.codigo); } catch (e) { } if (window.showTab) window.showTab('cup'); })) : el('span', { class: 'muted' }, r.tipo === 'empresa' ? 'Empresa: sin código de descuento' : 'Sin código de descuento');
     acts2.append(cj, el('span', { class: 'rs-sp' }),
       r.estado !== 'archivada' ? btn('Archivar', null, async () => { try { if (r.slot) { await quitarDeWeb(r.slot); await ctx.recargar(); } const n = await patch(r.id, { estado: 'archivada', slot: null }); Object.assign(r, n); S.sel = null; S.ed = null; pintar(); ctx.toast('Archivada'); } catch (e) { ctx.toast(e.message); } }) : btn('Desarchivar', null, async () => { const n = await patch(r.id, { estado: 'revisada' }); Object.assign(r, n); pintar(); }),
       btn('Borrar', 'trash', async () => { if (!confirm('¿Borrar esta reseña para siempre?' + (r.slot ? ' También se quita de la web.' : ''))) return; try { if (r.slot) { await quitarDeWeb(r.slot); await ctx.recargar(); } const x = await ctx.api('/rest/v1/rs_resenas?id=eq.' + r.id, { method: 'DELETE', headers: { Prefer: 'return=minimal' } }); if (!x.ok) throw new Error(await ctx.errText(x)); S.res = S.res.filter(z => z.id !== r.id); S.sel = null; S.ed = null; badge(); pintar(); } catch (e) { ctx.toast(e.message); } }, 'btn-red'));
@@ -283,16 +268,16 @@
 
   function vWeb() {
     const c = el('div', { class: 'card rs-sec' });
-    c.append(el('h3', {}, ico('globe'), ' En la web ahora'), el('p', { class: 'muted' }, 'Los 6 espacios de «Lo dicen nuestros clientes». Aquí también exportas cualquiera como imagen, aunque la hayas cargado a mano en Sitio web.'));
+    c.append(el('h3', {}, ico('globe'), ' En la web ahora'), el('p', { class: 'muted' }, 'Los 12 espacios de «Lo dicen nuestros clientes» (6 Personas y 6 Empresas). Aquí también exportas cualquiera como imagen, aunque la hayas cargado a mano en Sitio web.'));
     const g = el('div', { class: 'rs-wg' });
     slots().forEach(s => {
       const ph = el('div', { class: 'rs-ph' }); if (s.foto) { aplicarFondo(ph, s.foto, s.pos || POS0, null); natSize(s.foto).then(n => aplicarFondo(ph, s.foto, s.pos || POS0, n)); } else ph.append(ico('user'));
       const r = S.res.find(x => x.slot === s.n);
-      g.append(el('div', { class: 'rs-w' + (s.q ? '' : ' vacio') }, el('small', { class: 'muted' }, 'Espacio ' + s.n), ph,
+      g.append(el('div', { class: 'rs-w' + (s.q ? '' : ' vacio') }, el('small', { class: 'muted' }, etqSlot(s.n)), ph,
         s.q ? [el('b', {}, s.nombre || 'Cliente'), el('small', { class: 'rs-wl' }, s.linea), el('span', { class: 'rs-wst' }, estrellas(s.est)),
           el('div', { class: 'acts' }, btn('PNG', 'download', () => abrirExport({ nombre: s.nombre || 'Cliente', linea: s.linea, texto: s.q, estrellas: s.est, foto: s.foto, pos: s.pos || POS0 }), 'btn-gold'),
             r ? btn('Editar', null, () => { S.sel = r.id; S.ed = null; pintar(); setTimeout(() => { const t = $('.rs-ed', host); t && t.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50); }) : null,
-            btn('', 'x', async () => { if (!confirm('¿Quitar del espacio ' + s.n + '?')) return; try { await quitarDeWeb(s.n); if (r) { const n = await patch(r.id, { slot: null }); Object.assign(r, n); } await ctx.recargar(); pintar(); ctx.toast('Quitada'); } catch (e) { ctx.toast(e.message); } }, 'btn-red'))]
+            btn('', 'x', async () => { if (!confirm('¿Quitar de ' + etqSlot(s.n) + '?')) return; try { await quitarDeWeb(s.n); if (r) { const n = await patch(r.id, { slot: null }); Object.assign(r, n); } await ctx.recargar(); pintar(); ctx.toast('Quitada'); } catch (e) { ctx.toast(e.message); } }, 'btn-red'))]
           : el('small', { class: 'muted' }, 'Libre')));
     });
     c.append(g);
@@ -435,6 +420,7 @@
 .rs-new{display:flex;gap:10px;margin:14px 0;flex-wrap:wrap}.rs-new input{flex:1;min-width:220px}
 .rs-links{display:grid;gap:10px}
 .rs-link{display:grid;grid-template-columns:1fr auto;gap:8px 12px;align-items:center;padding:12px 14px;border-radius:14px;border:1px solid var(--line);background:var(--soft)}
+.rs-mej{margin:14px 0 0;padding:12px 14px;border-radius:14px;background:rgba(139,26,42,.07);border:1px solid rgba(139,26,42,.28)}.rs-mej p{margin:6px 0 0;white-space:pre-wrap}
 .rs-link.nuevo{border-color:var(--oro);box-shadow:0 0 0 3px rgba(184,160,106,.25)}
 .rs-lt{display:grid;gap:2px}.rs-link .acts{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:8px}
 .rs-aj{margin-top:16px;border-top:1px solid var(--line);padding-top:12px}.rs-aj summary{cursor:pointer;font-weight:700;display:flex;align-items:center;gap:8px}

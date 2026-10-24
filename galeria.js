@@ -229,7 +229,7 @@ function gCodigoHtml(cfg){
   const n=+cfg.descuento,dt=n>0?n+'% de descuento':'tu descuento';
   return '<aside class="gcod" id="gcod" aria-label="Código de descuento"><button class="tb" id="gcodb" aria-expanded="false" aria-controls="gcodp">'+ic('gift')+'<span class="vt">Tu código</span></button>'
     +'<div class="pn" id="gcodp"><div class="in2"><button class="gcx" id="gcodx" type="button" aria-label="Cerrar">'+ic('x')+'</button><small>DESCUENTO PARA TI</small><b class="cdg">'+esc(cod)+'</b>'
-    +'<p>Menciona este código al reservar tu próxima sesión y recibe <b>'+esc(dt)+'</b>.</p><p class="gvig">Vigencia de 5 meses desde la entrega de tu galería · se puede usar una sola vez.</p>'
+    +'<p>Menciona este código al reservar tu próxima sesión y recibe <b>'+esc(dt)+'</b>.</p><p class="gvig">Vigencia de 5 meses desde la entrega de tu galería · tiene 2 usos: uno para ti y otro para un amigo.</p>'
     +'<div class="row"><button class="gbtn p" id="gcodc">'+ic('copy')+' Copiar</button><button class="gbtn" id="gcodw">'+ic('wa')+' Usarlo</button></div></div></div></aside>';
 }
 function gCodigoLiga(){

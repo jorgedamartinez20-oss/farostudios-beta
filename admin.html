@@ -1866,7 +1866,7 @@ const SECC=[
  {id:'discos',c:'landing',t:'Discos',i:'music',keys:()=>rng('',8).flatMap(n=>['img.alb'+n,'audio.alb'+n,'at.'+n,'aa.'+n,'ay.'+n,'ag.'+n,'as.'+n,'pv.'+n]),r:rDiscos},
  {id:'catalogo',c:'landing',t:'Catálogo',i:'book',keys:()=>['catalogoPdf',...CAT_PAGS.flatMap((_,i)=>['cat.'+i+'.h','cat.'+i+'.p'])],r:rCatalogo},
  {id:'recursos',c:'landing',t:'Recursos gratis',i:'pdf',keys:()=>RECS.flatMap(r=>['pdf.'+r.id,'rt.'+r.id,'rd.'+r.id]),r:rRecursos},
- {id:'resenas',c:'landing',t:'Reseñas',i:'star',keys:()=>rng('',6).flatMap(n=>['rv.'+n+'.q','rv.'+n+'.n','rv.'+n+'.r','img.t'+n]),r:rResenas},
+ {id:'resenas',c:'landing',t:'Reseñas',i:'star',keys:()=>rng('',12).flatMap(n=>['rv.'+n+'.q','rv.'+n+'.n','rv.'+n+'.r','img.t'+n]),r:rResenas},
  {id:'promo',c:'landing',t:'Promoción (ventana de inicio)',i:'star',dest:'landing/fotos-studios',lead:'La ventana que aparece un momento después de abrir la página, una vez al día por persona. Si no subes imagen, se dibuja con el porcentaje del título. Para quitarla pon 0 en «Mostrar».',items:[TX('promo.on','Mostrar la ventana (1 = sí, 0 = no)','1'),TX('promo.t','Título grande (el porcentaje sale en la imagen)','15% de descuento'),{k:'promo.d',l:'Texto de apoyo',t:'area'},TX('promo.b','Texto del botón','Agendar mi graduación'),TX('promo.hasta','Mostrar hasta el día (AAAA-MM-DD, opcional)','2026-10-31'),{k:'img.promo',l:'Imagen de la ventana (opcional)',t:'img'}]},
  {id:'pagos',c:'landing',t:'Logos de pago',i:'card',dest:'landing/logos',lead:'Los logos que van junto a las preguntas frecuentes. Si dejas uno vacío, la página muestra el cuadro de ejemplo.',items:[{k:'img.logo-visa',l:'Logo Visa',t:'img'},{k:'img.logo-mc',l:'Logo Mastercard',t:'img'},{k:'img.logo-bi',l:'Logo Banco Industrial',t:'img'}]},
  {id:'m-fotos',c:'musica',t:'Fotos',i:'camera',dest:'landing/academy-fotos',items:[{k:'img.music-t1',l:'Foto testimonio Música',t:'img'},...INST.map(i=>({k:'img.music-'+i[0],l:'Foto de '+i[1],t:'img'}))]},
@@ -2189,9 +2189,9 @@ function rRecursos(card){
 
 /* --- Reseñas: una ficha por cliente --- */
 function rResenas(card){
-  const sel=selDe('resenas',6),n=sel+1;
-  card.append(el('p',{class:'muted'},'Toca una reseña para cargar la foto del cliente, su opinión, su nombre y su empresa o evento. Para que el cliente la escriba él mismo con un enlace privado, usa Clientes → Reseñas.'));
-  card.append(mdChips(rng('',6).map(x=>({l:sitioVal('rv.'+x+'.n')||'Reseña '+x,s:sitioVal('rv.'+x+'.r')||(sitioVal('rv.'+x+'.q')?'Con opinión':'Vacía'),img:sitioVal('img.t'+x),on:!!sitioVal('rv.'+x+'.q'),i:'user'})),sel,i=>{SIT.sel.resenas=i;renderSitio()}));
+  const sel=selDe('resenas',12),n=sel+1;
+  card.append(el('p',{class:'muted'},'Toca una reseña para cargar la foto del cliente, su opinión, su nombre y su empresa o evento. Los espacios 1–6 son de Personas y los 7–12 de Empresas. Para que el cliente escriba su comentario con el enlace público, usa Clientes → Reseñas.'));
+  card.append(mdChips(rng('',12).map(x=>({l:sitioVal('rv.'+x+'.n')||(x>6?'Empresa '+(x-6):'Persona '+x),s:sitioVal('rv.'+x+'.r')||(sitioVal('rv.'+x+'.q')?'Con opinión':'Vacía'),img:sitioVal('img.t'+x),on:!!sitioVal('rv.'+x+'.q'),i:'user'})),sel,i=>{SIT.sel.resenas=i;renderSitio()}));
   const url=sitioVal('img.t'+n);
   const enc=FaroResenas.encuadre({url,pos:sitioVal('rv.'+n+'.p')||'',size:210});
   const previa=el('div',{class:'mdp'},el('h4',{style:'margin:0 0 8px'},'Encuadre de la foto'),url?enc.el:el('p',{class:'muted'},'Sube la foto y podrás moverla dentro del círculo para que quede bien centrada.'));
@@ -4765,7 +4765,7 @@ function rsnCtx(){
     cfg:()=>AC.cfg,
     recargar:async()=>{try{const r=await api('/rest/v1/sitio_config?select=*');if(r.ok){AC.cfg={};(await r.json()).forEach(x=>AC.cfg[x.clave]=x.valor)}}catch(e){}try{renderSitio()}catch(e){}},
     subir:(f,k)=>sitioSubirArch({k:'img.'+k,l:'Foto',t:'img'},'landing/resenas',f),
-    base:()=>/\.github\.io$/.test(location.hostname)?ADMIN_URL.replace(/[^\/]*$/,'')+'resenas.html':'https://farostudios.net/resenas'};
+    base:()=>/\.github\.io$/.test(location.hostname)?ADMIN_URL.replace(/[^\/]*$/,'')+'comentario.html':'https://www.farostudios.net/comentario'};
 }
 function rsnTab(){try{FaroResenas.iniciar($('#rsn-body'),rsnCtx())}catch(e){console.error(e);toast('No se pudo abrir Reseñas')}}
 /* ---------- Cupones (cupones-admin.js · sql/cupones.sql) ---------- */
