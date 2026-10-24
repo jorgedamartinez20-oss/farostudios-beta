@@ -824,6 +824,7 @@ dialog.bkz::backdrop{background:#000}
 .tm-tabs button span{font-size:.75rem;padding:2px 8px;border-radius:999px;background:rgba(37,37,40,.1)}
 .tm-tabs button[aria-selected="true"]{background:var(--hi);color:#fff;box-shadow:0 8px 18px -8px rgba(139,26,42,.7)}
 .tm-tabs button[aria-selected="true"] span{background:rgba(255,255,255,.22)}
+.tm-cats[hidden]{display:none}
 .tm-cats{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:0 auto 26px;max-width:880px}
 .tm-cat{border:1.5px solid var(--line);background:transparent;color:var(--ink);font:700 .86rem/1 var(--body,'Lato',sans-serif);letter-spacing:.04em;padding:10px 16px;border-radius:999px;cursor:pointer;display:inline-flex;gap:8px;align-items:center;transition:background .25s,color .25s,border-color .25s,transform .25s var(--ease)}
 .tm-cat span{font-size:.72rem;opacity:.65}
@@ -4202,7 +4203,9 @@ window.rebuildPortfolio&&window.rebuildPortfolio();
         const cl=i=>(i.c||'').split('|').filter(Boolean),its=gr[ST.g],cnt=c=>its.filter(i=>cl(i).includes(c)).length;
         const extra=[...new Set(its.flatMap(cl).filter(c=>!CAT[ST.g].includes(c)))];
         const lista=[...CAT[ST.g],...extra];
-        cs.innerHTML=`<button type="button" class="tm-cat" data-c="" aria-pressed="${!ST.c}">Todas<span>${its.length}</span></button>`+lista.map(c=>{const k=cnt(c);return `<button type="button" class="tm-cat" data-c="${escH(c)}" aria-pressed="${ST.c===c}"${k?'':' disabled'}>${escH(c)}<span>${k}</span></button>`}).join('');
+        const con=lista.filter(c=>cnt(c)>0);
+        cs.hidden=con.length<2;
+        cs.innerHTML=`<button type="button" class="tm-cat" data-c="" aria-pressed="${!ST.c}">Todas<span>${its.length}</span></button>`+con.map(c=>`<button type="button" class="tm-cat" data-c="${escH(c)}" aria-pressed="${ST.c===c}">${escH(c)}<span>${cnt(c)}</span></button>`).join('');
         const vis=ST.c?its.filter(i=>cl(i).includes(ST.c)):its;
         const nb=document.createElement('div');bx.textContent='';bx.append(nb);
         mountTesti(nb,vis,ST.g==='emp'?'tu empresa':'tu cliente');
