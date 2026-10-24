@@ -3146,14 +3146,21 @@ const ALB=[
   });
 })();
 
+/* encuadre de la foto de cada reseña (lo elige el Workspace): posición x %, y % y acercamiento; la foto no se recorta, solo cambia qué parte se ve */
+function fotoPos(n,p,url){
+  const a=String(p||'').split(',').map(parseFloat);if(!n||a.length<2||a.some(isNaN))return;
+  const cl=(v,lo,hi)=>Math.min(hi,Math.max(lo,v)),x=cl(a[0],0,100),y=cl(a[1],0,100),z=cl(a[2]||1,1,3);
+  n.style.backgroundPosition=x+'% '+y+'%';
+  if(z>1&&url){const im=new Image();im.onload=()=>{n.style.backgroundSize=(Math.max(1,im.naturalWidth/im.naturalHeight)*z*100)+'% auto'};im.src=url}
+}
 /* testimonios (reutilizable) */
 function mountTesti(host,items,label){
   const photo=(it,i)=>`<div class="ph-in" data-img="${it.k}"><svg class="ico"><use href="#i-cam"/></svg><small>Foto de ${label}</small></div>`;
-  host.innerHTML=`<div class="tm"><div class="tm-ph"><div class="tm-ph-sw"></div></div><div class="tm-q">${items.map((it,i)=>`<div class="tm-slide${i?'':' on'}"><div class="tm-st" aria-label="5 estrellas">★★★★★</div><p>${it.q}</p><b>${it.n}</b><small>${it.r}</small></div>`).join('')}<div class="tm-dots">${items.map((_,i)=>`<button type="button" aria-label="Reseña ${i+1}" aria-current="${i===0}"></button>`).join('')}</div></div></div>`;
+  host.innerHTML=`<div class="tm"><div class="tm-ph"><div class="tm-ph-sw"></div></div><div class="tm-q">${items.map((it,i)=>`<div class="tm-slide${i?'':' on'}"><div class="tm-st" aria-label="${it.s||5} estrellas">${'★'.repeat(it.s||5)}${'☆'.repeat(5-(it.s||5))}</div><p>${it.q}</p><b>${it.n}</b><small>${it.r}</small></div>`).join('')}<div class="tm-dots">${items.map((_,i)=>`<button type="button" aria-label="Reseña ${i+1}" aria-current="${i===0}"></button>`).join('')}</div></div></div>`;
   const sl=$$('.tm-slide',host),dots=$$('.tm-dots button',host),sw=$('.tm-ph-sw',host);let i=0,timer;
   function show(n){
     i=(n+items.length)%items.length;sl.forEach((s,k)=>s.classList.toggle('on',k===i));dots.forEach((d,k)=>d.setAttribute('aria-current',k===i));
-    sw.style.opacity=0;setTimeout(()=>{sw.innerHTML=photo(items[i],i);sw.firstChild.style.cssText='width:100%;height:100%;border-radius:50%';fillSlots(sw);sw.style.opacity=1},250);
+    sw.style.opacity=0;setTimeout(()=>{sw.innerHTML=photo(items[i],i);sw.firstChild.style.cssText='width:100%;height:100%;border-radius:50%';fillSlots(sw);fotoPos(sw.firstChild,items[i].p,imgOf(items[i].k));sw.style.opacity=1},250);
   }
   function auto(){clearInterval(timer);if(!reduce)timer=setInterval(()=>{if(document.hidden||!host.isConnected)return;if(host.offsetParent!==null)show(i+1)},6500)}
   dots.forEach((d,k)=>d.addEventListener('click',()=>{show(k);auto()}));
@@ -4145,7 +4152,7 @@ window.rebuildPortfolio&&window.rebuildPortfolio();
       if(t)a[0]=t;const g=X['ag.'+n];if(ar||y||g)a[1]=[ar||a[1].split(' · ')[0],y,g].filter(Boolean).join(' · ');if(s)a[3]=s});
     $$('#covers .cv').forEach((b,i)=>{const bb=$('b',b),sm=$('small',b);if(bb&&ALB[i])bb.textContent=ALB[i][0];if(sm&&ALB[i])sm.textContent=ALB[i][1]});
     window.ampRefresh&&window.ampRefresh();
-    const it=[];for(let n=1;n<=6;n++){const q=X['rv.'+n+'.q'];if(q)it.push({k:'t'+n,q:escH(q),n:escH(X['rv.'+n+'.n']||'Cliente'),r:escH(X['rv.'+n+'.r']||'')})}
+    const it=[];for(let n=1;n<=6;n++){const q=X['rv.'+n+'.q'];if(q)it.push({k:'t'+n,q:escH(q),n:escH(X['rv.'+n+'.n']||'Cliente'),r:escH(X['rv.'+n+'.r']||''),s:Math.min(5,Math.max(1,parseInt(X['rv.'+n+'.s'],10)||5)),p:X['rv.'+n+'.p']||''})}
     const h=$('#testi-s');if(it.length&&h)mountTesti(h,it,'tu cliente');
   };})();
 
