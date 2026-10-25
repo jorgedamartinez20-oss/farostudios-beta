@@ -200,7 +200,10 @@
   function editarFactura(f) {
     const metodo = num(f.efectivo) > 0 ? 'efectivo' : num(f.deposito) > 0 ? 'deposito' : 'tarjeta';
     S.form = { id: f.id, recibo: f.recibo, nombre: f.nombre, metodo, monto: String(r2(num(f.efectivo) + num(f.tarjeta) + num(f.deposito))), obs: f.observaciones || f.referencia || '', prods: (f.productos && f.productos.length ? f.productos : [{ codigo: '', cant: 1 }]).map(p => ({ codigo: p.codigo, cant: p.cant })) };
-    pintar(); window.scrollTo({ top: host.getBoundingClientRect().top + window.scrollY + 120, behavior: 'smooth' });
+    S.open = 2; pintar();
+    const fm = $('.mp-frec', host), card = fm && fm.closest('.card, .mp-flat, .mp-accb');
+    if (card) { card.scrollIntoView({ behavior: 'smooth', block: 'start' }); card.classList.add('mp-flash'); setTimeout(() => card.classList.remove('mp-flash'), 1600); }
+    const nn = $('.mp-fnombre', host); nn && nn.focus({ preventScroll: true });
   }
   async function borrar(tabla, id, clave) {
     if (S.confirmar !== clave) { S.confirmar = clave; pintar(); setTimeout(() => { if (S.confirmar === clave) { S.confirmar = null; pintar(); } }, 3500); return; }
@@ -706,6 +709,7 @@
 .mp-acc{border:1px solid var(--line);border-left:6px solid var(--oro);border-radius:16px;background:var(--soft);overflow:hidden;box-shadow:0 10px 24px -20px rgba(0,0,0,.6)}
 .mp-ah{display:flex;align-items:center;gap:12px;width:100%;padding:14px 16px;border:0;background:none;color:var(--text);font:inherit;cursor:pointer;text-align:left}
 .mp-ah b{font-size:1.05rem}.mp-as{margin-left:auto;font-weight:700}.mp-ed{display:inline-flex;gap:5px;align-items:center;font-size:.8rem;color:var(--oro-t);padding:4px 10px;border:1px solid var(--line);border-radius:999px}
+.mp-flash{animation:mpf 1.6s ease}@keyframes mpf{0%,60%{box-shadow:0 0 0 3px var(--oro)}100%{box-shadow:0 0 0 0 transparent}}
 .mp-acc.mp-open{border-color:var(--oro)}.mp-accb{display:grid;gap:12px;padding:0 14px 14px}.mp-flat{border:0!important;box-shadow:none!important;background:none!important;padding:0!important}
 .mp-acc.mp-p2{border-left-color:#588CDC}.mp-acc.mp-p3{border-left-color:#2F6F7E}.mp-acc.mp-p4{border-left-color:#5E9E6B}.mp-acc.mp-pend{border-color:rgba(217,90,106,.7);background:rgba(217,90,106,.12)}
 .mp-cadena{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:26px;margin-bottom:16px}@media (max-width:980px){.mp-cadena{grid-template-columns:repeat(2,1fr);gap:14px}}@media (max-width:520px){.mp-cadena{grid-template-columns:1fr}}
