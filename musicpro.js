@@ -69,11 +69,12 @@
   const S = {
     vista: 'corte', fecha: null, mes: null, calYm: null, calSet: new Set(),
     D: { facs: [], egs: [], cortes: {} }, cfg: { porcentaje: '3' }, hint: null,
-    form: null, edit: null, falta: false, error: '', cargando: false, confirmar: null, extra: ''
+    form: null, edit: null, draft: {}, falta: false, error: '', cargando: false, confirmar: null, extra: ''
   };
   let host = null, ctx = null, css1 = false, logoImg = null, logoCargando = false, tok = 0, modal = null, pegar = false;
 
-  const formVacio = () => ({ id: null, recibo: '', nombre: '', metodo: 'tarjeta', monto: '', obs: '', prods: [{ codigo: '', cant: 1 }] });
+  const formVacio = () => ({ id: null, recibo: '', nombre: '', metodo: 'tarjeta', mixto: false, mx: { efectivo: '', tarjeta: '', deposito: '' }, monto: '', obs: '', prods: [{ codigo: '', cant: 1 }] });
+  const montoDe = f => f.mixto ? r2(num(f.mx.efectivo) + num(f.mx.tarjeta) + num(f.mx.deposito)) : r2(num(f.monto));
   const diaInicial = () => { const f = hoy(), d = parte(f).dow; return d === 6 || d === 0 ? f : mover(f, -d); };
 
   /* ---------- acceso a datos ---------- */
@@ -106,39 +107,63 @@
   const sabadoDe = f => { const d = parte(f).dow; return d === 6 ? f : d === 0 ? mover(f, -1) : null; };
   const diasSemana = f => { const s = sabadoDe(f); return s ? [s, mover(s, 1)] : [f]; };
 
-  async function cargar(quiet) {
-    const mi = ++tok;
-    if (!quiet) { S.cargando = true; pintar(); }
+  let loadedKey = null, calKey = null;
+  const claveMes = () => S.vista === 'ventas' ? S.mes : mesDe(S.fecha);
+  const ocupado = on => { host && host.classList.toggle('mp-busy', on); };
+  /* cargar(quiet, force): sin force, si el mes ya está en memoria solo se pinta (instantáneo); force vuelve a leer tras guardar */
+  async function cargar(quiet, force) {
+    const mi = ++tok, key = claveMes(), cy = S.calYm || mesDe(S.fecha);
+    const nuevoMes = !!force || loadedKey !== key;
+    if (!nuevoMes) {
+      if (!S.form) { S.form = formVacio(); S.form.recibo = sugerirRecibo(); }
+      S.cargando = false; pintar(); cargarCal(cy, mi); cargarHint(mi); return;
+    }
+    if (!quiet || !loadedKey) { S.cargando = !loadedKey; if (S.cargando) pintar(); }
+    ocupado(true);
     try {
-      const ym = S.vista === 'ventas' ? S.mes : mesDe(S.fecha), d0 = mover(ym + '-01', -3), d1 = mover(sumaMes(ym, 1) + '-01', 2), rng = 'fecha=gte.' + d0 + '&fecha=lt.' + d1;
-      const cy = S.calYm || mesDe(S.fecha);
-      const [facs, egs, cs, cfg, cal] = await Promise.all([
+      const d0 = mover(key + '-01', -3), d1 = mover(sumaMes(key, 1) + '-01', 2), rng = 'fecha=gte.' + d0 + '&fecha=lt.' + d1;
+      const [facs, egs, cs, cfg] = await Promise.all([
         get('mp_facturas?select=*&' + rng + '&order=fecha.asc,creado.asc&limit=5000'),
         get('mp_egresos?select=*&' + rng + '&order=creado.asc&limit=5000'),
         get('mp_cortes?select=*&' + rng),
-        get('mp_config?select=*'),
-        get('mp_cortes?select=fecha&fecha=gte.' + cy + '-01&fecha=lt.' + sumaMes(cy, 1) + '-01')
+        get('mp_config?select=*')
       ]);
       if (mi !== tok) return;
       const cortes = {}; cs.forEach(c => { cortes[c.fecha] = c; });
       S.D = { facs, egs, cortes }; S.cfg = { porcentaje: '3' }; cfg.forEach(c => { S.cfg[c.clave] = c.valor; });
-      S.calSet = new Set(cal.map(c => c.fecha));
-      S.falta = false; S.error = '';
-      await cargarHint(mi);
-      if (mi !== tok) return;
+      loadedKey = key; S.falta = false; S.error = '';
+      if (force) { S.hint = null; calKey = null; }
       if (!S.form) { S.form = formVacio(); S.form.recibo = sugerirRecibo(); }
     } catch (e) { if (mi !== tok) return; S.falta = true; S.error = e.message || ''; }
-    S.cargando = false; pintar();
+    S.cargando = false; ocupado(false); pintar();
+    if (!S.falta) { cargarCal(cy, mi); cargarHint(mi); }
   }
-  /* referencia para el sábado: cómo terminó el último corte (solo para que lo veas; el ingreso en caja lo escribes tú) */
+  /* puntos verdes del calendario: aparte y sin bloquear nada */
+  async function cargarCal(cy, mi) {
+    if (calKey === cy) return;
+    try {
+      const cal = await get('mp_cortes?select=fecha&fecha=gte.' + cy + '-01&fecha=lt.' + sumaMes(cy, 1) + '-01');
+      if (cy !== (S.calYm || mesDe(S.fecha))) return;
+      S.calSet = new Set(cal.map(c => c.fecha)); calKey = cy;
+      const old = $('.mp-calc2', host); if (old) old.replaceWith(calendario());
+    } catch (e) { /* los puntos son solo un adorno */ }
+  }
+  /* referencia para el sábado: cómo terminó el último corte (solo si falta el ingreso en caja; no bloquea la pantalla) */
+  const hintNodes = () => S.hint ? ['Referencia: el ' + fCorta(S.hint.fecha) + ' terminó con ' + Q(S.hint.monto) + ' (' + S.hint.tipo + '). ',
+    btn('Usar ' + Q(S.hint.monto), null, () => { const i = $('.mp-ingin', host); if (i) { i.value = String(S.hint.monto); i.focus(); } })] : [];
   async function cargarHint(mi) {
-    S.hint = null; const f = S.fecha; if (S.vista === 'ventas' || !f) return;
-    const p = await get('mp_cortes?select=*&fecha=lt.' + f + '&order=fecha.desc&limit=2'); if (!p.length || mi !== tok) return;
-    const last = p[0], dd = [last.fecha]; if (p[1] && p[1].fecha === mover(last.fecha, -1)) dd.push(p[1].fecha);
-    const [fa, eg] = await Promise.all([get('mp_facturas?select=*&fecha=in.(' + dd.join(',') + ')'), get('mp_egresos?select=*&fecha=in.(' + dd.join(',') + ')')]);
-    const cortes = {}; p.forEach(c => { cortes[c.fecha] = c; });
-    const t = totalDia(last.fecha, { facs: fa, egs: eg, cortes }), cn = contado(last.billetes);
-    S.hint = { fecha: last.fecha, monto: cn > 0 ? cn : t.total, tipo: cn > 0 ? 'lo que contaste' : 'el total en caja' };
+    const f = S.fecha; if (S.vista === 'ventas' || !f || !registrado(f) || saldoDe(f).estado !== 'pendiente') return;
+    if (S.hint && S.hint.para === f) return;
+    try {
+      const p = await get('mp_cortes?select=*&fecha=lt.' + f + '&order=fecha.desc&limit=2'); if (!p.length || f !== S.fecha) return;
+      const last = p[0], dd = [last.fecha]; if (p[1] && p[1].fecha === mover(last.fecha, -1)) dd.push(p[1].fecha);
+      const [fa, eg] = await Promise.all([get('mp_facturas?select=*&fecha=in.(' + dd.join(',') + ')'), get('mp_egresos?select=*&fecha=in.(' + dd.join(',') + ')')]);
+      if (f !== S.fecha) return;
+      const cortes = {}; p.forEach(c => { cortes[c.fecha] = c; });
+      const t = totalDia(last.fecha, { facs: fa, egs: eg, cortes }), cn = contado(last.billetes);
+      S.hint = { para: f, fecha: last.fecha, monto: cn > 0 ? cn : t.total, tipo: cn > 0 ? 'lo que contaste' : 'el total en caja' };
+      const box = $('.mp-hintbox', host); if (box) box.replaceChildren(...hintNodes());
+    } catch (e) { /* es solo una referencia */ }
   }
   function sugerirRecibo() {
     const dia = facsDe(S.fecha).map(f => parseInt(f.recibo, 10)).filter(isFinite);
@@ -159,27 +184,27 @@
     if (f > hoy()) { ctx.toast('Ese día todavía no llega'); return; }
     try { await crearSql(f); ctx.toast('Día ' + fCorta(f) + ' registrado'); S.extra = ''; await irA(f); } catch (e) { ctx.toast(e.message); }
   }
-  async function irA(f, vista) { S.open = null; S.fecha = f; S.calYm = null; S.form = null; S.edit = null; S.confirmar = null; if (vista) S.vista = vista; await cargar(true); }
+  async function irA(f, vista) { S.open = null; S.hint = null; S.fecha = f; S.calYm = null; S.form = null; S.edit = null; S.confirmar = null; if (vista) S.vista = vista; await cargar(true); }
 
   /* ---------- guardar ---------- */
   async function guardarSaldo(f, v, manual) {
     try {
       const c = S.D.cortes[f];
       if (c) await send('PATCH', 'mp_cortes?fecha=eq.' + f, { saldo_inicial: r2(num(v)), saldo_manual: manual !== false }); else await send('POST', 'mp_cortes', { fecha: f, saldo_inicial: r2(num(v)), saldo_manual: manual !== false });
-      ctx.toast(manual === false ? 'Ingreso en caja automático' : 'Ingreso en caja guardado'); S.open = 2; await cargar(true);
+      ctx.toast(manual === false ? 'Ingreso en caja automático' : 'Ingreso en caja guardado'); await cargar(true, true); togglePaso(2, true);
     } catch (e) { ctx.toast(e.message); }
   }
   async function guardarBilletes(f, b) {
     try {
       if (!S.D.cortes[f]) await crearSql(f);
-      await send('PATCH', 'mp_cortes?fecha=eq.' + f, { billetes: b }); ctx.toast('Conteo guardado'); await cargar(true);
+      await send('PATCH', 'mp_cortes?fecha=eq.' + f, { billetes: b }); ctx.toast('Conteo guardado'); delete S.draft[f]; await cargar(true, true);
     } catch (e) { ctx.toast(e.message); }
   }
   function leerForm(f) {
-    const monto = r2(num(f.monto));
+    const pa = f.mixto ? { efectivo: r2(num(f.mx.efectivo)), tarjeta: r2(num(f.mx.tarjeta)), deposito: r2(num(f.mx.deposito)) } : { efectivo: f.metodo === 'efectivo' ? r2(num(f.monto)) : 0, tarjeta: f.metodo === 'tarjeta' ? r2(num(f.monto)) : 0, deposito: f.metodo === 'deposito' ? r2(num(f.monto)) : 0 };
     return {
       fecha: S.fecha, recibo: limpiar(f.recibo), nombre: limpiar(f.nombre).toUpperCase(),
-      efectivo: f.metodo === 'efectivo' ? monto : 0, tarjeta: f.metodo === 'tarjeta' ? monto : 0, deposito: f.metodo === 'deposito' ? monto : 0,
+      efectivo: pa.efectivo, tarjeta: pa.tarjeta, deposito: pa.deposito,
       referencia: '', observaciones: limpiar(f.obs),   /* en un depósito, observaciones = número de depósito */
       productos: f.prods.map(p => ({ codigo: limpiar(p.codigo), cant: Math.max(1, parseInt(p.cant, 10) || 1) })).filter(p => p.codigo)
     };
@@ -188,20 +213,20 @@
     f = f || S.form;
     const d = leerForm(f);
     if (!d.recibo) { ctx.toast('Falta el número de recibo'); return; }
-    if (!(num(f.monto) > 0)) { ctx.toast('Falta el monto de la factura'); return; }
-    if (f.metodo === 'deposito' && !d.observaciones) { ctx.toast('Falta el número de depósito'); return; }
+    if (!(montoDe(f) > 0)) { ctx.toast('Falta el monto de la factura'); return; }
+    if (d.deposito > 0 && !d.observaciones) { ctx.toast('Falta el número de depósito'); return; }
     if (!d.nombre) d.nombre = 'CF';
     try {
       if (f.id) await send('PATCH', 'mp_facturas?id=eq.' + f.id, d); else await send('POST', 'mp_facturas', d);
       ctx.toast(f.id ? 'Factura actualizada' : 'Factura agregada');
-      if (f.id) { S.edit = null; await cargar(true); pintar(); return; }
-      S.form = formVacio(); await cargar(true); S.form.recibo = sugerirRecibo(); pintar();
+      if (f.id) { S.edit = null; await cargar(true, true); pintar(); return; }
+      S.form = formVacio(); await cargar(true, true); S.form.recibo = sugerirRecibo(); pintar();
       const n = $('.mp-fnombre', host); n && n.focus();
     } catch (e) { ctx.toast(e.message); }
   }
   function editarFactura(f) {
-    const metodo = num(f.efectivo) > 0 ? 'efectivo' : num(f.deposito) > 0 ? 'deposito' : 'tarjeta';
-    S.edit = { id: f.id, recibo: f.recibo, nombre: f.nombre, metodo, monto: String(r2(num(f.efectivo) + num(f.tarjeta) + num(f.deposito))), obs: f.observaciones || f.referencia || '', prods: (f.productos && f.productos.length ? f.productos : [{ codigo: '', cant: 1 }]).map(p => ({ codigo: p.codigo, cant: p.cant })) };
+    const metodo = num(f.efectivo) > 0 ? 'efectivo' : num(f.deposito) > 0 ? 'deposito' : 'tarjeta', nPartes = [f.efectivo, f.tarjeta, f.deposito].filter(x => num(x) > 0).length, sx = x => num(x) > 0 ? String(r2(num(x))) : '';
+    S.edit = { id: f.id, recibo: f.recibo, nombre: f.nombre, metodo, mixto: nPartes > 1, mx: { efectivo: sx(f.efectivo), tarjeta: sx(f.tarjeta), deposito: sx(f.deposito) }, monto: String(r2(num(f.efectivo) + num(f.tarjeta) + num(f.deposito))), obs: f.observaciones || f.referencia || '', prods: (f.productos && f.productos.length ? f.productos : [{ codigo: '', cant: 1 }]).map(p => ({ codigo: p.codigo, cant: p.cant })) };
     S.open = 2; pintar();
     const card = $('.mp-einline', host);
     if (card) { card.scrollIntoView({ behavior: 'smooth', block: 'center' }); card.classList.add('mp-flash'); setTimeout(() => card.classList.remove('mp-flash'), 1600); }
@@ -210,10 +235,10 @@
   async function borrar(tabla, id, clave) {
     if (S.confirmar !== clave) { S.confirmar = clave; pintar(); setTimeout(() => { if (S.confirmar === clave) { S.confirmar = null; pintar(); } }, 3500); return; }
     S.confirmar = null;
-    try { await send('DELETE', tabla + '?id=eq.' + id); ctx.toast('Eliminado'); await cargar(true); if (S.form && !S.form.id && !S.form.recibo) S.form.recibo = sugerirRecibo(); pintar(); } catch (e) { ctx.toast(e.message); }
+    try { await send('DELETE', tabla + '?id=eq.' + id); ctx.toast('Eliminado'); await cargar(true, true); if (S.form && !S.form.id && !S.form.recibo) S.form.recibo = sugerirRecibo(); pintar(); } catch (e) { ctx.toast(e.message); }
   }
   async function agregarEgreso(d) {
-    try { await send('POST', 'mp_egresos', Object.assign({ fecha: S.fecha }, d)); ctx.toast('Salida agregada'); await cargar(true); } catch (e) { ctx.toast(e.message); }
+    try { await send('POST', 'mp_egresos', Object.assign({ fecha: S.fecha }, d)); ctx.toast('Salida agregada'); await cargar(true, true); } catch (e) { ctx.toast(e.message); }
   }
   function parsearProductos(txt) {
     return limpiar(txt, true).split('\n').map(l => l.trim()).filter(Boolean).map(l => {
@@ -231,7 +256,7 @@
       if (!ps.length) { sin.push(f.recibo); return; }
       ps.forEach(p => { b1.push(fDrive(fecha) + '\t' + p.codigo); b2.push('\t' + p.cant + '\t\tFACTURADO\tR-' + f.recibo); });
     });
-    return { b1: b1.join('\n'), b2: b2.join('\n'), n: b1.length, sin };
+    return { b1: b1.join('\n'), b2: b2.join('\n'), todo: b1.map((x, i) => x + '\t\t' + b2[i]).join('\n'), n: b1.length, sin };
   }
   const copiar = async (t, ok) => {
     try { await navigator.clipboard.writeText(t); ctx.toast(ok || 'Copiado'); }
@@ -247,10 +272,10 @@
   const Y = y => y < 244 ? y : 244 + (y - 244) * K2;
   const FONT = "'Century Gothic','CenturyGothic','Questrial','Avenir Next','Helvetica Neue',Arial,sans-serif";
   const CL = { ink: '#0F172A', mut: '#475569', line: '#CBD5E1', navy: '#1E3A5F', navy2: '#3B5B85', head: '#E8EEF6', alt: '#F6F8FB', tot: '#DCE8F5', eg: '#2F6F7E', ok: '#1B7F4B', okbg: '#DDF3E6' };
-  function dibujar(cv, d) {
-    const c = cv.getContext('2d');
-    cv.width = Math.round(W * PX); cv.height = Math.round(H * PX);
-    c.setTransform(PX, 0, 0, PX, 0, 0);
+  function dibujar(cv, d, px) {
+    px = px || PX; const c = cv.getContext('2d');
+    cv.width = Math.round(W * px); cv.height = Math.round(H * px);
+    c.setTransform(px, 0, 0, px, 0, 0);
     c.fillStyle = '#fff'; c.fillRect(0, 0, W, H); c.textBaseline = 'middle';
     const rr = (x, y, w, h, r) => { c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r); c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath(); };
     const R = (x1, y1, x2, y2, o) => {
@@ -344,8 +369,8 @@
   function repintarCorte() {
     if (!registrado(S.fecha)) return;
     const d = datosCorte(S.fecha);
-    const cv = $('.mp-cv', host); if (cv) dibujar(cv, d);
-    if (modal && modal.cv.isConnected) { dibujar(modal.cv, d); modal.tit.textContent = 'Corte de caja · ' + fCorta(S.fecha); }
+    const cv = $('.mp-cv', host); if (cv) dibujar(cv, d, 0.8);   /* vista previa liviana; el PNG sale a tamaño oficio completo */
+    if (modal && modal.cv.isConnected) { dibujar(modal.cv, d, 1.5); modal.tit.textContent = 'Corte de caja · ' + fCorta(S.fecha); }
   }
   async function blobPNG() {
     await (document.fonts && document.fonts.ready);
@@ -389,13 +414,13 @@
       else host.append(S.vista === 'corte' ? vistaCorte() : S.vista === 'caja' ? vistaCaja() : vistaDrive());
     }
     window.scrollTo({ top: y });
-    setTimeout(async () => { await (document.fonts && document.fonts.ready); repintarCorte(); }, 0);
+    repintarCorte();
   }
   function avisoFalta() {
     const falla = /relation|does not exist|mp_|42P01|PGRST205/i.test(S.error || '') || /404/.test(String(S.error));
     return el('div', { class: 'card mp-aviso' }, el('h3', {}, 'Falta un paso en Supabase'),
       el('p', { class: 'muted' }, falla ? 'Las tablas de Music Pro aún no existen o no tienen permisos. Corre sql/musicpro.sql en Supabase → SQL Editor.' : 'No se pudieron leer los datos: ' + (S.error || 'error desconocido')),
-      btn('Reintentar', null, () => cargar(), 'btn-gold'));
+      btn('Reintentar', null, () => cargar(false, true), 'btn-gold'));
   }
   function cabecera() {
     const tabs = [['corte', 'Corte del día', 'cash'], ['caja', 'Caja del fin de semana', 'safe'], ['drive', 'Para el Drive', 'sheet'], ['ventas', 'Ventas y comisión', 'trend']];
@@ -426,7 +451,7 @@
   }
   function calendario() {
     const ym = S.calYm || mesDe(S.fecha), [y, m] = ym.split('-').map(Number), lead = (new Date(y, m - 1, 1, 12).getDay() + 6) % 7, dim = new Date(y, m, 0).getDate(), t = hoy();
-    const cab = el('div', { class: 'mp-ch' }, btn('', 'left', () => { S.calYm = sumaMes(ym, -1); cargar(true); }, 'btn-ghost', 'Mes anterior'), el('b', {}, mayus(nombreMes(ym))), btn('', 'right', () => { S.calYm = sumaMes(ym, 1); cargar(true); }, 'btn-ghost', 'Mes siguiente'));
+    const cab = el('div', { class: 'mp-ch' }, btn('', 'left', () => { S.calYm = sumaMes(ym, -1); cargar(true); }, 'btn-ghost', 'Mes anterior'), el('div', { class: 'mp-chm' }, el('b', {}, mayus(nombreMes(ym))), btn('Hoy', null, () => irA(diaInicial()), 'btn-gold', 'Volver al fin de semana más reciente')), btn('', 'right', () => { S.calYm = sumaMes(ym, 1); cargar(true); }, 'btn-ghost', 'Mes siguiente'));
     const g = el('div', { class: 'mp-cal' });
     ['L', 'M', 'M', 'J', 'V', 'S', 'D'].forEach((d, i) => g.append(el('span', { class: 'mp-cd' + (i > 4 ? ' mp-fin' : '') }, d)));
     for (let i = 0; i < lead; i++) g.append(el('span'));
@@ -438,7 +463,7 @@
     return el('div', { class: 'mp-calc2' }, cab, g,
       el('div', { class: 'mp-leyenda' }, el('span', {}, el('i', { class: 'mp-pt mp-pt-reg' }), 'registrado'), el('span', {}, el('i', { class: 'mp-pt mp-pt-hoy' }), 'hoy'), el('span', {}, el('i', { class: 'mp-pt mp-pt-sem' }), 'entre semana')),
       el('details', { class: 'mp-ex', open: S.extra ? true : null }, el('summary', {}, ico('plus'), ' Agregar día extraordinario'), el('div', { class: 'mp-acts' }, ex, btn('Agregar', 'check', () => registrarDia(S.extra || ex.value), 'btn-gold'))),
-      btn('Ir al último fin de semana', null, () => irA(diaInicial()), 'btn-ghost'));
+      null);
   }
   function diaNoRegistrado() {
     const f = S.fecha, n = ahoraGT(), fin = esFin(f);
@@ -461,11 +486,24 @@
   }
   function acc(n, tit, resumen, cls, fn) {
     const open = S.open === n;
-    const h = el('button', { type: 'button', class: 'mp-ah', 'aria-expanded': String(open), onclick: () => { S.open = open ? 0 : n; S.confirmar = null; pintar(); } },
-      el('span', { class: 'mp-bn' }, String(n)), el('b', {}, tit), el('span', { class: 'mp-as' }, resumen), el('span', { class: 'mp-ed' }, ico(open ? 'x' : 'edit'), ' ', open ? 'Cerrar' : 'Editar'));
-    const w = el('div', { class: 'mp-acc ' + cls + (open ? ' mp-open' : '') }, h);
-    if (open) { const b = el('div', { class: 'mp-accb' }); fn().forEach(c => { const t = c.querySelector(':scope > h3'); if (t) t.remove(); c.classList.add('mp-flat'); b.append(c); }); w.append(b); }
-    return w;
+    const h = el('button', { type: 'button', class: 'mp-ah', 'aria-expanded': String(open), onclick: () => togglePaso(n) },
+      el('span', { class: 'mp-bn' }, String(n)), el('b', {}, tit), el('span', { class: 'mp-as' }, resumen),
+      el('span', { class: 'mp-ed' }, ico('edit'), el('span', { class: 'mp-e1' }, ' Editar'), el('span', { class: 'mp-e2' }, ' Cerrar'), el('span', { class: 'mp-chev' }, ico('down'))));
+    const inner = el('div', { class: 'mp-accb' });
+    fn().forEach(c => { const t = c.querySelector(':scope > h3'); if (t) t.remove(); c.classList.add('mp-flat'); inner.append(c); });
+    const wrap = el('div', { class: 'mp-accw' }, el('div', { class: 'mp-accm' }, inner));
+    if (!open) wrap.setAttribute('inert', '');
+    return el('div', { class: 'mp-acc ' + cls + (open ? ' mp-open' : ''), 'data-n': String(n) }, h, wrap);
+  }
+  /* abre/cierra sin volver a pintar todo: la transición es suave y la página no salta */
+  function togglePaso(n, forzar) {
+    const abre = forzar ? true : S.open !== n; S.open = abre ? n : 0; S.confirmar = null;
+    host.querySelectorAll('.mp-acc').forEach(a => {
+      const o = +a.dataset.n === S.open; a.classList.toggle('mp-open', o);
+      a.querySelector('.mp-ah').setAttribute('aria-expanded', String(o));
+      const w = a.querySelector('.mp-accw'); if (o) w.removeAttribute('inert'); else w.setAttribute('inert', '');
+    });
+    if (abre) setTimeout(() => { const a = host.querySelector('.mp-acc[data-n="' + n + '"]'); if (a) { const r = a.getBoundingClientRect(); if (r.top < 90 || r.bottom > innerHeight) a.scrollIntoView({ behavior: 'smooth', block: 'start' }); } }, 320);
   }
   function vistaCorte() {
     const w = el('div', {}), sd = saldoDe(S.fecha), t = totalDia(S.fecha), nf = facsDe(S.fecha).length;
@@ -487,15 +525,14 @@
 
   function bloqueIngreso() {
     const sd = saldoDe(S.fecha), f = S.fecha, dom = parte(f).dow === 0, sab = mover(f, -1);
-    const inp = el('input', { inputmode: 'decimal', value: sd.estado === 'pendiente' && !sd.v ? '' : String(sd.v), placeholder: '0.00', 'aria-label': 'Ingreso en caja', 'data-num': '1', onkeydown: e => { if (e.key === 'Enter') guardarSaldo(f, inp.value); } });
+    const inp = el('input', { inputmode: 'decimal', value: sd.estado === 'pendiente' && !sd.v ? '' : String(sd.v), placeholder: '0.00', 'aria-label': 'Ingreso en caja', class: 'mp-ingin', 'data-num': '1', onkeydown: e => { if (e.key === 'Enter') guardarSaldo(f, inp.value); } });
     const nota = sd.estado === 'pendiente'
-      ? el('p', { class: 'mp-warn' }, ico('warn'), ' Falta el ingreso en caja de hoy: es el dinero que te entrega tu compañero al empezar. ' + (S.hint ? 'Referencia: el ' + fCorta(S.hint.fecha) + ' terminó con ' + Q(S.hint.monto) + ' (' + S.hint.tipo + ').' : ''))
+      ? el('p', { class: 'mp-warn' }, ico('warn'), ' Falta el ingreso en caja de hoy: es el dinero que te entrega tu compañero al empezar. ', el('span', { class: 'mp-hintbox' }, hintNodes()))
       : sd.estado === 'auto' ? el('p', { class: 'muted' }, 'Automático: es el total en caja del sábado ' + fCorta(sab) + ' (' + Q(sd.v) + '). Se corrige solo si cambias algo del sábado.')
         : el('p', { class: 'muted' }, dom && S.D.cortes[sab] ? 'Lo escribiste a mano para este día.' : 'Guardado para este día.');
     return el('div', { class: 'card' + (sd.estado === 'pendiente' ? ' mp-needs' : '') }, el('h3', {}, el('span', { class: 'mp-bn' }, '1'), ' Ingreso en caja'), nota,
       el('div', { class: 'mp-acts' }, el('span', { class: 'mp-q' }, 'Q'), inp, btn('Guardar ingreso', 'check', () => guardarSaldo(f, inp.value), 'btn-gold'),
-        S.hint && sd.estado === 'pendiente' ? btn('Usar ' + Q(S.hint.monto), null, () => { inp.value = String(S.hint.monto); inp.focus(); }) : null,
-        dom && S.D.cortes[sab] && sd.estado === 'manual' ? btn('Volver al automático (' + Q(totalDia(sab).total) + ')', null, () => guardarSaldo(f, 0, false)) : null));
+                dom && S.D.cortes[sab] && sd.estado === 'manual' ? btn('Volver al automático (' + Q(totalDia(sab).total) + ')', null, () => guardarSaldo(f, 0, false)) : null));
   }
 
   function formFactura(f) {
@@ -503,9 +540,11 @@
     const gap = (() => { const n = parseInt(f.recibo, 10); const prev = facsDe(S.fecha).filter(x => x.id !== f.id).map(x => parseInt(x.recibo, 10)).filter(isFinite); if (!isFinite(n) || !prev.length || f.id) return ''; const m = Math.max(...prev); return n > m + 1 || n <= m ? 'El último recibo de hoy fue el ' + m + '. ¿Seguro que es el ' + n + '?' : ''; })();
     const inRec = el('input', { class: 'mp-frec', inputmode: 'numeric', value: f.recibo, oninput: e => { f.recibo = e.target.value; } });
     const inNom = el('input', { class: 'mp-fnombre', value: f.nombre, placeholder: 'Nombre completo o CF', autocomplete: 'off', oninput: e => { f.nombre = e.target.value; } });
-    const inMonto = el('input', { class: 'mp-fmonto', inputmode: 'decimal', value: f.monto, placeholder: '0.00', 'data-num': '1', oninput: e => { f.monto = e.target.value; }, onkeydown: e => { if (e.key === 'Enter') guardarFactura(f); } });
-    const met = el('div', { class: 'mp-met' }, [['efectivo', 'Efectivo', 'cash'], ['tarjeta', 'Tarjeta', 'card'], ['deposito', 'Depósito', 'bank']].map(([k, t, i]) =>
-      el('button', { type: 'button', class: 'mp-m mp-m-' + k, 'aria-pressed': String(f.metodo === k), onclick: () => { f.metodo = k; pintar(); } }, ico(i), ' ', t)));
+    const inMonto = el('input', { class: 'mp-fmonto', inputmode: 'decimal', value: f.mixto ? (montoDe(f) || '') : f.monto, placeholder: f.mixto ? 'suma' : '0.00', readonly: f.mixto ? true : null, 'data-num': '1', oninput: e => { f.monto = e.target.value; }, onkeydown: e => { if (e.key === 'Enter') guardarFactura(f); } });
+    const met = el('div', { class: 'mp-met' }, [['efectivo', 'Efectivo', 'cash'], ['tarjeta', 'Tarjeta', 'card'], ['deposito', 'Depósito', 'bank'], ['mixto', 'Combinado', 'coin']].map(([k, t, i]) =>
+      el('button', { type: 'button', class: 'mp-m mp-m-' + k, 'aria-pressed': String(k === 'mixto' ? f.mixto : (!f.mixto && f.metodo === k)), onclick: () => { if (k === 'mixto') { if (!f.mixto) { f.mx = { efectivo: '', tarjeta: '', deposito: '' }; f.mx[f.metodo] = f.monto; f.mixto = true; } } else { if (f.mixto) f.monto = montoDe(f) ? String(montoDe(f)) : ''; f.mixto = false; f.metodo = k; } pintar(); } }, ico(i), ' ', t)));
+    const mxBox = !f.mixto ? null : el('div', { class: 'mp-mx' }, [['efectivo', 'Efectivo Q'], ['tarjeta', 'Tarjeta Q'], ['deposito', 'Depósito Q']].map(([k, t]) =>
+      el('label', { class: 'mp-mxc mp-mx-' + k }, el('span', {}, t), el('input', { inputmode: 'decimal', 'data-num': '1', value: f.mx[k], placeholder: '0.00', oninput: e => { f.mx[k] = e.target.value; inMonto.value = montoDe(f) || ''; } }))));
     const prods = el('div', { class: 'mp-prods' });
     f.prods.forEach((p, i) => {
       const c = el('input', { class: 'mp-pc', value: p.codigo, placeholder: 'Código (pega aquí)', autocomplete: 'off', oninput: e => { p.codigo = e.target.value; },
@@ -520,9 +559,9 @@
       el('h3', {}, f.id ? null : el('span', { class: 'mp-bn' }, '2'), ' ', ico(f.id ? 'edit' : 'plus'), f.id ? ' Editando factura ' + f.recibo : ' Ventas · agregar factura'),
       el('div', { class: 'mp-f3' }, field('Recibo', inRec), field('Nombre', inNom), field('Monto (Q)', inMonto)),
       gap ? el('p', { class: 'mp-warn' }, ico('warn'), ' ', gap) : null,
-      el('div', { class: 'field' }, el('label', {}, 'Forma de pago'), met),
-      f.metodo === 'deposito'
-        ? field('Número de depósito (va en observaciones)', el('input', { value: f.obs, placeholder: 'Ej. 123456789', inputmode: 'numeric', oninput: e => { f.obs = e.target.value; } }))
+      el('div', { class: 'field' }, el('label', {}, 'Forma de pago'), met), mxBox,
+      (f.metodo === 'deposito' && !f.mixto) || f.mixto
+        ? field(f.mixto ? 'Número de depósito (solo si hay depósito)' : 'Número de depósito (va en observaciones)', el('input', { value: f.obs, placeholder: 'Ej. 123456789', inputmode: 'numeric', oninput: e => { f.obs = e.target.value; } }))
         : field('Observaciones (opcional)', el('input', { value: f.obs, oninput: e => { f.obs = e.target.value; } })),
       el('div', { class: 'field' }, el('label', {}, 'Productos de la factura (para el Drive)'), prods,
         el('div', { class: 'mp-acts' }, btn('Agregar producto', 'plus', () => { f.prods.push({ codigo: '', cant: 1 }); pintar(); const c = host.querySelectorAll('.mp-pc'); c[c.length - 1] && c[c.length - 1].focus(); }),
@@ -537,12 +576,12 @@
     if (!fa.length) { c.append(el('p', { class: 'muted' }, 'Aún no hay facturas. Agrega la primera arriba.')); return c; }
     const l = el('div', { class: 'mp-lista' });
     fa.forEach((f, i) => {
-      const k = num(f.efectivo) > 0 ? ['efectivo', 'cash', 'Efectivo', f.efectivo] : num(f.deposito) > 0 ? ['deposito', 'bank', 'Depósito', f.deposito] : ['tarjeta', 'card', 'Tarjeta', f.tarjeta];
+      const pt = [['efectivo', 'cash', 'Efectivo', f.efectivo], ['tarjeta', 'card', 'Tarjeta', f.tarjeta], ['deposito', 'bank', 'Depósito', f.deposito]].filter(x => num(x[3]) > 0), k = pt[0] || ['tarjeta', 'card', 'Tarjeta', 0], tot = r2(num(f.efectivo) + num(f.tarjeta) + num(f.deposito));
       const ps = (f.productos || []), ob = f.observaciones || f.referencia;
       l.append(el('div', { class: 'mp-fila' + (S.edit && S.edit.id === f.id ? ' mp-on' : '') },
         el('span', { class: 'mp-num' }, String(i + 1)),
-        el('div', { class: 'mp-fi' }, el('b', {}, f.nombre || 'CF'), el('small', { class: 'muted' }, 'Recibo ' + f.recibo + (k[0] === 'deposito' && ob ? ' · Depósito ' + ob : '') + ' · ' + (ps.length ? ps.map(p => p.codigo + (p.cant > 1 ? ' ×' + p.cant : '')).join(', ') : 'sin productos ⚠'))),
-        el('span', { class: 'mp-tag mp-' + k[0] }, ico(k[1]), ' ', k[2]), el('b', { class: 'mp-mo' }, Q(k[3])),
+        el('div', { class: 'mp-fi' }, el('b', {}, f.nombre || 'CF'), el('small', { class: 'muted' }, 'Recibo ' + f.recibo + (num(f.deposito) > 0 && ob ? ' · Depósito ' + ob : '') + ' · ' + (ps.length ? ps.map(p => p.codigo + (p.cant > 1 ? ' ×' + p.cant : '')).join(', ') : 'sin productos ⚠'))),
+        el('span', { class: 'mp-tags' }, pt.map(x => el('span', { class: 'mp-tag mp-' + x[0] }, ico(x[1]), ' ', x[2] + (pt.length > 1 ? ' ' + money(x[3]) : '')))), el('b', { class: 'mp-mo' }, Q(tot)),
         el('div', { class: 'mp-ac' }, btn('', 'edit', () => editarFactura(f), 'btn-ghost', 'Editar'), btn(S.confirmar === 'f' + f.id ? '¿Seguro?' : '', 'trash', () => borrar('mp_facturas', f.id, 'f' + f.id), S.confirmar === 'f' + f.id ? 'btn-gold' : 'btn-ghost', 'Borrar'))));
       if (S.edit && S.edit.id === f.id) l.append(formFactura(S.edit));
     });
@@ -560,12 +599,13 @@
   }
 
   function bloqueTotal() {
-    const t = totalDia(S.fecha), cn = contado((S.D.cortes[S.fecha] || {}).billetes);
+    const t = totalDia(S.fecha);
     const caja = (l, v, cls) => el('div', { class: 'mp-eq ' + (cls || '') }, el('small', { class: 'muted' }, l), el('b', {}, v));
     return el('div', { class: 'card mp-totalc' }, el('h3', {}, el('span', { class: 'mp-bn' }, '4'), ' ', ico('box'), ' Total en caja'),
       el('div', { class: 'mp-eqs' }, caja('Ingreso en caja', Q(t.saldo)), el('i', {}, '+'), caja('Efectivo de ventas', Q(t.ef)), el('i', {}, '−'), caja('Salidas', Q(t.eg)), el('i', {}, '='), caja('Total en caja', Q(t.total), 'mp-eqt')),
       el('p', { class: 'muted' }, 'Tarjeta (' + Q(t.ta) + ') y depósitos (' + Q(t.de) + ') se cuentan en las ventas pero no entran a la caja.'),
-      el('div', { class: 'mp-acts' }, btn('Contar billetes y ver el fin de semana', 'safe', () => { S.vista = 'caja'; cargar(true); window.scrollTo({ top: 0 }); }, 'btn-gold'), cn > 0 ? chip('Contado ' + Q(cn), 'mp-ok', 'check') : null));
+      conteoCard(S.fecha),
+      el('div', { class: 'mp-acts' }, btn('Ver el fin de semana completo', 'safe', () => { S.vista = 'caja'; cargar(true); window.scrollTo({ top: 0 }); })));
   }
 
   /* ---------- 2 · caja del fin de semana ---------- */
@@ -597,24 +637,26 @@
 
   /* conteo de billetes: cada billete suma solo, y te dice cuánto sobra o falta */
   function conteoCard(f) {
-    const b = Object.assign({}, (S.D.cortes[f] || {}).billetes), t = totalDia(f), p = parte(f), ins = {}, subs = {};
+    const b = Object.assign({}, S.draft[f] || (S.D.cortes[f] || {}).billetes), t = totalDia(f), p = parte(f), ins = {}, subs = {};
     const tot = el('b', { class: 'mp-tb' }), dif = el('div', { class: 'mp-dif' }), barra = el('i');
     const leer = () => { const o = {}; DEN.forEach(d => { o[d] = Math.max(0, parseInt(ins[d].value, 10) || 0); }); o.mon = r2(num(ins.mon.value)); o.extra = r2(num(ins.extra.value)); return o; };
-    const calc = () => {
-      const o = leer(); DEN.forEach(d => { subs[d].textContent = o[d] ? '= ' + Q(o[d] * d) : ''; });
-      const c = contado(o), d = r2(c - t.total); tot.textContent = Q(c);
-      dif.className = 'mp-dif ' + (c === 0 ? 'mp-d0' : d === 0 ? 'mp-d1' : d > 0 ? 'mp-d2' : 'mp-d3');
-      dif.textContent = c === 0 ? 'Cuenta tus billetes y verás aquí cuánto sobra o falta' : d === 0 ? '✓ Cuadra exacto' : d > 0 ? 'Te sobra ' + Q(d) : 'Te falta ' + Q(-d);
-      barra.style.width = Math.min(100, t.total > 0 ? c / t.total * 100 : 0) + '%'; barra.className = d === 0 && c > 0 ? 'mp-bok' : d > 0 ? 'mp-bsob' : '';
+    const calc = guardar => {
+      const o = leer(); if (guardar) S.draft[f] = o;
+      DEN.forEach(d => { subs[d].textContent = o[d] ? '= ' + Q(o[d] * d) : ''; });
+      const c = contado(o), d = r2(c - t.total); tot.textContent = Q(c); tot.className = 'mp-tb' + (c > 0 ? (d === 0 ? ' mp-okt' : ' mp-malt') : '');
+      dif.className = 'mp-dif ' + (c === 0 ? 'mp-d0' : d === 0 ? 'mp-d1' : 'mp-d3');
+      dif.textContent = c === 0 ? 'Cuenta tus billetes y verás aquí cuánto sobra o falta' : d === 0 ? '✓ Cuadra exacto con lo facturado' : d > 0 ? 'SOBRANTE ' + Q(d) + ' · ¿hay una venta en efectivo sin facturar?' : 'FALTANTE ' + Q(-d) + ' · revisa recibos y salidas';
+      barra.style.width = Math.min(100, t.total > 0 ? c / t.total * 100 : 0) + '%'; barra.className = c === 0 ? '' : d === 0 ? 'mp-bok' : 'mp-bmal';
     };
-    const g = el('div', { class: 'mp-bill' });
-    DEN.forEach(d => { ins[d] = el('input', { type: 'number', min: '0', value: b[d] || '', placeholder: '0', oninput: calc, 'aria-label': 'Billetes de ' + d }); subs[d] = el('small', { class: 'mp-sub2' }); g.append(el('label', {}, el('span', { class: 'mp-den' }, 'Q' + d), ins[d], subs[d])); });
-    ins.mon = el('input', { inputmode: 'decimal', 'data-num': '1', value: b.mon || '', placeholder: '0.00', oninput: calc }); ins.extra = el('input', { inputmode: 'decimal', 'data-num': '1', value: b.extra || '', placeholder: '0.00', oninput: calc });
+    const g = el('div', { class: 'mp-bill' }), on = () => calc(true);
+    DEN.forEach(d => { ins[d] = el('input', { type: 'number', min: '0', inputmode: 'numeric', value: b[d] || '', placeholder: '0', oninput: on, 'aria-label': 'Billetes de ' + d }); subs[d] = el('small', { class: 'mp-sub2' }); g.append(el('label', {}, el('span', { class: 'mp-den' }, 'Q' + d), ins[d], subs[d])); });
+    ins.mon = el('input', { inputmode: 'decimal', 'data-num': '1', value: b.mon || '', placeholder: '0.00', oninput: on }); ins.extra = el('input', { inputmode: 'decimal', 'data-num': '1', value: b.extra || '', placeholder: '0.00', oninput: on });
     g.append(el('label', {}, el('span', { class: 'mp-den' }, 'Monedas Q'), ins.mon), el('label', {}, el('span', { class: 'mp-den' }, 'Extra Q'), ins.extra));
-    const c = el('div', { class: 'card' }, el('h3', {}, ico('cash'), ' Conteo · ' + mayus(DIA[p.dow]) + ' ' + p.d), g,
-      el('div', { class: 'mp-sumas' }, el('span', {}, 'Contado ', tot), el('span', {}, 'Sistema ', el('b', {}, Q(t.total)))), el('div', { class: 'mp-barra' }, barra), dif,
+    const deb = el('p', { class: 'muted mp-deb' }, 'Debe haber: ingreso ' + Q(t.saldo) + ' + efectivo vendido ' + Q(t.ef) + ' − salidas ' + Q(t.eg) + ' = ', el('b', {}, Q(t.total)));
+    const c = el('div', { class: 'card mp-conteo' }, el('h3', {}, ico('cash'), ' Conteo de billetes · ' + mayus(DIA[p.dow]) + ' ' + p.d), g,
+      el('div', { class: 'mp-sumas' }, el('span', {}, 'Contado ', tot), el('span', {}, 'En sistema ', el('b', {}, Q(t.total)))), el('div', { class: 'mp-barra' }, barra), dif, deb,
       el('div', { class: 'mp-acts' }, btn('Guardar conteo', 'check', () => guardarBilletes(f, leer()), 'btn-gold')));
-    calc(); return c;
+    calc(false); return c;
   }
 
   /* ---------- 3 · para el Drive ---------- */
@@ -623,15 +665,19 @@
     const d = textoDrive(facsDe(S.fecha), S.fecha);
     w.append(el('div', { class: 'card mp-guia' }, el('h3', {}, ico('sheet'), ' Cómo pegarlo en el Drive'),
       el('div', { class: 'mp-pasos' },
-        el('div', {}, el('b', {}, '1'), el('span', {}, 'Copia el Bloque 1 y pégalo en la primera casilla libre de la columna FECHA (el código queda a su lado).')),
-        el('div', {}, el('b', {}, '2'), el('span', {}, 'Copia el Bloque 2 y pégalo en la misma fila, empezando en la casilla vacía a la derecha del nombre. Así no pisas la fórmula del nombre.')),
-        el('div', {}, el('b', {}, '3'), el('span', {}, 'Cada producto lleva su renglón: cantidad · vacío · FACTURADO · R-recibo. Es texto plano: toma la letra y el formato de tu hoja.')))));
+        el('div', {}, el('b', {}, '1'), el('span', {}, 'Copia la lista completa y pégala en la columna A de la primera fila libre.')),
+        el('div', {}, el('b', {}, '2'), el('span', {}, 'Ya trae las columnas en orden: fecha, código, y deja vacías DESCRIPCIÓN, ENTRADA y ENTREGADO A. Después van la cantidad (SALIDA), FACTURADO y R-recibo.')),
+        el('div', {}, el('b', {}, '3'), el('span', {}, 'Es texto plano: toma la letra y el formato de tu hoja. Si al pegar se borra la descripción automática, deshaz con Cmd+Z y usa los dos bloques de abajo.')))));
     if (!d.n) { w.append(el('div', { class: 'card' }, el('p', { class: 'muted' }, 'No hay productos capturados en las facturas de este día. Agrégalos en «Corte del día».'))); }
     else {
+      w.append(el('div', { class: 'card' }, el('h3', {}, ico('sheet'), ' Lista completa · una sola vez'), el('p', { class: 'muted' }, d.n + (d.n === 1 ? ' renglón' : ' renglones') + ' · columnas A a H: FECHA · CÓDIGO · (descripción) · (entrada) · SALIDA · (entregado a) · OBSERVACIONES · hoja de registro'),
+        el('textarea', { class: 'mp-ta', readonly: true, rows: Math.min(14, d.n + 1), onclick: e => e.target.select() }, d.todo),
+        el('div', { class: 'mp-acts' }, btn('Copiar lista completa', 'copy', () => copiar(d.todo, 'Lista completa copiada'), 'btn-gold'))));
       const blk = (n, t, tx, sub) => el('div', { class: 'card' }, el('h3', {}, el('span', { class: 'mp-bn' }, n), ' ', t), el('p', { class: 'muted' }, sub),
         el('textarea', { class: 'mp-ta', readonly: true, rows: Math.min(14, d.n + 1), onclick: e => e.target.select() }, tx),
-        el('div', { class: 'mp-acts' }, btn('Copiar bloque ' + n, 'copy', () => copiar(tx, 'Bloque ' + n + ' copiado'), 'btn-gold')));
-      w.append(el('div', { class: 'mp-grid2' }, blk(1, 'Fecha + código', d.b1, d.n + ' renglones · 2 columnas'), blk(2, 'Cantidad · FACTURADO · recibo', d.b2, d.n + ' renglones · 5 columnas (con las vacías)')));
+        el('div', { class: 'mp-acts' }, btn('Copiar bloque ' + n, 'copy', () => copiar(tx, 'Bloque ' + n + ' copiado'))));
+      w.append(el('details', { class: 'mp-ex mp-bloques' }, el('summary', {}, ico('copy'), ' O por separado en dos bloques (sin tocar la descripción)'),
+        el('div', { class: 'mp-grid2' }, blk(1, 'Fecha + código (pega en A)', d.b1, d.n + ' renglones · 2 columnas'), blk(2, 'Cantidad · FACTURADO · recibo (pega en D)', d.b2, d.n + ' renglones · empieza en la columna D'))));
     }
     if (d.sin.length) w.append(el('p', { class: 'mp-warn' }, ico('warn'), ' Sin productos (no salen en el texto): recibo ' + d.sin.join(', ') + '.'));
     return w;
@@ -652,7 +698,7 @@
       el('div', { class: 'mp-acts' }, btn('Guardar % y «no corresponde»', 'check', async () => {
         try {
           await send('POST', 'mp_config?on_conflict=clave', [{ clave: 'porcentaje', valor: String(num(pin.value)) }, { clave: 'nc:' + S.mes, valor: String(r2(num(ncin.value))) }], 'resolution=merge-duplicates,return=minimal');
-          ctx.toast('Guardado'); await cargar(true);
+          ctx.toast('Guardado'); await cargar(true, true);
         } catch (e) { ctx.toast(e.message); }
       }, 'btn-gold'), el('small', { class: 'muted' }, 'El porcentaje vale para todos los meses; «no corresponde» es de este mes.'))));
     const c = el('div', { class: 'card' }, el('h3', {}, ico('sheet'), ' Registro de ventas por día'));
@@ -714,7 +760,7 @@
 .mp-ah b{font-size:1.05rem}.mp-as{margin-left:auto;font-weight:700}.mp-ed{display:inline-flex;gap:5px;align-items:center;font-size:.8rem;color:var(--oro-t);padding:4px 10px;border:1px solid var(--line);border-radius:999px}
 .mp-flash{animation:mpf 1.6s ease}@keyframes mpf{0%,60%{box-shadow:0 0 0 3px var(--oro)}100%{box-shadow:0 0 0 0 transparent}}
 .mp-einline{margin:-2px 0 6px 18px!important;border:2px solid var(--oro)!important;background:var(--soft)}
-.mp-acc.mp-open{border-color:var(--oro)}.mp-accb{display:grid;gap:12px;padding:0 14px 14px}.mp-flat{border:0!important;box-shadow:none!important;background:none!important;padding:0!important}
+.mp-flat{border:0!important;box-shadow:none!important;background:none!important;padding:0!important}
 .mp-acc.mp-p2{border-left-color:#588CDC}.mp-acc.mp-p3{border-left-color:#2F6F7E}.mp-acc.mp-p4{border-left-color:#5E9E6B}.mp-acc.mp-pend{border-color:rgba(217,90,106,.7);background:rgba(217,90,106,.12)}
 .mp-cadena{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:26px;margin-bottom:16px}@media (max-width:980px){.mp-cadena{grid-template-columns:repeat(2,1fr);gap:14px}}@media (max-width:520px){.mp-cadena{grid-template-columns:1fr}}
 .mp-paso{position:relative;display:flex;gap:12px;align-items:flex-start;padding:14px 16px;border-radius:16px;border:1px solid var(--line);border-left:6px solid var(--oro);background:var(--soft);box-shadow:0 10px 24px -20px rgba(0,0,0,.6)}
@@ -769,12 +815,41 @@
 .mp-mh{display:flex;gap:10px;align-items:center;flex-wrap:wrap;color:#fff;background:rgba(15,23,42,.6);padding:8px 12px;border-radius:12px}.mp-mh .muted{color:#cbd5e1}
 .mp-mb{flex:1;overflow:auto;display:grid;place-items:center}.mp-cvg{background:#fff;border-radius:8px;box-shadow:0 20px 60px rgba(0,0,0,.6);width:min(100%,calc((100vh - 90px) * 1.5293));height:auto}
 .mp-modal.mp-z .mp-mb{place-items:start}.mp-modal.mp-z .mp-cvg{width:2000px;max-width:none}
+
+.mp-top{align-items:stretch!important;gap:16px!important}.mp-semana{grid-template-rows:auto 1fr auto}.mp-dias{align-items:stretch}.mp-dia{height:100%;align-content:start}
+.mp-calc2{gap:6px;padding:12px 14px}.mp-c{aspect-ratio:1.25}.mp-cal{gap:3px}
+.mp-chm{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:center}.mp-chm .btn{padding:3px 12px}
+.mp-sticky{position:sticky!important;top:86px;align-self:start;max-height:calc(100vh - 100px);overflow:auto}@media (max-width:1100px){.mp-sticky{position:static!important;max-height:none}}
+.mp-col{gap:12px}
+.mp-busy::before{content:'';position:fixed;left:0;top:0;height:3px;width:30%;background:var(--oro);z-index:99999;animation:mpb 1s ease-in-out infinite}
+@keyframes mpb{0%{left:-30%}100%{left:100%}}
+.mp-busy .mp-col,.mp-busy .mp-semana{opacity:.7;transition:opacity .2s}
+.mp-accw{display:grid;grid-template-rows:0fr;transition:grid-template-rows .32s cubic-bezier(.4,0,.2,1)}
+.mp-accm{min-height:0;overflow:hidden}.mp-accb{display:grid;gap:12px;padding:2px 14px 14px;opacity:0;transform:translateY(-6px);transition:opacity .22s ease,transform .3s ease}
+.mp-acc.mp-open>.mp-accw{grid-template-rows:1fr}.mp-acc.mp-open .mp-accb{opacity:1;transform:none;transition-delay:.06s}
+.mp-acc{transition:border-color .2s,box-shadow .2s}.mp-acc.mp-open{border-color:var(--oro);box-shadow:0 14px 30px -22px rgba(0,0,0,.55)}
+.mp-ah{transition:background .15s}.mp-ah:hover{background:rgba(184,160,106,.12)}.mp-ah:active{transform:scale(.995)}
+.mp-ed .mp-e2{display:none}.mp-acc.mp-open .mp-ed .mp-e1{display:none}.mp-acc.mp-open .mp-ed .mp-e2{display:inline}
+.mp-chev{display:inline-flex;transition:transform .3s}.mp-acc.mp-open .mp-chev{transform:rotate(180deg)}
+.btn{transition:transform .12s,box-shadow .15s,background .15s}.mp-top .btn:active,.mp-acc .btn:active,.mp-seg button:active{transform:scale(.97)}
+.mp-c,.mp-dia,.mp-m,.mp-fila{transition:background .15s,border-color .15s,transform .12s,box-shadow .15s}.mp-c:active,.mp-dia:active{transform:scale(.96)}
+.mp-vista{animation:mpv .25s ease}@keyframes mpv{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.mp-tags{display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end}
+.mp-mx{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:8px 0}.mp-mxc{display:grid;gap:3px;padding:8px 10px;border-radius:12px;border:2px solid var(--line)}.mp-mxc span{font-size:.78rem;font-weight:700}
+.mp-mx-efectivo{border-color:#5E9E6B}.mp-mx-tarjeta{border-color:#588CDC}.mp-mx-deposito{border-color:#E2BE46}
+@media (max-width:560px){.mp-mx{grid-template-columns:1fr}}
+.mp-conteo{margin-top:12px!important;border:1px solid var(--line)!important}.mp-deb{margin:6px 0 0}
+.mp-d3{background:rgba(217,60,76,.18)!important;border-color:#D93C4C!important;color:#9E1B2B}.mp-bmal{background:#D93C4C!important}
+.mp-tb.mp-malt{color:#C0283A}.mp-tb.mp-okt{color:#1B7F4B}
+.mp-bloques{margin-top:12px}.mp-bloques .mp-grid2{margin-top:10px}
+.mp-m{min-width:96px}
 `));
   }
 
   window.FaroMusicPro = {
     async iniciar(el_, c) {
-      host = el_; ctx = c; S.form = null; S.edit = null; S.calYm = null; S.hint = null; S.open = null; S.vista = 'corte';
+      host = el_; ctx = c; S.form = null; S.edit = null; S.draft = {}; S.calYm = null; S.hint = null; S.open = null; S.vista = 'corte'; loadedKey = null; calKey = null;
+      if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => repintarCorte());
       if (!pegar) {
         pegar = true;
         /* lo que pegues, de donde sea, entra como texto limpio con la letra del panel */
