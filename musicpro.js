@@ -414,7 +414,7 @@
       else host.append(S.vista === 'corte' ? vistaCorte() : S.vista === 'caja' ? vistaCaja() : vistaDrive());
     }
     window.scrollTo({ top: y });
-    repintarCorte();
+    repintarCorte(); repintarLunes();
   }
   function avisoFalta() {
     const falla = /relation|does not exist|mp_|42P01|PGRST205/i.test(S.error || '') || /404/.test(String(S.error));
@@ -423,7 +423,7 @@
       btn('Reintentar', null, () => cargar(false, true), 'btn-gold'));
   }
   function cabecera() {
-    const tabs = [['corte', 'Corte del día', 'cash'], ['caja', 'Caja del fin de semana', 'safe'], ['drive', 'Para el Drive', 'sheet'], ['ventas', 'Ventas y comisión', 'trend']];
+    const tabs = [['corte', 'Corte del día', 'cash'], ['caja', 'Registro de caja', 'safe'], ['drive', 'Para el Drive', 'sheet'], ['ventas', 'Ventas y comisión', 'trend']];
     return el('div', { class: 'mp-cab' },
       el('div', { class: 'mp-tit' }, el('img', { src: 'musicpro-logo.png', alt: 'Music Pro', class: 'mp-logo' }), el('div', {}, el('h2', {}, 'Music Pro'), el('p', { class: 'muted' }, 'Trabajo de fin de semana · Pradera Zona 10'))),
       el('div', { class: 'mp-seg', role: 'tablist' }, tabs.map(([k, t, i]) => el('button', { type: 'button', role: 'tab', 'aria-pressed': String(S.vista === k), onclick: () => { S.vista = k; S.confirmar = null; if (k === 'ventas') S.mes = mesDe(S.fecha); cargar(true); } }, ico(i), ' ', t))));
@@ -611,33 +611,95 @@
       el('div', { class: 'mp-eqs' }, caja('Ingreso en caja', Q(t.saldo)), el('i', {}, '+'), caja('Efectivo de ventas', Q(t.ef)), el('i', {}, '−'), caja('Salidas', Q(t.eg)), el('i', {}, '='), caja('Total en caja', Q(t.total), 'mp-eqt')),
       el('p', { class: 'muted' }, 'Tarjeta (' + Q(t.ta) + ') y depósitos (' + Q(t.de) + ') se cuentan en las ventas pero no entran a la caja.'),
       conteoCard(S.fecha),
-      el('div', { class: 'mp-acts' }, btn('Ver el fin de semana completo', 'safe', () => { S.vista = 'caja'; cargar(true); window.scrollTo({ top: 0 }); })));
+      el('div', { class: 'mp-acts' }, btn('Ver registro de caja', 'safe', () => { S.vista = 'caja'; cargar(true); window.scrollTo({ top: 0 }); })));
   }
 
   /* ---------- 2 · caja del fin de semana ---------- */
   function vistaCaja() {
     const dias = diasSemana(S.fecha), w = el('div', {});
     const regs = dias.filter(registrado);
-    const flujo = el('div', { class: 'mp-flujo' });
-    regs.forEach((f, idx) => {
-      const sd = saldoDe(f), t = totalDia(f), p = parte(f), cn = contado((S.D.cortes[f] || {}).billetes);
-      const b = (l, v, c, sub) => el('div', { class: 'mp-fb ' + c }, el('small', {}, l), el('b', {}, v), sub ? el('small', { class: 'muted' }, sub) : null);
-      if (idx) flujo.append(el('div', { class: 'mp-pasa' }, ico('right'), el('small', {}, 'pasa al ' + DIA[p.dow])));
-      flujo.append(el('div', { class: 'card mp-fd' }, el('h3', {}, ico('cal'), ' ', mayus(DIA[p.dow]) + ' ' + p.d + ' de ' + MES[p.m - 1], ' ', sd.estado === 'pendiente' ? chip('Falta ingreso en caja', 'mp-mal', 'warn') : null),
-        el('div', { class: 'mp-fr' },
-          b('Ingreso en caja', Q(sd.v), 'mp-b1', sd.estado === 'auto' ? 'del sábado' : sd.estado === 'pendiente' ? 'falta indicarlo' : 'lo que te dieron'), el('i', {}, '+'),
-          b('Efectivo de ventas', Q(t.ef), 'mp-b2', t.ef ? '' : 'sin ventas en efectivo'), el('i', {}, '−'),
-          b('Salidas', Q(t.eg), 'mp-b3', t.eg ? 'egresos / depósitos de efectivo' : 'sin salidas'), el('i', {}, '='),
-          b('Total en caja', Q(t.total), 'mp-b4', cn > 0 ? 'contado ' + Q(cn) : 'sin contar')),
-        el('p', { class: 'muted' }, 'Aparte, no entran a la caja: tarjeta ' + Q(t.ta) + ' y depósitos ' + Q(t.de) + '.'),
-        btn('Editar ' + DIA[p.dow], 'edit', () => irA(f, 'corte'))));
-    });
-    w.append(flujo);
     const tv = r2(regs.reduce((a, f) => a + totalDia(f).ventas, 0)), te = r2(regs.reduce((a, f) => a + totalDia(f).ef, 0)), tg = r2(regs.reduce((a, f) => a + totalDia(f).eg, 0)), last = totalDia(regs[regs.length - 1]);
     w.append(el('div', { class: 'mp-kpis' },
       kpi('coin', 'Ventas del fin de semana', Q(tv), 'mp-k1'), kpi('cash', 'Efectivo vendido', Q(te), 'mp-k2'), kpi('out', 'Salidas', Q(tg), 'mp-k4'), kpi('box', 'Debe haber en caja', Q(last.total), 'mp-k5 mp-grande')));
     const cg = el('div', { class: 'mp-grid2' }); regs.forEach(f => cg.append(conteoCard(f))); w.append(cg);
+    w.append(cardLunes(regs[regs.length - 1]));
     return w;
+  }
+  /* ---------- foto «Registro lunes»: corte del día anterior + billetes y monedas que quedan en caja ---------- */
+  function cardLunes(f) {
+    S.lunesF = f;
+    return el('div', { class: 'card' }, el('h3', {}, ico('img'), ' Registro lunes · foto para tu compañero'),
+      el('p', { class: 'muted' }, 'Lleva la copia del corte de ' + DIA[parte(f).dow] + ' ' + fCorta(f) + ', una gráfica y el conteo de billetes y monedas que quedan en caja. Se actualiza sola con tu conteo.'),
+      el('canvas', { class: 'mp-cv mp-cvl', 'aria-label': 'Registro lunes' }),
+      el('div', { class: 'mp-acts' }, btn('Copiar foto', 'copy', copiarLunes, 'btn-gold'), btn('Guardar PNG', 'down', descargarLunes)));
+  }
+  const LW = 2600, LH = 1700;
+  function dibujarLunes(cv, f, px) {
+    px = px || 1; const c = cv.getContext('2d');
+    cv.width = Math.round(LW * px); cv.height = Math.round(LH * px); c.setTransform(px, 0, 0, px, 0, 0);
+    const d = datosCorte(f), b = S.draft[f] || (S.D.cortes[f] || {}).billetes || {}, cn = contado(b), sis = d.t.total, dif = r2(cn - sis), hay = cn > 0;
+    c.fillStyle = '#EEF2F8'; c.fillRect(0, 0, LW, LH); c.textBaseline = 'middle';
+    const rr = (x, y, w, h, r) => { c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r); c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath(); };
+    const caja = (x, y, w, h, fill, stroke, r, sh) => { c.save(); if (sh) { c.shadowColor = 'rgba(15,23,42,.16)'; c.shadowBlur = 18; c.shadowOffsetY = 4; } rr(x, y, w, h, r || 16); c.fillStyle = fill; c.fill(); c.restore(); if (stroke) { rr(x, y, w, h, r || 16); c.strokeStyle = stroke; c.lineWidth = 2; c.stroke(); } };
+    const T = (t, x, y, o) => { o = o || {}; let sz = o.s || 24; const wt = o.w || '400'; c.font = wt + ' ' + sz + 'px ' + FONT; if (o.mw) { const m = c.measureText(t).width; if (m > o.mw) sz = Math.max(10, sz * o.mw / m); } c.font = wt + ' ' + sz + 'px ' + FONT; c.fillStyle = o.c || CL.ink; c.textAlign = o.a || 'left'; c.fillText(t, x, y); };
+    /* encabezado */
+    c.fillStyle = CL.navy; c.fillRect(0, 0, LW, 172);
+    if (logoImg) { rr(60, 23, 327, 126, 16); c.save(); c.clip(); c.drawImage(logoImg, 60, 23, 327, 126); c.restore(); }
+    T('REGISTRO LUNES', 440, 70, { s: 70, w: '700', c: '#fff', mw: 1100 });
+    T('Cierre del ' + DIA[parte(f).dow] + ' ' + parte(f).d + ' de ' + MES[parte(f).m - 1] + ' de ' + parte(f).y + ' · Music Pro Pradera Zona 10', 440, 128, { s: 28, c: '#C9D6EA', mw: 1400 });
+    T(hay ? 'EN CAJA (CONTADO)' : 'EN CAJA (SISTEMA)', 2540, 56, { s: 24, w: '700', c: '#C9D6EA', a: 'right' });
+    T(Q(hay ? cn : sis), 2540, 112, { s: 62, w: '700', c: '#fff', a: 'right', mw: 760 });
+    /* corte del día anterior */
+    T('Corte de caja del día anterior', 60, 214, { s: 30, w: '700', c: CL.navy });
+    const tmp = document.createElement('canvas'); dibujar(tmp, d, Math.max(0.4, 0.72 * px));
+    caja(60, 244, 1440, 941.6, '#fff', null, 6, true); c.drawImage(tmp, 60, 244, 1440, 941.6);
+    /* resumen de efectivo */
+    const mini = [['INGRESO EN CAJA', d.t.saldo, '#B8A06A'], ['EFECTIVO VENDIDO', d.t.ef, '#5E9E6B'], ['SALIDAS', d.t.eg, '#2F6F7E'], ['TOTAL EN CAJA', d.t.total, CL.ok]];
+    mini.forEach((m, i) => { const x = 60 + i * 365; caja(x, 1218, 345, 150, '#fff', null, 16, true); c.fillStyle = m[2]; rr(x, 1218, 345, 10, 5); c.fill(); T(m[0], x + 22, 1262, { s: 21, w: '700', c: CL.mut }); T(Q(m[1]), x + 22, 1322, { s: 44, w: '700', c: i === 3 ? CL.ok : CL.ink, mw: 300 }); });
+    /* gráfica: ventas por forma de pago */
+    caja(60, 1400, 1440, 240, '#fff', null, 16, true);
+    T('Ventas del día por forma de pago · ' + Q(d.t.ventas), 90, 1438, { s: 26, w: '700', c: CL.navy });
+    const fp = [['Efectivo', d.t.ef, '#5E9E6B'], ['Tarjeta', d.t.ta, '#3B5B85'], ['Depósito', d.t.de, '#C9A227']], tvv = fp.reduce((a, x) => a + x[1], 0);
+    let bx = 90; const bw = 1380;
+    rr(bx, 1470, bw, 50, 25); c.fillStyle = '#E2E8F0'; c.fill();
+    if (tvv > 0) { c.save(); rr(bx, 1470, bw, 50, 25); c.clip(); let xx = bx; fp.forEach(x => { const ww = bw * x[1] / tvv; c.fillStyle = x[2]; c.fillRect(xx, 1470, ww, 50); xx += ww; }); c.restore(); }
+    fp.forEach((x, i) => { const lx = 90 + i * 470; c.fillStyle = x[2]; rr(lx, 1556, 30, 30, 8); c.fill(); T(x[0], lx + 44, 1560, { s: 26, w: '700' }); T(Q(x[1]) + (tvv > 0 ? ' · ' + Math.round(x[1] / tvv * 100) + '%' : ''), lx + 44, 1598, { s: 26, c: CL.mut, mw: 400 }); });
+    /* billetes y monedas */
+    caja(1560, 214, 980, 1426, '#fff', null, 20, true);
+    T('Billetes y monedas en caja', 1600, 270, { s: 40, w: '700', c: CL.navy });
+    const filas = DEN.map(n => ({ l: 'Q' + n, n: Math.max(0, parseInt(b[n], 10) || 0), v: (parseInt(b[n], 10) || 0) * n, c: CL.navy2 }));
+    filas.push({ l: 'Monedas', n: null, v: num(b.mon), c: '#2F6F7E' }); if (num(b.extra) > 0) filas.push({ l: 'Extra', n: null, v: num(b.extra), c: '#B8A06A' });
+    const mx = Math.max(1, ...filas.map(x => x.v)), y0 = 345, rh = 88;
+    filas.forEach((x, i) => {
+      const y = y0 + i * rh; if (i % 2 === 0) { c.fillStyle = '#F6F8FB'; rr(1580, y - 34, 940, 74, 12); c.fill(); }
+      T(x.l, 1604, y + 3, { s: 32, w: '700' });
+      c.fillStyle = '#E2E8F0'; rr(1810, y - 10, 340, 26, 13); c.fill();
+      if (x.v > 0) { c.fillStyle = x.c; rr(1810, y - 10, Math.max(26, 340 * x.v / mx), 26, 13); c.fill(); }
+      T(x.n == null ? '' : '× ' + x.n, 2170, y + 3, { s: 30, c: CL.mut });
+      T(Q(x.v), 2504, y + 3, { s: 32, w: '700', a: 'right', mw: 200 });
+    });
+    /* totales */
+    const ty = y0 + filas.length * rh + 24;
+    c.fillStyle = CL.line; c.fillRect(1600, ty, 900, 2);
+    T('CONTADO', 1604, ty + 60, { s: 30, w: '700', c: CL.mut }); T(hay ? Q(cn) : '—', 2504, ty + 60, { s: 64, w: '700', a: 'right', c: CL.navy, mw: 560 });
+    T('EN SISTEMA', 1604, ty + 138, { s: 30, w: '700', c: CL.mut }); T(Q(sis), 2504, ty + 138, { s: 44, w: '700', a: 'right', mw: 500 });
+    const ok = hay && dif === 0, col = !hay ? CL.mut : ok ? CL.ok : '#C0283A', bg = !hay ? '#EEF2F8' : ok ? CL.okbg : '#FBE0E3';
+    caja(1600, ty + 180, 900, 100, bg, col, 18);
+    T(!hay ? 'Sin conteo de billetes todavía' : ok ? 'CUADRA EXACTO' : (dif > 0 ? 'SOBRANTE ' : 'FALTANTE ') + Q(Math.abs(dif)), 2050, ty + 232, { s: 42, w: '700', c: col, a: 'center', mw: 840 });
+  }
+  let lunesTk = 0;
+  function repintarLunes() {
+    const cv = $('.mp-cvl', host); if (!cv || !S.lunesF) return; const t = ++lunesTk;
+    requestAnimationFrame(() => { if (t === lunesTk && cv.isConnected) dibujarLunes(cv, S.lunesF, 0.5); });
+  }
+  async function blobLunes() { await (document.fonts && document.fonts.ready); const cv = document.createElement('canvas'); dibujarLunes(cv, S.lunesF, 1); return new Promise(ok => cv.toBlob(ok, 'image/png')); }
+  async function descargarLunes() {
+    const b = await blobLunes(); if (!b) { ctx.toast('No se pudo crear la imagen'); return; }
+    const a = el('a', { href: URL.createObjectURL(b), download: 'registro-lunes-' + S.lunesF + '.png' }); document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000); ctx.toast('Foto guardada');
+  }
+  async function copiarLunes() {
+    try { const b = await blobLunes(); await navigator.clipboard.write([new ClipboardItem({ 'image/png': b })]); ctx.toast('Foto copiada: pégala en el mensaje'); }
+    catch (e) { ctx.toast('Tu navegador no permite copiar la imagen; usa «Guardar PNG»'); }
   }
   const kpi = (i, l, v, c) => el('div', { class: 'mp-kpi ' + c }, el('span', { class: 'mp-kl' }, ico(i), ' ', l), el('b', {}, v));
 
@@ -647,7 +709,7 @@
     const tot = el('b', { class: 'mp-tb' }), dif = el('div', { class: 'mp-dif' }), barra = el('i');
     const leer = () => { const o = {}; DEN.forEach(d => { o[d] = Math.max(0, parseInt(ins[d].value, 10) || 0); }); o.mon = r2(num(ins.mon.value)); o.extra = r2(num(ins.extra.value)); return o; };
     const calc = guardar => {
-      const o = leer(); if (guardar) S.draft[f] = o;
+      const o = leer(); if (guardar) { S.draft[f] = o; repintarLunes(); }
       DEN.forEach(d => { subs[d].textContent = o[d] ? '= ' + Q(o[d] * d) : ''; });
       const c = contado(o), d = r2(c - t.total); tot.textContent = Q(c); tot.className = 'mp-tb' + (c > 0 ? (d === 0 ? ' mp-okt' : ' mp-malt') : '');
       dif.className = 'mp-dif ' + (c === 0 ? 'mp-d0' : d === 0 ? 'mp-d1' : 'mp-d3');
@@ -683,16 +745,48 @@
     return w;
   }
 
+  /* gráfica isométrica (barras 3D) sin librerías */
+  function isoBarras(it) {
+    const w = 78, gap = 40, dp = 78, Hm = 190, c30 = Math.cos(Math.PI / 6), n = it.length, mx = Math.max(1, ...it.map(i => i.v)), st = w + gap, A = (n - 1) * st, m = 30;
+    /* las barras van en fila de izquierda a derecha en pantalla: (x, y) = (a, -a) */
+    const P = (x, y, z) => [(x - y) * c30, (x + y) * 0.5 - z], pts = a => a.map(q => P(...q).map(v => v.toFixed(1)).join(',')).join(' ');
+    let g = '<polygon points="' + pts([[-m, -m, 0], [-m, dp + m, 0], [A + w + m, -A + dp + m, 0], [A + w + m, -A - m, 0]]) + '" fill="rgba(120,130,150,.14)" stroke="rgba(120,130,150,.35)"/>';
+    let xs = [], ys = [];
+    [[-m, -m], [-m, dp + m], [A + w + m, -A + dp + m], [A + w + m, -A - m]].forEach(([x, y]) => { const q = P(x, y, 0); xs.push(q[0]); ys.push(q[1]); });
+    it.forEach((b, i) => {
+      const x = i * st, y = -x, h = b.v > 0 ? Math.max(8, b.v / mx * Hm) : 3;
+      g += '<polygon points="' + pts([[x, y + dp, 0], [x + w, y + dp, 0], [x + w, y + dp, h], [x, y + dp, h]]) + '" fill="' + b.c[1] + '"/>';
+      g += '<polygon points="' + pts([[x + w, y, 0], [x + w, y + dp, 0], [x + w, y + dp, h], [x + w, y, h]]) + '" fill="' + b.c[2] + '"/>';
+      g += '<polygon points="' + pts([[x, y, h], [x + w, y, h], [x + w, y + dp, h], [x, y + dp, h]]) + '" fill="' + b.c[0] + '"/>';
+      const [lx, ly] = P(x + w / 2, y + dp / 2, h); ys.push(ly - 70); xs.push(lx - 60, lx + 60);
+      g += '<text x="' + lx.toFixed(1) + '" y="' + (ly - 46).toFixed(1) + '" text-anchor="middle" font-size="19" font-weight="700" fill="currentColor">' + Q(b.v) + '</text>';
+      const [bx, by] = P(x + w / 2, y + dp + m, 0); ys.push(by + 44);
+      g += '<text x="' + bx.toFixed(1) + '" y="' + (by + 30).toFixed(1) + '" text-anchor="middle" font-size="19" font-weight="700" fill="currentColor">' + b.l + '</text>';
+    });
+    const x0 = Math.min(...xs) - 10, x1 = Math.max(...xs) + 10, y0 = Math.min(...ys) - 6, y1 = Math.max(...ys) + 6;
+    const sv = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); sv.setAttribute('viewBox', [x0, y0, x1 - x0, y1 - y0].map(v => v.toFixed(0)).join(' ')); sv.setAttribute('class', 'mp-isos'); sv.setAttribute('role', 'img'); sv.setAttribute('aria-label', 'Ventas del mes por forma de pago'); sv.innerHTML = g; return sv;
+  }
+
   /* ---------- 4 · ventas y comisión ---------- */
   function vistaVentas() {
     const pctv = num(S.cfg.porcentaje) || 0, nc = num(S.cfg['nc:' + S.mes]);
-    const dias = [...new Set([...Object.keys(S.D.cortes), ...S.D.facs.map(f => f.fecha)])].filter(f => mesDe(f) === S.mes).sort();
-    const filas = dias.map(f => ({ f, t: totalDia(f), c: contado((S.D.cortes[f] || {}).billetes), n: facsDe(f).length }));
+    const fin = new Set(), [yy, mm] = S.mes.split('-').map(Number);
+    for (let k = 1; k <= new Date(yy, mm, 0).getDate(); k++) { const iso = S.mes + '-' + String(k).padStart(2, '0'); if (esFin(iso)) fin.add(iso); }
+    [...Object.keys(S.D.cortes), ...S.D.facs.map(f => f.fecha)].forEach(f => { if (mesDe(f) === S.mes) fin.add(f); });
+    const dias = [...fin].sort();   /* los días que faltan del mes salen en 0 */
+    const filas = dias.map(f => ({ f, reg: registrado(f), t: totalDia(f), c: contado((S.D.cortes[f] || {}).billetes), n: facsDe(f).length }));
+    const fm = S.D.facs.filter(f => mesDe(f.fecha) === S.mes), sm = k => r2(fm.reduce((a, f) => a + num(f[k]), 0));
+    const mEf = sm('efectivo'), mTa = sm('tarjeta'), mDe = sm('deposito');
     const total = r2(filas.reduce((a, x) => a + x.t.ventas, 0)), com = r2(total * pctv / 100 - nc), max = Math.max(1, ...filas.map(x => x.t.ventas));
     const w = el('div', {});
-    w.append(el('div', { class: 'mp-fecha' }, btn('', 'left', () => { S.mes = sumaMes(S.mes, -1); cargar(true); }, 'btn-ghost', 'Mes anterior'), el('div', { class: 'mp-fechab' }, ico('cal'), el('b', {}, mayus(nombreMes(S.mes)))), btn('', 'right', () => { S.mes = sumaMes(S.mes, 1); cargar(true); }, 'btn-ghost', 'Mes siguiente'), btn('Este mes', null, () => { S.mes = mesDe(hoy()); cargar(true); })));
+    w.append(el('div', { class: 'mp-fecha' }, btn('', 'left', () => { S.mes = sumaMes(S.mes, -1); cargar(true); }, 'btn-ghost', 'Mes anterior'), el('div', { class: 'mp-fechab' }, ico('cal'), el('b', {}, mayus(nombreMes(S.mes)))), btn('', 'right', () => { S.mes = sumaMes(S.mes, 1); cargar(true); }, 'btn-ghost', 'Mes siguiente'), btn('Este mes', null, () => { S.mes = mesDe(hoy()); cargar(true); }), el('input', { type: 'month', value: S.mes, 'aria-label': 'Elegir mes', onchange: e => { if (e.target.value) { S.mes = e.target.value; cargar(true); } } })));
     const pin = el('input', { inputmode: 'decimal', value: String(pctv), 'aria-label': 'Porcentaje', 'data-num': '1' }), ncin = el('input', { inputmode: 'decimal', value: nc ? String(nc) : '', placeholder: '0.00', 'aria-label': 'No corresponde', 'data-num': '1' });
     w.append(el('div', { class: 'mp-kpis' }, kpi('coin', 'Ventas del mes', Q(total), 'mp-k1'), kpi('pct', 'Comisión (' + pctv + '%)', Q(r2(total * pctv / 100)), 'mp-k3'), kpi('x', 'No corresponde', Q(nc), 'mp-k4'), kpi('check', 'Comisión a recibir', Q(com), 'mp-k5 mp-grande')));
+    const pm = [['Efectivo', mEf, ['#8FD3A1', '#4FA06A', '#2E7A4B'], 'cash'], ['Tarjeta', mTa, ['#9FC0F0', '#5B8FD6', '#3A68AE'], 'card'], ['Depósito', mDe, ['#F3DA85', '#D9B13A', '#B08A1C'], 'bank']], tm = r2(mEf + mTa + mDe);
+    w.append(el('div', { class: 'card mp-iso' }, el('h3', {}, ico('trend'), ' Ventas de ' + nombreMes(S.mes) + ' por forma de pago'),
+      el('div', { class: 'mp-isog' }, isoBarras(pm.map(x => ({ v: x[1], c: x[2], l: x[0] }))),
+        el('div', { class: 'mp-isol' }, pm.map(x => el('div', { class: 'mp-il' }, el('i', { style: 'background:' + x[2][1] }), el('div', {}, el('small', { class: 'muted' }, x[0]), el('b', {}, Q(x[1])), el('small', { class: 'muted' }, (tm > 0 ? (x[1] / tm * 100).toFixed(1) : '0.0') + '% de las ventas')))),
+          el('div', { class: 'mp-il mp-ilt' }, el('div', {}, el('small', { class: 'muted' }, 'Total del mes'), el('b', {}, Q(tm)), el('small', { class: 'muted' }, fm.length + (fm.length === 1 ? ' factura' : ' facturas'))))))));
     w.append(el('div', { class: 'card' }, el('h3', {}, ico('pct'), ' Cómo se calcula'),
       el('div', { class: 'mp-calc' }, el('span', {}, 'Ventas ', el('b', {}, Q(total))), el('i', {}, '×'), el('label', { class: 'mp-mini' }, pin, '%'), el('i', {}, '−'), el('label', { class: 'mp-mini' }, 'Q', ncin, ' no corresponde'), el('i', {}, '='), el('b', { class: 'mp-res' }, Q(com))),
       el('div', { class: 'mp-acts' }, btn('Guardar % y «no corresponde»', 'check', async () => {
@@ -702,18 +796,18 @@
         } catch (e) { ctx.toast(e.message); }
       }, 'btn-gold'), el('small', { class: 'muted' }, 'El porcentaje vale para todos los meses; «no corresponde» es de este mes.'))));
     const c = el('div', { class: 'card' }, el('h3', {}, ico('sheet'), ' Registro de ventas por día'));
-    if (!filas.length) c.append(el('p', { class: 'muted' }, 'No hay ventas registradas en este mes.'));
+    if (!filas.length) c.append(el('p', { class: 'muted' }, 'No hay días en este mes.'));
     else {
       const grupos = []; filas.forEach(x => { const p = parte(x.f); const lun = mover(x.f, -((p.dow + 6) % 7)); let g = grupos.find(z => z.lun === lun); if (!g) grupos.push(g = { lun, items: [] }); g.items.push(x); });
       const tb = el('div', { class: 'mp-reg' });
-      tb.append(el('div', { class: 'mp-rh' }, el('span', {}, 'Fecha'), el('span', {}, 'Monto vendido'), el('span', {}, ''), el('span', {}, 'Comisión'), el('span', {}, 'Total en caja'), el('span', {}, 'Contado'), el('span', {}, 'Diferencia')));
+      tb.append(el('div', { class: 'mp-rh' }, el('span', {}, 'Fecha'), el('span', {}, 'Monto vendido'), el('span', {}, '% del mes'), el('span', {}, 'Comisión'), el('span', {}, 'Total en caja'), el('span', {}, 'Contado'), el('span', {}, 'Diferencia')));
       grupos.forEach(g => {
         const sub = r2(g.items.reduce((a, x) => a + x.t.ventas, 0));
         g.items.forEach(x => {
           const dif = x.c > 0 ? r2(x.c - x.t.total) : null;
-          tb.append(el('button', { type: 'button', class: 'mp-rr', onclick: () => irA(x.f, 'corte'), title: 'Abrir este día' },
+          tb.append(el('button', { type: 'button', class: 'mp-rr' + (x.reg ? '' : ' mp-cero'), onclick: () => irA(x.f, 'corte'), title: 'Abrir este día' },
             el('span', { class: 'mp-rf' }, el('b', {}, fCorta(x.f)), el('small', { class: 'muted' }, ' ' + DIA[parte(x.f).dow] + (esFin(x.f) ? '' : ' (extraordinario)') + ' · ' + x.n + ' fact.')),
-            el('b', {}, Q(x.t.ventas)), el('span', { class: 'mp-bar' }, el('i', { style: 'width:' + Math.max(2, x.t.ventas / max * 100) + '%' })),
+            el('b', {}, Q(x.t.ventas)), el('span', { class: 'mp-barc' }, el('span', { class: 'mp-bar' }, el('i', { style: 'width:' + (x.t.ventas > 0 ? Math.max(2, x.t.ventas / max * 100) : 0) + '%' })), el('small', {}, (total > 0 ? (x.t.ventas / total * 100).toFixed(1) : '0.0') + '%')),
             el('span', {}, Q(x.t.ventas * pctv / 100)), el('span', {}, Q(x.t.total)), el('span', {}, x.c > 0 ? Q(x.c) : '—'), el('span', { class: dif == null ? '' : dif === 0 ? 'mp-okt' : 'mp-malt' }, dif == null ? '—' : dif === 0 ? 'Cuadra' : (dif > 0 ? '+' : '−') + money(Math.abs(dif)))));
         });
         if (g.items.length > 1) tb.append(el('div', { class: 'mp-sub' }, el('span', {}, 'Fin de semana · ' + fCorta(g.items[0].f) + ' al ' + fCorta(g.items[g.items.length - 1].f)), el('b', {}, Q(sub)), el('span'), el('span', {}, Q(sub * pctv / 100)), el('span'), el('span'), el('span')));
@@ -721,8 +815,8 @@
       c.append(tb);
     }
     w.append(c);
-    const dw = {}; filas.forEach(x => { const k = parte(x.f).dow; (dw[k] = dw[k] || { n: 0, v: 0 }); dw[k].n++; dw[k].v += x.t.ventas; });
-    if (filas.length) w.append(el('div', { class: 'card' }, el('h3', {}, ico('trend'), ' Por día de la semana'), el('div', { class: 'mp-dw' }, Object.keys(dw).sort((a, b) => ((+a + 6) % 7) - ((+b + 6) % 7)).map(k => el('div', { class: 'mp-dwc' }, el('small', { class: 'muted' }, DIA[k].toUpperCase()), el('b', {}, Q(dw[k].v)), el('small', { class: 'muted' }, dw[k].n + (dw[k].n === 1 ? ' día' : ' días') + ' · promedio ' + Q(dw[k].v / dw[k].n)))))));
+    const dw = {}; filas.filter(x => x.reg).forEach(x => { const k = parte(x.f).dow; (dw[k] = dw[k] || { n: 0, v: 0 }); dw[k].n++; dw[k].v += x.t.ventas; });
+    if (filas.some(x => x.reg)) w.append(el('div', { class: 'card' }, el('h3', {}, ico('trend'), ' Por día de la semana'), el('div', { class: 'mp-dw' }, Object.keys(dw).sort((a, b) => ((+a + 6) % 7) - ((+b + 6) % 7)).map(k => el('div', { class: 'mp-dwc' }, el('small', { class: 'muted' }, DIA[k].toUpperCase()), el('b', {}, Q(dw[k].v)), el('small', { class: 'muted' }, dw[k].n + (dw[k].n === 1 ? ' día' : ' días') + ' · promedio ' + Q(dw[k].v / dw[k].n)))))));
     return w;
   }
 
@@ -844,6 +938,10 @@
 .mp-tw{overflow-x:auto;border:1px solid var(--line);border-radius:12px}.mp-tb2{width:100%;border-collapse:collapse;font-size:.9rem;white-space:nowrap}.mp-tb2 th{background:#1E3A5F;color:#fff;text-align:left;padding:8px 12px;font-size:.74rem;letter-spacing:.06em}.mp-tb2 td{padding:8px 12px;border-top:1px solid var(--line);min-width:20px}.mp-tb2 tbody tr:nth-child(even){background:var(--soft)}.mp-tb2 td:empty::after{content:'·';color:var(--line)}
 .mp-dmef{display:grid;gap:3px;margin-top:6px;padding-top:8px;border-top:1px dashed var(--line);font-size:.9rem}.mp-dmef span{display:flex;justify-content:space-between;gap:10px}.mp-dmf{margin-top:2px;padding:5px 9px;border-radius:9px;background:rgba(94,158,107,.2);border:1px solid #5E9E6B}.mp-dmf b{font-size:1.02rem}
 .mp-calc2{align-content:start}.mp-cal{align-content:start}.mp-c{align-self:start;min-width:0}
+.mp-iso{margin-bottom:14px}.mp-isog{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:18px;align-items:center}@media (max-width:860px){.mp-isog{grid-template-columns:1fr}}
+.mp-isos{width:100%;height:auto;max-height:340px;color:var(--text)}.mp-isol{display:grid;gap:10px}.mp-il{display:flex;gap:12px;align-items:center;padding:10px 14px;border-radius:14px;background:var(--soft);border:1px solid var(--line)}.mp-il i{flex:none;width:14px;height:44px;border-radius:7px}.mp-il>div{display:grid;gap:1px}.mp-il b{font-size:1.25rem}.mp-ilt{background:rgba(184,160,106,.16);border-color:var(--oro)}
+.mp-barc{display:flex;gap:8px;align-items:center}.mp-barc .mp-bar{flex:1}.mp-barc small{min-width:44px;text-align:right;color:var(--muted);font-weight:700}.mp-cero{opacity:.55}.mp-fecha input[type=month]{width:auto}
+.mp-cvl{aspect-ratio:2600/1700}
 .mp-bloques{margin-top:12px}.mp-bloques .mp-grid2{margin-top:10px}
 .mp-m{min-width:96px}
 `));
