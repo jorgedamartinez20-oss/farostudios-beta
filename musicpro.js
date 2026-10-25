@@ -250,13 +250,13 @@
 
   /* ---------- texto para el Drive (2 bloques, texto plano) ---------- */
   function textoDrive(facs, fecha) {
-    const b1 = [], b2 = [], sin = [];
+    const b1 = [], b2 = [], sin = [], filas = [];
     facs.forEach(f => {
       const ps = (f.productos || []).filter(p => p.codigo);
       if (!ps.length) { sin.push(f.recibo); return; }
-      ps.forEach(p => { b1.push(fDrive(fecha) + '\t' + p.codigo); b2.push('\t' + p.cant + '\t\tFACTURADO\tR-' + f.recibo); });
+      ps.forEach(p => { b1.push(fDrive(fecha) + '\t' + p.codigo); b2.push('\t' + p.cant + '\t\tFACTURADO\tR-' + f.recibo); filas.push([fDrive(fecha), p.codigo, '', '', String(p.cant), '', 'FACTURADO', 'R-' + f.recibo]); });
     });
-    return { b1: b1.join('\n'), b2: b2.join('\n'), todo: b1.map((x, i) => x + '\t\t' + b2[i]).join('\n'), n: b1.length, sin };
+    return { b1: b1.join('\n'), b2: b2.join('\n'), todo: b1.map((x, i) => x + '\t\t' + b2[i]).join('\n'), n: b1.length, sin, filas };
   }
   const copiar = async (t, ok) => {
     try { await navigator.clipboard.writeText(t); ctx.toast(ok || 'Copiado'); }
@@ -663,21 +663,18 @@
   function vistaDrive() {
     const w = el('div', {});
     const d = textoDrive(facsDe(S.fecha), S.fecha);
-    w.append(el('div', { class: 'card mp-guia' }, el('h3', {}, ico('sheet'), ' Cómo pegarlo en el Drive'),
-      el('div', { class: 'mp-pasos' },
-        el('div', {}, el('b', {}, '1'), el('span', {}, 'Copia la lista completa y pégala en la columna A de la primera fila libre.')),
-        el('div', {}, el('b', {}, '2'), el('span', {}, 'Ya trae las columnas en orden: fecha, código, y deja vacías DESCRIPCIÓN, ENTRADA y ENTREGADO A. Después van la cantidad (SALIDA), FACTURADO y R-recibo.')),
-        el('div', {}, el('b', {}, '3'), el('span', {}, 'Es texto plano: toma la letra y el formato de tu hoja. Si al pegar se borra la descripción automática, deshaz con Cmd+Z y usa los dos bloques de abajo.')))));
+    const HD = ['FECHA', 'CÓDIGO', 'DESCRIPCIÓN', 'ENTRADA', 'SALIDA', 'ENTREGADO A', 'OBSERVACIONES', 'Nº HOJA'];
+    const tabla = (c0, c1) => el('div', { class: 'mp-tw' }, el('table', { class: 'mp-tb2' },
+      el('thead', {}, el('tr', {}, HD.slice(c0, c1).map(h => el('th', {}, h)))),
+      el('tbody', {}, d.filas.map(r => el('tr', {}, r.slice(c0, c1).map(x => el('td', {}, x)))))));
     if (!d.n) { w.append(el('div', { class: 'card' }, el('p', { class: 'muted' }, 'No hay productos capturados en las facturas de este día. Agrégalos en «Corte del día».'))); }
     else {
-      w.append(el('div', { class: 'card' }, el('h3', {}, ico('sheet'), ' Lista completa · una sola vez'), el('p', { class: 'muted' }, d.n + (d.n === 1 ? ' renglón' : ' renglones') + ' · columnas A a H: FECHA · CÓDIGO · (descripción) · (entrada) · SALIDA · (entregado a) · OBSERVACIONES · hoja de registro'),
-        el('textarea', { class: 'mp-ta', readonly: true, rows: Math.min(14, d.n + 1), onclick: e => e.target.select() }, d.todo),
+      w.append(el('div', { class: 'card' }, el('h3', {}, ico('sheet'), ' Lista completa · una sola vez ', el('span', { class: 'mp-n' }, String(d.n))), tabla(0, 8),
         el('div', { class: 'mp-acts' }, btn('Copiar lista completa', 'copy', () => copiar(d.todo, 'Lista completa copiada'), 'btn-gold'))));
-      const blk = (n, t, tx, sub) => el('div', { class: 'card' }, el('h3', {}, el('span', { class: 'mp-bn' }, n), ' ', t), el('p', { class: 'muted' }, sub),
-        el('textarea', { class: 'mp-ta', readonly: true, rows: Math.min(14, d.n + 1), onclick: e => e.target.select() }, tx),
-        el('div', { class: 'mp-acts' }, btn('Copiar bloque ' + n, 'copy', () => copiar(tx, 'Bloque ' + n + ' copiado'))));
       w.append(el('details', { class: 'mp-ex mp-bloques' }, el('summary', {}, ico('copy'), ' O por separado en dos bloques (sin tocar la descripción)'),
-        el('div', { class: 'mp-grid2' }, blk(1, 'Fecha + código (pega en A)', d.b1, d.n + ' renglones · 2 columnas'), blk(2, 'Cantidad · FACTURADO · recibo (pega en D)', d.b2, d.n + ' renglones · empieza en la columna D'))));
+        el('div', { class: 'mp-grid2' },
+          el('div', { class: 'card' }, el('h3', {}, el('span', { class: 'mp-bn' }, '1'), ' Fecha + código · pega en A'), tabla(0, 2), el('div', { class: 'mp-acts' }, btn('Copiar bloque 1', 'copy', () => copiar(d.b1, 'Bloque 1 copiado')))),
+          el('div', { class: 'card' }, el('h3', {}, el('span', { class: 'mp-bn' }, '2'), ' Cantidad · FACTURADO · recibo · pega en D'), tabla(3, 8), el('div', { class: 'mp-acts' }, btn('Copiar bloque 2', 'copy', () => copiar(d.b2, 'Bloque 2 copiado')))))));
     }
     if (d.sin.length) w.append(el('p', { class: 'mp-warn' }, ico('warn'), ' Sin productos (no salen en el texto): recibo ' + d.sin.join(', ') + '.'));
     return w;
@@ -841,6 +838,7 @@
 .mp-conteo{margin-top:12px!important;border:1px solid var(--line)!important}.mp-deb{margin:6px 0 0}
 .mp-d3{background:rgba(217,60,76,.18)!important;border-color:#D93C4C!important;color:#9E1B2B}.mp-bmal{background:#D93C4C!important}
 .mp-tb.mp-malt{color:#C0283A}.mp-tb.mp-okt{color:#1B7F4B}
+.mp-tw{overflow-x:auto;border:1px solid var(--line);border-radius:12px}.mp-tb2{width:100%;border-collapse:collapse;font-size:.9rem;white-space:nowrap}.mp-tb2 th{background:#1E3A5F;color:#fff;text-align:left;padding:8px 12px;font-size:.74rem;letter-spacing:.06em}.mp-tb2 td{padding:8px 12px;border-top:1px solid var(--line);min-width:20px}.mp-tb2 tbody tr:nth-child(even){background:var(--soft)}.mp-tb2 td:empty::after{content:'·';color:var(--line)}
 .mp-bloques{margin-top:12px}.mp-bloques .mp-grid2{margin-top:10px}
 .mp-m{min-width:96px}
 `));
