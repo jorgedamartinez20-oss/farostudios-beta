@@ -241,7 +241,7 @@
   const K2 = (H - 60 - 244) / (1030 - 244);
   const Y = y => y < 244 ? y : 244 + (y - 244) * K2;
   const FONT = "'Century Gothic','CenturyGothic','Questrial','Avenir Next','Helvetica Neue',Arial,sans-serif";
-  const CL = { ink: '#0F172A', mut: '#475569', line: '#CBD5E1', navy: '#1E3A5F', navy2: '#3B5B85', head: '#E8EEF6', alt: '#F6F8FB', tot: '#FFF3C4', eg: '#8A3B45', ok: '#1B7F4B', okbg: '#DDF3E6' };
+  const CL = { ink: '#0F172A', mut: '#475569', line: '#CBD5E1', navy: '#1E3A5F', navy2: '#3B5B85', head: '#E8EEF6', alt: '#F6F8FB', tot: '#DCE8F5', eg: '#2F6F7E', ok: '#1B7F4B', okbg: '#DDF3E6' };
   function dibujar(cv, d) {
     const c = cv.getContext('2d');
     cv.width = Math.round(W * PX); cv.height = Math.round(H * PX);
@@ -298,7 +298,7 @@
     R(90, 295, 1915, 677, { stroke: CL.navy2, lw: 2 });
 
     /* totales de ingresos */
-    const tb = (a, b) => R(a, 693, b, 718, { fill: CL.tot, stroke: '#E3CE7A' });
+    const tb = (a, b) => R(a, 693, b, 718, { fill: CL.tot, stroke: '#A9C0DA' });
     tb(816, 966); M(money(d.t.ef), 816, 966, 705.5, { s: 17, w: '700' }); tb(966, 1149); M(money(d.t.ta), 966, 1149, 705.5, { s: 17, w: '700' });
     tb(1149, 1341); M(dash(d.t.de), 1149, 1341, 705.5, { s: 17, w: '700' }); tb(1341, 1535);
     tb(1535, 1722); T('INGESO EFECTIVO', 1628, 706, { s: 15, w: '700', mw: 170 }); tb(1722, 1915); M(money(d.t.ingresoEf), 1722, 1915, 705.5, { s: 17, w: '700' });
@@ -324,7 +324,7 @@
     R(1341, 758, 1723, 835, { fill: CL.navy, stroke: CL.navy, r: 12 }); T('Q', 1362, 796.5, { s: 34, c: '#fff', a: 'left' }); T(money(d.t.ventas), 1704, 796.5, { s: 38, c: '#fff', a: 'right', w: '700', mw: 310 });
 
     /* egreso efectivo y total en caja */
-    const eb2 = (a, b) => R(a, 923, b, 948, { fill: CL.tot, stroke: '#E3CE7A' });
+    const eb2 = (a, b) => R(a, 923, b, 948, { fill: CL.tot, stroke: '#A9C0DA' });
     eb2(816, 966); M(dash(d.t.eg), 816, 966, 935.5, { s: 17, w: '700' }); eb2(966, 1149); eb2(1149, 1341); eb2(1341, 1535);
     eb2(1535, 1722); T('EGRESO EFECTIVO', 1628, 936, { s: 15, w: '700', mw: 170 }); eb2(1722, 1915); M(dash(d.t.eg), 1722, 1915, 935.5, { s: 17, w: '700' });
     R(1341, 963, 1722, 1005, { fill: CL.okbg, stroke: CL.ok, lw: 3, r: 12 }); T('TOTAL EN CAJA', 1531, 984, { s: 21, w: '700', c: CL.ok, mw: 330 });
