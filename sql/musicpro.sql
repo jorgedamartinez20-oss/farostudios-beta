@@ -9,10 +9,12 @@
 create table if not exists public.mp_cortes (
   fecha date primary key,
   saldo_inicial numeric(12,2) not null default 0,
+  saldo_manual boolean not null default false,
   billetes jsonb not null default '{}'::jsonb,
   notas text not null default '',
   creado timestamptz not null default now()
 );
+alter table public.mp_cortes add column if not exists saldo_manual boolean not null default false;
 create table if not exists public.mp_facturas (
   id uuid primary key default gen_random_uuid(),
   fecha date not null,
