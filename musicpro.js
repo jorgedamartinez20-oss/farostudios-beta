@@ -69,7 +69,7 @@
   const S = {
     vista: 'corte', fecha: null, mes: null, calYm: null, calSet: new Set(),
     D: { facs: [], egs: [], cortes: {} }, cfg: { porcentaje: '3' }, hint: null,
-    form: null, falta: false, error: '', cargando: false, confirmar: null, extra: ''
+    form: null, edit: null, falta: false, error: '', cargando: false, confirmar: null, extra: ''
   };
   let host = null, ctx = null, css1 = false, logoImg = null, logoCargando = false, tok = 0, modal = null, pegar = false;
 
@@ -159,7 +159,7 @@
     if (f > hoy()) { ctx.toast('Ese día todavía no llega'); return; }
     try { await crearSql(f); ctx.toast('Día ' + fCorta(f) + ' registrado'); S.extra = ''; await irA(f); } catch (e) { ctx.toast(e.message); }
   }
-  async function irA(f, vista) { S.open = null; S.fecha = f; S.calYm = null; S.form = null; S.confirmar = null; if (vista) S.vista = vista; await cargar(true); }
+  async function irA(f, vista) { S.open = null; S.fecha = f; S.calYm = null; S.form = null; S.edit = null; S.confirmar = null; if (vista) S.vista = vista; await cargar(true); }
 
   /* ---------- guardar ---------- */
   async function guardarSaldo(f, v, manual) {
@@ -175,8 +175,8 @@
       await send('PATCH', 'mp_cortes?fecha=eq.' + f, { billetes: b }); ctx.toast('Conteo guardado'); await cargar(true);
     } catch (e) { ctx.toast(e.message); }
   }
-  function leerForm() {
-    const f = S.form, monto = r2(num(f.monto));
+  function leerForm(f) {
+    const monto = r2(num(f.monto));
     return {
       fecha: S.fecha, recibo: limpiar(f.recibo), nombre: limpiar(f.nombre).toUpperCase(),
       efectivo: f.metodo === 'efectivo' ? monto : 0, tarjeta: f.metodo === 'tarjeta' ? monto : 0, deposito: f.metodo === 'deposito' ? monto : 0,
@@ -184,26 +184,28 @@
       productos: f.prods.map(p => ({ codigo: limpiar(p.codigo), cant: Math.max(1, parseInt(p.cant, 10) || 1) })).filter(p => p.codigo)
     };
   }
-  async function guardarFactura() {
-    const d = leerForm();
+  async function guardarFactura(f) {
+    f = f || S.form;
+    const d = leerForm(f);
     if (!d.recibo) { ctx.toast('Falta el número de recibo'); return; }
-    if (!(num(S.form.monto) > 0)) { ctx.toast('Falta el monto de la factura'); return; }
-    if (S.form.metodo === 'deposito' && !d.observaciones) { ctx.toast('Falta el número de depósito'); return; }
+    if (!(num(f.monto) > 0)) { ctx.toast('Falta el monto de la factura'); return; }
+    if (f.metodo === 'deposito' && !d.observaciones) { ctx.toast('Falta el número de depósito'); return; }
     if (!d.nombre) d.nombre = 'CF';
     try {
-      if (S.form.id) await send('PATCH', 'mp_facturas?id=eq.' + S.form.id, d); else await send('POST', 'mp_facturas', d);
-      ctx.toast(S.form.id ? 'Factura actualizada' : 'Factura agregada');
+      if (f.id) await send('PATCH', 'mp_facturas?id=eq.' + f.id, d); else await send('POST', 'mp_facturas', d);
+      ctx.toast(f.id ? 'Factura actualizada' : 'Factura agregada');
+      if (f.id) { S.edit = null; await cargar(true); pintar(); return; }
       S.form = formVacio(); await cargar(true); S.form.recibo = sugerirRecibo(); pintar();
       const n = $('.mp-fnombre', host); n && n.focus();
     } catch (e) { ctx.toast(e.message); }
   }
   function editarFactura(f) {
     const metodo = num(f.efectivo) > 0 ? 'efectivo' : num(f.deposito) > 0 ? 'deposito' : 'tarjeta';
-    S.form = { id: f.id, recibo: f.recibo, nombre: f.nombre, metodo, monto: String(r2(num(f.efectivo) + num(f.tarjeta) + num(f.deposito))), obs: f.observaciones || f.referencia || '', prods: (f.productos && f.productos.length ? f.productos : [{ codigo: '', cant: 1 }]).map(p => ({ codigo: p.codigo, cant: p.cant })) };
+    S.edit = { id: f.id, recibo: f.recibo, nombre: f.nombre, metodo, monto: String(r2(num(f.efectivo) + num(f.tarjeta) + num(f.deposito))), obs: f.observaciones || f.referencia || '', prods: (f.productos && f.productos.length ? f.productos : [{ codigo: '', cant: 1 }]).map(p => ({ codigo: p.codigo, cant: p.cant })) };
     S.open = 2; pintar();
-    const fm = $('.mp-frec', host), card = fm && fm.closest('.card, .mp-flat, .mp-accb');
-    if (card) { card.scrollIntoView({ behavior: 'smooth', block: 'start' }); card.classList.add('mp-flash'); setTimeout(() => card.classList.remove('mp-flash'), 1600); }
-    const nn = $('.mp-fnombre', host); nn && nn.focus({ preventScroll: true });
+    const card = $('.mp-einline', host);
+    if (card) { card.scrollIntoView({ behavior: 'smooth', block: 'center' }); card.classList.add('mp-flash'); setTimeout(() => card.classList.remove('mp-flash'), 1600); }
+    const nn = $('.mp-einline .mp-fnombre', host); nn && nn.focus({ preventScroll: true });
   }
   async function borrar(tabla, id, clave) {
     if (S.confirmar !== clave) { S.confirmar = clave; pintar(); setTimeout(() => { if (S.confirmar === clave) { S.confirmar = null; pintar(); } }, 3500); return; }
@@ -496,12 +498,12 @@
         dom && S.D.cortes[sab] && sd.estado === 'manual' ? btn('Volver al automático (' + Q(totalDia(sab).total) + ')', null, () => guardarSaldo(f, 0, false)) : null));
   }
 
-  function formFactura() {
-    const f = S.form || (S.form = formVacio());
+  function formFactura(f) {
+    f = f || S.form || (S.form = formVacio());
     const gap = (() => { const n = parseInt(f.recibo, 10); const prev = facsDe(S.fecha).filter(x => x.id !== f.id).map(x => parseInt(x.recibo, 10)).filter(isFinite); if (!isFinite(n) || !prev.length || f.id) return ''; const m = Math.max(...prev); return n > m + 1 || n <= m ? 'El último recibo de hoy fue el ' + m + '. ¿Seguro que es el ' + n + '?' : ''; })();
     const inRec = el('input', { class: 'mp-frec', inputmode: 'numeric', value: f.recibo, oninput: e => { f.recibo = e.target.value; }, onchange: () => pintar() });
     const inNom = el('input', { class: 'mp-fnombre', value: f.nombre, placeholder: 'Nombre completo o CF', autocomplete: 'off', oninput: e => { f.nombre = e.target.value; } });
-    const inMonto = el('input', { class: 'mp-fmonto', inputmode: 'decimal', value: f.monto, placeholder: '0.00', 'data-num': '1', oninput: e => { f.monto = e.target.value; }, onkeydown: e => { if (e.key === 'Enter') guardarFactura(); } });
+    const inMonto = el('input', { class: 'mp-fmonto', inputmode: 'decimal', value: f.monto, placeholder: '0.00', 'data-num': '1', oninput: e => { f.monto = e.target.value; }, onkeydown: e => { if (e.key === 'Enter') guardarFactura(f); } });
     const met = el('div', { class: 'mp-met' }, [['efectivo', 'Efectivo', 'cash'], ['tarjeta', 'Tarjeta', 'card'], ['deposito', 'Depósito', 'bank']].map(([k, t, i]) =>
       el('button', { type: 'button', class: 'mp-m mp-m-' + k, 'aria-pressed': String(f.metodo === k), onclick: () => { f.metodo = k; pintar(); } }, ico(i), ' ', t)));
     const prods = el('div', { class: 'mp-prods' });
@@ -514,8 +516,8 @@
       const q = el('input', { class: 'mp-pq', type: 'number', min: '1', value: p.cant, 'aria-label': 'Cantidad', oninput: e => { p.cant = e.target.value; } });
       prods.append(el('div', { class: 'mp-pr' }, el('span', { class: 'mp-pn' }, String(i + 1)), c, q, f.prods.length > 1 ? btn('', 'x', () => { f.prods.splice(i, 1); pintar(); }, 'btn-ghost', 'Quitar') : null));
     });
-    return el('div', { class: 'card' },
-      el('h3', {}, el('span', { class: 'mp-bn' }, '2'), ' ', ico(f.id ? 'edit' : 'plus'), f.id ? ' Editando factura ' + f.recibo : ' Ventas · agregar factura'),
+    return el('div', { class: 'card' + (f.id ? ' mp-einline' : '') },
+      el('h3', {}, f.id ? null : el('span', { class: 'mp-bn' }, '2'), ' ', ico(f.id ? 'edit' : 'plus'), f.id ? ' Editando factura ' + f.recibo : ' Ventas · agregar factura'),
       el('div', { class: 'mp-f3' }, field('Recibo', inRec), field('Nombre', inNom), field('Monto (Q)', inMonto)),
       gap ? el('p', { class: 'mp-warn' }, ico('warn'), ' ', gap) : null,
       el('div', { class: 'field' }, el('label', {}, 'Forma de pago'), met),
@@ -525,7 +527,7 @@
       el('div', { class: 'field' }, el('label', {}, 'Productos de la factura (para el Drive)'), prods,
         el('div', { class: 'mp-acts' }, btn('Agregar producto', 'plus', () => { f.prods.push({ codigo: '', cant: 1 }); pintar(); const c = host.querySelectorAll('.mp-pc'); c[c.length - 1] && c[c.length - 1].focus(); }),
           el('small', { class: 'muted' }, 'Pega tal cual: si copias varias líneas de la factura, se reparten solas y el formato se limpia.'))),
-      el('div', { class: 'mp-acts' }, btn(f.id ? 'Guardar cambios' : 'Agregar factura', 'check', guardarFactura, 'btn-gold'), f.id ? btn('Cancelar', 'x', () => { S.form = formVacio(); S.form.recibo = sugerirRecibo(); pintar(); }) : null));
+      el('div', { class: 'mp-acts' }, btn(f.id ? 'Guardar cambios' : 'Agregar factura', 'check', () => guardarFactura(f), 'btn-gold'), f.id ? btn('Cancelar', 'x', () => { S.edit = null; pintar(); }) : null));
   }
   const field = (l, i) => el('div', { class: 'field' }, el('label', {}, l), i);
 
@@ -537,11 +539,12 @@
     fa.forEach((f, i) => {
       const k = num(f.efectivo) > 0 ? ['efectivo', 'cash', 'Efectivo', f.efectivo] : num(f.deposito) > 0 ? ['deposito', 'bank', 'Depósito', f.deposito] : ['tarjeta', 'card', 'Tarjeta', f.tarjeta];
       const ps = (f.productos || []), ob = f.observaciones || f.referencia;
-      l.append(el('div', { class: 'mp-fila' + (S.form && S.form.id === f.id ? ' mp-on' : '') },
+      l.append(el('div', { class: 'mp-fila' + (S.edit && S.edit.id === f.id ? ' mp-on' : '') },
         el('span', { class: 'mp-num' }, String(i + 1)),
         el('div', { class: 'mp-fi' }, el('b', {}, f.nombre || 'CF'), el('small', { class: 'muted' }, 'Recibo ' + f.recibo + (k[0] === 'deposito' && ob ? ' · Depósito ' + ob : '') + ' · ' + (ps.length ? ps.map(p => p.codigo + (p.cant > 1 ? ' ×' + p.cant : '')).join(', ') : 'sin productos ⚠'))),
         el('span', { class: 'mp-tag mp-' + k[0] }, ico(k[1]), ' ', k[2]), el('b', { class: 'mp-mo' }, Q(k[3])),
         el('div', { class: 'mp-ac' }, btn('', 'edit', () => editarFactura(f), 'btn-ghost', 'Editar'), btn(S.confirmar === 'f' + f.id ? '¿Seguro?' : '', 'trash', () => borrar('mp_facturas', f.id, 'f' + f.id), S.confirmar === 'f' + f.id ? 'btn-gold' : 'btn-ghost', 'Borrar'))));
+      if (S.edit && S.edit.id === f.id) l.append(formFactura(S.edit));
     });
     c.append(l); return c;
   }
@@ -710,6 +713,7 @@
 .mp-ah{display:flex;align-items:center;gap:12px;width:100%;padding:14px 16px;border:0;background:none;color:var(--text);font:inherit;cursor:pointer;text-align:left}
 .mp-ah b{font-size:1.05rem}.mp-as{margin-left:auto;font-weight:700}.mp-ed{display:inline-flex;gap:5px;align-items:center;font-size:.8rem;color:var(--oro-t);padding:4px 10px;border:1px solid var(--line);border-radius:999px}
 .mp-flash{animation:mpf 1.6s ease}@keyframes mpf{0%,60%{box-shadow:0 0 0 3px var(--oro)}100%{box-shadow:0 0 0 0 transparent}}
+.mp-einline{margin:-2px 0 6px 18px!important;border:2px solid var(--oro)!important;background:var(--soft)}
 .mp-acc.mp-open{border-color:var(--oro)}.mp-accb{display:grid;gap:12px;padding:0 14px 14px}.mp-flat{border:0!important;box-shadow:none!important;background:none!important;padding:0!important}
 .mp-acc.mp-p2{border-left-color:#588CDC}.mp-acc.mp-p3{border-left-color:#2F6F7E}.mp-acc.mp-p4{border-left-color:#5E9E6B}.mp-acc.mp-pend{border-color:rgba(217,90,106,.7);background:rgba(217,90,106,.12)}
 .mp-cadena{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:26px;margin-bottom:16px}@media (max-width:980px){.mp-cadena{grid-template-columns:repeat(2,1fr);gap:14px}}@media (max-width:520px){.mp-cadena{grid-template-columns:1fr}}
@@ -770,7 +774,7 @@
 
   window.FaroMusicPro = {
     async iniciar(el_, c) {
-      host = el_; ctx = c; S.form = null; S.calYm = null; S.hint = null; S.open = null; S.vista = 'corte';
+      host = el_; ctx = c; S.form = null; S.edit = null; S.calYm = null; S.hint = null; S.open = null; S.vista = 'corte';
       if (!pegar) {
         pegar = true;
         /* lo que pegues, de donde sea, entra como texto limpio con la letra del panel */
