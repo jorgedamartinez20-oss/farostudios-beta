@@ -238,7 +238,7 @@
     try { await send('DELETE', tabla + '?id=eq.' + id); ctx.toast('Eliminado'); await cargar(true, true); if (S.form && !S.form.id && !S.form.recibo) S.form.recibo = sugerirRecibo(); pintar(); } catch (e) { ctx.toast(e.message); }
   }
   async function agregarEgreso(d) {
-    try { await send('POST', 'mp_egresos', Object.assign({ fecha: S.fecha }, d)); ctx.toast('Salida agregada'); await cargar(true, true); } catch (e) { ctx.toast(e.message); }
+    try { await send('POST', 'mp_egresos', Object.assign({ fecha: S.fecha }, d)); ctx.toast('Depósito/egreso agregado'); await cargar(true, true); } catch (e) { ctx.toast(e.message); }
   }
   function parsearProductos(txt) {
     return limpiar(txt, true).split('\n').map(l => l.trim()).filter(Boolean).map(l => {
@@ -353,6 +353,10 @@
     R(1149, 758, 1341, 835, { fill: '#fff', stroke: CL.navy2, lw: 2, r: 12 }); T('VENTAS DEL DÍA', 1245, 796.5, { s: 19, w: '700', c: CL.navy, mw: 170 });
     R(1341, 758, 1723, 835, { fill: CL.navy, stroke: CL.navy, r: 12 }); T('Q', 1362, 796.5, { s: 34, c: '#fff', a: 'left' }); T(money(d.t.ventas), 1704, 796.5, { s: 38, c: '#fff', a: 'right', w: '700', mw: 310 });
 
+    /* gráfica breve: ventas del día por forma de pago (para quien solo mira qué se vendió) */
+    { const fp = [['Efectivo', d.t.ef, '#5E9E6B'], ['Tarjeta', d.t.ta, '#3B5B85'], ['Depósito', d.t.de, '#C9A227']], tv = fp.reduce((a, x) => a + x[1], 0), bx = 1000, bw = 915, by = Y(852), bh = 26;
+      c.save(); rr(bx, by, bw, bh, 13); c.fillStyle = '#E2E8F0'; c.fill(); if (tv > 0) { c.clip(); let xx = bx; fp.forEach(x => { const ww = bw * x[1] / tv; c.fillStyle = x[2]; c.fillRect(xx, by, ww, bh); xx += ww; }); } c.restore();
+      fp.forEach((x, i) => { const lx = bx + i * 305; c.fillStyle = x[2]; rr(lx, Y(884), 18, 18, 5); c.fill(); T(x[0] + ' ' + Q(x[1]) + (tv > 0 ? ' · ' + Math.round(x[1] / tv * 100) + '%' : ''), lx + 28, 893, { s: 17, w: '700', a: 'left', c: CL.ink, mw: 270 }); }); }
     /* egreso efectivo y total en caja */
     const eb2 = (a, b) => R(a, 923, b, 948, { fill: CL.tot, stroke: '#A9C0DA' });
     eb2(816, 966); M(dash(d.t.eg), 816, 966, 935.5, { s: 17, w: '700' }); eb2(966, 1149); eb2(1149, 1341); eb2(1341, 1535);
@@ -447,7 +451,7 @@
           el('div', { class: 'mp-dmef' },
             el('span', {}, 'Ingreso en caja ', el('b', {}, Q(t.saldo))),
             el('span', {}, 'Efectivo vendido ', el('b', {}, '+ ' + Q(t.ef))),
-            el('span', {}, 'Salidas ', el('b', {}, '− ' + Q(t.eg))),
+            el('span', {}, 'Depósitos/egresos ', el('b', {}, '− ' + Q(t.eg))),
             el('span', { class: 'mp-dmf' }, 'Final de caja ', el('b', {}, Q(t.total))))) : null);
     });
     const regs = dias.filter(registrado), tv = r2(regs.reduce((a, f) => a + totalDia(f).ventas, 0)), last = regs.length ? totalDia(regs[regs.length - 1]) : null;
@@ -488,8 +492,8 @@
     return el('div', { class: 'mp-cadena' },
       paso('1', 'safe', 'Ingreso en caja', Q(sd.v), sd.estado === 'pendiente' ? 'falta indicarlo' : sd.estado === 'auto' ? 'viene del sábado' : 'lo que te dieron', sd.estado === 'pendiente' ? 'mp-p1 mp-pend' : 'mp-p1'),
       paso('2', 'coin', 'Ventas del día', Q(t.ventas), 'Efectivo ' + money(t.ef) + ' · Tarjeta ' + money(t.ta) + ' · Depósito ' + money(t.de), 'mp-p2'),
-      paso('3', 'out', 'Salidas', Q(t.eg), 'egresos del día', 'mp-p3'),
-      paso('4', 'box', 'Total en caja', Q(t.total), 'ingreso + efectivo − salidas', 'mp-p4'));
+      paso('3', 'out', 'Depósitos/egresos', Q(t.eg), 'egresos del día', 'mp-p3'),
+      paso('4', 'box', 'Total en caja', Q(t.total), 'ingreso + efectivo − depósitos/egresos', 'mp-p4'));
   }
   function acc(n, tit, resumen, cls, fn) {
     const open = S.open === n;
@@ -520,11 +524,11 @@
     izq.append(
       acc(1, 'Ingreso en caja', sd.estado === 'pendiente' ? 'Falta indicarlo' : Q(sd.v), sd.estado === 'pendiente' ? 'mp-p1 mp-pend' : 'mp-p1', () => [bloqueIngreso()]),
       acc(2, 'Ventas', Q(t.ventas) + ' · ' + nf + (nf === 1 ? ' factura' : ' facturas'), 'mp-p2', () => [formFactura(), listaFacturas()]),
-      acc(3, 'Salidas', Q(t.eg), 'mp-p3', () => [bloqueEgresos()]),
+      acc(3, 'Depósitos/egresos', Q(t.eg), 'mp-p3', () => [bloqueEgresos()]),
       acc(4, 'Total en caja', Q(t.total), 'mp-p4', () => [bloqueTotal()]));
     const der = el('div', { class: 'mp-col mp-sticky' });
     der.append(el('div', { class: 'card' }, el('h3', {}, ico('img'), ' Corte de caja · vista previa'),
-      el('p', { class: 'muted' }, 'Se actualiza sola mientras agregas facturas, salidas o el ingreso en caja. Tamaño oficio horizontal.'), el('canvas', { class: 'mp-cv', 'aria-label': 'Corte de caja' }),
+      el('p', { class: 'muted' }, 'Se actualiza sola mientras agregas facturas, depósitos/egresos o el ingreso en caja. Tamaño oficio horizontal.'), el('canvas', { class: 'mp-cv', 'aria-label': 'Corte de caja' }),
       el('div', { class: 'mp-acts' }, btn('Ver en grande', 'zoom', abrirGrande, 'btn-gold'), btn('Guardar PNG (oficio)', 'down', descargarPNG), btn('Copiar imagen', 'copy', copiarPNG))));
     g.append(izq, der); w.append(g);
     return w;
@@ -597,11 +601,11 @@
 
   function bloqueEgresos() {
     const eg = egsDe(S.fecha), nom = el('input', { placeholder: 'Concepto (gasto, depósito a banco…)' }), rec = el('input', { placeholder: 'Recibo', inputmode: 'numeric' }), cant = el('input', { placeholder: '0.00', inputmode: 'decimal', 'data-num': '1' });
-    const c = el('div', { class: 'card' }, el('h3', {}, el('span', { class: 'mp-bn' }, '3'), ' ', ico('out'), ' Salidas de efectivo ', el('span', { class: 'mp-n' }, String(eg.length))),
+    const c = el('div', { class: 'card' }, el('h3', {}, el('span', { class: 'mp-bn' }, '3'), ' ', ico('out'), ' Depósitos y egresos de efectivo ', el('span', { class: 'mp-n' }, String(eg.length))),
       el('p', { class: 'muted' }, 'Todo lo que sale de la caja en efectivo (gastos o si depositas efectivo al banco) resta del total en caja.'));
     eg.forEach((e, i) => c.append(el('div', { class: 'mp-fila' }, el('span', { class: 'mp-num' }, String(i + 1)), el('div', { class: 'mp-fi' }, el('b', {}, e.nombre || '—'), el('small', { class: 'muted' }, e.recibo ? 'Recibo ' + e.recibo : '')), el('b', { class: 'mp-mo' }, '− ' + Q(e.cantidad)), btn(S.confirmar === 'e' + e.id ? '¿Seguro?' : '', 'trash', () => borrar('mp_egresos', e.id, 'e' + e.id), S.confirmar === 'e' + e.id ? 'btn-gold' : 'btn-ghost'))));
     c.append(el('div', { class: 'mp-f3' }, field('Recibo', rec), field('Concepto', nom), field('Cantidad (Q)', cant)),
-      el('div', { class: 'mp-acts' }, btn('Agregar salida', 'plus', () => { if (!(num(cant.value) > 0)) { ctx.toast('Falta la cantidad'); return; } agregarEgreso({ recibo: limpiar(rec.value), nombre: limpiar(nom.value).toUpperCase(), cantidad: r2(num(cant.value)) }); })));
+      el('div', { class: 'mp-acts' }, btn('Agregar depósito/egreso', 'plus', () => { if (!(num(cant.value) > 0)) { ctx.toast('Falta la cantidad'); return; } agregarEgreso({ recibo: limpiar(rec.value), nombre: limpiar(nom.value).toUpperCase(), cantidad: r2(num(cant.value)) }); })));
     return c;
   }
 
@@ -609,7 +613,7 @@
     const t = totalDia(S.fecha);
     const caja = (l, v, cls) => el('div', { class: 'mp-eq ' + (cls || '') }, el('small', { class: 'muted' }, l), el('b', {}, v));
     return el('div', { class: 'card mp-totalc' }, el('h3', {}, el('span', { class: 'mp-bn' }, '4'), ' ', ico('box'), ' Total en caja'),
-      el('div', { class: 'mp-eqs' }, caja('Ingreso en caja', Q(t.saldo)), el('i', {}, '+'), caja('Efectivo de ventas', Q(t.ef)), el('i', {}, '−'), caja('Salidas', Q(t.eg)), el('i', {}, '='), caja('Total en caja', Q(t.total), 'mp-eqt')),
+      el('div', { class: 'mp-eqs' }, caja('Ingreso en caja', Q(t.saldo)), el('i', {}, '+'), caja('Efectivo de ventas', Q(t.ef)), el('i', {}, '−'), caja('Depósitos/egresos', Q(t.eg)), el('i', {}, '='), caja('Total en caja', Q(t.total), 'mp-eqt')),
       el('p', { class: 'muted' }, 'Tarjeta (' + Q(t.ta) + ') y depósitos (' + Q(t.de) + ') se cuentan en las ventas pero no entran a la caja.'),
       conteoCard(S.fecha),
       el('div', { class: 'mp-acts' }, btn('Ver registro de caja', 'safe', () => { S.vista = 'caja'; cargar(true); window.scrollTo({ top: 0 }); })));
@@ -621,7 +625,7 @@
     const regs = dias.filter(registrado);
     const tv = r2(regs.reduce((a, f) => a + totalDia(f).ventas, 0)), te = r2(regs.reduce((a, f) => a + totalDia(f).ef, 0)), tg = r2(regs.reduce((a, f) => a + totalDia(f).eg, 0)), last = totalDia(regs[regs.length - 1]);
     w.append(el('div', { class: 'mp-kpis' },
-      kpi('coin', 'Ventas del fin de semana', Q(tv), 'mp-k1'), kpi('cash', 'Efectivo vendido', Q(te), 'mp-k2'), kpi('out', 'Salidas', Q(tg), 'mp-k4'), kpi('box', 'Debe haber en caja', Q(last.total), 'mp-k5 mp-grande')));
+      kpi('coin', 'Ventas del fin de semana', Q(tv), 'mp-k1'), kpi('cash', 'Efectivo vendido', Q(te), 'mp-k2'), kpi('out', 'Depósitos/egresos', Q(tg), 'mp-k4'), kpi('box', 'Debe haber en caja', Q(last.total), 'mp-k5 mp-grande')));
     const cg = el('div', { class: 'mp-grid2' }); regs.forEach(f => cg.append(conteoCard(f))); w.append(cg);
     w.append(cardLunes(regs[regs.length - 1]));
     return w;
@@ -646,7 +650,7 @@
     /* encabezado */
     c.fillStyle = CL.navy; c.fillRect(0, 0, LW, 172);
     if (logoImg) { rr(60, 23, 327, 126, 16); c.save(); c.clip(); c.drawImage(logoImg, 60, 23, 327, 126); c.restore(); }
-    T('REGISTRO LUNES', 440, 70, { s: 70, w: '700', c: '#fff', mw: 1100 });
+    T('REGISTRO DOMINGO', 440, 70, { s: 70, w: '700', c: '#fff', mw: 1100 });
     T('Cierre del ' + DIA[parte(f).dow] + ' ' + parte(f).d + ' de ' + MES[parte(f).m - 1] + ' de ' + parte(f).y + ' · Music Pro Pradera Zona 10', 440, 128, { s: 28, c: '#C9D6EA', mw: 1400 });
     T(hay ? 'EN CAJA (CONTADO)' : 'EN CAJA (SISTEMA)', 2540, 56, { s: 24, w: '700', c: '#C9D6EA', a: 'right' });
     T(Q(hay ? cn : sis), 2540, 112, { s: 62, w: '700', c: '#fff', a: 'right', mw: 760 });
@@ -655,8 +659,8 @@
     const tmp = document.createElement('canvas'); dibujar(tmp, d, Math.max(0.4, 0.72 * px));
     caja(60, 244, 1440, 941.6, '#fff', null, 6, true); c.drawImage(tmp, 60, 244, 1440, 941.6);
     /* resumen de efectivo */
-    const mini = [['INGRESO EN CAJA', d.t.saldo, '#B8A06A'], ['EFECTIVO VENDIDO', d.t.ef, '#5E9E6B'], ['SALIDAS', d.t.eg, '#2F6F7E'], ['TOTAL EN CAJA', d.t.total, CL.ok]];
-    mini.forEach((m, i) => { const x = 60 + i * 365; caja(x, 1218, 345, 150, '#fff', null, 16, true); c.fillStyle = m[2]; rr(x, 1218, 345, 10, 5); c.fill(); T(m[0], x + 22, 1262, { s: 21, w: '700', c: CL.mut }); T(Q(m[1]), x + 22, 1322, { s: 44, w: '700', c: i === 3 ? CL.ok : CL.ink, mw: 300 }); });
+    const mini = [['INGRESO EN CAJA', d.t.saldo, '#B8A06A'], ['EFECTIVO VENDIDO', d.t.ef, '#5E9E6B'], ['DEPÓSITOS/EGRESOS', d.t.eg, '#2F6F7E'], ['TOTAL EN CAJA', d.t.total, CL.ok]];
+    mini.forEach((m, i) => { const x = 60 + i * 365; caja(x, 1218, 345, 150, '#fff', null, 16, true); c.fillStyle = m[2]; rr(x, 1218, 345, 10, 5); c.fill(); T(m[0], x + 22, 1262, { s: 21, w: '700', c: CL.mut, mw: 300 }); T(Q(m[1]), x + 22, 1322, { s: 44, w: '700', c: i === 3 ? CL.ok : CL.ink, mw: 300 }); });
     /* gráfica: ventas por forma de pago */
     caja(60, 1400, 1440, 240, '#fff', null, 16, true);
     T('Ventas del día por forma de pago · ' + Q(d.t.ventas), 90, 1438, { s: 26, w: '700', c: CL.navy });
@@ -714,14 +718,14 @@
       DEN.forEach(d => { subs[d].textContent = o[d] ? '= ' + Q(o[d] * d) : ''; });
       const c = contado(o), d = r2(c - t.total); tot.textContent = Q(c); tot.className = 'mp-tb' + (c > 0 ? (d === 0 ? ' mp-okt' : ' mp-malt') : '');
       dif.className = 'mp-dif ' + (c === 0 ? 'mp-d0' : d === 0 ? 'mp-d1' : 'mp-d3');
-      dif.textContent = c === 0 ? 'Cuenta tus billetes y verás aquí cuánto sobra o falta' : d === 0 ? '✓ Cuadra exacto con lo facturado' : d > 0 ? 'SOBRANTE ' + Q(d) + ' · ¿hay una venta en efectivo sin facturar?' : 'FALTANTE ' + Q(-d) + ' · revisa recibos y salidas';
+      dif.textContent = c === 0 ? 'Cuenta tus billetes y verás aquí cuánto sobra o falta' : d === 0 ? '✓ Cuadra exacto con lo facturado' : d > 0 ? 'SOBRANTE ' + Q(d) + ' · ¿hay una venta en efectivo sin facturar?' : 'FALTANTE ' + Q(-d) + ' · revisa recibos y depósitos/egresos';
       barra.style.width = Math.min(100, t.total > 0 ? c / t.total * 100 : 0) + '%'; barra.className = c === 0 ? '' : d === 0 ? 'mp-bok' : 'mp-bmal';
     };
     const g = el('div', { class: 'mp-bill' }), on = () => calc(true);
     DEN.forEach(d => { ins[d] = el('input', { type: 'number', min: '0', inputmode: 'numeric', value: b[d] || '', placeholder: '0', oninput: on, 'aria-label': 'Billetes de ' + d }); subs[d] = el('small', { class: 'mp-sub2' }); g.append(el('label', {}, el('span', { class: 'mp-den' }, 'Q' + d), ins[d], subs[d])); });
     ins.mon = el('input', { inputmode: 'decimal', 'data-num': '1', value: b.mon || '', placeholder: '0.00', oninput: on }); ins.extra = el('input', { inputmode: 'decimal', 'data-num': '1', value: b.extra || '', placeholder: '0.00', oninput: on });
     g.append(el('label', {}, el('span', { class: 'mp-den' }, 'Monedas Q'), ins.mon), el('label', {}, el('span', { class: 'mp-den' }, 'Extra Q'), ins.extra));
-    const deb = el('p', { class: 'muted mp-deb' }, 'Debe haber: ingreso ' + Q(t.saldo) + ' + efectivo vendido ' + Q(t.ef) + ' − salidas ' + Q(t.eg) + ' = ', el('b', {}, Q(t.total)));
+    const deb = el('p', { class: 'muted mp-deb' }, 'Debe haber: ingreso ' + Q(t.saldo) + ' + efectivo vendido ' + Q(t.ef) + ' − depósitos/egresos ' + Q(t.eg) + ' = ', el('b', {}, Q(t.total)));
     const c = el('div', { class: 'card mp-conteo' }, el('h3', {}, ico('cash'), ' Conteo de billetes · ' + mayus(DIA[p.dow]) + ' ' + p.d), g,
       el('div', { class: 'mp-sumas' }, el('span', {}, 'Contado ', tot), el('span', {}, 'En sistema ', el('b', {}, Q(t.total)))), el('div', { class: 'mp-barra' }, barra), dif, deb,
       el('div', { class: 'mp-acts' }, btn('Guardar conteo', 'check', () => guardarBilletes(f, leer()), 'btn-gold')));
@@ -955,7 +959,7 @@
     const dif = (l, arr, cls) => el('div', { class: 'mp-cq ' + cls }, el('small', { class: 'muted' }, l), el('b', {}, String(arr.length)), arr.length ? el('small', {}, Q(Math.abs(arr.reduce((a, d) => a + d.dif, 0)))) : null);
     b.append(el('div', { class: 'mp-g3' },
       el('div', { class: 'card' }, el('h3', {}, ico('card'), ' Forma de pago'), el('div', { class: 'mp-donw' }, sv, el('div', { class: 'mp-isol' }, it.map(([l, v, c]) => el('div', { class: 'mp-il' }, el('i', { style: 'background:' + c }), el('div', {}, el('small', { class: 'muted' }, l), el('b', {}, Q(v)), el('small', { class: 'muted' }, (tp ? (v / tp * 100).toFixed(1) : '0.0') + '%')))))) ),
-      el('div', { class: 'card' }, el('h3', {}, ico('cal'), ' Sábado vs domingo'), fila('Sábado', A.sab, '#5B8FD6'), fila('Domingo', A.dom, '#E9B28A'), el('p', { class: 'muted mp-sm' }, 'Egresos (depósitos y salidas): ', el('b', {}, Q(A.eg)))),
+      el('div', { class: 'card' }, el('h3', {}, ico('cal'), ' Sábado vs domingo'), fila('Sábado', A.sab, '#5B8FD6'), fila('Domingo', A.dom, '#E9B28A'), el('p', { class: 'muted mp-sm' }, 'Egresos (depósitos y egresos): ', el('b', {}, Q(A.eg)))),
       el('div', { class: 'card' }, el('h3', {}, ico('safe'), ' Cuadre de caja'), A.ncont ? el('div', { class: 'mp-cqs' }, el('div', { class: 'mp-cq mp-qok' }, el('small', { class: 'muted' }, 'Cuadran'), el('b', {}, String(A.cuadra))), dif('Sobrante', A.sobra, 'mp-qmal'), dif('Faltante', A.falta, 'mp-qmal')) : el('p', { class: 'muted' }, 'Aún no hay conteos de billetes guardados en este periodo.'),
         el('p', { class: 'muted mp-sm' }, A.ncont ? 'De ' + A.ncont + (A.ncont === 1 ? ' día contado.' : ' días contados.') : ''))));
     /* mejores días */
