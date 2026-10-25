@@ -441,7 +441,13 @@
       const est = reg ? (sd.estado === 'pendiente' ? chip('Falta ingreso en caja', 'mp-mal', 'warn') : chip('Registrado', 'mp-ok', 'check')) : chip(f > n.f ? 'Aún no llega' : 'Sin registrar', 'mp-gris');
       return el('button', { type: 'button', class: 'mp-dia' + (f === S.fecha ? ' mp-sel' : '') + (reg ? '' : ' mp-vacio'), onclick: () => irA(f) },
         el('small', { class: 'muted' }, DIA[p.dow].toUpperCase() + (esFin(f) ? '' : ' · EXTRAORDINARIO')), el('b', { class: 'mp-dn' }, p.d + ' de ' + MES[p.m - 1]), est,
-        reg ? el('div', { class: 'mp-dm' }, el('span', {}, 'Ventas ', el('b', {}, Q(t.ventas))), el('span', {}, 'En caja ', el('b', {}, Q(t.total)))) : null);
+        reg ? el('div', { class: 'mp-dm' },
+          el('span', {}, 'Ventas del día ', el('b', {}, Q(t.ventas))),
+          el('div', { class: 'mp-dmef' },
+            el('span', {}, 'Ingreso en caja ', el('b', {}, Q(t.saldo))),
+            el('span', {}, 'Efectivo vendido ', el('b', {}, '+ ' + Q(t.ef))),
+            el('span', {}, 'Salidas ', el('b', {}, '− ' + Q(t.eg))),
+            el('span', { class: 'mp-dmf' }, 'Final de caja ', el('b', {}, Q(t.total))))) : null);
     });
     const regs = dias.filter(registrado), tv = r2(regs.reduce((a, f) => a + totalDia(f).ventas, 0)), last = regs.length ? totalDia(regs[regs.length - 1]) : null;
     return el('div', { class: 'mp-semana' },
@@ -836,6 +842,8 @@
 .mp-d3{background:rgba(217,60,76,.18)!important;border-color:#D93C4C!important;color:#9E1B2B}.mp-bmal{background:#D93C4C!important}
 .mp-tb.mp-malt{color:#C0283A}.mp-tb.mp-okt{color:#1B7F4B}
 .mp-tw{overflow-x:auto;border:1px solid var(--line);border-radius:12px}.mp-tb2{width:100%;border-collapse:collapse;font-size:.9rem;white-space:nowrap}.mp-tb2 th{background:#1E3A5F;color:#fff;text-align:left;padding:8px 12px;font-size:.74rem;letter-spacing:.06em}.mp-tb2 td{padding:8px 12px;border-top:1px solid var(--line);min-width:20px}.mp-tb2 tbody tr:nth-child(even){background:var(--soft)}.mp-tb2 td:empty::after{content:'·';color:var(--line)}
+.mp-dmef{display:grid;gap:3px;margin-top:6px;padding-top:8px;border-top:1px dashed var(--line);font-size:.9rem}.mp-dmef span{display:flex;justify-content:space-between;gap:10px}.mp-dmf{margin-top:2px;padding:5px 9px;border-radius:9px;background:rgba(94,158,107,.2);border:1px solid #5E9E6B}.mp-dmf b{font-size:1.02rem}
+.mp-calc2{align-content:start}.mp-cal{align-content:start}.mp-c{align-self:start;min-width:0}
 .mp-bloques{margin-top:12px}.mp-bloques .mp-grid2{margin-top:10px}
 .mp-m{min-width:96px}
 `));
