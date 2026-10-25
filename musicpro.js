@@ -669,12 +669,9 @@
       el('tbody', {}, d.filas.map(r => el('tr', {}, r.slice(c0, c1).map(x => el('td', {}, x)))))));
     if (!d.n) { w.append(el('div', { class: 'card' }, el('p', { class: 'muted' }, 'No hay productos capturados en las facturas de este día. Agrégalos en «Corte del día».'))); }
     else {
-      w.append(el('div', { class: 'card' }, el('h3', {}, ico('sheet'), ' Lista completa · una sola vez ', el('span', { class: 'mp-n' }, String(d.n))), tabla(0, 8),
-        el('div', { class: 'mp-acts' }, btn('Copiar lista completa', 'copy', () => copiar(d.todo, 'Lista completa copiada'), 'btn-gold'))));
-      w.append(el('details', { class: 'mp-ex mp-bloques' }, el('summary', {}, ico('copy'), ' O por separado en dos bloques (sin tocar la descripción)'),
-        el('div', { class: 'mp-grid2' },
-          el('div', { class: 'card' }, el('h3', {}, el('span', { class: 'mp-bn' }, '1'), ' Fecha + código · pega en A'), tabla(0, 2), el('div', { class: 'mp-acts' }, btn('Copiar bloque 1', 'copy', () => copiar(d.b1, 'Bloque 1 copiado')))),
-          el('div', { class: 'card' }, el('h3', {}, el('span', { class: 'mp-bn' }, '2'), ' Cantidad · FACTURADO · recibo · pega en D'), tabla(3, 8), el('div', { class: 'mp-acts' }, btn('Copiar bloque 2', 'copy', () => copiar(d.b2, 'Bloque 2 copiado')))))));
+      w.append(
+        el('div', { class: 'card' }, el('h3', {}, el('span', { class: 'mp-bn' }, '1'), ' Fecha + código · pega en A ', el('span', { class: 'mp-n' }, String(d.n))), tabla(0, 2), el('div', { class: 'mp-acts' }, btn('Copiar bloque 1', 'copy', () => copiar(d.b1, 'Bloque 1 copiado'), 'btn-gold'))),
+        el('div', { class: 'card', style: 'margin-top:14px' }, el('h3', {}, el('span', { class: 'mp-bn' }, '2'), ' Cantidad · FACTURADO · recibo · pega en D ', el('span', { class: 'mp-n' }, String(d.n))), tabla(3, 8), el('div', { class: 'mp-acts' }, btn('Copiar bloque 2', 'copy', () => copiar(d.b2, 'Bloque 2 copiado'), 'btn-gold'))));
     }
     if (d.sin.length) w.append(el('p', { class: 'mp-warn' }, ico('warn'), ' Sin productos (no salen en el texto): recibo ' + d.sin.join(', ') + '.'));
     return w;
