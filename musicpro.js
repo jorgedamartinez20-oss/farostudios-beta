@@ -159,14 +159,14 @@
     if (f > hoy()) { ctx.toast('Ese día todavía no llega'); return; }
     try { await crearSql(f); ctx.toast('Día ' + fCorta(f) + ' registrado'); S.extra = ''; await irA(f); } catch (e) { ctx.toast(e.message); }
   }
-  async function irA(f, vista) { S.fecha = f; S.calYm = null; S.form = null; S.confirmar = null; if (vista) S.vista = vista; await cargar(true); }
+  async function irA(f, vista) { S.open = null; S.fecha = f; S.calYm = null; S.form = null; S.confirmar = null; if (vista) S.vista = vista; await cargar(true); }
 
   /* ---------- guardar ---------- */
   async function guardarSaldo(f, v, manual) {
     try {
       const c = S.D.cortes[f];
       if (c) await send('PATCH', 'mp_cortes?fecha=eq.' + f, { saldo_inicial: r2(num(v)), saldo_manual: manual !== false }); else await send('POST', 'mp_cortes', { fecha: f, saldo_inicial: r2(num(v)), saldo_manual: manual !== false });
-      ctx.toast(manual === false ? 'Ingreso en caja automático' : 'Ingreso en caja guardado'); await cargar(true);
+      ctx.toast(manual === false ? 'Ingreso en caja automático' : 'Ingreso en caja guardado'); S.open = 2; await cargar(true);
     } catch (e) { ctx.toast(e.message); }
   }
   async function guardarBilletes(f, b) {
@@ -454,10 +454,24 @@
       paso('3', 'out', 'Salidas', Q(t.eg), 'egresos del día', 'mp-p3'),
       paso('4', 'box', 'Total en caja', Q(t.total), 'ingreso + efectivo − salidas', 'mp-p4'));
   }
+  function acc(n, tit, resumen, cls, fn) {
+    const open = S.open === n;
+    const h = el('button', { type: 'button', class: 'mp-ah', 'aria-expanded': String(open), onclick: () => { S.open = open ? 0 : n; S.confirmar = null; pintar(); } },
+      el('span', { class: 'mp-bn' }, String(n)), el('b', {}, tit), el('span', { class: 'mp-as' }, resumen), el('span', { class: 'mp-ed' }, ico(open ? 'x' : 'edit'), ' ', open ? 'Cerrar' : 'Editar'));
+    const w = el('div', { class: 'mp-acc ' + cls + (open ? ' mp-open' : '') }, h);
+    if (open) { const b = el('div', { class: 'mp-accb' }); fn().forEach(c => { const t = c.querySelector(':scope > h3'); if (t) t.remove(); c.classList.add('mp-flat'); b.append(c); }); w.append(b); }
+    return w;
+  }
   function vistaCorte() {
-    const w = el('div', {}); w.append(cadena());
+    const w = el('div', {}), sd = saldoDe(S.fecha), t = totalDia(S.fecha), nf = facsDe(S.fecha).length;
+    if (S.open == null) S.open = sd.estado === 'pendiente' ? 1 : 2;
     const g = el('div', { class: 'mp-grid' });
-    const izq = el('div', { class: 'mp-col' }); izq.append(bloqueIngreso(), formFactura(), listaFacturas(), bloqueEgresos(), bloqueTotal());
+    const izq = el('div', { class: 'mp-col' });
+    izq.append(
+      acc(1, 'Ingreso en caja', sd.estado === 'pendiente' ? 'Falta indicarlo' : Q(sd.v), sd.estado === 'pendiente' ? 'mp-p1 mp-pend' : 'mp-p1', () => [bloqueIngreso()]),
+      acc(2, 'Ventas', Q(t.ventas) + ' · ' + nf + (nf === 1 ? ' factura' : ' facturas'), 'mp-p2', () => [formFactura(), listaFacturas()]),
+      acc(3, 'Salidas', Q(t.eg), 'mp-p3', () => [bloqueEgresos()]),
+      acc(4, 'Total en caja', Q(t.total), 'mp-p4', () => [bloqueTotal()]));
     const der = el('div', { class: 'mp-col mp-sticky' });
     der.append(el('div', { class: 'card' }, el('h3', {}, ico('img'), ' Corte de caja · vista previa'),
       el('p', { class: 'muted' }, 'Se actualiza sola mientras agregas facturas, salidas o el ingreso en caja. Tamaño oficio horizontal.'), el('canvas', { class: 'mp-cv', 'aria-label': 'Corte de caja' }),
@@ -545,7 +559,7 @@
     return el('div', { class: 'card mp-totalc' }, el('h3', {}, el('span', { class: 'mp-bn' }, '4'), ' ', ico('box'), ' Total en caja'),
       el('div', { class: 'mp-eqs' }, caja('Ingreso en caja', Q(t.saldo)), el('i', {}, '+'), caja('Efectivo de ventas', Q(t.ef)), el('i', {}, '−'), caja('Salidas', Q(t.eg)), el('i', {}, '='), caja('Total en caja', Q(t.total), 'mp-eqt')),
       el('p', { class: 'muted' }, 'Tarjeta (' + Q(t.ta) + ') y depósitos (' + Q(t.de) + ') se cuentan en las ventas pero no entran a la caja.'),
-      el('div', { class: 'mp-acts' }, btn('Contar billetes y ver el fin de semana', 'safe', () => { S.vista = 'caja'; pintar(); window.scrollTo({ top: 0 }); }, 'btn-gold'), cn > 0 ? chip('Contado ' + Q(cn), 'mp-ok', 'check') : null));
+      el('div', { class: 'mp-acts' }, btn('Contar billetes y ver el fin de semana', 'safe', () => { S.vista = 'caja'; cargar(true); window.scrollTo({ top: 0 }); }, 'btn-gold'), cn > 0 ? chip('Contado ' + Q(cn), 'mp-ok', 'check') : null));
   }
 
   /* ---------- 2 · caja del fin de semana ---------- */
@@ -689,6 +703,11 @@
 .mp-leyenda{display:flex;gap:10px;flex-wrap:wrap;font-size:.72rem;color:var(--muted)}.mp-leyenda span{display:flex;gap:4px;align-items:center}.mp-pt{display:inline-block;width:8px;height:8px;border-radius:50%}
 .mp-pt-reg{background:#5E9E6B}.mp-pt-hoy{border:2px solid #588CDC;width:10px;height:10px;box-sizing:border-box}.mp-pt-sem{background:var(--line)}
 .mp-ex summary{cursor:pointer;font-weight:700;display:flex;gap:6px;align-items:center}.mp-ex .mp-acts input{flex:1 1 130px;min-width:0}
+.mp-acc{border:1px solid var(--line);border-left:6px solid var(--oro);border-radius:16px;background:var(--soft);overflow:hidden;box-shadow:0 10px 24px -20px rgba(0,0,0,.6)}
+.mp-ah{display:flex;align-items:center;gap:12px;width:100%;padding:14px 16px;border:0;background:none;color:var(--text);font:inherit;cursor:pointer;text-align:left}
+.mp-ah b{font-size:1.05rem}.mp-as{margin-left:auto;font-weight:700}.mp-ed{display:inline-flex;gap:5px;align-items:center;font-size:.8rem;color:var(--oro-t);padding:4px 10px;border:1px solid var(--line);border-radius:999px}
+.mp-acc.mp-open{border-color:var(--oro)}.mp-accb{display:grid;gap:12px;padding:0 14px 14px}.mp-flat{border:0!important;box-shadow:none!important;background:none!important;padding:0!important}
+.mp-acc.mp-p2{border-left-color:#588CDC}.mp-acc.mp-p3{border-left-color:#2F6F7E}.mp-acc.mp-p4{border-left-color:#5E9E6B}.mp-acc.mp-pend{border-color:rgba(217,90,106,.7);background:rgba(217,90,106,.12)}
 .mp-cadena{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:26px;margin-bottom:16px}@media (max-width:980px){.mp-cadena{grid-template-columns:repeat(2,1fr);gap:14px}}@media (max-width:520px){.mp-cadena{grid-template-columns:1fr}}
 .mp-paso{position:relative;display:flex;gap:12px;align-items:flex-start;padding:14px 16px;border-radius:16px;border:1px solid var(--line);border-left:6px solid var(--oro);background:var(--soft);box-shadow:0 10px 24px -20px rgba(0,0,0,.6)}
 .mp-paso:not(:last-child)::after{content:'›';position:absolute;right:-20px;top:50%;margin-top:-16px;font-size:2rem;color:var(--oro-t);line-height:1}@media (max-width:980px){.mp-paso::after{display:none}}
@@ -747,7 +766,7 @@
 
   window.FaroMusicPro = {
     async iniciar(el_, c) {
-      host = el_; ctx = c; S.form = null; S.calYm = null; S.hint = null; S.vista = 'corte';
+      host = el_; ctx = c; S.form = null; S.calYm = null; S.hint = null; S.open = null; S.vista = 'corte';
       if (!pegar) {
         pegar = true;
         /* lo que pegues, de donde sea, entra como texto limpio con la letra del panel */
