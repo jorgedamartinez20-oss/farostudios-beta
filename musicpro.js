@@ -501,7 +501,7 @@
   function formFactura(f) {
     f = f || S.form || (S.form = formVacio());
     const gap = (() => { const n = parseInt(f.recibo, 10); const prev = facsDe(S.fecha).filter(x => x.id !== f.id).map(x => parseInt(x.recibo, 10)).filter(isFinite); if (!isFinite(n) || !prev.length || f.id) return ''; const m = Math.max(...prev); return n > m + 1 || n <= m ? 'El último recibo de hoy fue el ' + m + '. ¿Seguro que es el ' + n + '?' : ''; })();
-    const inRec = el('input', { class: 'mp-frec', inputmode: 'numeric', value: f.recibo, oninput: e => { f.recibo = e.target.value; }, onchange: () => pintar() });
+    const inRec = el('input', { class: 'mp-frec', inputmode: 'numeric', value: f.recibo, oninput: e => { f.recibo = e.target.value; } });
     const inNom = el('input', { class: 'mp-fnombre', value: f.nombre, placeholder: 'Nombre completo o CF', autocomplete: 'off', oninput: e => { f.nombre = e.target.value; } });
     const inMonto = el('input', { class: 'mp-fmonto', inputmode: 'decimal', value: f.monto, placeholder: '0.00', 'data-num': '1', oninput: e => { f.monto = e.target.value; }, onkeydown: e => { if (e.key === 'Enter') guardarFactura(f); } });
     const met = el('div', { class: 'mp-met' }, [['efectivo', 'Efectivo', 'cash'], ['tarjeta', 'Tarjeta', 'card'], ['deposito', 'Depósito', 'bank']].map(([k, t, i]) =>
