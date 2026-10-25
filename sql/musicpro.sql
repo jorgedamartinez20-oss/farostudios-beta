@@ -42,6 +42,10 @@ create table if not exists public.mp_config (
 );
 insert into public.mp_config(clave, valor) values ('porcentaje', '3') on conflict (clave) do nothing;
 
+-- permisos de la API (sin esto Supabase responde «tabla no existe»); solo para usuarios con sesión, nunca anon
+grant select, insert, update, delete on public.mp_cortes, public.mp_facturas, public.mp_egresos, public.mp_config to authenticated;
+notify pgrst, 'reload schema';
+
 do $$ declare t text; begin
   foreach t in array array['mp_cortes','mp_facturas','mp_egresos','mp_config'] loop
     execute format('alter table public.%I enable row level security', t);
