@@ -295,8 +295,8 @@
     const rows = d.facs.map(f => { const L = lineasDe(nomVis(f.nombre), CNW), O = lineasDe(obsDe(f), COW); return { f, L, O, h: Math.max(L.length, O.length) > 1 ? Math.max(L.length, O.length) * 30 + 32 : rowH }; });
     const deps = d.facs.filter(f => num(f.deposito) > 0), egs = d.egs;
     const sumH = rows.reduce((a, r) => a + r.h, 0), ch = Math.max(70 + 48 + sumH + rowH + 30, 540);
-    const dh = deps.length ? 130 + deps.length * rowH : 210, eh = egs.length ? 130 + egs.length * rowH : 0;
-    const y1 = 720, y2 = y1 + ch + 30, y3 = y2 + dh + (eh ? 30 : 0), H = Math.round(y3 + eh + 80);
+    const dh = egs.length ? 130 + egs.length * rowH : 210, eh = 0;
+    const y1 = 720, y2 = y1 + ch + 30, y3 = y2 + dh, H = Math.round(y3 + 80);
     cv.width = Math.round(W * k); cv.height = Math.round(H * k); cv.style.setProperty('--r', (W / H).toFixed(4));
     const c = cv.getContext('2d'); c.setTransform(k, 0, 0, k, 0, 0); c.textBaseline = 'middle';
     const m = v => num(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }), QQ = v => 'Q ' + m(v);
@@ -359,8 +359,7 @@
       if (!filas.length) T(vacio, 1300, dy + 48 + 55, 30, '400', CL.mut, 'center');
       filas.forEach((e, i) => { const y = dy + 48 + i * rowH + rowH / 2; T(String(e[0] || ''), DC[0], y, 26, '700', CL.ink, 'left', 440); T(String(e[1] || '').toUpperCase(), DC[1], y, CNS, '400', CL.ink, 'left', 500); AC(e[2], DC[2] + 240, y, 28, '700', CL.ink, 150); T(String(e[3] || ''), DC[3], y, 26, '400', CL.ink, 'left', 500); });
     };
-    tabla2(y2, dh, 'Detalle de depósitos', deps.map(f => [f.referencia, f.banco, f.deposito, f.autorizacion]), 'No hay depósitos en este día', 'REFERENCIA', 'BANCO');
-    if (egs.length) tabla2(y2 + dh + 30, eh, 'Detalle de depósitos y egresos de caja', egs.map(e => [e.recibo, e.nombre, e.cantidad, e.autorizacion]), '', 'REFERENCIA / RECIBO', 'BANCO / CONCEPTO');
+    tabla2(y2, dh, 'Detalle de depósitos', egs.map(e => [e.recibo, e.nombre, e.cantidad, e.autorizacion]), 'No hay depósitos en este día', 'REFERENCIA', 'BANCO / CONCEPTO');
     T('Music Pro · Pradera Zona 10', W / 2, H - 34, 22, '400', '#64748B', 'center');
   }
   const datosCorte = f => { const s = saldoDe(f).v, fa = facsDe(f), eg = egsDe(f); return { fecha: f, facs: fa, egs: eg, saldo: s, t: totalesDe(fa, eg, s) }; };
@@ -656,9 +655,8 @@
     const T = (t, x, y, o) => { o = o || {}; let sz = o.s || 24; const wt = o.w || '400'; c.font = wt + ' ' + sz + 'px ' + FONT; if (o.mw) { const m = c.measureText(t).width; if (m > o.mw) sz = Math.max(10, sz * o.mw / m); } c.font = wt + ' ' + sz + 'px ' + FONT; c.fillStyle = o.c || CL.ink; c.textAlign = o.a || 'left'; c.fillText(t, x, y); };
     /* encabezado */
     c.fillStyle = CL.navy; c.fillRect(0, 0, LW, 172);
-    if (logoImg) { rr(60, 23, 327, 126, 16); c.save(); c.clip(); c.drawImage(logoImg, 60, 23, 327, 126); c.restore(); }
-    T('REGISTRO DOMINGO', 440, 70, { s: 70, w: '700', c: '#fff', mw: 1100 });
-    T('Cierre del ' + DIA[parte(f).dow] + ' ' + parte(f).d + ' de ' + MES[parte(f).m - 1] + ' de ' + parte(f).y + ' · Music Pro Pradera Zona 10', 440, 128, { s: 28, c: '#C9D6EA', mw: 1400 });
+    T('REGISTRO DOMINGO', 70, 70, { s: 70, w: '700', c: '#fff', mw: 1100 });
+    T('Cierre del ' + DIA[parte(f).dow] + ' ' + parte(f).d + ' de ' + MES[parte(f).m - 1] + ' de ' + parte(f).y + ' · Music Pro Pradera Zona 10', 70, 128, { s: 28, c: '#C9D6EA', mw: 1400 });
     T(hay ? 'EN CAJA (CONTADO)' : 'EN CAJA (SISTEMA)', 2540, 56, { s: 24, w: '700', c: '#C9D6EA', a: 'right' });
     T(Q(hay ? cn : sis), 2540, 112, { s: 62, w: '700', c: '#fff', a: 'right', mw: 760 });
     /* corte del día anterior */
