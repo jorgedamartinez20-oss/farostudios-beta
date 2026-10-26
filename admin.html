@@ -939,16 +939,19 @@ async function api(path,o){
 async function errText(r){try{const j=await r.json();return j.message||j.msg||('Error '+r.status)}catch(e){return 'Error '+r.status}}
 function logout(){try{FaroPerfil.salir()}catch(e){}S=null;try{sessionStorage.removeItem('faro_adm');localStorage.removeItem('faro_adm')}catch(e){}$('#v-app').hidden=true;$('#v-login').hidden=false;$('#out').hidden=true;try{$('#fl').hidden=true;FL.open=false;$('#fl').classList.remove('open')}catch(e){}}
 $('#out').addEventListener('click',logout);
+/* registro de accesos (fallos y entradas): se guarda en la tabla acceso_log y se lee en Ajustes › Accesos */
+function dispositivoCorto(){const u=navigator.userAgent||'';const so=/iPhone|iPad/.test(u)?'iPhone/iPad':/Android/.test(u)?'Android':/Mac/.test(u)?'Mac':/Windows/.test(u)?'Windows':'Otro';const nv=/Edg\//.test(u)?'Edge':/Chrome\//.test(u)?'Chrome':/Safari\//.test(u)?'Safari':/Firefox\//.test(u)?'Firefox':'Navegador';return so+' · '+nv}
+function logAcceso(evento,ok,usuario){try{fetch(SB.url+'/rest/v1/rpc/acceso_registrar',{method:'POST',keepalive:true,headers:{apikey:SB.key,'Content-Type':'application/json'},body:JSON.stringify({p_evento:evento,p_ok:!!ok,p_usuario:usuario||'',p_dispositivo:dispositivoCorto()})}).catch(()=>{})}catch(e){}}
 async function doLogin(){
   const e=$('#lerr');e.hidden=true;const b=$('#lgo');if(b.disabled)return;b.disabled=true;b.textContent='Entrando…';
   try{
     try{localStorage.setItem('faro_rec',$('#rec').checked?'1':'0');if($('#rec').checked)localStorage.setItem('faro_adm_u',$('#em').value.trim());else localStorage.removeItem('faro_adm_u')}catch(x){}
     const r=await fetch(SB.url+'/auth/v1/token?grant_type=password',{method:'POST',headers:{apikey:SB.key,'Content-Type':'application/json'},body:JSON.stringify({email:loginEmail($('#em').value),password:$('#pw').value})});
-    if(!r.ok){e.hidden=false;let m='';try{const j=await r.json();m=(j.error_description||j.msg||j.message||'')}catch(x){}
+    if(!r.ok){logAcceso('login_fallo',false,$('#em').value.trim());e.hidden=false;let m='';try{const j=await r.json();m=(j.error_description||j.msg||j.message||'')}catch(x){}
       e.textContent=/not confirmed/i.test(m)?'Ese usuario existe pero su correo no está confirmado. En Supabase > Authentication > Users, abre el usuario y confirma el correo (o créalo con “Auto Confirm User”).':
         /invalid login|invalid_credentials/i.test(m)||r.status===400?'Correo o contraseña incorrectos. Si no recuerdas la contraseña o el usuario no existe, créalo o cámbiala en Supabase > Authentication > Users.':
         'No se pudo entrar ('+r.status+'). '+m;return}
-    saveS(await r.json());$('#pw').value='';await start();
+    logAcceso('login_ok',true,$('#em').value.trim());saveS(await r.json());$('#pw').value='';await start();
   }catch(x){e.hidden=false;e.textContent='No hay conexión con el servidor. Abre este archivo desde tu navegador (no desde una vista previa).'}
   finally{b.disabled=false;b.textContent='Entrar'}
 }
@@ -962,7 +965,7 @@ $('#lgo').addEventListener('click',doLogin);
  pw.addEventListener('change',()=>{if(Date.now()-tec>400)setTimeout(auto,120)});
  let t=0;const iv=setInterval(()=>{if(++t>12||!$('#lerr').hidden){clearInterval(iv);return}if(pw.value.length>=6&&tec===0){clearInterval(iv);auto()}},400);}
 ['pointerdown','keydown','touchstart','scroll'].forEach(ev=>addEventListener(ev,()=>{if(S)actMarca()},{passive:true,capture:true}));
-function vigilaInact(){if(S&&Date.now()-actGet()>INACT){logout();const e=$('#lerr');e.hidden=false;e.textContent='Cerramos tu sesión por inactividad. Entra de nuevo.'}}
+function vigilaInact(){if(S&&Date.now()-actGet()>INACT){logAcceso('inactividad',true,'');logout();const e=$('#lerr');e.hidden=false;e.textContent='Cerramos tu sesión por inactividad. Entra de nuevo.'}}
 ['gesturestart','gesturechange','gestureend'].forEach(g=>document.addEventListener(g,e=>e.preventDefault()));
 document.addEventListener('visibilitychange',()=>{if(!document.hidden){vigilaInact();if(S&&S.exp-120000<Date.now())refresh().catch(()=>{})}});setInterval(vigilaInact,60000);
 $('#spw').addEventListener('change',e=>{$('#pw').type=e.target.checked?'text':'password'});
@@ -1010,8 +1013,8 @@ async function mfaVerificar(){
   const e=$('#merr'),b=$('#mgo');e.hidden=true;if(b.disabled)return;
   const code=$('#mfa').value.replace(/\D/g,'');if(code.length!==6){e.hidden=false;e.textContent='Escribe los 6 dígitos.';return}
   b.disabled=true;
-  try{await mfaCodigo(MFA.factor,code);$('#mfa-box').hidden=true;$('#lstep1').hidden=false;await start()}
-  catch(x){e.hidden=false;e.textContent=x.message||'No se pudo verificar';$('#mfa').value=''}
+  try{await mfaCodigo(MFA.factor,code);logAcceso('mfa_ok',true,$('#em').value.trim());$('#mfa-box').hidden=true;$('#lstep1').hidden=false;await start()}
+  catch(x){logAcceso('mfa_fallo',false,$('#em').value.trim());e.hidden=false;e.textContent=x.message||'No se pudo verificar';$('#mfa').value=''}
   finally{b.disabled=false}}
 $('#mgo').addEventListener('click',mfaVerificar);
 $('#mno').addEventListener('click',()=>{$('#mfa-box').hidden=true;$('#lstep1').hidden=false;logout()});
@@ -1025,6 +1028,21 @@ function qrImg(t){
   if(/^data:image\/svg\+xml/i.test(q)){const i=q.indexOf(',');let d=q.slice(i+1);try{d=decodeURIComponent(d)}catch(e){}q='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(d)}
   else if(/^<svg/i.test(q))q='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(q);
   return el('img',{src:q,alt:'Código QR para tu app de autenticación',style:'width:200px;height:200px;background:#fff;padding:10px;border-radius:8px;display:block;margin:8px 0'})}
+const ACC_TXT={login_ok:['Entró con contraseña',1],login_fallo:['Contraseña incorrecta',0],mfa_ok:['Código correcto',1],mfa_fallo:['Código incorrecto',0],inactividad:['Sesión cerrada por inactividad',1],salida:['Salió',1]};
+async function accesosCard(card){
+  const body=card.querySelector('p');
+  try{const r=await api('/rest/v1/acceso_log?select=creado,evento,ok,usuario,ip,dispositivo&order=creado.desc&limit=60');
+    if(!r.ok){body.textContent='No se pudo leer el registro.';return}
+    const rows=await r.json(),h24=Date.now()-864e5,fall=rows.filter(x=>!x.ok&&new Date(x.creado).getTime()>h24).length;
+    const list=el('div',{style:'display:grid;gap:6px;margin-top:8px;max-height:340px;overflow:auto'});
+    if(!rows.length)list.append(el('p',{class:'muted'},'Aún no hay accesos registrados. Se llenará con tu próxima entrada.'));
+    rows.forEach(x=>{const t=ACC_TXT[x.evento]||[x.evento,x.ok],mal=!x.ok;
+      list.append(el('div',{style:'display:flex;gap:10px;align-items:center;padding:8px 10px;border-radius:10px;border:1px solid '+(mal?'#C0283A':'var(--line)')+';background:'+(mal?'rgba(192,40,58,.08)':'var(--soft)')},
+        el('span',{style:'width:10px;height:10px;border-radius:50%;flex:none;background:'+(mal?'#C0283A':'#3E8E5A')}),
+        el('div',{style:'min-width:0;flex:1'},el('b',{style:'display:block'},t[0]+(x.usuario?' · '+x.usuario:'')),el('small',{class:'muted'},[x.dispositivo,x.ip].filter(Boolean).join(' · '))),
+        el('small',{class:'muted',style:'white-space:nowrap'},new Date(x.creado).toLocaleString('es-GT',{timeZone:'America/Guatemala',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}))))});
+    body.replaceWith(el('div',{},el('div',{style:'padding:10px 12px;border-radius:12px;font-weight:600;background:'+(fall?'rgba(192,40,58,.12)':'rgba(62,142,90,.12)')+';color:'+(fall?'#C0283A':'#2F6F46')},fall?('⚠ '+fall+' intento'+(fall>1?'s':'')+' fallido'+(fall>1?'s':'')+' en las últimas 24 horas'):'Sin intentos fallidos en las últimas 24 horas'),list));
+  }catch(e){body.textContent='No se pudo leer el registro.'}}
 async function mfaCard(card){
   const body=el('div',{});card.append(body);
   const pintar=async()=>{
@@ -3805,6 +3823,7 @@ async function renderPre(){
     el('div',{style:'margin-top:10px;display:flex;gap:8px;flex-wrap:wrap'},el('button',{class:'btn btn-ghost btn-sm',type:'button',onclick:()=>refrescar(true)},icoEl('refresh'),' Actualizar ahora'),
       el('button',{class:'btn btn-ghost btn-sm',type:'button',onclick:()=>{PREF=Object.assign({},PREF0);prefGuardar();DASH.meses=PREF.rd;AN.rango=PREF.ra;relojPintar();avisosPintar();renderPre();toast('Preferencias restablecidas')}},'Restablecer')));
   const sg=card('w6','Seguridad en 2 pasos','Pide un código de tu teléfono además de la contraseña');mfaCard(sg);
+  const ac=card('w6','Accesos al Workspace','Quién entró, y los intentos fallidos',el('p',{class:'muted'},'Cargando…'));accesosCard(ac);
   /* estado del sistema */
   const est=card('w6','Estado del sistema','Para saber si todo está conectado',el('p',{class:'muted'},'Revisando…'));
   const ex=card('w6','Exportar datos','Descarga una copia para abrir en Excel o Numbers',

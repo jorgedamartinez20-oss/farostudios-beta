@@ -1,0 +1,5 @@
+-- Registro de accesos al Workspace (aplicado en Supabase: migración cerrar_funciones_internas_y_registro_accesos)
+-- Tabla acceso_log (solo el administrador la lee) + función acceso_registrar(evento, ok, usuario, dispositivo)
+-- que cualquiera puede llamar para dejar constancia (con tope de 60 por minuto y lista cerrada de eventos).
+-- También cierra funciones internas que no deben llamarse sin sesión.
+-- Ver el SQL completo en el historial de migraciones del proyecto.
