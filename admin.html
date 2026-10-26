@@ -954,6 +954,13 @@ async function doLogin(){
 }
 try{$('#rec').checked=recOn();const u=localStorage.getItem('faro_adm_u');if(u&&recOn())$('#em').value=u}catch(e){}
 $('#lgo').addEventListener('click',doLogin);
+/* entrada automática: si el gestor de contraseñas rellena (o pegas) la contraseña de golpe, entra solo y pide el código */
+{let ant=0,tec=0;const pw=$('#pw'),em=$('#em');
+ const auto=()=>{if(!$('#v-login').hidden&&!$('#lstep1').hidden&&em.value.trim()&&pw.value.length>=6&&!$('#lgo').disabled)doLogin()};
+ pw.addEventListener('keydown',e=>{tec=Date.now();if(e.key==='Enter')doLogin()});
+ pw.addEventListener('input',()=>{const n=pw.value.length,salto=n-ant>=6&&Date.now()-tec>400;ant=n;if(salto)setTimeout(auto,120)});
+ pw.addEventListener('change',()=>{if(Date.now()-tec>400)setTimeout(auto,120)});
+ let t=0;const iv=setInterval(()=>{if(++t>12||!$('#lerr').hidden){clearInterval(iv);return}if(pw.value.length>=6&&tec===0){clearInterval(iv);auto()}},400);}
 ['pointerdown','keydown','touchstart','scroll'].forEach(ev=>addEventListener(ev,()=>{if(S)actMarca()},{passive:true,capture:true}));
 function vigilaInact(){if(S&&Date.now()-actGet()>INACT){logout();const e=$('#lerr');e.hidden=false;e.textContent='Cerramos tu sesión por inactividad. Entra de nuevo.'}}
 ['gesturestart','gesturechange','gestureend'].forEach(g=>document.addEventListener(g,e=>e.preventDefault()));
