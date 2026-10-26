@@ -249,13 +249,13 @@
   }
 
   /* ---------- texto para el Drive (2 bloques, texto plano) ---------- */
-  function textoDrive(facs, fecha) {
+  function textoDrive(grupos) {   /* grupos: [{ fecha, facs }] en orden: sábado y domingo juntos */
     const b1 = [], b2 = [], sin = [], filas = [];
-    facs.forEach(f => {
+    grupos.forEach(({ fecha, facs }) => facs.forEach(f => {
       const ps = (f.productos || []).filter(p => p.codigo);
       if (!ps.length) { sin.push(f.recibo); return; }
       ps.forEach(p => { b1.push(fDrive(fecha) + '\t' + p.codigo); b2.push('\t' + p.cant + '\t\tFACTURADO\tR-' + f.recibo); filas.push([fDrive(fecha), p.codigo, '', '', String(p.cant), '', 'FACTURADO', 'R-' + f.recibo]); });
-    });
+    }));
     return { b1: b1.join('\n'), b2: b2.join('\n'), todo: b1.map((x, i) => x + '\t\t' + b2[i]).join('\n'), n: b1.length, sin, filas };
   }
   const copiar = async (t, ok) => {
@@ -586,7 +586,8 @@
       const ps = (f.productos || []), dep = num(f.deposito) > 0 ? [f.referencia ? 'ref. ' + f.referencia : '', f.banco].filter(Boolean).join(' · ') : '';
       l.append(el('div', { class: 'mp-fila' + (S.edit && S.edit.id === f.id ? ' mp-on' : '') },
         el('span', { class: 'mp-num' }, String(i + 1)),
-        el('div', { class: 'mp-fi' }, el('b', {}, nomVis(f.nombre)), el('small', { class: 'muted' }, 'Recibo ' + f.recibo + (dep ? ' · Depósito ' + dep : '') + (f.observaciones ? ' · ' + f.observaciones : '') + ' · ' + (ps.length ? ps.map(p => p.codigo + (p.cant > 1 ? ' ×' + p.cant : '')).join(', ') : 'sin productos ⚠'))),
+        el('div', { class: 'mp-fi' }, el('b', {}, nomVis(f.nombre)), el('small', { class: 'muted' }, 'Recibo ' + f.recibo + (dep ? ' · Depósito ' + dep : '') + (f.observaciones ? ' · ' + f.observaciones : '')),
+          ps.length ? el('div', { class: 'mp-pl' }, ps.map(p => el('span', {}, el('b', {}, p.codigo), p.cant > 1 ? el('i', {}, ' × ' + p.cant) : null))) : el('small', { class: 'mp-warn2' }, 'sin productos ⚠')),
         el('span', { class: 'mp-tags' }, pt.map(x => el('span', { class: 'mp-tag mp-' + x[0] }, ico(x[1]), ' ', x[2] + (pt.length > 1 ? ' ' + money(x[3]) : '')))), el('b', { class: 'mp-mo' }, Q(tot)),
         el('div', { class: 'mp-ac' }, btn('', 'edit', () => editarFactura(f), 'btn-ghost', 'Editar'), btn(S.confirmar === 'f' + f.id ? '¿Seguro?' : '', 'trash', () => borrar('mp_facturas', f.id, 'f' + f.id), S.confirmar === 'f' + f.id ? 'btn-gold' : 'btn-ghost', 'Borrar'))));
       if (S.edit && S.edit.id === f.id) l.append(formFactura(S.edit));
@@ -731,12 +732,13 @@
   /* ---------- 3 · para el Drive ---------- */
   function vistaDrive() {
     const w = el('div', {});
-    const d = textoDrive(facsDe(S.fecha), S.fecha);
+    const dias = diasSemana(S.fecha), d = textoDrive(dias.map(f => ({ fecha: f, facs: facsDe(f) })));
+    w.append(el('p', { class: 'muted' }, 'Todo el fin de semana junto: ' + dias.map(f => DIA[parte(f).dow] + ' ' + fCorta(f)).join(' + ') + '. Si estás en el domingo, aquí van sábado y domingo en la misma lista.'));
     const HD = ['FECHA', 'CÓDIGO', 'DESCRIPCIÓN', 'ENTRADA', 'SALIDA', 'ENTREGADO A', 'OBSERVACIONES', 'Nº HOJA'];
     const tabla = (c0, c1) => el('div', { class: 'mp-tw' }, el('table', { class: 'mp-tb2' },
       el('thead', {}, el('tr', {}, HD.slice(c0, c1).map(h => el('th', {}, h)))),
       el('tbody', {}, d.filas.map(r => el('tr', {}, r.slice(c0, c1).map(x => el('td', {}, x)))))));
-    if (!d.n) { w.append(el('div', { class: 'card' }, el('p', { class: 'muted' }, 'No hay productos capturados en las facturas de este día. Agrégalos en «Corte del día».'))); }
+    if (!d.n) { w.append(el('div', { class: 'card' }, el('p', { class: 'muted' }, 'No hay productos capturados en las facturas de este fin de semana. Agrégalos en «Corte del día».'))); }
     else {
       w.append(
         el('div', { class: 'card' }, el('h3', {}, el('span', { class: 'mp-bn' }, '1'), ' Fecha + código · pega en A ', el('span', { class: 'mp-n' }, String(d.n))), tabla(0, 2), el('div', { class: 'mp-acts' }, btn('Copiar bloque 1', 'copy', () => copiar(d.b1, 'Bloque 1 copiado'), 'btn-gold'))),
@@ -1120,6 +1122,7 @@
 .mp-dmef{display:grid;gap:3px;margin-top:6px;padding-top:8px;border-top:1px dashed var(--line);font-size:.9rem}.mp-dmef span{display:flex;justify-content:space-between;gap:10px}.mp-dmf{margin-top:2px;padding:5px 9px;border-radius:9px;background:rgba(94,158,107,.2);border:1px solid #5E9E6B}.mp-dmf b{font-size:1.02rem}
 .mp-calc2{align-content:start}.mp-cal{align-content:start}.mp-c{align-self:start;min-width:0}
 .mp-dep .mp-f3{grid-template-columns:1fr 1fr 1fr}@media (max-width:700px){.mp-dep .mp-f3{grid-template-columns:1fr}}
+.mp-pl{display:grid;gap:3px;margin-top:6px;padding-left:10px;border-left:3px solid #B8A06A}.mp-pl span{font-size:.92rem}.mp-pl i{font-style:normal;color:var(--muted)}.mp-warn2{color:#B8603A}
 .mp-dep{padding:12px;border-radius:14px;background:rgba(201,162,39,.1);border:1px solid rgba(201,162,39,.45);margin-bottom:10px}.mp-depl{display:block;font-weight:700;margin-bottom:6px}
 .mp-iso{margin-bottom:14px}.mp-isog{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:18px;align-items:center}@media (max-width:860px){.mp-isog{grid-template-columns:1fr}}
 .mp-isos{width:100%;height:auto;max-height:340px;color:var(--text)}.mp-isol{display:grid;gap:10px}.mp-il{display:flex;gap:12px;align-items:center;padding:10px 14px;border-radius:14px;background:var(--soft);border:1px solid var(--line)}.mp-il i{flex:none;width:14px;height:44px;border-radius:7px}.mp-il>div{display:grid;gap:1px}.mp-il b{font-size:1.25rem}.mp-ilt{background:rgba(184,160,106,.16);border-color:var(--oro)}
