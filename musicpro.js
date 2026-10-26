@@ -702,7 +702,7 @@
     const cv = $('.mp-cvl', host); if (!cv || !S.lunesF) return; const t = ++lunesTk;
     requestAnimationFrame(() => { if (t === lunesTk && cv.isConnected) dibujarLunes(cv, S.lunesF, 0.5); });
   }
-  async function blobLunes() { await (document.fonts && document.fonts.ready); const cv = document.createElement('canvas'); dibujarLunes(cv, S.lunesF, 1); return new Promise(ok => cv.toBlob(ok, 'image/png')); }
+  async function blobLunes() { await (document.fonts && document.fonts.ready); const cv = document.createElement('canvas'); dibujarLunes(cv, S.lunesF, 1.5); return new Promise(ok => cv.toBlob(ok, 'image/png')); }
   async function descargarLunes() {
     const b = await blobLunes(); if (!b) { ctx.toast('No se pudo crear la imagen'); return; }
     const a = el('a', { href: URL.createObjectURL(b), download: 'registro-lunes-' + S.lunesF + '.png' }); document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000); ctx.toast('Foto guardada');
