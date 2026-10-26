@@ -95,6 +95,8 @@
   const contado = b => { b = b || {}; return r2(DEN.reduce((a, d) => a + d * num(b[d]), 0) + num(b.mon) + num(b.extra)); };
   const facsDe = (f, D) => (D || S.D).facs.filter(x => x.fecha === f);
   const egsDe = (f, D) => (D || S.D).egs.filter(x => x.fecha === f);
+  const esAnulada = f => /^\s*(RECIBO|FACTURA|VOUCHER)\s+ANULAD[OA]/i.test(String((f && f.nombre) || ''));
+  const validas = a => a.filter(f => !esAnulada(f));
   const registrado = f => !!S.D.cortes[f];
   /* ingreso en caja: el sábado (y un día extraordinario) lo indica David; el domingo arranca con el total en caja del sábado */
   function saldoDe(f, D) {
@@ -165,10 +167,13 @@
       const box = $('.mp-hintbox', host); if (box) box.replaceChildren(...hintNodes());
     } catch (e) { /* es solo una referencia */ }
   }
+  /* el recibo siguiente sigue al último del fin de semana (sábado + domingo); si aún no hay, al último anterior */
+  const cicloFacs = () => diasSemana(S.fecha).flatMap(f => facsDe(f));
   function sugerirRecibo() {
-    const dia = facsDe(S.fecha).map(f => parseInt(f.recibo, 10)).filter(isFinite);
+    const ciclo = cicloFacs().map(f => parseInt(f.recibo, 10)).filter(isFinite);
+    if (ciclo.length) return String(ciclo[ciclo.length - 1] + 1);
     const todos = S.D.facs.filter(f => f.fecha <= S.fecha).map(f => parseInt(f.recibo, 10)).filter(isFinite);
-    const l = dia.length ? dia : todos.slice(-1); return l.length ? String(Math.max(...l) + 1) : '';
+    return todos.length ? String(todos[todos.length - 1] + 1) : '';
   }
 
   /* ---------- días: se crean solos al llegar (sáb y dom desde las 10 am) ---------- */
@@ -202,18 +207,20 @@
   }
   function leerForm(f) {
     const pa = f.mixto ? { efectivo: r2(num(f.mx.efectivo)), tarjeta: r2(num(f.mx.tarjeta)), deposito: r2(num(f.mx.deposito)) } : { efectivo: f.metodo === 'efectivo' ? r2(num(f.monto)) : 0, tarjeta: f.metodo === 'tarjeta' ? r2(num(f.monto)) : 0, deposito: f.metodo === 'deposito' ? r2(num(f.monto)) : 0 };
+    const an = esAnulada(f);
+    if (an) pa.efectivo = pa.tarjeta = pa.deposito = 0;
     return {
       fecha: S.fecha, recibo: limpiar(f.recibo), nombre: limpiar(f.nombre).toUpperCase(),
       efectivo: pa.efectivo, tarjeta: pa.tarjeta, deposito: pa.deposito,
-      referencia: pa.deposito > 0 ? limpiar(f.ref) : '', banco: pa.deposito > 0 ? limpiar(f.banco).toUpperCase() : '', autorizacion: pa.deposito > 0 ? limpiar(f.aut) : '', observaciones: limpiar(f.obs),
-      productos: f.prods.map(p => ({ codigo: limpiar(p.codigo), cant: Math.max(1, parseInt(p.cant, 10) || 1) })).filter(p => p.codigo)
+      referencia: pa.deposito > 0 ? limpiar(f.ref) : '', banco: pa.deposito > 0 ? limpiar(f.banco).toUpperCase() : '', autorizacion: pa.deposito > 0 ? limpiar(f.aut) : '', observaciones: an ? '' : limpiar(f.obs),
+      productos: an ? [] : f.prods.map(p => ({ codigo: limpiar(p.codigo), cant: Math.max(1, parseInt(p.cant, 10) || 1) })).filter(p => p.codigo)
     };
   }
   async function guardarFactura(f) {
     f = f || S.form;
     const d = leerForm(f);
     if (!d.recibo) { ctx.toast('Falta el número de recibo'); return; }
-    if (!(montoDe(f) > 0)) { ctx.toast('Falta el monto de la factura'); return; }
+    if (!esAnulada(f) && !(montoDe(f) > 0)) { ctx.toast('Falta el monto de la factura'); return; }
     if (d.deposito > 0 && !d.referencia) { ctx.toast('Falta la referencia de la transacción del depósito'); return; }
     if (!d.nombre) d.nombre = 'CF';
     try {
@@ -252,6 +259,7 @@
   function textoDrive(grupos) {   /* grupos: [{ fecha, facs }] en orden: sábado y domingo juntos */
     const b1 = [], b2 = [], sin = [], filas = [];
     grupos.forEach(({ fecha, facs }) => facs.forEach(f => {
+      if (esAnulada(f)) { const t = String(f.nombre).trim().toUpperCase(); b1.push(fDrive(fecha) + '\t' + t); b2.push('\t\t\t' + t + '\tR-' + f.recibo); filas.push([fDrive(fecha), t, '', '', '', '', t, 'R-' + f.recibo]); return; }
       const ps = (f.productos || []).filter(p => p.codigo);
       if (!ps.length) { sin.push(f.recibo); return; }
       ps.forEach(p => { b1.push(fDrive(fecha) + '\t' + p.codigo); b2.push('\t' + p.cant + '\t\tFACTURADO\tR-' + f.recibo); filas.push([fDrive(fecha), p.codigo, '', '', String(p.cant), '', 'FACTURADO', 'R-' + f.recibo]); });
@@ -312,7 +320,7 @@
     let X = 50;
     cards.forEach((q, i) => {
       const w = q[2];
-      if (i === 0) { box(X, 260, w, 250, CL.navy); T(q[0], X + 30, 310, 26, '700', '#C9D6EA'); T(QQ(q[1]), X + 30, 395, 70, '700', '#fff', 'left', w - 60); T(d.facs.length + (d.facs.length === 1 ? ' factura' : ' facturas'), X + 30, 465, 26, '400', '#C9D6EA'); }
+      if (i === 0) { box(X, 260, w, 250, CL.navy); T(q[0], X + 30, 310, 26, '700', '#C9D6EA'); T(QQ(q[1]), X + 30, 395, 70, '700', '#fff', 'left', w - 60); T(validas(d.facs).length + (validas(d.facs).length === 1 ? ' factura' : ' facturas') + (d.facs.length > validas(d.facs).length ? ' · ' + (d.facs.length - validas(d.facs).length) + ' anulada' : ''), X + 30, 465, 26, '400', '#C9D6EA'); }
       else { box(X, 260, w, 250, i === 1 ? '#FFF1B8' : '#fff'); if (i === 1) { c.save(); rr(X, 260, w, 250, 22); c.strokeStyle = '#E2B100'; c.lineWidth = 4; c.stroke(); c.restore(); } c.fillStyle = q[3]; rr(X, 260, w, 12, 6); c.fill(); T(q[0], X + 26, 312, 24, '700', i === 1 ? '#7A5A00' : CL.mut); T(QQ(q[1]), X + 26, 385, i === 1 ? 46 : 44, '700', CL.ink, 'left', w - 50); T(i === 1 ? 'con esto arranca la caja' : (ven ? Math.round(q[1] / ven * 100) + '% de las ventas' : '—'), X + 26, 455, 22, '400', CL.mut, 'left', w - 50); }
       X += w + 25;
     });
@@ -331,7 +339,7 @@
     rows.forEach((r, i) => {
       const f = r.f, ym = yy + r.h / 2; if (i % 2) { c.fillStyle = CL.alt; c.fillRect(70, yy, DW - 40, r.h); }
       T(String(f.recibo), 90, ym, 26, '700', CL.ink);
-      r.L.forEach((l, q) => T(l, 200, ym + (q - (r.L.length - 1) / 2) * 30, CNS, '400', CL.ink));
+      r.L.forEach((l, q) => T(l, 200, ym + (q - (r.L.length - 1) / 2) * 30, CNS, esAnulada(f) ? '700' : '400', esAnulada(f) ? '#C0283A' : CL.ink));
       r.O.forEach((l, q) => T(l, 1640, ym + (q - (r.O.length - 1) / 2) * 28, 22, '400', CL.mut));
       [f.efectivo, f.tarjeta, f.deposito].forEach((v, j) => AC(v, R[j], ym, 26, '400', CL.ink));
       AC(num(f.efectivo) + num(f.tarjeta) + num(f.deposito), R[3], ym, 27, '700', CL.ink); yy += r.h;
@@ -508,7 +516,7 @@
     if (abre) setTimeout(() => { const a = host.querySelector('.mp-acc[data-n="' + n + '"]'); if (a) { const r = a.getBoundingClientRect(); if (r.top < 90 || r.bottom > innerHeight) a.scrollIntoView({ behavior: 'smooth', block: 'start' }); } }, 320);
   }
   function vistaCorte() {
-    const w = el('div', {}), sd = saldoDe(S.fecha), t = totalDia(S.fecha), nf = facsDe(S.fecha).length;
+    const w = el('div', {}), sd = saldoDe(S.fecha), t = totalDia(S.fecha), nf = validas(facsDe(S.fecha)).length;
     if (S.open == null) S.open = sd.estado === 'pendiente' ? 1 : 2;
     const g = el('div', { class: 'mp-grid' });
     const izq = el('div', { class: 'mp-col' });
@@ -539,7 +547,7 @@
 
   function formFactura(f) {
     f = f || S.form || (S.form = formVacio());
-    const gap = (() => { const n = parseInt(f.recibo, 10); const prev = facsDe(S.fecha).filter(x => x.id !== f.id).map(x => parseInt(x.recibo, 10)).filter(isFinite); if (!isFinite(n) || !prev.length || f.id) return ''; const m = Math.max(...prev); return n > m + 1 || n <= m ? 'El último recibo de hoy fue el ' + m + '. ¿Seguro que es el ' + n + '?' : ''; })();
+    const gap = (() => { const n = parseInt(f.recibo, 10); const prev = cicloFacs().filter(x => x.id !== f.id).map(x => parseInt(x.recibo, 10)).filter(isFinite); if (!isFinite(n) || !prev.length || f.id) return ''; const m = prev[prev.length - 1]; return n !== m + 1 ? 'El último recibo de este fin de semana fue el ' + m + ' (sigue el ' + (m + 1) + '). ¿Seguro que es el ' + n + '?' : ''; })();
     const inRec = el('input', { class: 'mp-frec', inputmode: 'numeric', value: f.recibo, oninput: e => { f.recibo = e.target.value; } });
     const inNom = el('input', { class: 'mp-fnombre', value: f.nombre, placeholder: 'Nombre completo o CF', autocomplete: 'off', oninput: e => { f.nombre = e.target.value; } });
     const inMonto = el('input', { class: 'mp-fmonto', inputmode: 'decimal', value: f.mixto ? (montoDe(f) || '') : f.monto, placeholder: f.mixto ? 'suma' : '0.00', readonly: f.mixto ? true : null, 'data-num': '1', oninput: e => { f.monto = e.target.value; }, onkeydown: e => { if (e.key === 'Enter') guardarFactura(f); } });
@@ -560,6 +568,8 @@
     return el('div', { class: 'card' + (f.id ? ' mp-einline' : '') },
       el('h3', {}, f.id ? null : el('span', { class: 'mp-bn' }, '2'), ' ', ico(f.id ? 'edit' : 'plus'), f.id ? ' Editando factura ' + f.recibo : ' Ventas · agregar factura'),
       el('div', { class: 'mp-f3' }, field('Recibo', inRec), field('Nombre', inNom), field('Monto (Q)', inMonto)),
+      el('div', { class: 'mp-anu' }, el('small', { class: 'muted' }, 'Si se anuló:'), btn('Recibo anulado', 'x', () => { f.nombre = 'RECIBO ANULADO'; f.monto = ''; f.mixto = false; pintar(); }), btn('Factura anulada', 'x', () => { f.nombre = 'FACTURA ANULADA'; f.monto = ''; f.mixto = false; pintar(); }),
+        esAnulada(f) ? el('small', { class: 'mp-warn2' }, 'Se guarda con el número de recibo y sin montos ni productos.') : null),
       gap ? el('p', { class: 'mp-warn' }, ico('warn'), ' ', gap) : null,
       el('div', { class: 'field' }, el('label', {}, 'Forma de pago'), met), mxBox,
       (f.metodo === 'deposito' && !f.mixto) || f.mixto ? el('div', { class: 'mp-dep' }, el('label', { class: 'mp-depl' }, ico('bank'), f.mixto ? ' Datos del depósito (solo si hay depósito)' : ' Datos del depósito'),
@@ -588,7 +598,7 @@
         el('span', { class: 'mp-num' }, String(i + 1)),
         el('div', { class: 'mp-fi' }, el('b', {}, nomVis(f.nombre)), el('small', { class: 'muted' }, 'Recibo ' + f.recibo + (dep ? ' · Depósito ' + dep : '') + (f.observaciones ? ' · ' + f.observaciones : '')),
           ps.length ? el('div', { class: 'mp-pl' }, ps.map(p => el('span', {}, el('b', {}, p.codigo), p.cant > 1 ? el('i', {}, ' × ' + p.cant) : null))) : el('small', { class: 'mp-warn2' }, 'sin productos ⚠')),
-        el('span', { class: 'mp-tags' }, pt.map(x => el('span', { class: 'mp-tag mp-' + x[0] }, ico(x[1]), ' ', x[2] + (pt.length > 1 ? ' ' + money(x[3]) : '')))), el('b', { class: 'mp-mo' }, Q(tot)),
+        el('span', { class: 'mp-tags' }, esAnulada(f) ? el('span', { class: 'mp-tag mp-anut' }, 'Anulada') : null, pt.map(x => el('span', { class: 'mp-tag mp-' + x[0] }, ico(x[1]), ' ', x[2] + (pt.length > 1 ? ' ' + money(x[3]) : '')))), el('b', { class: 'mp-mo' }, Q(tot)),
         el('div', { class: 'mp-ac' }, btn('', 'edit', () => editarFactura(f), 'btn-ghost', 'Editar'), btn(S.confirmar === 'f' + f.id ? '¿Seguro?' : '', 'trash', () => borrar('mp_facturas', f.id, 'f' + f.id), S.confirmar === 'f' + f.id ? 'btn-gold' : 'btn-ghost', 'Borrar'))));
       if (S.edit && S.edit.id === f.id) l.append(formFactura(S.edit));
     });
@@ -833,7 +843,7 @@
     if (yPend[y]) return yPend[y];
     const rng = 'fecha=gte.' + y + '-01-01&fecha=lt.' + (+y + 1) + '-01-01';
     return (yPend[y] = Promise.all([
-      get('mp_facturas?select=fecha,efectivo,tarjeta,deposito&' + rng + '&order=fecha.asc&limit=5000'),
+      get('mp_facturas?select=fecha,nombre,efectivo,tarjeta,deposito&' + rng + '&order=fecha.asc&limit=5000'),
       get('mp_egresos?select=fecha,cantidad&' + rng + '&limit=5000'),
       get('mp_cortes?select=*&' + rng),
       get('mp_config?select=*')
@@ -848,7 +858,7 @@
     const pct = num(cfg.porcentaje) || 0, dias = {}, meses = [];
     for (let m = 1; m <= 12; m++) meses.push({ m, ym: y + '-' + String(m).padStart(2, '0'), ventas: 0, ef: 0, ta: 0, de: 0, eg: 0, nf: 0, dias: 0, com: 0, nc: 0 });
     const dd = f => dias[f] || (dias[f] = { f, ventas: 0, nf: 0, reg: false });
-    D.facs.forEach(x => { const mo = meses[parte(x.fecha).m - 1]; if (!mo) return; const e = num(x.efectivo), t = num(x.tarjeta), p = num(x.deposito); mo.ef += e; mo.ta += t; mo.de += p; mo.ventas += e + t + p; mo.nf++; const d = dd(x.fecha); d.ventas += e + t + p; d.nf++; });
+    D.facs.forEach(x => { const mo = meses[parte(x.fecha).m - 1]; if (!mo) return; const e = num(x.efectivo), t = num(x.tarjeta), p = num(x.deposito); mo.ef += e; mo.ta += t; mo.de += p; mo.ventas += e + t + p; const d = dd(x.fecha); d.ventas += e + t + p; if (!esAnulada(x)) { mo.nf++; d.nf++; } });
     D.egs.forEach(x => { const mo = meses[parte(x.fecha).m - 1]; if (mo) mo.eg += num(x.cantidad); });
     Object.keys(D.cortes).forEach(f => { dd(f).reg = true; const mo = meses[parte(f).m - 1]; if (mo) mo.dias++; });
     meses.forEach(mo => { ['ef', 'ta', 'de', 'eg', 'ventas'].forEach(k => { mo[k] = r2(mo[k]); }); mo.nc = num(cfg['nc:' + mo.ym]); mo.com = mo.ventas > 0 || mo.nc ? r2(mo.ventas * pct / 100 - mo.nc) : 0; });
@@ -1122,6 +1132,7 @@
 .mp-dmef{display:grid;gap:3px;margin-top:6px;padding-top:8px;border-top:1px dashed var(--line);font-size:.9rem}.mp-dmef span{display:flex;justify-content:space-between;gap:10px}.mp-dmf{margin-top:2px;padding:5px 9px;border-radius:9px;background:rgba(94,158,107,.2);border:1px solid #5E9E6B}.mp-dmf b{font-size:1.02rem}
 .mp-calc2{align-content:start}.mp-cal{align-content:start}.mp-c{align-self:start;min-width:0}
 .mp-dep .mp-f3{grid-template-columns:1fr 1fr 1fr}@media (max-width:700px){.mp-dep .mp-f3{grid-template-columns:1fr}}
+.mp-anu{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:-2px 0 10px}.mp-anut{color:#C0283A;font-weight:700}
 .mp-pl{display:grid;gap:3px;margin-top:6px;padding-left:10px;border-left:3px solid #B8A06A}.mp-pl span{font-size:.92rem}.mp-pl i{font-style:normal;color:var(--muted)}.mp-warn2{color:#B8603A}
 .mp-dep{padding:12px;border-radius:14px;background:rgba(201,162,39,.1);border:1px solid rgba(201,162,39,.45);margin-bottom:10px}.mp-depl{display:block;font-weight:700;margin-bottom:6px}
 .mp-iso{margin-bottom:14px}.mp-isog{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:18px;align-items:center}@media (max-width:860px){.mp-isog{grid-template-columns:1fr}}
