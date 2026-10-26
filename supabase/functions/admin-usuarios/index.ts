@@ -13,6 +13,7 @@ const ORIGENES = [
   "https://jorgedamartinez20-oss.github.io",
   "https://farostudios.net",
   "https://www.farostudios.net",
+  "https://workspace.farostudios.net",
   "null",
   "http://localhost:8000",
   "http://localhost:3000",

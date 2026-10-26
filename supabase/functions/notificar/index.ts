@@ -12,6 +12,7 @@ const ORIGENES = [
   "https://jorgedamartinez20-oss.github.io",
   "https://farostudios.net",
   "https://www.farostudios.net",
+  "https://workspace.farostudios.net",
 ];
 
 function cors(req: Request) {

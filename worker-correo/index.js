@@ -21,7 +21,7 @@ const DEF = {
   SUPABASE_URL: 'https://keivqvsgdfhthouzlqxo.supabase.co',
   SUPABASE_KEY: 'sb_publishable_5nj3M7rjQs3phGU6u2uNqw_3tjTL6PE',
   ADMIN_EMAIL: 'reservas@farostudios.net',
-  ORIGENES: 'https://jorgedamartinez20-oss.github.io,https://farostudios.net,https://www.farostudios.net',
+  ORIGENES: 'https://jorgedamartinez20-oss.github.io,https://farostudios.net,https://www.farostudios.net,https://workspace.farostudios.net',
 };
 const cfg = (env, k) => (env && env[k]) || DEF[k];
 
