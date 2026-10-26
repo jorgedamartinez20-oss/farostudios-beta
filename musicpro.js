@@ -73,7 +73,7 @@
   };
   let host = null, ctx = null, css1 = false, logoImg = null, logoCargando = false, tok = 0, modal = null, pegar = false;
 
-  const formVacio = () => ({ id: null, recibo: '', nombre: '', metodo: 'tarjeta', mixto: false, mx: { efectivo: '', tarjeta: '', deposito: '' }, monto: '', obs: '', prods: [{ codigo: '', cant: 1 }] });
+  const formVacio = () => ({ id: null, recibo: '', nombre: '', metodo: 'tarjeta', mixto: false, mx: { efectivo: '', tarjeta: '', deposito: '' }, monto: '', ref: '', banco: '', aut: '', obs: '', prods: [{ codigo: '', cant: 1 }] });
   const montoDe = f => f.mixto ? r2(num(f.mx.efectivo) + num(f.mx.tarjeta) + num(f.mx.deposito)) : r2(num(f.monto));
   const diaInicial = () => { const f = hoy(), d = parte(f).dow; return d === 6 || d === 0 ? f : mover(f, -d); };
 
@@ -205,7 +205,7 @@
     return {
       fecha: S.fecha, recibo: limpiar(f.recibo), nombre: limpiar(f.nombre).toUpperCase(),
       efectivo: pa.efectivo, tarjeta: pa.tarjeta, deposito: pa.deposito,
-      referencia: '', observaciones: limpiar(f.obs),   /* en un depósito, observaciones = número de depósito */
+      referencia: pa.deposito > 0 ? limpiar(f.ref) : '', banco: pa.deposito > 0 ? limpiar(f.banco).toUpperCase() : '', autorizacion: pa.deposito > 0 ? limpiar(f.aut) : '', observaciones: limpiar(f.obs),
       productos: f.prods.map(p => ({ codigo: limpiar(p.codigo), cant: Math.max(1, parseInt(p.cant, 10) || 1) })).filter(p => p.codigo)
     };
   }
@@ -214,7 +214,7 @@
     const d = leerForm(f);
     if (!d.recibo) { ctx.toast('Falta el número de recibo'); return; }
     if (!(montoDe(f) > 0)) { ctx.toast('Falta el monto de la factura'); return; }
-    if (d.deposito > 0 && !d.observaciones) { ctx.toast('Falta el número de depósito'); return; }
+    if (d.deposito > 0 && !d.referencia) { ctx.toast('Falta la referencia de la transacción del depósito'); return; }
     if (!d.nombre) d.nombre = 'CF';
     try {
       if (f.id) await send('PATCH', 'mp_facturas?id=eq.' + f.id, d); else await send('POST', 'mp_facturas', d);
@@ -226,7 +226,7 @@
   }
   function editarFactura(f) {
     const metodo = num(f.efectivo) > 0 ? 'efectivo' : num(f.deposito) > 0 ? 'deposito' : 'tarjeta', nPartes = [f.efectivo, f.tarjeta, f.deposito].filter(x => num(x) > 0).length, sx = x => num(x) > 0 ? String(r2(num(x))) : '';
-    S.edit = { id: f.id, recibo: f.recibo, nombre: f.nombre, metodo, mixto: nPartes > 1, mx: { efectivo: sx(f.efectivo), tarjeta: sx(f.tarjeta), deposito: sx(f.deposito) }, monto: String(r2(num(f.efectivo) + num(f.tarjeta) + num(f.deposito))), obs: f.observaciones || f.referencia || '', prods: (f.productos && f.productos.length ? f.productos : [{ codigo: '', cant: 1 }]).map(p => ({ codigo: p.codigo, cant: p.cant })) };
+    S.edit = { id: f.id, recibo: f.recibo, nombre: f.nombre, metodo, mixto: nPartes > 1, mx: { efectivo: sx(f.efectivo), tarjeta: sx(f.tarjeta), deposito: sx(f.deposito) }, monto: String(r2(num(f.efectivo) + num(f.tarjeta) + num(f.deposito))), ref: f.referencia || '', banco: f.banco || '', aut: f.autorizacion || '', obs: f.observaciones || '', prods: (f.productos && f.productos.length ? f.productos : [{ codigo: '', cant: 1 }]).map(p => ({ codigo: p.codigo, cant: p.cant })) };
     S.open = 2; pintar();
     const card = $('.mp-einline', host);
     if (card) { card.scrollIntoView({ behavior: 'smooth', block: 'center' }); card.classList.add('mp-flash'); setTimeout(() => card.classList.remove('mp-flash'), 1600); }
@@ -267,102 +267,92 @@
    *  CORTE DE CAJA · imagen (mismo esquema que Numbers, diseño moderno, Century Gothic)
    *  Espacio 2000 × 1307.7 → PNG 3900 × 2550 (oficio horizontal, 13 × 8.5 in a 300 ppp)
    * ===================================================================== */
-  const W = 2000, H = 2550 / 1.95, PX = 1.95;
-  const K2 = (H - 60 - 244) / (1030 - 244);
-  const Y = y => y < 244 ? y : 244 + (y - 244) * K2;
-  const FONT = "'Century Gothic','CenturyGothic','Questrial','Avenir Next','Helvetica Neue',Arial,sans-serif";
-  const CL = { ink: '#0F172A', mut: '#475569', line: '#CBD5E1', navy: '#1E3A5F', navy2: '#3B5B85', head: '#E8EEF6', alt: '#F6F8FB', tot: '#DCE8F5', eg: '#2F6F7E', ok: '#1B7F4B', okbg: '#DDF3E6' };
+  const PX = 1.95, FONT = "'Century Gothic','CenturyGothic','Questrial','Avenir Next','Helvetica Neue',Arial,sans-serif";
+  const CL = { ink: '#0F172A', mut: '#475569', line: '#CBD5E1', navy: '#1E3A5F', navy2: '#3B5B85', head: '#E8EEF6', alt: '#F6F8FB', tot: '#DCE8F5', eg: '#2F6F7E', ok: '#1B7F4B', okbg: '#DDF3E6', ef: '#5E9E6B', ta: '#3B5B85', de: '#C9A227', oro: '#B8A06A' };
+  /* CIERRE DEL DÍA (imagen para correo / jefes): fecha y lugar de héroe, ventas por forma de pago, detalle, caja y depósitos.
+     Ancho de diseño 2600; el alto crece con las facturas. px conserva la escala de siempre (1.95 → 3900 px de ancho). */
+  const CW = 2600, CNW = 620, COW = 330, CNS = 25;
+  let _cm = null;
+  const lineasDe = (txt, w) => {
+    txt = String(txt || ''); if (!txt) return []; if (!_cm) _cm = document.createElement('canvas').getContext('2d');
+    _cm.font = '400 ' + CNS + 'px ' + FONT; if (_cm.measureText(txt).width <= w) return [txt];
+    const p = txt.split(' '), out = []; let a = '';
+    for (let i = 0; i < p.length; i++) { const t = a ? a + ' ' + p[i] : p[i]; if (_cm.measureText(t).width > w && a) { out.push(a); a = p[i]; } else a = t; }
+    out.push(a); return out;
+  };
+  const obsDe = f => [num(f.deposito) > 0 && f.referencia ? 'Ref. ' + f.referencia : '', num(f.deposito) > 0 ? f.banco : '', f.observaciones].filter(Boolean).join(' · ');
   function dibujar(cv, d, px) {
-    px = px || PX; const c = cv.getContext('2d');
-    cv.width = Math.round(W * px); cv.height = Math.round(H * px);
-    c.setTransform(px, 0, 0, px, 0, 0);
-    c.fillStyle = '#fff'; c.fillRect(0, 0, W, H); c.textBaseline = 'middle';
+    px = px || PX; const k = px * 2000 / CW, W = CW, rowH = 64;
+    const rows = d.facs.map(f => { const L = lineasDe(String(f.nombre || '').toUpperCase(), CNW), O = lineasDe(obsDe(f), COW); return { f, L, O, h: Math.max(L.length, O.length) > 1 ? Math.max(L.length, O.length) * 30 + 32 : rowH }; });
+    const deps = d.facs.filter(f => num(f.deposito) > 0), egs = d.egs;
+    const sumH = rows.reduce((a, r) => a + r.h, 0), ch = Math.max(70 + 48 + sumH + rowH + 30, 540);
+    const dh = deps.length ? 130 + deps.length * rowH : 210, eh = egs.length ? 130 + egs.length * rowH : 0;
+    const y1 = 720, y2 = y1 + ch + 30, y3 = y2 + dh + (eh ? 30 : 0), H = Math.round(y3 + eh + 80);
+    cv.width = Math.round(W * k); cv.height = Math.round(H * k); cv.style.setProperty('--r', (W / H).toFixed(4));
+    const c = cv.getContext('2d'); c.setTransform(k, 0, 0, k, 0, 0); c.textBaseline = 'middle';
+    const m = v => num(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }), QQ = v => 'Q ' + m(v);
     const rr = (x, y, w, h, r) => { c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r); c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath(); };
-    const R = (x1, y1, x2, y2, o) => {
-      o = o || {}; const a = Y(y1), b = Y(y2);
-      if (o.r) rr(x1, a, x2 - x1, b - a, o.r); else { c.beginPath(); c.rect(x1, a, x2 - x1, b - a); }
-      if (o.fill) { c.fillStyle = o.fill; c.fill(); }
-      if (o.stroke !== null) { c.strokeStyle = o.stroke || CL.line; c.lineWidth = o.lw || 1.3; c.stroke(); }
+    const box = (x, y, w, h, f, r, sh) => { c.save(); if (sh !== 0) { c.shadowColor = 'rgba(15,23,42,.14)'; c.shadowBlur = 22; c.shadowOffsetY = 5; } rr(x, y, w, h, r == null ? 22 : r); c.fillStyle = f; c.fill(); c.restore(); };
+    const T = (t, x, y, s, w, col, a, mw) => { c.font = w + ' ' + s + 'px ' + FONT; if (mw) { const q = c.measureText(t).width; if (q > mw) { s *= mw / q; c.font = w + ' ' + s + 'px ' + FONT; } } c.fillStyle = col; c.textAlign = a || 'left'; c.fillText(t, x, y); };
+    /* contabilidad: Q a la izquierda de la casilla, monto a la derecha; vacío si no hay */
+    const AC = (v, x, y, sz, w, col, wd) => { if (!(num(v) > 0)) return; T('Q', x - (wd || 168), y, sz * .8, '400', col, 'left'); T(m(v), x, y, sz, w, col, 'right'); };
+    const ef = d.t.ef, ta = d.t.ta, de = d.t.de, ven = d.t.ventas, p = parte(d.fecha);
+    c.fillStyle = '#EEF2F8'; c.fillRect(0, 0, W, H);
+    /* encabezado: fecha a la izquierda, lugar a la derecha */
+    c.fillStyle = CL.navy; c.fillRect(0, 0, W, 230);
+    if (logoImg) { c.save(); rr(50, 52, 327, 126, 16); c.clip(); c.drawImage(logoImg, 50, 52, 327, 126); c.restore(); }
+    T('CIERRE DEL DÍA', 430, 36, 22, '700', '#C9D6EA');
+    T(DIA[p.dow].toUpperCase() + ' ' + p.d, 430, 122, 104, '700', '#fff', 'left', 1000);
+    T(MES[p.m - 1].toUpperCase() + ' ' + p.y, 430, 196, 54, '700', '#E3EBF7', 'left', 1000);
+    c.fillStyle = 'rgba(255,255,255,.25)'; c.fillRect(1650, 40, 3, 150);
+    T('MUSIC PRO', 1710, 60, 30, '700', '#C9D6EA'); T('PRADERA', 1710, 130, 96, '700', '#fff', 'left', 780); T('ZONA 10', 1710, 196, 54, '700', '#E3EBF7', 'left', 780);
+    /* ventas, ingreso del día y formas de pago */
+    const cards = [['VENTAS DEL DÍA', ven, 700], ['INGRESO DEL DÍA', d.saldo, 425, CL.oro], ['EFECTIVO', ef, 425, CL.ef], ['TARJETA', ta, 425, CL.ta], ['DEPÓSITO', de, 425, CL.de]];
+    let X = 50;
+    cards.forEach((q, i) => {
+      const w = q[2];
+      if (i === 0) { box(X, 260, w, 250, CL.navy); T(q[0], X + 30, 310, 26, '700', '#C9D6EA'); T(QQ(q[1]), X + 30, 395, 70, '700', '#fff', 'left', w - 60); T(d.facs.length + (d.facs.length === 1 ? ' factura' : ' facturas'), X + 30, 465, 26, '400', '#C9D6EA'); }
+      else { box(X, 260, w, 250, '#fff'); c.fillStyle = q[3]; rr(X, 260, w, 12, 6); c.fill(); T(q[0], X + 26, 312, 24, '700', CL.mut); T(QQ(q[1]), X + 26, 385, i === 1 ? 46 : 44, '700', CL.ink, 'left', w - 50); T(i === 1 ? 'saldo inicial de la caja' : (ven ? Math.round(q[1] / ven * 100) + '% de las ventas' : '—'), X + 26, 455, 22, '400', CL.mut, 'left', w - 50); }
+      X += w + 25;
+    });
+    box(50, 540, 2500, 150, '#fff'); T('¿Cómo se pagó?', 80, 572, 26, '700', CL.navy);
+    const fp = [['Efectivo', ef, CL.ef], ['Tarjeta', ta, CL.ta], ['Depósito', de, CL.de]];
+    fp.forEach((q, i) => { const lx = 900 + i * 450; c.fillStyle = q[2]; rr(lx, 560, 22, 22, 6); c.fill(); T(q[0] + ' ' + (ven ? Math.round(q[1] / ven * 100) : 0) + '%', lx + 34, 572, 24, '700', CL.ink); });
+    rr(80, 615, 2440, 40, 20); c.fillStyle = '#E2E8F0'; c.fill();
+    if (ven > 0) { c.save(); rr(80, 615, 2440, 40, 20); c.clip(); let xx = 80; fp.forEach(q => { const w = 2440 * q[1] / ven; c.fillStyle = q[2]; c.fillRect(xx, 615, w, 40); xx += w; }); c.restore(); }
+    /* detalle de ventas: columnas fijas efectivo · tarjeta · depósito (una factura combinada llena dos) */
+    const DW = 1900, R = [1030, 1210, 1390, 1560], ty = y1 + 75;
+    box(50, y1, DW, ch, '#fff'); T('Detalle de ventas', 80, y1 + 40, 32, '700', CL.navy);
+    c.fillStyle = CL.head; c.fillRect(70, ty, DW - 40, 48);
+    T('RECIBO', 90, ty + 24, 20, '700', CL.mut); T('CLIENTE', 200, ty + 24, 20, '700', CL.mut); T('OBSERVACIONES / REF.', 1610, ty + 24, 20, '700', CL.mut, 'left', 330);
+    ['EFECTIVO', 'TARJETA', 'DEPÓSITO', 'TOTAL'].forEach((h, i) => T(h, R[i], ty + 24, 20, '700', CL.mut, 'right'));
+    let yy = ty + 48;
+    rows.forEach((r, i) => {
+      const f = r.f, ym = yy + r.h / 2; if (i % 2) { c.fillStyle = CL.alt; c.fillRect(70, yy, DW - 40, r.h); }
+      T(String(f.recibo), 90, ym, 26, '700', CL.ink);
+      r.L.forEach((l, q) => T(l, 200, ym + (q - (r.L.length - 1) / 2) * 30, CNS, '400', CL.ink));
+      r.O.forEach((l, q) => T(l, 1610, ym + (q - (r.O.length - 1) / 2) * 28, 22, '400', CL.mut));
+      [f.efectivo, f.tarjeta, f.deposito].forEach((v, j) => AC(v, R[j], ym, 26, '400', CL.ink));
+      AC(num(f.efectivo) + num(f.tarjeta) + num(f.deposito), R[3], ym, 27, '700', CL.ink); yy += r.h;
+    });
+    c.fillStyle = CL.tot; c.fillRect(70, yy, DW - 40, rowH); T('TOTAL', 90, yy + rowH / 2, 24, '700', CL.navy);
+    [ef, ta, de, ven].forEach((v, j) => AC(v, R[j], yy + rowH / 2, 26, '700', CL.navy));
+    /* caja del día */
+    const CX = 50 + DW + 30, CWd = 2550 - CX; box(CX, y1, CWd, ch, '#fff'); T('Caja del día', CX + 30, y1 + 40, 32, '700', CL.navy);
+    [['Ingreso del día', d.saldo, ''], ['Efectivo vendido', ef, ''], ['Depósitos/egresos', d.t.eg, '− ']].forEach((l, i) => { const y = y1 + 115 + i * 80; T(l[0], CX + 30, y, 26, '400', CL.mut); T(l[2] + QQ(l[1]), CX + CWd - 30, y, 36, '700', CL.ink, 'right', 300); });
+    c.fillStyle = CL.line; c.fillRect(CX + 30, y1 + 115 + 3 * 80 - 30, CWd - 60, 2);
+    const by = y1 + 115 + 3 * 80 + 4; box(CX + 30, by, CWd - 60, 140, CL.ok, 20, 0); T('TOTAL EN CAJA', CX + 60, by + 38, 24, '700', '#fff'); T(QQ(d.t.total), CX + CWd - 60, by + 95, 56, '700', '#fff', 'right', CWd - 120);
+    /* detalle de depósitos (referencia · banco · monto · autorización); vacío si no hay */
+    const tabla2 = (yTop, hh, titulo, filas, vacio, hRef, hBan) => {
+      box(50, yTop, 2500, hh, '#fff'); T(titulo, 80, yTop + 42, 32, '700', CL.navy);
+      const dy = yTop + 80, DC = [90, 560, 1100, 1500]; c.fillStyle = CL.head; c.fillRect(70, dy, 2460, 48);
+      [[hRef, DC[0], 'left'], [hBan, DC[1], 'left'], ['MONTO', DC[2] + 240, 'right'], ['AUTORIZACIÓN', DC[3], 'left']].forEach(h => T(h[0], h[1], dy + 24, 20, '700', CL.mut, h[2]));
+      if (!filas.length) T(vacio, 1300, dy + 48 + 55, 30, '400', CL.mut, 'center');
+      filas.forEach((e, i) => { const y = dy + 48 + i * rowH + rowH / 2; T(String(e[0] || ''), DC[0], y, 26, '700', CL.ink, 'left', 440); T(String(e[1] || '').toUpperCase(), DC[1], y, CNS, '400', CL.ink, 'left', 500); AC(e[2], DC[2] + 240, y, 28, '700', CL.ink, 150); T(String(e[3] || ''), DC[3], y, 26, '400', CL.ink, 'left', 500); });
     };
-    const T = (t, x, y, o) => {
-      o = o || {}; let s = o.s || 18; const w = o.w || '400'; c.font = w + ' ' + s + 'px ' + FONT;
-      if (o.mw) { const m = c.measureText(t).width; if (m > o.mw) s = Math.max(8, s * o.mw / m); }
-      c.font = w + ' ' + s + 'px ' + FONT; c.fillStyle = o.c || CL.ink; c.textAlign = o.a || 'center'; c.fillText(t, x, Y(y));
-    };
-    const M = (v, x1, x2, y, o) => { o = o || {}; T('Q', x1 + 12, y, Object.assign({}, o, { a: 'left', mw: 0 })); T(v, x2 - 14, y, Object.assign({}, o, { a: 'right', mw: (x2 - x1) - 50 })); };
-    const dash = v => v ? money(v) : '-';
-
-    /* marco, logo, título */
-    c.save(); c.shadowColor = 'rgba(15,23,42,.14)'; c.shadowBlur = 18; c.shadowOffsetY = 4; rr(60, 70, 1880, H - 60 - 70, 22); c.fillStyle = '#fff'; c.fill(); c.restore();
-    rr(60, 70, 1880, H - 60 - 70, 22); c.strokeStyle = '#94A3B8'; c.lineWidth = 2.5; c.stroke();
-    if (logoImg) c.drawImage(logoImg, 240, 96, 327, 126);
-    T('CORTE DE CAJA - PRADERA ZONA 10', 1000, 118, { s: 32, w: '700', c: CL.navy, mw: 900 });
-    T(mayus(fLarga(d.fecha)), 1000, 163, { s: 26, c: CL.mut, mw: 900 });
-
-    /* saldo inicial */
-    R(1535, 205, 1722, 231, { fill: CL.head, r: 7 }); R(1722, 205, 1915, 231, { fill: CL.tot, r: 7 });
-    T('SALDO INICIAL', 1628, 218, { s: 17, w: '700', mw: 165 }); M(money(d.saldo), 1722, 1915, 218, { s: 18, w: '700' });
-
-    /* bandas */
-    R(90, 244, 816, 269, { fill: CL.navy, stroke: CL.navy }); T('INGRESOS', 453, 257, { w: '700', c: '#fff', s: 18 });
-    R(816, 244, 1915, 269, { fill: CL.navy2, stroke: CL.navy2 }); T('MODALIDAD', 1365, 257, { w: '700', c: '#fff', s: 18 });
-    const COL = [90, 135, 229, 340, 816, 966, 1149, 1341, 1535, 1915];
-    const HD = ['NO.', 'FECHA', 'RECIBO', 'NOMBRE', 'EFECTIVO', 'TERJETA DE CRÉDITO', 'DEPÓSITO', 'REF. TRANSACCIÓN', 'OBSERVACIONES'];
-    HD.forEach((h, i) => { R(COL[i], 269, COL[i + 1], 295, { fill: CL.head }); T(h, (COL[i] + COL[i + 1]) / 2, 282, { w: '700', s: 16, mw: COL[i + 1] - COL[i] - 10 }); });
-
-    /* ingresos · 15 renglones (si hay más, se aprietan) */
-    const N = Math.max(15, d.facs.length), top = 295, bot = 677, rh = (bot - top) / N;
-    for (let i = 0; i < N; i++) {
-      const y1 = top + i * rh, y2 = y1 + rh, ym = (y1 + y2) / 2, f = d.facs[i], fill = i % 2 ? CL.alt : '#fff';
-      for (let j = 0; j < 9; j++) R(COL[j], y1, COL[j + 1], y2, { fill });
-      if (!f) continue;
-      const fs = N > 15 ? Math.max(11, 17 * 15 / N) : 17;
-      T(String(i + 1), (COL[0] + COL[1]) / 2, ym, { s: fs, c: CL.mut }); T(fCorta(d.fecha), (COL[1] + COL[2]) / 2, ym, { s: fs, mw: COL[2] - COL[1] - 8 });
-      T(String(f.recibo), (COL[2] + COL[3]) / 2, ym, { s: fs, w: '700' }); T(String(f.nombre || '').toUpperCase(), (COL[3] + COL[4]) / 2, ym, { s: fs, mw: COL[4] - COL[3] - 24 });
-      if (num(f.efectivo)) M(money(f.efectivo), COL[4], COL[5], ym, { s: fs });
-      if (num(f.tarjeta)) M(money(f.tarjeta), COL[5], COL[6], ym, { s: fs });
-      if (num(f.deposito)) M(money(f.deposito), COL[6], COL[7], ym, { s: fs });
-      if (f.referencia) T(f.referencia, (COL[7] + COL[8]) / 2, ym, { s: fs, mw: COL[8] - COL[7] - 12 });
-      if (f.observaciones) T(f.observaciones, (COL[8] + COL[9]) / 2, ym, { s: fs, mw: COL[9] - COL[8] - 16 });
-    }
-    R(90, 295, 1915, 677, { stroke: CL.navy2, lw: 2 });
-
-    /* totales de ingresos */
-    const tb = (a, b) => R(a, 693, b, 718, { fill: CL.tot, stroke: '#A9C0DA' });
-    tb(816, 966); M(money(d.t.ef), 816, 966, 705.5, { s: 17, w: '700' }); tb(966, 1149); M(money(d.t.ta), 966, 1149, 705.5, { s: 17, w: '700' });
-    tb(1149, 1341); M(dash(d.t.de), 1149, 1341, 705.5, { s: 17, w: '700' }); tb(1341, 1535);
-    tb(1535, 1722); T('INGESO EFECTIVO', 1628, 706, { s: 15, w: '700', mw: 170 }); tb(1722, 1915); M(money(d.t.ingresoEf), 1722, 1915, 705.5, { s: 17, w: '700' });
-
-    /* egresos */
-    R(90, 733, 966, 758, { fill: CL.eg, stroke: CL.eg }); T('EGRESOS', 528, 745.5, { w: '700', c: '#fff', s: 18 });
-    const EC = [90, 135, 229, 340, 816, 966], EH = ['NO.', 'FECHA', 'RECIBO', 'NOMBRE', 'CANTIDAD'];
-    EH.forEach((h, i) => { R(EC[i], 758, EC[i + 1], 783, { fill: CL.head }); T(h, (EC[i] + EC[i + 1]) / 2, 770.5, { w: '700', s: 16, mw: EC[i + 1] - EC[i] - 10 }); });
-    const NE = Math.max(5, d.egs.length), et = 783, eb = 910, eh = (eb - et) / NE;
-    for (let i = 0; i < NE; i++) {
-      const y1 = et + i * eh, y2 = y1 + eh, ym = (y1 + y2) / 2, e = d.egs[i], fill = i % 2 ? CL.alt : '#fff';
-      for (let j = 0; j < 5; j++) R(EC[j], y1, EC[j + 1], y2, { fill });
-      if (!e) continue;
-      const fs = NE > 5 ? Math.max(11, 17 * 5 / NE) : 17;
-      T(String(i + 1), (EC[0] + EC[1]) / 2, ym, { s: fs, c: CL.mut }); T(fCorta(d.fecha), (EC[1] + EC[2]) / 2, ym, { s: fs, mw: EC[2] - EC[1] - 8 });
-      T(e.recibo || '', (EC[2] + EC[3]) / 2, ym, { s: fs }); T(String(e.nombre || '').toUpperCase(), (EC[3] + EC[4]) / 2, ym, { s: fs, mw: EC[4] - EC[3] - 24 });
-      M(money(e.cantidad), EC[4], EC[5], ym, { s: fs });
-    }
-    R(90, 783, 966, 910, { stroke: CL.eg, lw: 2 });
-
-    /* ventas del día */
-    R(1149, 758, 1341, 835, { fill: '#fff', stroke: CL.navy2, lw: 2, r: 12 }); T('VENTAS DEL DÍA', 1245, 796.5, { s: 19, w: '700', c: CL.navy, mw: 170 });
-    R(1341, 758, 1723, 835, { fill: CL.navy, stroke: CL.navy, r: 12 }); T('Q', 1362, 796.5, { s: 34, c: '#fff', a: 'left' }); T(money(d.t.ventas), 1704, 796.5, { s: 38, c: '#fff', a: 'right', w: '700', mw: 310 });
-
-    /* gráfica breve: ventas del día por forma de pago (para quien solo mira qué se vendió) */
-    { const fp = [['Efectivo', d.t.ef, '#5E9E6B'], ['Tarjeta', d.t.ta, '#3B5B85'], ['Depósito', d.t.de, '#C9A227']], tv = fp.reduce((a, x) => a + x[1], 0), bx = 1000, bw = 915, by = Y(852), bh = 26;
-      c.save(); rr(bx, by, bw, bh, 13); c.fillStyle = '#E2E8F0'; c.fill(); if (tv > 0) { c.clip(); let xx = bx; fp.forEach(x => { const ww = bw * x[1] / tv; c.fillStyle = x[2]; c.fillRect(xx, by, ww, bh); xx += ww; }); } c.restore();
-      fp.forEach((x, i) => { const lx = bx + i * 305; c.fillStyle = x[2]; rr(lx, Y(884), 18, 18, 5); c.fill(); T(x[0] + ' ' + Q(x[1]) + (tv > 0 ? ' · ' + Math.round(x[1] / tv * 100) + '%' : ''), lx + 28, 893, { s: 17, w: '700', a: 'left', c: CL.ink, mw: 270 }); }); }
-    /* egreso efectivo y total en caja */
-    const eb2 = (a, b) => R(a, 923, b, 948, { fill: CL.tot, stroke: '#A9C0DA' });
-    eb2(816, 966); M(dash(d.t.eg), 816, 966, 935.5, { s: 17, w: '700' }); eb2(966, 1149); eb2(1149, 1341); eb2(1341, 1535);
-    eb2(1535, 1722); T('EGRESO EFECTIVO', 1628, 936, { s: 15, w: '700', mw: 170 }); eb2(1722, 1915); M(dash(d.t.eg), 1722, 1915, 935.5, { s: 17, w: '700' });
-    R(1341, 963, 1722, 1005, { fill: CL.okbg, stroke: CL.ok, lw: 3, r: 12 }); T('TOTAL EN CAJA', 1531, 984, { s: 21, w: '700', c: CL.ok, mw: 330 });
-    R(1722, 963, 1915, 1005, { fill: CL.ok, stroke: CL.ok, lw: 3, r: 12 }); T('Q', 1740, 984, { s: 27, w: '700', a: 'left', c: '#fff' }); T(money(d.t.total), 1898, 984, { s: 29, w: '700', a: 'right', c: '#fff', mw: 150 });
+    tabla2(y2, dh, 'Detalle de depósitos', deps.map(f => [f.referencia, f.banco, f.deposito, f.autorizacion]), 'No hay depósitos en este día', 'REFERENCIA', 'BANCO');
+    if (egs.length) tabla2(y2 + dh + 30, eh, 'Detalle de depósitos y egresos de caja', egs.map(e => [e.recibo, e.nombre, e.cantidad, e.autorizacion]), '', 'REFERENCIA / RECIBO', 'BANCO / CONCEPTO');
+    T('Music Pro · Pradera Zona 10', W / 2, H - 34, 22, '400', '#64748B', 'center');
   }
   const datosCorte = f => { const s = saldoDe(f).v, fa = facsDe(f), eg = egsDe(f); return { fecha: f, facs: fa, egs: eg, saldo: s, t: totalesDe(fa, eg, s) }; };
   function cargarLogo() {
@@ -571,14 +561,18 @@
       el('div', { class: 'mp-f3' }, field('Recibo', inRec), field('Nombre', inNom), field('Monto (Q)', inMonto)),
       gap ? el('p', { class: 'mp-warn' }, ico('warn'), ' ', gap) : null,
       el('div', { class: 'field' }, el('label', {}, 'Forma de pago'), met), mxBox,
-      (f.metodo === 'deposito' && !f.mixto) || f.mixto
-        ? field(f.mixto ? 'Número de depósito (solo si hay depósito)' : 'Número de depósito (va en observaciones)', el('input', { value: f.obs, placeholder: 'Ej. 123456789', inputmode: 'numeric', oninput: e => { f.obs = e.target.value; } }))
-        : field('Observaciones (opcional)', el('input', { value: f.obs, oninput: e => { f.obs = e.target.value; } })),
+      (f.metodo === 'deposito' && !f.mixto) || f.mixto ? el('div', { class: 'mp-dep' }, el('label', { class: 'mp-depl' }, ico('bank'), f.mixto ? ' Datos del depósito (solo si hay depósito)' : ' Datos del depósito'),
+        el('div', { class: 'mp-f3' }, field('Referencia de la transacción', el('input', { class: 'mp-fref', value: f.ref, placeholder: 'Ej. 123456789', inputmode: 'numeric', oninput: e => { f.ref = e.target.value; } })),
+          field('Banco', el('input', { class: 'mp-fbanco', value: f.banco, placeholder: 'Elige o escribe', list: 'mp-bancos', autocomplete: 'off', oninput: e => { f.banco = e.target.value; } })),
+          field('Autorización', el('input', { class: 'mp-faut', value: f.aut, placeholder: 'Opcional', oninput: e => { f.aut = e.target.value; } }))), bancosList()) : null,
+      field('Observaciones (opcional)', el('input', { class: 'mp-fobs', value: f.obs, oninput: e => { f.obs = e.target.value; } })),
       el('div', { class: 'field' }, el('label', {}, 'Productos de la factura (para el Drive)'), prods,
         el('div', { class: 'mp-acts' }, btn('Agregar producto', 'plus', () => { f.prods.push({ codigo: '', cant: 1 }); pintar(); const c = host.querySelectorAll('.mp-pc'); c[c.length - 1] && c[c.length - 1].focus(); }),
           el('small', { class: 'muted' }, 'Pega tal cual: si copias varias líneas de la factura, se reparten solas y el formato se limpia.'))),
       el('div', { class: 'mp-acts' }, btn(f.id ? 'Guardar cambios' : 'Agregar factura', 'check', () => guardarFactura(f), 'btn-gold'), f.id ? btn('Cancelar', 'x', () => { S.edit = null; pintar(); }) : null));
   }
+  const BANCOS = ['BAC CREDOMATIC', 'BANRURAL', 'BANCO INDUSTRIAL', 'G&T CONTINENTAL', 'INTERBANCO', 'BANTRAB', 'BAM', 'PROMERICA'];
+  const bancosList = () => { if (!document.getElementById('mp-bancos')) document.body.append(el('datalist', { id: 'mp-bancos' }, BANCOS.map(b => el('option', { value: b })))); return null; };
   const field = (l, i) => el('div', { class: 'field' }, el('label', {}, l), i);
 
   function listaFacturas() {
@@ -588,10 +582,10 @@
     const l = el('div', { class: 'mp-lista' });
     fa.forEach((f, i) => {
       const pt = [['efectivo', 'cash', 'Efectivo', f.efectivo], ['tarjeta', 'card', 'Tarjeta', f.tarjeta], ['deposito', 'bank', 'Depósito', f.deposito]].filter(x => num(x[3]) > 0), k = pt[0] || ['tarjeta', 'card', 'Tarjeta', 0], tot = r2(num(f.efectivo) + num(f.tarjeta) + num(f.deposito));
-      const ps = (f.productos || []), ob = f.observaciones || f.referencia;
+      const ps = (f.productos || []), dep = num(f.deposito) > 0 ? [f.referencia ? 'ref. ' + f.referencia : '', f.banco].filter(Boolean).join(' · ') : '';
       l.append(el('div', { class: 'mp-fila' + (S.edit && S.edit.id === f.id ? ' mp-on' : '') },
         el('span', { class: 'mp-num' }, String(i + 1)),
-        el('div', { class: 'mp-fi' }, el('b', {}, f.nombre || 'CF'), el('small', { class: 'muted' }, 'Recibo ' + f.recibo + (num(f.deposito) > 0 && ob ? ' · Depósito ' + ob : '') + ' · ' + (ps.length ? ps.map(p => p.codigo + (p.cant > 1 ? ' ×' + p.cant : '')).join(', ') : 'sin productos ⚠'))),
+        el('div', { class: 'mp-fi' }, el('b', {}, f.nombre || 'CF'), el('small', { class: 'muted' }, 'Recibo ' + f.recibo + (dep ? ' · Depósito ' + dep : '') + (f.observaciones ? ' · ' + f.observaciones : '') + ' · ' + (ps.length ? ps.map(p => p.codigo + (p.cant > 1 ? ' ×' + p.cant : '')).join(', ') : 'sin productos ⚠'))),
         el('span', { class: 'mp-tags' }, pt.map(x => el('span', { class: 'mp-tag mp-' + x[0] }, ico(x[1]), ' ', x[2] + (pt.length > 1 ? ' ' + money(x[3]) : '')))), el('b', { class: 'mp-mo' }, Q(tot)),
         el('div', { class: 'mp-ac' }, btn('', 'edit', () => editarFactura(f), 'btn-ghost', 'Editar'), btn(S.confirmar === 'f' + f.id ? '¿Seguro?' : '', 'trash', () => borrar('mp_facturas', f.id, 'f' + f.id), S.confirmar === 'f' + f.id ? 'btn-gold' : 'btn-ghost', 'Borrar'))));
       if (S.edit && S.edit.id === f.id) l.append(formFactura(S.edit));
@@ -600,12 +594,13 @@
   }
 
   function bloqueEgresos() {
-    const eg = egsDe(S.fecha), nom = el('input', { placeholder: 'Concepto (gasto, depósito a banco…)' }), rec = el('input', { placeholder: 'Recibo', inputmode: 'numeric' }), cant = el('input', { placeholder: '0.00', inputmode: 'decimal', 'data-num': '1' });
+    const eg = egsDe(S.fecha), nom = el('input', { placeholder: 'Banco o concepto (gasto, depósito…)', list: 'mp-bancos', autocomplete: 'off' }), rec = el('input', { placeholder: 'Referencia / recibo', inputmode: 'numeric' }), aut = el('input', { placeholder: 'Opcional' }), cant = el('input', { placeholder: '0.00', inputmode: 'decimal', 'data-num': '1' });
     const c = el('div', { class: 'card' }, el('h3', {}, el('span', { class: 'mp-bn' }, '3'), ' ', ico('out'), ' Depósitos y egresos de efectivo ', el('span', { class: 'mp-n' }, String(eg.length))),
       el('p', { class: 'muted' }, 'Todo lo que sale de la caja en efectivo (gastos o si depositas efectivo al banco) resta del total en caja.'));
-    eg.forEach((e, i) => c.append(el('div', { class: 'mp-fila' }, el('span', { class: 'mp-num' }, String(i + 1)), el('div', { class: 'mp-fi' }, el('b', {}, e.nombre || '—'), el('small', { class: 'muted' }, e.recibo ? 'Recibo ' + e.recibo : '')), el('b', { class: 'mp-mo' }, '− ' + Q(e.cantidad)), btn(S.confirmar === 'e' + e.id ? '¿Seguro?' : '', 'trash', () => borrar('mp_egresos', e.id, 'e' + e.id), S.confirmar === 'e' + e.id ? 'btn-gold' : 'btn-ghost'))));
-    c.append(el('div', { class: 'mp-f3' }, field('Recibo', rec), field('Concepto', nom), field('Cantidad (Q)', cant)),
-      el('div', { class: 'mp-acts' }, btn('Agregar depósito/egreso', 'plus', () => { if (!(num(cant.value) > 0)) { ctx.toast('Falta la cantidad'); return; } agregarEgreso({ recibo: limpiar(rec.value), nombre: limpiar(nom.value).toUpperCase(), cantidad: r2(num(cant.value)) }); })));
+    eg.forEach((e, i) => c.append(el('div', { class: 'mp-fila' }, el('span', { class: 'mp-num' }, String(i + 1)), el('div', { class: 'mp-fi' }, el('b', {}, e.nombre || '—'), el('small', { class: 'muted' }, [e.recibo ? 'Ref. ' + e.recibo : '', e.autorizacion ? 'Autorización ' + e.autorizacion : ''].filter(Boolean).join(' · '))), el('b', { class: 'mp-mo' }, '− ' + Q(e.cantidad)), btn(S.confirmar === 'e' + e.id ? '¿Seguro?' : '', 'trash', () => borrar('mp_egresos', e.id, 'e' + e.id), S.confirmar === 'e' + e.id ? 'btn-gold' : 'btn-ghost'))));
+    bancosList();
+    c.append(el('div', { class: 'mp-f2' }, field('Referencia / recibo', rec), field('Autorización', aut)), el('div', { class: 'mp-f2' }, field('Banco o concepto', nom), field('Cantidad (Q)', cant)),
+      el('div', { class: 'mp-acts' }, btn('Agregar depósito/egreso', 'plus', () => { if (!(num(cant.value) > 0)) { ctx.toast('Falta la cantidad'); return; } agregarEgreso({ recibo: limpiar(rec.value), nombre: limpiar(nom.value).toUpperCase(), cantidad: r2(num(cant.value)), autorizacion: limpiar(aut.value) }); })));
     return c;
   }
 
@@ -657,7 +652,7 @@
     /* corte del día anterior */
     T('Corte de caja del día anterior', 60, 214, { s: 30, w: '700', c: CL.navy });
     const tmp = document.createElement('canvas'); dibujar(tmp, d, Math.max(0.4, 0.72 * px));
-    caja(60, 244, 1440, 941.6, '#fff', null, 6, true); c.drawImage(tmp, 60, 244, 1440, 941.6);
+    { const bw = 1440, bh = 941.6, ar = tmp.height / tmp.width; let dw = bw, dh2 = bw * ar; if (dh2 > bh) { dh2 = bh; dw = bh / ar; } const dx = 60 + (bw - dw) / 2, dy2 = 244 + (bh - dh2) / 2; caja(dx, dy2, dw, dh2, '#fff', null, 6, true); c.drawImage(tmp, dx, dy2, dw, dh2); }
     /* resumen de efectivo */
     const mini = [['INGRESO EN CAJA', d.t.saldo, '#B8A06A'], ['EFECTIVO VENDIDO', d.t.ef, '#5E9E6B'], ['DEPÓSITOS/EGRESOS', d.t.eg, '#2F6F7E'], ['TOTAL EN CAJA', d.t.total, CL.ok]];
     mini.forEach((m, i) => { const x = 60 + i * 365; caja(x, 1218, 345, 150, '#fff', null, 16, true); c.fillStyle = m[2]; rr(x, 1218, 345, 10, 5); c.fill(); T(m[0], x + 22, 1262, { s: 21, w: '700', c: CL.mut, mw: 300 }); T(Q(m[1]), x + 22, 1322, { s: 44, w: '700', c: i === 3 ? CL.ok : CL.ink, mw: 300 }); });
@@ -938,7 +933,7 @@
     const mxv = Math.max(1, ...R.meses.map(m => m.ventas)), cols = el('div', { class: 'mp-cols' });
     R.meses.forEach((m, i) => {
       const c = el('button', { type: 'button', class: 'mp-col' + (ms === m.m ? ' mp-on' : ms ? ' mp-dim' : ''), style: '--i:' + i, 'aria-pressed': String(ms === m.m), 'aria-label': mayus(MES[i]) + ' ' + Q(m.ventas), onclick: () => elegirMes(m.m) },
-        el('small', { class: 'mp-cv' }, m.ventas ? kq(m.ventas) : ''),
+        el('small', { class: 'mp-cval' }, m.ventas ? kq(m.ventas) : ''),
         el('span', { class: 'mp-cb' }, el('span', { class: 'mp-cs', style: 'height:' + (m.ventas / mxv * 100) + '%' }, [['ef', '#4FA06A'], ['ta', '#5B8FD6'], ['de', '#D9B13A']].map(([k, col]) => m[k] > 0 ? el('i', { style: 'flex:' + m[k] + ';background:' + col }) : null))),
         el('small', { class: 'mp-cm' }, MES3[i]));
       conTip(c, () => tipMes(R, m)); cols.append(c);
@@ -1092,8 +1087,8 @@
 .mp-aviso{border-color:rgba(217,90,106,.5)}.mp-nr{border:2px dashed var(--line)}
 .mp-modal{position:fixed;inset:0;z-index:9999;background:rgba(15,23,42,.82);display:flex;flex-direction:column;padding:12px;gap:10px}
 .mp-mh{display:flex;gap:10px;align-items:center;flex-wrap:wrap;color:#fff;background:rgba(15,23,42,.6);padding:8px 12px;border-radius:12px}.mp-mh .muted{color:#cbd5e1}
-.mp-mb{flex:1;overflow:auto;display:grid;place-items:center}.mp-cvg{background:#fff;border-radius:8px;box-shadow:0 20px 60px rgba(0,0,0,.6);width:min(100%,calc((100vh - 90px) * 1.5293));height:auto}
-.mp-modal.mp-z .mp-mb{place-items:start}.mp-modal.mp-z .mp-cvg{width:2000px;max-width:none}
+.mp-mb{flex:1;overflow:auto;display:grid;place-items:center}.mp-cvg{background:#fff;border-radius:8px;box-shadow:0 20px 60px rgba(0,0,0,.6);width:min(100%,calc((100vh - 90px) * var(--r,1.5293)));height:auto}
+.mp-modal.mp-z .mp-mb{place-items:start}  .mp-modal.mp-z .mp-cvg{width:2000px;max-width:none}
 
 .mp-top{align-items:stretch!important;gap:16px!important}.mp-semana{grid-template-rows:auto 1fr auto}.mp-dias{align-items:stretch}.mp-dia{height:100%;align-content:start}
 .mp-calc2{gap:6px;padding:12px 14px}.mp-c{aspect-ratio:1.25}.mp-cal{gap:3px}
@@ -1123,6 +1118,8 @@
 .mp-tw{overflow-x:auto;border:1px solid var(--line);border-radius:12px}.mp-tb2{width:100%;border-collapse:collapse;font-size:.9rem;white-space:nowrap}.mp-tb2 th{background:#1E3A5F;color:#fff;text-align:left;padding:8px 12px;font-size:.74rem;letter-spacing:.06em}.mp-tb2 td{padding:8px 12px;border-top:1px solid var(--line);min-width:20px}.mp-tb2 tbody tr:nth-child(even){background:var(--soft)}.mp-tb2 td:empty::after{content:'·';color:var(--line)}
 .mp-dmef{display:grid;gap:3px;margin-top:6px;padding-top:8px;border-top:1px dashed var(--line);font-size:.9rem}.mp-dmef span{display:flex;justify-content:space-between;gap:10px}.mp-dmf{margin-top:2px;padding:5px 9px;border-radius:9px;background:rgba(94,158,107,.2);border:1px solid #5E9E6B}.mp-dmf b{font-size:1.02rem}
 .mp-calc2{align-content:start}.mp-cal{align-content:start}.mp-c{align-self:start;min-width:0}
+.mp-dep .mp-f3{grid-template-columns:1fr 1fr 1fr}@media (max-width:700px){.mp-dep .mp-f3{grid-template-columns:1fr}}
+.mp-dep{padding:12px;border-radius:14px;background:rgba(201,162,39,.1);border:1px solid rgba(201,162,39,.45);margin-bottom:10px}.mp-depl{display:block;font-weight:700;margin-bottom:6px}
 .mp-iso{margin-bottom:14px}.mp-isog{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:18px;align-items:center}@media (max-width:860px){.mp-isog{grid-template-columns:1fr}}
 .mp-isos{width:100%;height:auto;max-height:340px;color:var(--text)}.mp-isol{display:grid;gap:10px}.mp-il{display:flex;gap:12px;align-items:center;padding:10px 14px;border-radius:14px;background:var(--soft);border:1px solid var(--line)}.mp-il i{flex:none;width:14px;height:44px;border-radius:7px}.mp-il>div{display:grid;gap:1px}.mp-il b{font-size:1.25rem}.mp-ilt{background:rgba(184,160,106,.16);border-color:var(--oro)}
 .mp-barc{display:flex;gap:8px;align-items:center}.mp-barc .mp-bar{flex:1}.mp-barc small{min-width:44px;text-align:right;color:var(--muted);font-weight:700}.mp-cero{opacity:.55}.mp-fecha input[type=month]{width:auto}
@@ -1141,7 +1138,7 @@
 .mp-sth{margin:0 0 10px}.mp-stb>.card{margin-bottom:14px;animation:mpup .5s ease both}.mp-stb .mp-kpis .mp-kpi{animation:mpup .45s ease both}.mp-stb .mp-kpis .mp-kpi:nth-child(2){animation-delay:.06s}.mp-stb .mp-kpis .mp-kpi:nth-child(3){animation-delay:.12s}.mp-stb .mp-kpis .mp-kpi:nth-child(4){animation-delay:.18s}.mp-stb .mp-kpis .mp-kpi:nth-child(5){animation-delay:.24s}.mp-stb .mp-kpis .mp-kpi:nth-child(6){animation-delay:.3s}
 .mp-cols{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:8px;align-items:end}.mp-col{display:grid;gap:4px;justify-items:center;padding:0;border:0;background:none;color:inherit;font:inherit;cursor:pointer;transition:opacity .2s,transform .2s}.mp-col:hover{transform:translateY(-3px)}.mp-col.mp-dim{opacity:.4}
 .mp-cb{display:flex;align-items:flex-end;justify-content:center;width:100%;height:210px;border-radius:10px;background:rgba(120,130,150,.1)}.mp-cs{display:flex;flex-direction:column-reverse;width:100%;min-height:0;border-radius:10px 10px 4px 4px;overflow:hidden;transform-origin:bottom;animation:mpsy .9s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(var(--i)*60ms)}.mp-cs i{display:block;min-height:0}
-.mp-col.mp-on .mp-cb{box-shadow:0 0 0 2px #B8A06A}.mp-cv{font-weight:700;font-size:.76rem;min-height:1.1em}.mp-cm{text-transform:capitalize;font-weight:700;color:var(--muted)}.mp-col.mp-on .mp-cm{color:inherit}
+.mp-col.mp-on .mp-cb{box-shadow:0 0 0 2px #B8A06A}.mp-cval{font-weight:700;font-size:.76rem;min-height:1.1em}.mp-cm{text-transform:capitalize;font-weight:700;color:var(--muted)}.mp-col.mp-on .mp-cm{color:inherit}
 .mp-leg{display:flex;gap:16px;flex-wrap:wrap;margin-top:10px;font-size:.86rem}.mp-leg span{display:inline-flex;gap:6px;align-items:center}.mp-leg i{width:12px;height:12px;border-radius:4px;display:inline-block}
 .mp-lin{width:100%;height:auto;color:var(--text)}.mp-lp{stroke-dasharray:1;animation:mpdraw 1.6s ease both}@keyframes mpdraw{from{stroke-dashoffset:1}to{stroke-dashoffset:0}}
 .mp-ld{animation:mpfade .4s ease both;animation-delay:calc(var(--i)*110ms + .5s)}@keyframes mpfade{from{opacity:0}to{opacity:1}}.mp-lb{transform-box:fill-box;transform-origin:bottom;animation:mpsy .8s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(var(--i)*60ms)}

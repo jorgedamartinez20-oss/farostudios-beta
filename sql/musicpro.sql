@@ -37,6 +37,9 @@ create table if not exists public.mp_egresos (
   cantidad numeric(12,2) not null default 0,
   creado timestamptz not null default now()
 );
+alter table public.mp_facturas add column if not exists banco text not null default '';
+alter table public.mp_facturas add column if not exists autorizacion text not null default '';
+alter table public.mp_egresos add column if not exists autorizacion text not null default '';
 create index if not exists mp_egresos_fecha on public.mp_egresos(fecha);
 create table if not exists public.mp_config (
   clave text primary key,      -- 'porcentaje' · 'nc:2026-10' (no corresponde del mes)
