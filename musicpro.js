@@ -596,7 +596,7 @@
       const ps = (f.productos || []), dep = num(f.deposito) > 0 ? [f.referencia ? 'ref. ' + f.referencia : '', f.banco].filter(Boolean).join(' · ') : '';
       l.append(el('div', { class: 'mp-fila' + (S.edit && S.edit.id === f.id ? ' mp-on' : '') },
         el('span', { class: 'mp-num' }, String(i + 1)),
-        el('div', { class: 'mp-fi' }, el('b', {}, nomVis(f.nombre)), el('small', { class: 'muted' }, 'Recibo ' + f.recibo + (dep ? ' · Depósito ' + dep : '') + (f.observaciones ? ' · ' + f.observaciones : '')),
+        el('div', { class: 'mp-fi' }, el('span', { class: 'mp-rec' }, 'RECIBO ', el('b', {}, String(f.recibo || '—'))), el('b', {}, nomVis(f.nombre)), (dep || f.observaciones) ? el('small', { class: 'muted' }, [dep ? 'Depósito ' + dep : '', f.observaciones || ''].filter(Boolean).join(' · ')) : null,
           ps.length ? el('div', { class: 'mp-pl' }, ps.map(p => el('span', {}, el('b', {}, p.codigo), p.cant > 1 ? el('i', {}, ' × ' + p.cant) : null))) : el('small', { class: 'mp-warn2' }, 'sin productos ⚠')),
         el('span', { class: 'mp-tags' }, esAnulada(f) ? el('span', { class: 'mp-tag mp-anut' }, 'Anulada') : null, pt.map(x => el('span', { class: 'mp-tag mp-' + x[0] }, ico(x[1]), ' ', x[2] + (pt.length > 1 ? ' ' + money(x[3]) : '')))), el('b', { class: 'mp-mo' }, Q(tot)),
         el('div', { class: 'mp-ac' }, btn('', 'edit', () => editarFactura(f), 'btn-ghost', 'Editar'), btn(S.confirmar === 'f' + f.id ? '¿Seguro?' : '', 'trash', () => borrar('mp_facturas', f.id, 'f' + f.id), S.confirmar === 'f' + f.id ? 'btn-gold' : 'btn-ghost', 'Borrar'))));
@@ -1076,6 +1076,7 @@
 .mp-n{display:inline-block;min-width:24px;padding:1px 8px;border-radius:999px;background:var(--borgona);color:#fff;font-size:.8rem;text-align:center}
 .mp-lista{display:grid;gap:8px}.mp-fila{display:grid;grid-template-columns:30px 1fr auto auto auto;gap:10px;align-items:center;padding:9px 12px;border-radius:12px;border:1px solid var(--line);background:var(--soft)}
 .mp-fila.mp-on{border-color:var(--oro);box-shadow:0 0 0 2px rgba(184,160,106,.35)}.mp-num{width:26px;height:26px;border-radius:50%;background:var(--oro);color:#252528;font-weight:700;display:grid;place-items:center;font-size:.8rem}
+.mp-rec{justify-self:start;display:inline-flex;align-items:baseline;gap:6px;background:#1F4E8C;color:#fff;border-radius:8px;padding:3px 11px;font-size:.72rem;letter-spacing:.08em;font-weight:600;margin-bottom:3px}.mp-rec b{font-size:1.15rem;letter-spacing:.02em;overflow:visible}
 .mp-fi{display:grid;gap:2px;min-width:0}.mp-fi b{overflow:hidden;text-overflow:ellipsis}.mp-mo{white-space:nowrap}.mp-ac{display:flex;gap:4px}
 @media (max-width:640px){.mp-fila{grid-template-columns:30px 1fr auto}.mp-fila .mp-tag{grid-column:2}.mp-fila .mp-ac{grid-column:3}}
 .mp-eqs,.mp-fr{display:flex;gap:10px;align-items:stretch;flex-wrap:wrap}.mp-eqs i,.mp-fr i{align-self:center;font-style:normal;font-size:1.5rem;color:var(--muted)}
