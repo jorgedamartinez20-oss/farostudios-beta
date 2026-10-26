@@ -310,7 +310,7 @@
     /* encabezado: fecha a la izquierda, lugar a la derecha */
     c.fillStyle = CL.navy; c.fillRect(0, 0, W, 230);
     if (logoImg) { c.save(); rr(50, 52, 327, 126, 16); c.clip(); c.drawImage(logoImg, 50, 52, 327, 126); c.restore(); }
-    T('CIERRE DEL DÍA', 430, 36, 22, '700', '#C9D6EA');
+    T('CORTE DE CAJA', 430, 36, 22, '700', '#C9D6EA');
     T(DIA[p.dow].toUpperCase() + ' ' + p.d, 430, 122, 104, '700', '#fff', 'left', 1000);
     T(MES[p.m - 1].toUpperCase() + ' ' + p.y, 430, 196, 54, '700', '#E3EBF7', 'left', 1000);
     c.fillStyle = 'rgba(255,255,255,.25)'; c.fillRect(1650, 40, 3, 150);
@@ -656,7 +656,7 @@
     /* encabezado */
     c.fillStyle = CL.navy; c.fillRect(0, 0, LW, 172);
     T('REGISTRO DOMINGO', 70, 70, { s: 70, w: '700', c: '#fff', mw: 1100 });
-    T('Cierre del ' + DIA[parte(f).dow] + ' ' + parte(f).d + ' de ' + MES[parte(f).m - 1] + ' de ' + parte(f).y + ' · Music Pro Pradera Zona 10', 70, 128, { s: 28, c: '#C9D6EA', mw: 1400 });
+    T('Corte de caja del ' + DIA[parte(f).dow] + ' ' + parte(f).d + ' de ' + MES[parte(f).m - 1] + ' de ' + parte(f).y + ' · Music Pro Pradera Zona 10', 70, 128, { s: 28, c: '#C9D6EA', mw: 1400 });
     T(hay ? 'EN CAJA (CONTADO)' : 'EN CAJA (SISTEMA)', 2540, 56, { s: 24, w: '700', c: '#C9D6EA', a: 'right' });
     T(Q(hay ? cn : sis), 2540, 112, { s: 62, w: '700', c: '#fff', a: 'right', mw: 760 });
     /* corte del día anterior */
