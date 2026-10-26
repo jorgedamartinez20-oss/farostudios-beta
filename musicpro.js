@@ -196,7 +196,7 @@
     try {
       const c = S.D.cortes[f];
       if (c) await send('PATCH', 'mp_cortes?fecha=eq.' + f, { saldo_inicial: r2(num(v)), saldo_manual: manual !== false }); else await send('POST', 'mp_cortes', { fecha: f, saldo_inicial: r2(num(v)), saldo_manual: manual !== false });
-      ctx.toast(manual === false ? 'Ingreso en caja automático' : 'Ingreso en caja guardado'); await cargar(true, true); togglePaso(2, true);
+      ctx.toast(manual === false ? 'Saldo inicial automático' : 'Saldo inicial guardado'); await cargar(true, true); togglePaso(2, true);
     } catch (e) { ctx.toast(e.message); }
   }
   async function guardarBilletes(f, b) {
@@ -441,13 +441,13 @@
     const cards = dias.map(f => {
       const reg = registrado(f), p = parte(f);
       const t = reg ? totalDia(f) : null, sd = reg ? saldoDe(f) : null;
-      const est = reg ? (sd.estado === 'pendiente' ? chip('Falta ingreso en caja', 'mp-mal', 'warn') : chip('Registrado', 'mp-ok', 'check')) : chip(f > n.f ? 'Aún no llega' : 'Sin registrar', 'mp-gris');
+      const est = reg ? (sd.estado === 'pendiente' ? chip('Falta saldo inicial', 'mp-mal', 'warn') : chip('Registrado', 'mp-ok', 'check')) : chip(f > n.f ? 'Aún no llega' : 'Sin registrar', 'mp-gris');
       return el('button', { type: 'button', class: 'mp-dia' + (f === S.fecha ? ' mp-sel' : '') + (reg ? '' : ' mp-vacio'), onclick: () => irA(f) },
         el('small', { class: 'muted' }, DIA[p.dow].toUpperCase() + (esFin(f) ? '' : ' · EXTRAORDINARIO')), el('b', { class: 'mp-dn' }, p.d + ' de ' + MES[p.m - 1]), est,
         reg ? el('div', { class: 'mp-dm' },
           el('span', {}, 'Ventas del día ', el('b', {}, Q(t.ventas))),
           el('div', { class: 'mp-dmef' },
-            el('span', {}, 'Ingreso en caja ', el('b', {}, Q(t.saldo))),
+            el('span', {}, 'Saldo inicial ', el('b', {}, Q(t.saldo))),
             el('span', {}, 'Efectivo vendido ', el('b', {}, '+ ' + Q(t.ef))),
             el('span', {}, 'Depósitos/egresos ', el('b', {}, '− ' + Q(t.eg))),
             el('span', { class: 'mp-dmf' }, 'Final de caja ', el('b', {}, Q(t.total))))) : null);
@@ -488,7 +488,7 @@
     const sd = saldoDe(S.fecha), t = totalDia(S.fecha);
     const paso = (n, ico_, tit, val, sub, cls) => el('div', { class: 'mp-paso ' + cls }, el('span', { class: 'mp-pn2' }, n), el('div', {}, el('small', { class: 'mp-kl' }, ico(ico_), ' ', tit), el('b', {}, val), el('small', { class: 'muted' }, sub)));
     return el('div', { class: 'mp-cadena' },
-      paso('1', 'safe', 'Ingreso en caja', Q(sd.v), sd.estado === 'pendiente' ? 'falta indicarlo' : sd.estado === 'auto' ? 'viene del sábado' : 'lo que te dieron', sd.estado === 'pendiente' ? 'mp-p1 mp-pend' : 'mp-p1'),
+      paso('1', 'safe', 'Saldo inicial', Q(sd.v), sd.estado === 'pendiente' ? 'falta indicarlo' : sd.estado === 'auto' ? 'viene del sábado' : 'lo que te dieron', sd.estado === 'pendiente' ? 'mp-p1 mp-pend' : 'mp-p1'),
       paso('2', 'coin', 'Ventas del día', Q(t.ventas), 'Efectivo ' + money(t.ef) + ' · Tarjeta ' + money(t.ta) + ' · Depósito ' + money(t.de), 'mp-p2'),
       paso('3', 'out', 'Depósitos/egresos', Q(t.eg), 'egresos del día', 'mp-p3'),
       paso('4', 'box', 'Total en caja', Q(t.total), 'ingreso + efectivo − depósitos/egresos', 'mp-p4'));
@@ -520,13 +520,13 @@
     const g = el('div', { class: 'mp-grid' });
     const izq = el('div', { class: 'mp-col' });
     izq.append(
-      acc(1, 'Ingreso en caja', sd.estado === 'pendiente' ? 'Falta indicarlo' : Q(sd.v), sd.estado === 'pendiente' ? 'mp-p1 mp-pend' : 'mp-p1', () => [bloqueIngreso()]),
+      acc(1, 'Saldo inicial', sd.estado === 'pendiente' ? 'Falta indicarlo' : Q(sd.v), sd.estado === 'pendiente' ? 'mp-p1 mp-pend' : 'mp-p1', () => [bloqueIngreso()]),
       acc(2, 'Ventas', Q(t.ventas) + ' · ' + nf + (nf === 1 ? ' factura' : ' facturas'), 'mp-p2', () => [formFactura(), listaFacturas()]),
       acc(3, 'Depósitos/egresos', Q(t.eg), 'mp-p3', () => [bloqueEgresos()]),
       acc(4, 'Total en caja', Q(t.total), 'mp-p4', () => [bloqueTotal()]));
     const der = el('div', { class: 'mp-col mp-sticky' });
     der.append(el('div', { class: 'card' }, el('h3', {}, ico('img'), ' Corte de caja · vista previa'),
-      el('p', { class: 'muted' }, 'Se actualiza sola mientras agregas facturas, depósitos/egresos o el ingreso en caja. Tamaño oficio horizontal.'), el('canvas', { class: 'mp-cv', 'aria-label': 'Corte de caja' }),
+      el('p', { class: 'muted' }, 'Se actualiza sola mientras agregas facturas, depósitos/egresos o el saldo inicial. Tamaño oficio horizontal.'), el('canvas', { class: 'mp-cv', 'aria-label': 'Corte de caja' }),
       el('div', { class: 'mp-acts' }, btn('Ver en grande', 'zoom', abrirGrande, 'btn-gold'), btn('Guardar PNG (oficio)', 'down', descargarPNG), btn('Copiar imagen', 'copy', copiarPNG))));
     g.append(izq, der); w.append(g);
     return w;
@@ -534,12 +534,12 @@
 
   function bloqueIngreso() {
     const sd = saldoDe(S.fecha), f = S.fecha, dom = parte(f).dow === 0, sab = mover(f, -1);
-    const inp = el('input', { inputmode: 'decimal', value: sd.estado === 'pendiente' && !sd.v ? '' : String(sd.v), placeholder: '0.00', 'aria-label': 'Ingreso en caja', class: 'mp-ingin', 'data-num': '1', onkeydown: e => { if (e.key === 'Enter') guardarSaldo(f, inp.value); } });
+    const inp = el('input', { inputmode: 'decimal', value: sd.estado === 'pendiente' && !sd.v ? '' : String(sd.v), placeholder: '0.00', 'aria-label': 'Saldo inicial', class: 'mp-ingin', 'data-num': '1', onkeydown: e => { if (e.key === 'Enter') guardarSaldo(f, inp.value); } });
     const nota = sd.estado === 'pendiente'
-      ? el('p', { class: 'mp-warn' }, ico('warn'), ' Falta el ingreso en caja de hoy: es el dinero que te entrega tu compañero al empezar. ', el('span', { class: 'mp-hintbox' }, hintNodes()))
+      ? el('p', { class: 'mp-warn' }, ico('warn'), ' Falta el saldo inicial de hoy: es el dinero que te entrega tu compañero al empezar. ', el('span', { class: 'mp-hintbox' }, hintNodes()))
       : sd.estado === 'auto' ? el('p', { class: 'muted' }, 'Automático: es el total en caja del sábado ' + fCorta(sab) + ' (' + Q(sd.v) + '). Se corrige solo si cambias algo del sábado.')
         : el('p', { class: 'muted' }, dom && S.D.cortes[sab] ? 'Lo escribiste a mano para este día.' : 'Guardado para este día.');
-    return el('div', { class: 'card' + (sd.estado === 'pendiente' ? ' mp-needs' : '') }, el('h3', {}, el('span', { class: 'mp-bn' }, '1'), ' Ingreso en caja'), nota,
+    return el('div', { class: 'card' + (sd.estado === 'pendiente' ? ' mp-needs' : '') }, el('h3', {}, el('span', { class: 'mp-bn' }, '1'), ' Saldo inicial'), nota,
       el('div', { class: 'mp-acts' }, el('span', { class: 'mp-q' }, 'Q'), inp, btn('Guardar ingreso', 'check', () => guardarSaldo(f, inp.value), 'btn-gold'),
                 dom && S.D.cortes[sab] && sd.estado === 'manual' ? btn('Volver al automático (' + Q(totalDia(sab).total) + ')', null, () => guardarSaldo(f, 0, false)) : null));
   }
@@ -619,7 +619,7 @@
     const t = totalDia(S.fecha);
     const caja = (l, v, cls) => el('div', { class: 'mp-eq ' + (cls || '') }, el('small', { class: 'muted' }, l), el('b', {}, v));
     return el('div', { class: 'card mp-totalc' }, el('h3', {}, el('span', { class: 'mp-bn' }, '4'), ' ', ico('box'), ' Total en caja'),
-      el('div', { class: 'mp-eqs' }, caja('Ingreso en caja', Q(t.saldo)), el('i', {}, '+'), caja('Efectivo de ventas', Q(t.ef)), el('i', {}, '−'), caja('Depósitos/egresos', Q(t.eg)), el('i', {}, '='), caja('Total en caja', Q(t.total), 'mp-eqt')),
+      el('div', { class: 'mp-eqs' }, caja('Saldo inicial', Q(t.saldo)), el('i', {}, '+'), caja('Efectivo de ventas', Q(t.ef)), el('i', {}, '−'), caja('Depósitos/egresos', Q(t.eg)), el('i', {}, '='), caja('Total en caja', Q(t.total), 'mp-eqt')),
       el('p', { class: 'muted' }, 'Tarjeta (' + Q(t.ta) + ') y depósitos (' + Q(t.de) + ') se cuentan en las ventas pero no entran a la caja.'),
       conteoCard(S.fecha),
       el('div', { class: 'mp-acts' }, btn('Ver registro de caja', 'safe', () => { S.vista = 'caja'; cargar(true); window.scrollTo({ top: 0 }); })));
