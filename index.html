@@ -480,11 +480,21 @@ section[id]{scroll-margin-top:84px}
 .drop .rm{margin-left:auto;border:1px solid var(--line);background:none;color:var(--ink);border-radius:999px;padding:8px 14px;cursor:pointer;font:700 .85rem var(--body)}
 .rv-err{margin-top:18px;padding:14px 16px;border-radius:6px;border:1px solid var(--borg-claro);background:rgba(139,26,42,.4);color:var(--marfil)}
 .rv-err .btn{margin-top:12px;padding:12px 20px}
-.rv-prog{position:sticky;top:89px;z-index:6;margin:0 0 21px;padding:13px 21px;border-radius:13px;background:var(--pizarra,#252528);border:1px solid rgba(184,160,106,.45);box-shadow:0 13px 21px -13px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.08)}
+.rv-prog{position:sticky;top:89px;z-index:6;margin:0 0 21px;padding:13px 21px;border-radius:13px;background:var(--pizarra,#252528);border:1px solid rgba(217,190,126,.5);box-shadow:0 13px 21px -13px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.08)}
 .rv-prog-t{display:flex;align-items:baseline;gap:13px;font-size:.9375rem;color:var(--marfil)}
-.rv-prog-t b{font-size:1.375rem;color:var(--hi,#B8A06A);min-width:3.2ch;font-variant-numeric:tabular-nums}
+.rv-prog-t b{font-size:1.375rem;color:#D9BE7E;min-width:3.2ch;font-variant-numeric:tabular-nums}
 .rv-prog-bar{height:8px;border-radius:8px;background:rgba(245,242,238,.16);margin-top:8px;overflow:hidden}
-.rv-prog-bar i{display:block;height:100%;width:60%;border-radius:8px;background:linear-gradient(90deg,var(--hi,#B8A06A),#F0DEAA);transition:width .55s cubic-bezier(.2,.8,.2,1)}
+.rv-prog-bar i{display:block;height:100%;width:60%;border-radius:8px;background:linear-gradient(90deg,#D9BE7E,#F0DEAA);transition:width .55s cubic-bezier(.2,.8,.2,1)}
+.rv-prog-bar{position:relative}
+.rv-prog-bar::after{content:"";position:absolute;left:50%;top:-2px;bottom:-2px;width:2px;background:rgba(245,242,238,.55);transform:translateX(-1px)}
+.rv-prog-s{display:flex;margin-top:8px;font-size:.8125rem;letter-spacing:.04em;color:rgba(245,242,238,.62)}
+.rv-prog-s span{flex:1;display:flex;align-items:center;gap:8px;transition:color .4s}
+.rv-prog-s span.s2{justify-content:flex-end}
+.rv-prog-s em{font-style:normal;display:inline-grid;place-items:center;width:21px;height:21px;border-radius:50%;border:1px solid currentColor;font-size:.75rem;transition:background .4s,color .4s,border-color .4s}
+.rv-prog[data-stage=cotiza] .s1,.rv-prog[data-stage=agenda] .s2,.rv-prog[data-stage=agenda] .s1{color:var(--marfil)}
+.rv-prog[data-stage=cotiza] .s1 em,.rv-prog[data-stage=agenda] .s2 em{background:#D9BE7E;border-color:#D9BE7E;color:#252528}
+.rv-prog[data-stage=agenda] .s1 em{background:rgba(143,214,160,.9);border-color:transparent;color:#252528;font-size:0}
+.rv-prog[data-stage=agenda] .s1 em::before{content:"\2713";font-size:.75rem}
 .rv-prog.done .rv-prog-t b{color:#8FD6A0}
 @media (prefers-reduced-motion:reduce){.rv-prog-bar i{transition:none}}
 .rv-submit{width:100%;justify-content:center;margin-top:24px;font-size:1.05rem}
@@ -2427,9 +2437,10 @@ html[data-page="academy"] .hero2,html[data-page="music"] .hero2,html[data-page="
 
       <form id="rv-form" novalidate hidden>
         <h2>Datos de tu reserva</h2>
-        <div class="rv-prog" id="rv-prog" role="progressbar" aria-label="Avance de tu reserva" aria-valuemin="0" aria-valuemax="100" aria-valuenow="60">
-          <div class="rv-prog-t"><b id="rv-prog-n">60%</b><span id="rv-prog-m">¡Buen comienzo! Tu código ya está verificado.</span></div>
-          <div class="rv-prog-bar"><i id="rv-prog-i"></i></div>
+        <div class="rv-prog" id="rv-prog" data-stage="agenda" role="progressbar" aria-label="Avance hacia tu reserva" aria-valuemin="0" aria-valuemax="100" aria-valuenow="56">
+          <div class="rv-prog-t"><b id="rv-prog-n">56%</b><span id="rv-prog-m">Tu código está verificado. Completa tu reserva.</span></div>
+          <div class="rv-prog-bar"><i id="rv-prog-i" style="width:56%"></i></div>
+          <div class="rv-prog-s"><span class="s1"><em>1</em>Cotiza</span><span class="s2"><em>2</em>Agenda</span></div>
         </div>
 
         <div class="field"><span class="lab">¿Qué servicio necesitas?</span>
@@ -2539,6 +2550,11 @@ html[data-page="academy"] .hero2,html[data-page="music"] .hero2,html[data-page="
     <div class="form-card" id="qt-card">
       <form id="qt-form" novalidate>
         <h2>Datos de tu cotización</h2>
+        <div class="rv-prog" id="qt-prog" data-stage="cotiza" role="progressbar" aria-label="Avance hacia tu reserva" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+          <div class="rv-prog-t"><b id="qt-prog-n">0%</b><span id="qt-prog-m">Cuéntanos qué necesitas: son 4 datos.</span></div>
+          <div class="rv-prog-bar"><i id="qt-prog-i" style="width:0%"></i></div>
+          <div class="rv-prog-s"><span class="s1"><em>1</em>Cotiza</span><span class="s2"><em>2</em>Agenda</span></div>
+        </div>
         <div class="field"><span class="lab">¿Qué servicio necesitas?</span>
           <div class="cats" role="radiogroup" aria-label="Servicio"><label class="cat"><input type="radio" name="qcat" value="Eventos sociales"><span class="cb"><svg class="ico"><use href="#i-heart"/></svg><span><b>Eventos sociales</b><small>Bodas, graduaciones, XV años y más</small></span></span></label><label class="cat"><input type="radio" name="qcat" value="Corporativo"><span class="cb"><svg class="ico"><use href="#i-vid"/></svg><span><b>Corporativo</b><small>Empresas y marcas</small></span></span></label><label class="cat"><input type="radio" name="qcat" value="Sonido y grabación de audio"><span class="cb"><svg class="ico"><use href="#i-mic"/></svg><span><b>Sonido y grabación de audio</b></span></span></label><label class="cat"><input type="radio" name="qcat" value="Producción musical"><span class="cb"><svg class="ico"><use href="#i-note"/></svg><span><b>Producción musical</b></span></span></label><label class="cat"><input type="radio" name="qcat" value="Locuciones comerciales"><span class="cb"><svg class="ico"><use href="#i-chat"/></svg><span><b>Locuciones comerciales</b></span></span></label><label class="cat"><input type="radio" name="qcat" value="Ilustración 2D y animación digital"><span class="cb"><svg class="ico"><use href="#i-layers"/></svg><span><b>Ilustración 2D y animación digital</b></span></span></label><label class="cat"><input type="radio" name="qcat" value="Servicios para iglesias"><span class="cb"><svg class="ico"><use href="#i-star"/></svg><span><b>Servicios para iglesias</b></span></span></label><label class="cat"><input type="radio" name="qcat" value="Otro servicio de Faro Studios"><span class="cb"><svg class="ico"><use href="#i-file"/></svg><span><b>Otro servicio de Faro Studios</b></span></span></label></div>
         </div>
@@ -2983,11 +2999,17 @@ function rvOpen(){
   rvView(rvCode?'form':'gate');if(rvCode){rvCalGo(0)}rvClock();
 }
 /* --- enviar --- */
-/* Avance de la reserva: 60 % ya cuenta (código verificado + formulario abierto); los 7 pasos reales suman el 40 % restante */
+/* Avance unificado: cotizar = 0–50 %, agendar = 50–100 %. Se recalcula desde el estado real de los campos: si borras un dato, baja. */
+function progSet(pre,pct,msg){
+  const bar=$('#'+pre+'-prog');if(!bar)return;
+  $('#'+pre+'-prog-n').textContent=pct+'%';$('#'+pre+'-prog-m').textContent=msg;$('#'+pre+'-prog-i').style.width=pct+'%';
+  bar.setAttribute('aria-valuenow',pct);bar.classList.toggle('done',pct===100);
+}
 function rvProg(){
   const f=$('#rv-form');if(!f||f.hidden)return;
   const v=i=>(($(i)||{}).value||'').trim();
   const steps=[
+    true,
     !!$('input[name=categoria]:checked',f),
     !!v('#rv-fecha'),
     rvH!==null&&rvM!==null,
@@ -2996,14 +3018,24 @@ function rvProg(){
     !!($('#rv-acepto')||{}).checked,
     !!(($('#rv-voucher')||{}).files&&$('#rv-voucher').files.length)
   ];
-  const n=steps.filter(Boolean).length,pct=n===7?100:Math.round(60+n*40/7);
-  const m=n===7?'¡Todo listo! Envía tu reserva.':n?`Llevas ${n} de 7 pasos. ¡Sigue así!`:'¡Buen comienzo! Tu código ya está verificado.';
-  $('#rv-prog-n').textContent=pct+'%';$('#rv-prog-m').textContent=m;$('#rv-prog-i').style.width=pct+'%';
-  const bar=$('#rv-prog');bar.setAttribute('aria-valuenow',pct);bar.classList.toggle('done',pct===100);
+  const n=steps.filter(Boolean).length,pct=n===8?100:50+Math.round(n*50/8);
+  const m=n===8?'Todo listo para asegurar tu espacio.':n>=5?'Falta poco para asegurar tu espacio.':n===1?'Tu código está verificado. Completa tu reserva.':`Paso ${n-1} de 7 completado.`;
+  progSet('rv',pct,m);
 }
-(function(){const f=document.getElementById('rv-form');if(!f)return;let t;const q=()=>{clearTimeout(t);t=setTimeout(rvProg,60)};
-  ['input','change','click'].forEach(e=>f.addEventListener(e,q));
-  new MutationObserver(q).observe(f,{attributes:true,attributeFilter:['hidden']});})();
+function qtProg(){
+  const f=$('#qt-form');if(!f||f.hidden)return;
+  const v=i=>(($(i)||{}).value||'').trim();
+  const steps=[!!$('input[name=qcat]:checked',f),v('#qt-nombre').length>=2,v('#qt-wa').replace(/\D/g,'').length>=6,/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v('#qt-mail'))];
+  const n=steps.filter(Boolean).length,pct=Math.round(n*50/4);
+  const m=n===4?'Cotización lista. Después podrás agendar para asegurar tu fecha.':n===0?'Cuéntanos qué necesitas: son 4 datos.':n===3?'Falta poco: un dato más.':`Llevas ${n} de 4 datos.`;
+  progSet('qt',pct,m);
+}
+(function(){
+  const bind=(id,fn)=>{const f=document.getElementById(id);if(!f)return;let t;const q=()=>{clearTimeout(t);t=setTimeout(fn,60)};
+    ['input','change','click','reset'].forEach(e=>f.addEventListener(e,q));
+    new MutationObserver(q).observe(f,{attributes:true,attributeFilter:['hidden']});q()};
+  bind('rv-form',rvProg);bind('qt-form',qtProg);
+})();
 async function rvSubmit(e){
   if(e)e.preventDefault();if(rv.send.disabled)return;rv.err.hidden=true;
   const v=id=>$(id).value.trim();
