@@ -63,6 +63,12 @@ async function pintaPortada(){
   }catch(e){}}
 
 /* ---------- abrir la galería (Entregas) con la misma sesión, sin pedir otro login ---------- */
+const prodCta=()=>((S.cli&&S.cli.ent)||[]).find(x=>x.tipo==='empresa'||x.tipo==='agencia');
+function abrirProduccion(){
+  if(S.demo){aviso('Vista de prueba: aquí abriría tu plataforma de producción');return}
+  try{sessionStorage.setItem('faro_ent',JSON.stringify(SES))}catch(e){}
+  location.href='/produccion'}
+window.abrirProduccion=abrirProduccion;
 function abrirGaleria(){
   if(S.demo){aviso('Vista de prueba: aquí el cliente pasaría a su galería');return}
   const unico=S.cli&&S.cli.ent&&S.cli.ent.length;
@@ -80,6 +86,7 @@ P['c-inicio']=()=>{
     +'<button class="ms-tile" type="button" onclick="go(\'c-agenda\')"><span>'+ic('cal')+'</span><b>Mi agenda</b><small>Fechas de tu sesión y entrega</small></button>'
     +'<button class="ms-tile" type="button" onclick="go(\'c-docs\')"><span>'+ic('file')+'</span><b>Documentos</b><small>'+d.length+' disponible'+(d.length===1?'':'s')+'</small></button>'
     +'<button class="ms-tile" type="button" onclick="go(\'c-galeria\')"><span>'+ic('image')+'</span><b>Mi galería</b><small>'+(lista?'¡Lista para ti!':'Cuando esté lista, aquí')+'</small></button>'
+    +(prodCta()?'<button class="ms-tile" type="button" onclick="abrirProduccion()"><span>'+ic('file')+'</span><b>Producción</b><small>Guiones, avances y entregas</small></button>':'')
     +'<button class="ms-tile" type="button" onclick="go(\'c-buzon\')"><span>'+ic('chat')+'</span><b>Buzón</b><small>'+(nu?nu+' mensaje'+(nu===1?'':'s')+' de Faro':'Escríbenos aquí')+'</small></button>'
     +'</div>'
     +(c.nota?'<div class="ms-card ms-nota"><p><b>Mensaje de Faro Studios:</b> '+esc(c.nota)+'</p></div>':'')
@@ -147,7 +154,7 @@ window.msCaducado=function(){
 /* ---------- datos del cliente ---------- */
 window.cargarCliente=async function(id){
   const [k,d,m,ses]=await Promise.all([rows('cl_clientes','id=eq.'+id+'&select=*'),rows('cl_documentos','cliente_id=eq.'+id+'&order=creado.desc'),rows('cl_mensajes','cliente_id=eq.'+id+'&order=creado.asc&limit=200'),rows('cl_sesiones','cliente_id=eq.'+id+'&order=creado.asc')]);
-  let ent=[];try{const u=jwtSub();if(u)ent=await rows('en_cuentas','user_id=eq.'+u+'&select=user_id')}catch(e){}
+  let ent=[];try{const u=S.demo?'demo':jwtSub();if(u)ent=await rows('en_cuentas','user_id=eq.'+u+'&select=user_id,tipo,nombre')}catch(e){}
   return{k:k[0]||{},docs:d,msgs:m,ses,ent};
 };
 window.clEstado=async function(){try{const r=await api('/rest/v1/rpc/cl_mi_estado',{method:'POST',body:{}});return r.ok?await r.json():{}}catch(e){return{}}};
@@ -174,7 +181,7 @@ if(DEMO==='cliente'){
     cl_clientes:[{id:'demo',nombre:'Mirna Raxtún',proyecto:'Graduación',tipo:'Graduación',fecha:sumd(hoy,-4),nota:'¡Gracias por confiar en nosotros! Cualquier duda, escríbenos por aquí.'}],
     cl_documentos:[{id:'1',tipo:'otro',titulo:'Confirmación de servicio',ruta:'x',creado:sumd(hoy,-12)},{id:'2',tipo:'contrato',titulo:'Contrato de servicios',ruta:'x',creado:sumd(hoy,-12)},{id:'3',tipo:'voucher',titulo:'Voucher de reserva',ruta:'x',creado:sumd(hoy,-12)},{id:'4',tipo:'factura',titulo:'Factura 0007',ruta:'x',creado:sumd(hoy,-5)}],
     cl_mensajes:[{id:'m1',de:'faro',texto:'¡Hola Mirna! Ya recibimos tu material. Te avisamos por aquí cuando esté listo.',creado:new Date().toISOString()}],
-    cl_sesiones:ses,en_cuentas:[{user_id:'demo'}],en_proyectos:[{id:'p1',titulo:'Graduación Mirna',config:{}}],en_archivos:[]};
+    cl_sesiones:ses,en_cuentas:[{user_id:'demo',tipo:Q.get('prod')?'empresa':'galeria',nombre:'Demo'}],en_proyectos:[{id:'p1',titulo:'Graduación Mirna',config:{}}],en_archivos:[]};
   window.api=async(path,o)=>{
     const R=(b)=>({ok:true,status:200,json:async()=>b,text:async()=>JSON.stringify(b)});
     if(/rpc\/cl_mi_estado/.test(path))return R({cliente_id:'demo',vencido:false,aviso_en:Q.get('aviso')?null:new Date().toISOString()});
