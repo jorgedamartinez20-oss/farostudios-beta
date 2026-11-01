@@ -480,6 +480,13 @@ section[id]{scroll-margin-top:84px}
 .drop .rm{margin-left:auto;border:1px solid var(--line);background:none;color:var(--ink);border-radius:999px;padding:8px 14px;cursor:pointer;font:700 .85rem var(--body)}
 .rv-err{margin-top:18px;padding:14px 16px;border-radius:6px;border:1px solid var(--borg-claro);background:rgba(139,26,42,.4);color:var(--marfil)}
 .rv-err .btn{margin-top:12px;padding:12px 20px}
+.rv-prog{position:sticky;top:89px;z-index:6;margin:0 0 21px;padding:13px 21px;border-radius:13px;background:var(--pizarra,#252528);border:1px solid rgba(184,160,106,.45);box-shadow:0 13px 21px -13px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.08)}
+.rv-prog-t{display:flex;align-items:baseline;gap:13px;font-size:.9375rem;color:var(--marfil)}
+.rv-prog-t b{font-size:1.375rem;color:var(--hi,#B8A06A);min-width:3.2ch;font-variant-numeric:tabular-nums}
+.rv-prog-bar{height:8px;border-radius:8px;background:rgba(245,242,238,.16);margin-top:8px;overflow:hidden}
+.rv-prog-bar i{display:block;height:100%;width:60%;border-radius:8px;background:linear-gradient(90deg,var(--hi,#B8A06A),#F0DEAA);transition:width .55s cubic-bezier(.2,.8,.2,1)}
+.rv-prog.done .rv-prog-t b{color:#8FD6A0}
+@media (prefers-reduced-motion:reduce){.rv-prog-bar i{transition:none}}
 .rv-submit{width:100%;justify-content:center;margin-top:24px;font-size:1.05rem}
 .rv-submit[disabled]{opacity:.7;cursor:progress}
 .rv-priv{margin-top:14px;color:var(--muted);font-size:.92rem}
@@ -2420,6 +2427,10 @@ html[data-page="academy"] .hero2,html[data-page="music"] .hero2,html[data-page="
 
       <form id="rv-form" novalidate hidden>
         <h2>Datos de tu reserva</h2>
+        <div class="rv-prog" id="rv-prog" role="progressbar" aria-label="Avance de tu reserva" aria-valuemin="0" aria-valuemax="100" aria-valuenow="60">
+          <div class="rv-prog-t"><b id="rv-prog-n">60%</b><span id="rv-prog-m">¡Buen comienzo! Tu código ya está verificado.</span></div>
+          <div class="rv-prog-bar"><i id="rv-prog-i"></i></div>
+        </div>
 
         <div class="field"><span class="lab">¿Qué servicio necesitas?</span>
           <div class="cats" role="radiogroup" aria-label="Servicio"><label class="cat"><input type="radio" name="categoria" value="Eventos sociales"><span class="cb"><svg class="ico"><use href="#i-heart"/></svg><span><b>Eventos sociales</b><small>Bodas, graduaciones, XV años y más</small></span></span></label><label class="cat"><input type="radio" name="categoria" value="Corporativo"><span class="cb"><svg class="ico"><use href="#i-vid"/></svg><span><b>Corporativo</b><small>Empresas y marcas</small></span></span></label><label class="cat"><input type="radio" name="categoria" value="Sonido y grabación de audio"><span class="cb"><svg class="ico"><use href="#i-mic"/></svg><span><b>Sonido y grabación de audio</b></span></span></label><label class="cat"><input type="radio" name="categoria" value="Producción musical"><span class="cb"><svg class="ico"><use href="#i-note"/></svg><span><b>Producción musical</b></span></span></label><label class="cat"><input type="radio" name="categoria" value="Locuciones comerciales"><span class="cb"><svg class="ico"><use href="#i-chat"/></svg><span><b>Locuciones comerciales</b></span></span></label><label class="cat"><input type="radio" name="categoria" value="Ilustración 2D y animación digital"><span class="cb"><svg class="ico"><use href="#i-layers"/></svg><span><b>Ilustración 2D y animación digital</b></span></span></label><label class="cat"><input type="radio" name="categoria" value="Servicios para iglesias"><span class="cb"><svg class="ico"><use href="#i-star"/></svg><span><b>Servicios para iglesias</b></span></span></label><label class="cat"><input type="radio" name="categoria" value="Otro servicio de Faro Studios"><span class="cb"><svg class="ico"><use href="#i-file"/></svg><span><b>Otro servicio de Faro Studios</b></span></span></label></div>
@@ -2972,6 +2983,27 @@ function rvOpen(){
   rvView(rvCode?'form':'gate');if(rvCode){rvCalGo(0)}rvClock();
 }
 /* --- enviar --- */
+/* Avance de la reserva: 60 % ya cuenta (código verificado + formulario abierto); los 7 pasos reales suman el 40 % restante */
+function rvProg(){
+  const f=$('#rv-form');if(!f||f.hidden)return;
+  const v=i=>(($(i)||{}).value||'').trim();
+  const steps=[
+    !!$('input[name=categoria]:checked',f),
+    !!v('#rv-fecha'),
+    rvH!==null&&rvM!==null,
+    v('#rv-nombre').length>=2&&v('#rv-wa').replace(/\D/g,'').length>=8&&/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v('#rv-mail')),
+    !!v('#rv-nit')&&v('#rv-nf').length>=2&&v('#rv-ciudad').length>=2,
+    !!($('#rv-acepto')||{}).checked,
+    !!(($('#rv-voucher')||{}).files&&$('#rv-voucher').files.length)
+  ];
+  const n=steps.filter(Boolean).length,pct=n===7?100:Math.round(60+n*40/7);
+  const m=n===7?'¡Todo listo! Envía tu reserva.':n?`Llevas ${n} de 7 pasos. ¡Sigue así!`:'¡Buen comienzo! Tu código ya está verificado.';
+  $('#rv-prog-n').textContent=pct+'%';$('#rv-prog-m').textContent=m;$('#rv-prog-i').style.width=pct+'%';
+  const bar=$('#rv-prog');bar.setAttribute('aria-valuenow',pct);bar.classList.toggle('done',pct===100);
+}
+(function(){const f=document.getElementById('rv-form');if(!f)return;let t;const q=()=>{clearTimeout(t);t=setTimeout(rvProg,60)};
+  ['input','change','click'].forEach(e=>f.addEventListener(e,q));
+  new MutationObserver(q).observe(f,{attributes:true,attributeFilter:['hidden']});})();
 async function rvSubmit(e){
   if(e)e.preventDefault();if(rv.send.disabled)return;rv.err.hidden=true;
   const v=id=>$(id).value.trim();
