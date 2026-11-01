@@ -12,6 +12,40 @@
 <link rel="preconnect" href="https://faro-archivos.jorgedamartinez20.workers.dev" crossorigin>
 <script>/* la configuración del sitio empieza a pedirse desde el principio (no al final de la página) */
 window.__faroCfg=fetch('https://keivqvsgdfhthouzlqxo.supabase.co/rest/v1/sitio_config?select=clave,valor',{headers:{apikey:'sb_publishable_5nj3M7rjQs3phGU6u2uNqw_3tjTL6PE'}}).then(function(r){return r.ok?r.json():[]}).catch(function(){return[]});</script>
+<script>/* Áreas visibles: en el Workspace (Archivos y web → Sitio web) se apagan o prenden con interruptores; aquí se ocultan según sitio_config (vis.<área> = 0).
+   Para ver la página completa aunque haya áreas apagadas, agrega ?ver=todo a la dirección. */
+(function(){
+  var M={
+    presentacion:['#presentacion','a[href="#presentacion"]','a[href="#quienes"]'],
+    servicios:['#servicios','a[href="#servicios"]'],
+    portafolio:['#portafolio','a[href="#portafolio"]'],
+    porque:['#porque','a[href="#porque"]'],
+    audio:['#audio','a[href="#audio"]'],
+    catalogo:['#catalogo','a[href="#catalogo"]'],
+    descargas:['#descargas-s','a[href="#descargas-s"]'],
+    testimonios:['#testimonios','a[href="#testimonios"]'],
+    faq:['#faq','a[href="#faq"]'],
+    contacto:['#contacto-s','a[href="#contacto-s"]'],
+    reservas:['[data-page-go="reservas"]'],
+    cotizar:['[data-page-go="cotizar"]'],
+    entregas:['[data-open="dlg-cli"]'],
+    academy:['[data-page-go="academy"]','.pn4','.sw','.plat-strip','a[href="plataforma.html"]','#foot-sw'],
+    music:['[data-page-go="music"]'],
+    english:['[data-page-go="english"]']
+  },H={};
+  function aplicar(rows){
+    H={};(rows||[]).forEach(function(r){if(r&&/^vis\./.test(r.clave)&&String(r.valor).trim()==='0')H[r.clave.slice(4)]=1});
+    if(/[?&]ver=todo/.test(location.search))H={};
+    if(H.academy){H.music=1;H.english=1}
+    var css=[];Object.keys(H).forEach(function(k){(M[k]||[]).forEach(function(q){css.push(q+'{display:none!important}')})});
+    var st=document.getElementById('vis-css');if(!st){st=document.createElement('style');st.id='vis-css';document.head.appendChild(st)}
+    st.textContent=css.join('\n');
+  }
+  window.faroOculto=function(k){return !!H[k]};
+  try{aplicar(JSON.parse(localStorage.getItem('faro_cfg')||'[]'))}catch(e){}
+  if(window.__faroCfg)window.__faroCfg.then(aplicar);
+})();
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Lato:wght@400;700;900&display=swap" rel="stylesheet">
@@ -2757,6 +2791,7 @@ $('#lv-go').addEventListener('click',()=>{$('#dlg-leave').close();const c=leaveC
 window.addEventListener('beforeunload',e=>{if(leaveNeeded()){e.preventDefault();e.returnValue=''}});
 function goPage(p,x,y,force){
   if(p===current||busy)return;
+  if(window.faroOculto&&window.faroOculto(p))return;  /* área apagada desde el Workspace */
   if(!force&&leaveNeeded()){askLeave(()=>goPage(p,x,y,true));return}
   if(reduce){applyPage(p);return}
   busy=true;
@@ -3100,7 +3135,7 @@ function rvDone(ref,d,hora){
 $('#rv-new').addEventListener('click',()=>{rvReset();rvView('form');$('#rv-card').scrollIntoView({block:'start'})});
 rvCalRender();rvClock();
 
-{let q0='studios';try{const q=new URLSearchParams(location.search).get('p');if(q&&PAGES[q])q0=q}catch(e){}applyPage(q0)}window.scrollTo(0,0);
+{let q0='studios';try{const q=new URLSearchParams(location.search).get('p');if(q&&PAGES[q]&&!(window.faroOculto&&window.faroOculto(q)))q0=q}catch(e){}applyPage(q0)}window.scrollTo(0,0);
 </script>
 <script>
 /* ===== v11 Stage 2: Studios ===== */
