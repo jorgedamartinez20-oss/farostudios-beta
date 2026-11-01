@@ -101,12 +101,13 @@ async function vistaGaleria(){
   APP.innerHTML='<div class="gal pre"><header class="gtop" id="gtp"><span class="iso"></span>'+cerrar+'<span class="sp"></span>'
     +'<div class="gvista" role="group" aria-label="Vista" id="gvista"><button data-v="editorial" aria-pressed="false">Editorial</button><button data-v="cuadricula" aria-pressed="false">Cuadrícula</button></div>'
     +'<button class="gb" id="glis" aria-label="Mis listas">'+ic('heart')+'<span class="t">Mis listas</span><span class="cnt" id="glc" hidden></span></button>'
-    +'<button class="gb" id="gdl" aria-label="Descargar">'+ic('dl')+'<span class="t">Descargar</span></button>'
+    +'<button class="gb pri" id="gdl" aria-label="Descargar">'+ic('dl')+'<span class="t">Descargar</span></button>'
     +'<button class="gb" id="gay" aria-label="Ayuda">'+ic('help')+'</button>'
     +'<button class="gb" id="gsal" aria-label="Salir">'+ic('out')+'<span class="t">Salir</span></button></header>'
+   +'<nav class="gbm" id="gbm" aria-label="Acciones principales"><button class="gbm-d" id="gdlm" type="button">'+ic('dl')+'<span>Descargar mis fotos</span></button><button class="gbm-l" id="glim" type="button" aria-label="Mis listas">'+ic('heart')+'<span class="cnt" id="glcm" hidden></span></button></nav>'
    +'<section class="gcov" id="gcv"></section>'
    +'<section class="gmuro" id="gmu"><div class="in">'+(cfg.mensaje?'<p class="cab">'+esc(cfg.mensaje)+'</p>':'')+'<div id="gfl"></div><div id="gcuerpo"></div>'
-   +'<div class="gfin" id="gfin"><span class="iso"></span><p>Gracias por dejarnos contar tu historia. Guarda tus favoritas, compártelas con quien quieras y si te gustó, cuéntanos cómo fue.</p><div class="row"><button class="gbtn p" id="gresb">'+ic('star')+' Dejar una reseña</button><button class="gbtn" id="gprb">'+ic('bag')+' Pedir impresiones</button></div></div></div>'
+   +'<div class="gfin" id="gfin"><span class="iso"></span><h2>Gracias por dejarnos contar tu historia</h2><p>Guarda tus favoritas, compártelas con quien quieras y, si te gustó, cuéntanos cómo fue.</p><div class="col"><button class="gbtn p big" id="gfdl" type="button">'+ic('dl')+' Descargar mis fotos</button><button class="gbtn" id="gresb" type="button">'+ic('star')+' Dejar una reseña</button><button class="lnk" id="gprb" type="button">'+ic('bag')+' Pedir impresiones</button></div></div></div>'
    +'<div class="gcon" id="gcon" hidden></div>'
    +'<footer class="gpie">© '+new Date().getFullYear()+' Faro Studios · farostudios.net<br>Todos los derechos reservados</footer></section>'
    +gCodigoHtml(cfg)
@@ -118,7 +119,7 @@ async function vistaGaleria(){
   $('#gsal').onclick=gConfirmaSalir;const gv=$('#gvol');if(gv)gv.onclick=()=>inicio();
   $('#bver').onclick=gAbrirMuro;
   $('#gay').onclick=()=>{$('#gmu').scrollIntoView({behavior:'auto'});setTimeout(()=>gTutorial(false),120)};
-  $('#glis').onclick=gAbrirListas;$('#gdl').onclick=()=>gAbrirDescarga('todas');
+  $('#glis').onclick=gAbrirListas;$('#gdl').onclick=()=>gAbrirDescarga('todas');$('#glim').onclick=gAbrirListas;$('#gdlm').onclick=()=>gAbrirDescarga('todas');$('#gfdl').onclick=()=>gAbrirDescarga('todas');
   $('#gbolsa').onclick=gAbrirBolsa;$('#gresb').onclick=()=>gAbrirResena(true);$('#gprb').onclick=gAbrirBolsa;
   document.querySelectorAll('#gvista button').forEach(b=>b.onclick=()=>{G.vista=b.dataset.v;gLS(gKey('faro_vista'),G.vista);gPintaMuro()});
   const tp=$('#gtp'),ga=document.querySelector('.gal');
@@ -317,7 +318,7 @@ function gMusicaPlay(){
   if(q&&q.catch)q.catch(()=>{const reintenta=()=>{au.play().catch(()=>{})};document.addEventListener('pointerdown',reintenta,{once:true})});
 }
 function gContadores(){
-  const lc=$('#glc');if(lc){const n=ST.favs.size;lc.textContent=n;lc.hidden=!n}
+  const lc=$('#glc');if(lc){const n=ST.favs.size;lc.textContent=n;lc.hidden=!n;const lm=$('#glcm');if(lm){lm.textContent=n;lm.hidden=!n}}
   const bc=$('#gbc');if(bc){const n=G.carro.reduce((s,x)=>s+x.cant,0);bc.textContent=n;bc.hidden=!n}
 }
 
@@ -425,7 +426,7 @@ function gAbrirVisor(i){
     lb.innerHTML='<div class="bar"><span>'+(k+1)+' / '+v.length+'</span>'
      +'<button id="glbh" data-id="'+a.id+'" class="'+(ST.favs.has(a.id)?'on':'')+'" aria-label="Guardar en una lista">'+ic('heart')+'<span class="t">Guardar</span></button>'
      +(img?'<button id="glbi" aria-label="A mi historia de Instagram">'+ic('ig')+'<span class="t">Historia</span></button>':'')
-     +'<button id="glbd" aria-label="Descargar">'+ic('dl')+'<span class="t">Descargar</span></button>'
+     +'<button id="glbd" class="pri" aria-label="Descargar">'+ic('dl')+'<span class="t">Descargar</span></button>'
      +(img?'<button id="glbp" aria-label="Pedir impresión">'+ic('bag')+'<span class="t">Imprimir</span></button>':'')
      +'<button id="glbx" aria-label="Cerrar">'+ic('x')+'</button></div>'
      +'<div class="st"><button class="nv l" id="glbl" aria-label="Anterior">'+ic('prev')+'</button>'
@@ -726,6 +727,7 @@ function gAbrirPromo(recordatorio){
 }
 
 /* ================= TUTORIAL CON FLECHAS ================= */
+function gqs(s){const e=document.querySelector(s);if(e&&e.getBoundingClientRect().width)return e;const m={'#gdl':'#gdlm','#glis':'#glim'}[s];return m?document.querySelector(m):e}
 const GPASOS=[
   {s:'#gvista',t:'Muévete por la galería',x:'Cambia entre Editorial y Cuadrícula. Es la misma sesión, solo se ve distinta.'},
   {s:'.gph .gh',t:'Estas son todas tus fotos',x:'Tú decides cuáles incluir. Toca el corazón para guardar una foto en una lista.'},
@@ -738,7 +740,7 @@ const GPASOS=[
 function gTutorial(primera){
   if(document.querySelector('.gt'))return;
   document.body.classList.add('gtut');
-  const pasos=GPASOS.filter(p=>document.querySelector(p.s)&&document.querySelector(p.s).getBoundingClientRect().width);
+  const pasos=GPASOS.filter(p=>gqs(p.s)&&gqs(p.s).getBoundingClientRect().width);
   if(!pasos.length){document.body.classList.remove('gtut');return}
   const t=document.createElement('div');t.className='gt';
   t.innerHTML='<div class="hl"></div><div class="pl"></div><svg class="fl" aria-hidden="true"><defs><marker id="gta" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M1 1l8 4-8 4z" fill="#B8A06A"/></marker></defs><path id="gtp" d="" fill="none" stroke="#B8A06A" stroke-width="3" stroke-linecap="round" marker-end="url(#gta)"/></svg><div class="cd" role="dialog" aria-modal="true"></div>';
@@ -749,14 +751,14 @@ function gTutorial(primera){
     if(primera){if(!PREVIA)gLS(gKey('faro_tut'),'1');window.scrollTo(0,0);if(G.onScroll)G.onScroll()}};
   const tec=e=>{if(e.key==='Escape')fin(false)};addEventListener('keydown',tec);
   const pos=()=>{
-    const p=pasos[k],el=document.querySelector(p.s);
+    const p=pasos[k],el=gqs(p.s);
     const hl=t.querySelector('.hl'),pl=t.querySelector('.pl'),cd=t.querySelector('.cd'),W=innerWidth,H=innerHeight,cw=cd.offsetWidth,ch=cd.offsetHeight;
     const r=el&&el.getBoundingClientRect();
     if(!el||!r.width||!r.height||r.bottom<0||r.top>H){
       /* el objetivo no está a la vista: tarjeta centrada, sin flecha (y se intenta acercarlo) */
       for(const e of [hl,pl])e.style.opacity='0';t.querySelector('#gtp').setAttribute('d','');
       cd.style.left=Math.max(12,(W-cw)/2)+'px';cd.style.top=Math.max(12,(H-ch)/2)+'px';
-      if(el&&!el.closest('.gtop,#gbolsa'))el.scrollIntoView({block:'center',behavior:'instant'});
+      if(el&&!el.closest('.gtop,.gbm,#gbolsa'))el.scrollIntoView({block:'center',behavior:'instant'});
       return;
     }
     const pad=8;for(const e of [hl,pl]){e.style.opacity='';e.style.left=(r.left-pad)+'px';e.style.top=(r.top-pad)+'px';e.style.width=(r.width+pad*2)+'px';e.style.height=(r.height+pad*2)+'px'}
@@ -774,8 +776,8 @@ function gTutorial(primera){
     t.querySelector('#gtp').setAttribute('d','M'+desde.x+' '+desde.y+' Q'+mx+' '+my+' '+hasta.x+' '+hasta.y);
   };
   const paso=()=>{
-    const p=pasos[k],el=document.querySelector(p.s);
-    if(el&&!el.closest('.gtop,#gbolsa')){const r=el.getBoundingClientRect();if(r.top<110||r.bottom>innerHeight-90)el.scrollIntoView({block:'center',behavior:'instant'})}
+    const p=pasos[k],el=gqs(p.s);
+    if(el&&!el.closest('.gtop,.gbm,#gbolsa')){const r=el.getBoundingClientRect();if(r.top<110||r.bottom>innerHeight-90)el.scrollIntoView({block:'center',behavior:'instant'})}
     const cd=t.querySelector('.cd');
     cd.innerHTML='<div class="eti">PASO '+(k+1)+' DE '+pasos.length+'</div><h3>'+esc(p.t)+'</h3><p>'+esc(p.x)+'</p>'
       +(p.vista&&portada?'<div class="pv"><div class="hist"><canvas width="62" height="110" id="gtv"></canvas></div><span>Así se verá tu foto en la historia.<br><b style="color:#8B1A2A">Abrir Instagram → publicar</b></span></div>':'')
