@@ -2663,7 +2663,7 @@ html[data-page="academy"] .hero2,html[data-page="music"] .hero2,html[data-page="
 <div class="ftabs" id="ftabs">
   <button class="ftab est" type="button" data-open="dlg-est"><svg class="ico"><use href="#i-user"/></svg>Ingreso<br>estudiantes</button>
   <button class="ftab pad" type="button" data-open="dlg-pad"><svg class="ico"><use href="#i-family"/></svg>Padres<br>de familia</button>
-  <a class="ftab doc" href="portal.html?r=do"><svg class="ico"><use href="#i-user"/></svg>Ingreso<br>docentes</a>
+  <a class="ftab doc" href="miespacio.html?r=do"><svg class="ico"><use href="#i-user"/></svg>Ingreso<br>docentes</a>
 </div>
 
 
@@ -3935,7 +3935,7 @@ $$('[data-wa]').forEach(a=>a.href=WA+encodeURIComponent(waMsg[a.dataset.wa]));
     e.preventDefault();
     const u=f.elements.u.value.trim(),p=f.elements.p.value;if(!u||!p)return;
     try{sessionStorage.setItem('faro_handoff',JSON.stringify({t:f.dataset.r,u:u,p:p}))}catch(x){}
-    location.href=f.dataset.r==='en'?'entregas.html':'portal.html?r='+f.dataset.r;
+    location.href=f.dataset.r==='en'?'entregas.html':'miespacio.html?r='+f.dataset.r;
   }));
   $$('.apl-eye').forEach(b=>b.addEventListener('click',()=>{const i=b.parentElement.querySelector('input');i.type=i.type==='password'?'text':'password'}));
   /* recorrido visual */

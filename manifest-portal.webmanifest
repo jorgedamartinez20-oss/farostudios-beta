@@ -1,7 +1,7 @@
 {
   "name": "Faro Academy",
   "short_name": "Faro",
-  "start_url": "./portal.html",
+  "start_url": "./miespacio.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
