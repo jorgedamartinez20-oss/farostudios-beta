@@ -40,10 +40,31 @@ window.__faroCfg=fetch('https://keivqvsgdfhthouzlqxo.supabase.co/rest/v1/sitio_c
     var css=[];Object.keys(H).forEach(function(k){(M[k]||[]).forEach(function(q){css.push(q+'{display:none!important}')})});
     var st=document.getElementById('vis-css');if(!st){st=document.createElement('style');st.id='vis-css';document.head.appendChild(st)}
     st.textContent=css.join('\n');
+    if(document.readyState!=='loading')ajustar();
   }
+  /* la portada se reacomoda: sin Agendar, Cotizar pasa a ser el botón principal; la frase guía se adapta o desaparece; si no queda ningún botón, se quita la fila */
+  function ajustar(){
+    var d=document,cta=d.querySelector('.hero .cta');if(!cta)return;
+    var ra=!H.reservas,co=!H.cotizar,po=!H.portafolio,g=cta.querySelector('.cta-guia'),cb=cta.querySelector('[data-page-go="cotizar"]');
+    if(g){if(!g.dataset.o)g.dataset.o=g.textContent;
+      g.style.display=(ra||co)?'':'none';
+      g.textContent=ra&&co?g.dataset.o:ra?'¿Ya conversamos tu proyecto? Agenda con tu código.':'¿Primera vez? Cotiza y te lo damos.'}
+    if(cb){cb.classList.toggle('btn-solid',!ra);cb.classList.toggle('btn-main',!ra);cb.classList.toggle('btn-ghost',ra)}
+    cta.style.display=(ra||co||po)?'':'none';
+    /* fila de íconos de la portada: si quedan menos de 2 íconos con destino visible, se quita (un ícono solo se ve huérfano) */
+    var row=d.querySelector('.hero .svc-row');
+    if(row){var n=0;row.querySelectorAll('.svc').forEach(function(a){if(getComputedStyle(a).display!=='none')n++});row.style.display=n<2?'none':''}
+    /* secciones que continúan el fondo de la anterior (padding-top:0): si la anterior ya no es del mismo color, recuperan su espacio de arriba */
+    var prev=null;d.querySelectorAll('#p-studios > section, #p-studios > div').forEach(function(sc){
+      if(getComputedStyle(sc).display==='none')return;
+      if(sc.dataset.pt0===undefined)sc.dataset.pt0=(sc.getAttribute('style')||'').indexOf('padding-top:0')>-1?'1':'0';
+      if(sc.dataset.pt0==='1')sc.classList.toggle('pt-full',!(prev&&prev.classList.contains('pal-studios')));
+      prev=sc});
+  }
+  document.addEventListener('DOMContentLoaded',ajustar);
   window.faroOculto=function(k){return !!H[k]};
   try{aplicar(JSON.parse(localStorage.getItem('faro_cfg')||'[]'))}catch(e){}
-  if(window.__faroCfg)window.__faroCfg.then(aplicar);
+  if(window.__faroCfg)window.__faroCfg.then(function(r){if(r&&r.length)aplicar(r)});  /* si no hay respuesta, se queda lo último que se sabía (no reaparece lo apagado) */
 })();
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -980,7 +1001,7 @@ dialog.bkz::backdrop{background:#000}
 .btn.btn-main .ico{width:1.3em;height:1.3em}
 .hero .cta .btn-ghost{padding:13px 26px;font-size:.9375rem;min-height:44px}
 .btn-link{color:inherit;font:700 .9375rem/1 var(--body);text-decoration:underline;text-underline-offset:5px;padding:13px 8px;min-height:44px;display:inline-flex;align-items:center;opacity:.85}
-.cta-guia{flex:1 1 100%;margin:0;font-size:1rem;line-height:1.5;opacity:.85;max-width:44ch}
+.cta-guia{flex:1 1 100%;margin:0;font-size:1rem;line-height:1.5;opacity:.85;max-width:none;padding-right:max(0px,calc(100% - 44ch))}
 @media(prefers-reduced-motion:no-preference){.btn.btn-main::after{content:"";position:absolute;inset:0;background:linear-gradient(110deg,transparent 35%,rgba(255,255,255,.35) 50%,transparent 65%);transform:translateX(-120%);animation:mainShine 5.2s 1.6s ease-in-out infinite;pointer-events:none}}
 @keyframes mainShine{0%,70%{transform:translateX(-120%)}100%{transform:translateX(120%)}}
 @media(max-width:560px){.hero .cta{flex-direction:column;align-items:stretch}.btn.btn-main{justify-content:center;width:100%}.hero .cta .btn-ghost{justify-content:center;width:100%}.btn-link{justify-content:center}}
@@ -1303,6 +1324,7 @@ header.nav[data-side="academy"] .sw button[aria-selected="true"]{color:#fff}
 html{scroll-padding-top:76px}
 section[id]{scroll-margin-top:0}
 #servicios,#portafolio{padding-top:30px!important}
+#servicios.pt-full,#portafolio.pt-full{padding-top:clamp(70px,10vw,128px)!important}
 /* 29 · pestaña de plataforma educativa */
 .nl-plat{display:inline-flex;flex-direction:column;gap:2px}
 .nl-plat .s{display:none}
