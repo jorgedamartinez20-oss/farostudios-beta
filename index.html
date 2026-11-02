@@ -3430,7 +3430,7 @@ window.__slow=!!(navigator.connection&&(navigator.connection.saveData||/^(slow-2
 /* las fotos se piden cuando están cerca de la pantalla (no todas de golpe) y los videos del portafolio igual */
 const LZI=('IntersectionObserver' in window)?new IntersectionObserver((en,o)=>en.forEach(x=>{if(!x.isIntersecting)return;const n=x.target;o.unobserve(n);const u=n.dataset.lz;if(u){n.style.backgroundImage='url("'+u+'")';n.classList.add('has')}}),{rootMargin:'800px 0px'}):null;
 function fillSlots(root){
-  $$('[data-img]',root||document).forEach(n=>{let u=imgOf(n.dataset.img);if(!u)return;if(n.closest&&n.closest('#gallery'))u=miniOf(u)||u;
+  $$('[data-img]',root||document).forEach(n=>{let u=imgOf(n.dataset.img);if(!u)return;if((n.closest&&n.closest('#gallery'))||n.dataset.img!=='hero'||innerWidth<=900)u=miniOf(u)||u;
     if(!LZI){n.style.backgroundImage='url("'+u+'")';n.classList.add('has');return}
     if(n.dataset.lz===u)return;n.dataset.lz=u;LZI.observe(n)});
 }
