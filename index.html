@@ -1308,10 +1308,10 @@ dialog.portal .field input,dialog.portal .field select{background:#fff;color:#25
 /*V12CSS*/
 /* ===================== v12 · Encabezado y menú ===================== */
 /* 4 · encabezado con 10 % de transparencia (el difuminado va en un pseudo-elemento para no romper el menú fijo móvil) */
-header.nav{background:transparent;isolation:isolate}
-header.nav::before{content:"";position:absolute;inset:0;z-index:-1;background:rgba(139,26,42,.9);-webkit-backdrop-filter:blur(10px) saturate(1.2);backdrop-filter:blur(10px) saturate(1.2);transition:background-color .45s var(--ease)}
-header.nav[data-side="academy"]{background:transparent}
-header.nav[data-side="academy"]::before{background:rgba(245,242,238,.9)}
+header.nav{background-color:rgba(139,26,42,.92);isolation:isolate}
+header.nav::before{content:"";position:absolute;inset:0;z-index:-1;background:transparent;-webkit-backdrop-filter:blur(10px) saturate(1.2);backdrop-filter:blur(10px) saturate(1.2);transition:background-color .45s var(--ease)}
+header.nav[data-side="academy"]{background-color:rgba(245,242,238,.92)}
+header.nav[data-side="academy"]::before{background:transparent}
 /* 1 · hamburguesa: solo líneas finas, sin caja ni margen */
 .menu-btn,header.nav[data-side="academy"] .menu-btn{background:none!important;border:0!important;box-shadow:none!important;border-radius:0;overflow:visible;width:40px;height:40px;margin-left:6px}
 .menu-btn .mb i{height:1.5px}

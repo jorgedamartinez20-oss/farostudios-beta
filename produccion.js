@@ -143,7 +143,7 @@ async function subirArchivo(file,pref){
 function seleccionar(accept,cb){const i=document.createElement('input');i.type='file';if(accept)i.accept=accept;i.onchange=()=>{if(i.files&&i.files[0])cb(i.files[0])};i.click()}
 
 /* ---------- entrada ---------- */
-function logoImgs(w){return '<img class="logo-d" src="logo-nav.png" alt="Faro Studios"'+(w?' style="width:'+w+'px"':'')+'><img class="logo-l" src="logo-borgona.png" alt="Faro Studios"'+(w?' style="width:'+w+'px"':'')+'>'}
+function logoImgs(w){return '<img class="logo-d" src="doc-logo.png" alt="Faro Studios"'+(w?' style="width:'+w+'px"':'')+'><img class="logo-l" src="doc-logo-borgona.png" alt="Faro Studios"'+(w?' style="width:'+w+'px"':'')+'>'}
 function temaBtn(){const l=document.documentElement.getAttribute('data-theme')==='light'||(!document.documentElement.getAttribute('data-theme')&&matchMedia('(prefers-color-scheme:light)').matches);return '<button class="ib" data-a="tema" aria-label="Cambiar a tema '+(l?'oscuro':'claro')+'">'+ic(l?'moon':'sun')+'</button>'}
 function pantallaLogin(msg){
   APP.innerHTML='<div class="lg"><div class="card lg-card"><div class="lg-top">'+logoImgs(150)+'<h1>Producción</h1><p class="mu">Tu espacio de trabajo con Faro Studios: ideas, guiones, revisión, entregas y documentos.</p></div>'
