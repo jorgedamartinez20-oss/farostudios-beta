@@ -2161,6 +2161,18 @@ html[data-page="academy"] .hero2,html[data-page="music"] .hero2,html[data-page="
 @media (prefers-reduced-motion:reduce){.amp3.on .amp3-bg,.amp3.on .amp-wf i.on{animation:none}}
 .amp3 .vinyl{border:0!important;padding:0}.amp3 .vinyl .label{border:0}
 .amp3 .vinyl .label{box-shadow:none!important}
+
+/* modo claro: las secciones se alternan marfil / gris arena */
+@media not all and (prefers-color-scheme:dark){
+  #presentacion,#portafolio,#audio,#descargas-s,#faq{--bg:var(--marfil);--card:var(--a1);
+    --fx-a:radial-gradient(70% 55% at 100% 0%,rgba(184,160,106,.16),transparent 70%),linear-gradient(180deg,var(--marfil),var(--a1));
+    --fx-b:radial-gradient(70% 55% at 0% 0%,rgba(184,160,106,.16),transparent 70%),linear-gradient(180deg,var(--marfil),var(--a1))}
+  #servicios,#porque,#catalogo,#testimonios{--bg:var(--a2);--card:var(--marfil);
+    --fx-a:radial-gradient(70% 55% at 100% 0%,rgba(245,242,238,.7),transparent 70%),linear-gradient(180deg,var(--a1),var(--a2));
+    --fx-b:radial-gradient(70% 55% at 0% 0%,rgba(245,242,238,.7),transparent 70%),linear-gradient(180deg,var(--a1),var(--a2))}
+  #portafolio,#audio,#descargas-s,#faq{background-image:linear-gradient(180deg,var(--a2) 0,transparent clamp(55px,8vw,89px)),var(--fx-a)}
+  #servicios,#porque,#catalogo,#testimonios{background-image:linear-gradient(180deg,var(--marfil) 0,transparent clamp(55px,8vw,89px)),var(--fx-a)}
+}
 </style>
 <style id="v13">
 /* ===== v13: video de portada, servicios con medios, portafolio en bucle, fichas del equipo, logos de pago ===== */
@@ -2379,14 +2391,13 @@ html[data-page="academy"] .hero2,html[data-page="music"] .hero2,html[data-page="
 }
 /* ===== v16 · desvanecidos entre bloques (sin líneas), barras sin borde oscuro ===== */
 :root{--next:var(--pizarra);--prev-st:color-mix(in srgb,var(--pizarra) 40%,var(--dk0,#161618));--prev-alt:var(--dk1,#1D1D20);--bx:radial-gradient(60% clamp(89px,12vw,144px) at 100% 0%,rgba(139,26,42,.2),transparent)}
-@media not all and (prefers-color-scheme:dark){:root{--next:var(--a2);--prev-st:var(--a2);--prev-alt:var(--marfil);--bx:linear-gradient(transparent,transparent)}}
+@media not all and (prefers-color-scheme:dark){:root{--next:var(--marfil);--prev-st:var(--a2);--prev-alt:var(--marfil);--bx:linear-gradient(transparent,transparent)}}
 /* barra de título: sin resplandor ni borde oscuro, degradado oro → transparente */
 .rule,.sec-head .rule{box-shadow:none!important;border:0}
 .sec-head .rule{background:linear-gradient(90deg,var(--hi),color-mix(in srgb,var(--oro) 70%,transparent) 55%,transparent)}
 /* foto de inicio: se funde con el color del bloque que sigue */
 .hero::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:clamp(110px,24vh,233px);z-index:2;pointer-events:none;background:linear-gradient(180deg,transparent 0,color-mix(in srgb,var(--next) 22%,transparent) 34%,color-mix(in srgb,var(--next) 66%,transparent) 66%,var(--next) 100%)}
-.hero .hint,.hero .cta,.hero .hero-in,.hero>.wrap{position:relative}
-.hero .hint{z-index:3}
+.hero .cta,.hero .hero-in,.hero>.wrap{position:relative}
 /* entre secciones contiguas: el borde superior se funde con la sección anterior */
 .sec{position:relative}
 .pal-studios-alt+.pal-studios,.pal-studios+.pal-studios-alt{box-shadow:none}
