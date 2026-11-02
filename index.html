@@ -2411,6 +2411,14 @@ html[data-page="academy"] .hero2,html[data-page="music"] .hero2,html[data-page="
 .nav-links a.acc:hover{background:rgba(255,255,255,.12)!important;color:var(--marfil)!important;box-shadow:none!important;transform:none!important;filter:none!important}
 header.nav[data-side="academy"] .nav-links a.acc{color:var(--pizarra)!important;border-color:rgba(37,37,40,.35)!important}
 header.nav[data-side="academy"] .nav-links a.acc:hover{background:rgba(37,37,40,.07)!important;color:var(--pizarra)!important}
+/* teléfonos: menos efectos continuos para que el desplazamiento sea fluido (sin cambiar cómo se ve la página quieta) */
+@media (max-width:900px),(hover:none){
+  .orb{display:none!important}
+  .sec-head .rule::after{display:none!important;animation:none!important}
+  .svc,.svc-i,.ph,.ico,.tm-q,.tm-ph,.shine,.btn-main{animation:none!important}
+  *,*::before,*::after{-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+  .nav-scrim{background:rgba(18,10,12,.7)}
+}
 </style>
 </head>
 <body>
