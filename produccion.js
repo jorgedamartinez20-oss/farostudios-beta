@@ -145,8 +145,9 @@ function seleccionar(accept,cb){const i=document.createElement('input');i.type='
 /* ---------- entrada ---------- */
 function logoImgs(w){return '<img class="logo-d" src="doc-logo.png" alt="Faro Studios"'+(w?' style="width:'+w+'px"':'')+'><img class="logo-l" src="doc-logo-borgona.png" alt="Faro Studios"'+(w?' style="width:'+w+'px"':'')+'>'}
 function temaBtn(){const l=document.documentElement.getAttribute('data-theme')==='light'||(!document.documentElement.getAttribute('data-theme')&&matchMedia('(prefers-color-scheme:light)').matches);return '<button class="ib" data-a="tema" aria-label="Cambiar a tema '+(l?'oscuro':'claro')+'">'+ic(l?'moon':'sun')+'</button>'}
+function cabLogin(){return '<header class="top brand"><div class="in"><a href="/" aria-label="Faro Studios, ir al inicio" style="display:flex">'+logoImgs()+'</a><span class="tg">PRODUCCIÓN</span><span class="sp"></span><a class="ib" href="/" style="text-decoration:none">Regresar a Faro Studios</a>'+temaBtn()+'</div></header>'}
 function pantallaLogin(msg){
-  APP.innerHTML='<div class="lg"><div class="card lg-card"><div class="lg-top">'+logoImgs(150)+'<h1>Producción</h1><p class="mu">Tu espacio de trabajo con Faro Studios: ideas, guiones, revisión, entregas y documentos.</p></div>'
+  APP.innerHTML=cabLogin()+'<div class="lg"><div class="card lg-card"><div class="lg-top">'+logoImgs(150)+'<h1>Producción</h1><p class="mu">Tu espacio de trabajo con Faro Studios: ideas, guiones, revisión, entregas y documentos.</p></div>'
    +'<form class="f" id="lf" autocomplete="on"><label>Correo<input id="lu" type="email" autocomplete="username" autocapitalize="none" placeholder="tucorreo@empresa.com" required></label>'
    +'<label>Contraseña<input id="lp" type="password" autocomplete="current-password" required></label>'
    +'<p class="err" id="le" role="alert">'+esc(msg||'')+'</p><button class="btn p" type="submit" id="lb" style="min-height:54px;letter-spacing:.14em">ENTRAR</button>'
@@ -158,11 +159,11 @@ function pantallaLogin(msg){
     await arrancar()};
 }
 function pantallaAviso(titulo,texto,botones){
-  APP.innerHTML='<div class="lg"><div class="card lg-card"><div class="lg-top">'+logoImgs(150)+'<h1>'+esc(titulo)+'</h1><p class="mu">'+texto+'</p></div><div class="f">'+botones+'</div></div></div>';
+  APP.innerHTML=cabLogin()+'<div class="lg"><div class="card lg-card"><div class="lg-top">'+logoImgs(150)+'<h1>'+esc(titulo)+'</h1><p class="mu">'+texto+'</p></div><div class="f">'+botones+'</div></div></div>';
   const s=$('[data-a="salir"]');if(s)s.onclick=()=>salir('');
 }
 async function arrancar(){
-  APP.innerHTML='<div class="lg"><p class="mu">Cargando…</p></div>';
+  APP.innerHTML=cabLogin()+'<div class="lg"><p class="mu">Cargando…</p></div>';
   let perfil=null;
   try{perfil=await rpc('en_mi_perfil')}catch(e){if(!SES)return}
   if(!perfil||!perfil.tipo){salir('Tu acceso no está activo. Escríbenos por WhatsApp y lo revisamos.');return}
@@ -195,7 +196,7 @@ async function cargar(){
 }
 function pantallaQuien(){
   const ns=ST.revisores;
-  APP.innerHTML='<div class="lg"><div class="card lg-card"><div class="lg-top">'+logoImgs(150)+'<h1>¿Quién eres?</h1><p class="mu">Tu nombre queda en cada nota y aprobación, y este dispositivo lo recuerda.</p></div>'
+  APP.innerHTML=cabLogin()+'<div class="lg"><div class="card lg-card"><div class="lg-top">'+logoImgs(150)+'<h1>¿Quién eres?</h1><p class="mu">Tu nombre queda en cada nota y aprobación, y este dispositivo lo recuerda.</p></div>'
    +(ns.length?'<div class="quien">'+ns.map(n=>'<button data-a="soy" data-n="'+esc(n)+'"><span class="av">'+esc(ini(n))+'</span><span>'+esc(n)+'</span></button>').join('')+'</div>':'')
    +'<div class="f"><label>'+(ns.length?'Soy otra persona':'Tu nombre')+'<input id="qn" maxlength="60" placeholder="Escribe tu nombre" autocomplete="name"></label><button class="btn p" data-a="soy-nuevo" style="min-height:54px;letter-spacing:.14em">CONTINUAR</button></div></div></div>';
 }
