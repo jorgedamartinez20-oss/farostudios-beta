@@ -144,8 +144,8 @@ function seleccionar(accept,cb){const i=document.createElement('input');i.type='
 
 /* ---------- entrada ---------- */
 function logoImgs(w){return '<img class="logo-d" src="doc-logo.png" alt="Faro Studios"'+(w?' style="width:'+w+'px"':'')+'><img class="logo-l" src="doc-logo-borgona.png" alt="Faro Studios"'+(w?' style="width:'+w+'px"':'')+'>'}
-function temaBtn(){const l=document.documentElement.getAttribute('data-theme')==='light'||(!document.documentElement.getAttribute('data-theme')&&matchMedia('(prefers-color-scheme:light)').matches);return '<button class="ib" data-a="tema" aria-label="Cambiar a tema '+(l?'oscuro':'claro')+'">'+ic(l?'moon':'sun')+'</button>'}
-function cabLogin(){return '<header class="top brand"><div class="in"><a href="/" aria-label="Faro Studios, ir al inicio" style="display:flex">'+logoImgs()+'</a><span class="tg">PRODUCCIÓN</span><span class="sp"></span><a class="ib" href="/" style="text-decoration:none">Regresar a Faro Studios</a>'+temaBtn()+'</div></header>'}
+function temaBtn(){return ''}
+function cabLogin(){return '<header class="top brand"><div class="in"><a href="index.html" aria-label="Faro Studios, ir al inicio" style="display:flex">'+logoImgs()+'</a><span class="tg">PRODUCCIÓN</span><span class="sp"></span><a class="ib" href="index.html" style="text-decoration:none">Regresar a Faro Studios</a>'+temaBtn()+'</div></header>'}
 function pantallaLogin(msg){
   APP.innerHTML=cabLogin()+'<div class="lg"><div class="card lg-card"><div class="lg-top">'+logoImgs(150)+'<h1>Producción</h1><p class="mu">Tu espacio de trabajo con Faro Studios: ideas, guiones, revisión, entregas y documentos.</p></div>'
    +'<form class="f" id="lf" autocomplete="on"><label>Correo<input id="lu" type="email" autocomplete="username" autocapitalize="none" placeholder="tucorreo@empresa.com" required></label>'
@@ -209,7 +209,7 @@ async function fijarYo(n){
 /* ---------- marco de la página ---------- */
 function cabecera(){
   const sel=ST.proyectos.length>1?'<select class="ib" data-a="proy" aria-label="Proyecto" style="max-width:34vw">'+ST.proyectos.map(x=>'<option value="'+x.id+'"'+(x.id===ST.p.id?' selected':'')+'>'+esc(x.titulo)+'</option>').join('')+'</select>':'';
-  return '<header class="top"><div class="in"><a href="/" aria-label="Faro Studios, ir al inicio" style="display:flex">'+logoImgs()+'</a><span class="tg">PRODUCCIÓN</span><span class="sp"></span>'+sel
+  return '<header class="top"><div class="in"><a href="index.html" aria-label="Faro Studios, ir al inicio" style="display:flex">'+logoImgs()+'</a><span class="tg">PRODUCCIÓN</span><span class="sp"></span>'+sel
    +(varios()?'<button class="ib" data-a="cambiar-yo" aria-label="Cambiar de persona"><span class="av">'+esc(ini(yo()))+'</span><span class="nm">'+esc(yo()||'¿Quién eres?')+'</span></button>':'')
    +temaBtn()+'<button class="ib" data-a="salir" aria-label="Salir">'+ic('out')+'</button></div></header>';
 }
