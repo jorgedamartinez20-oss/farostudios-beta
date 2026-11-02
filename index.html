@@ -33,9 +33,12 @@ window.__faroCfg=fetch('https://keivqvsgdfhthouzlqxo.supabase.co/rest/v1/sitio_c
     academy:['[data-page-go="academy"]','.pn4','.sw','.plat-strip','a[href="plataforma.html"]','#foot-sw'],
     music:['[data-page-go="music"]'],
     english:['[data-page-go="english"]']
-  },H={};
+  },H={},A={},R=[];
+  /* A = áreas que se ocultan solas porque no tienen nada cargado (faroAuto); R = última configuración recibida */
   function aplicar(rows){
-    H={};(rows||[]).forEach(function(r){if(r&&/^vis\./.test(r.clave)&&String(r.valor).trim()==='0')H[r.clave.slice(4)]=1});
+    R=rows||[];
+    H={};R.forEach(function(r){if(r&&/^vis\./.test(r.clave)&&String(r.valor).trim()==='0')H[r.clave.slice(4)]=1});
+    Object.keys(A).forEach(function(k){H[k]=1});
     if(/[?&]ver=todo/.test(location.search))H={};
     if(H.academy){H.music=1;H.english=1}
     var css=[];Object.keys(H).forEach(function(k){(M[k]||[]).forEach(function(q){css.push(q+'{display:none!important}')})});
@@ -64,6 +67,7 @@ window.__faroCfg=fetch('https://keivqvsgdfhthouzlqxo.supabase.co/rest/v1/sitio_c
   }
   document.addEventListener('DOMContentLoaded',ajustar);
   window.faroOculto=function(k){return !!H[k]};
+  window.faroAuto=function(k,v){if(!!A[k]===!!v)return;if(v)A[k]=1;else delete A[k];aplicar(R)};
   try{aplicar(JSON.parse(localStorage.getItem('faro_cfg')||'[]'))}catch(e){}
   if(window.__faroCfg)window.__faroCfg.then(function(r){if(r&&r.length)aplicar(r)});  /* si no hay respuesta, se queda lo último que se sabía (no reaparece lo apagado) */
 })();
@@ -1469,6 +1473,12 @@ section[id]{scroll-margin-top:0}
 @keyframes cvpeek{0%,100%{translate:0}38%{translate:-30px}}
 .cvx.peek .cv{animation:cvpeek 1.1s var(--ease) 1}
 @media (prefers-reduced-motion:reduce){.cvx-t i,.cvx.peek .cv{animation:none}}
+/* aviso de "galería completa": solo aparece cuando ya hay discos cargados */
+.mus-mas{margin:clamp(28px,4vw,46px) auto 0;max-width:640px;padding:clamp(22px,3vw,32px) clamp(22px,3.4vw,38px);text-align:center;border-radius:14px;
+  background:linear-gradient(160deg,rgba(245,242,238,.1),rgba(245,242,238,.03));border:1px solid var(--line);box-shadow:var(--sh)}
+.mus-mas .ico{width:30px;height:30px;color:var(--hi)}
+.mus-mas b{display:block;margin:10px 0 8px;font:400 1.7rem/1.1 var(--display);letter-spacing:.05em;color:var(--ink)}
+.mus-mas p{margin:0;font:400 1.05rem/1.55 var(--body);color:var(--muted)}
 .amp-k small{opacity:.7;font-weight:400;letter-spacing:.04em}
 /* ===== v12 · Biblioteca de recursos ===== */
 #descargas-s .dl-grid{display:block}
@@ -2384,6 +2394,11 @@ html[data-page="academy"] .hero2,html[data-page="music"] .hero2,html[data-page="
       <h3 class="sub-h" style="margin-top:56px">Discos y producciones</h3>
       <div class="cvx sr" id="cvx"><button type="button" class="cvx-b prev" aria-label="Producciones anteriores">‹</button><div class="covers" id="covers"></div><button type="button" class="cvx-b next" aria-label="Más producciones">›</button></div>
       <div class="cvx-foot" id="cvx-foot"><div class="cvx-dots" id="cvx-dots" role="tablist" aria-label="Discos"></div><small class="cvx-t"><span id="cvx-n">Desliza para ver más</span> <i aria-hidden="true">→</i></small></div>
+      <div class="mus-mas" id="mus-mas" hidden>
+        <svg class="ico" aria-hidden="true"><use href="#i-note"/></svg>
+        <b>Y hay más discos en camino</b>
+        <p>Hemos grabado, mezclado y producido muchos más proyectos de los que ves aquí. Estamos subiendo nuestra galería completa poco a poco.</p>
+      </div>
     </div>
   </section>
 
@@ -3255,6 +3270,8 @@ const WORKS=[
   }));
 })();
 
+/* un disco "está cargado" cuando en el Workspace se le subió portada, audio o título; los que no, no se muestran (con ?ver=todo se ven todos) */
+const discoOn=i=>{if(/[?&]ver=todo/.test(location.search))return true;const n=i+1,X=SITE.x||{};return !!(SITE.img['alb'+n]||SITE.audio['alb'+n]||X['at.'+n])};
 /* reproductor de producciones musicales */
 const ALB=[
  ['Sencillo 01','Artista · Grabación y mezcla','linear-gradient(135deg,#8b1a2b,#3a0c14)'],
@@ -3280,14 +3297,15 @@ const ALB=[
   const anyAud=()=>ALB.some((a,i)=>hasAud(i));
   const pvOf=i=>{const X=SITE.x||{},s=parseFloat(X['pv.'+(i+1)]),l=parseFloat(X['pl.'+(i+1)]);return{s:s>=0?s:0,l:l>=5&&l<=90?l:PREVIEW}};
   /* siguiente disco que sí tiene audio (si ninguno tiene, sigue el orden normal de la demo) */
-  const nextAud=(i,d)=>{const L=ALB.length,m=x=>((x%L)+L)%L;if(!anyAud())return m(i+d);for(let k=1;k<=L;k++){const j=m(i+d*k);if(hasAud(j))return j}return m(i+d)};
+  const nextAud=(i,d)=>{const L=ALB.length,m=x=>((x%L)+L)%L,au=anyAud();for(let k=1;k<=L;k++){const j=m(i+d*k);if(discoOn(j)&&(!au||hasAud(j)))return j}return m(i+d)};
   ALB.forEach((a,i)=>{
     const b=document.createElement('button');b.type='button';b.className='cv tilt';b.setAttribute('aria-label','Reproducir '+a[0]);
     b.innerHTML=`<div class="cv-d"></div><div class="cv-art ${imgOf('alb'+(i+1))?'has':''}" style="--cov:${covBg(i)}"><span class="play-i"><svg class="ico-f"><use href="#i-play"/></svg></span></div><b>${a[0]}</b><small>${a[1]}</small>`;
     b.addEventListener('click',()=>{if(cur===i){toggle()}else{load(i);play()}});
+    b.hidden=!discoOn(i);
     covers.appendChild(b);
   });
-  window.refreshCovers=()=>{$$('.cv',covers).forEach((b,i)=>{const u=imgOf('alb'+(i+1));if(u){const a=$('.cv-art',b);a.classList.add('has');a.style.setProperty('--cov','url("'+u+'")')}})};
+  window.refreshCovers=()=>{$$('.cv',covers).forEach((b,i)=>{b.hidden=!discoOn(i);const u=imgOf('alb'+(i+1));if(u){const a=$('.cv-art',b);a.classList.add('has');a.style.setProperty('--cov','url("'+u+'")')}})};
   function shape(i){bs.forEach((b,k)=>{const h=16+Math.abs(Math.sin(k*.5+i*2.1)*Math.cos(k*.19+i))*84;b.style.height=h.toFixed(0)+'%'})}
   function paint(){
     const p=dur?Math.min(1,pos/dur):0,n=Math.floor(p*N);bs.forEach((b,k)=>b.classList.toggle('on',k<n));
@@ -3356,12 +3374,12 @@ const ALB=[
   function pause(){cancelAnimationFrame(raf);if(A)A.pause();setPlaying(false)}
   function toggle(){playing?pause():play()}
   /* cuando llegan los datos del Workspace: el reproductor grande toma la portada, los datos y el audio reales */
-  window.ampRefresh=()=>{if(cur<0)return;if(playing)info();else load(cur)};
+  window.ampRefresh=()=>{if(cur<0)return;if(!playing&&!discoOn(cur)){const f=ALB.findIndex((a,i)=>discoOn(i));if(f>=0){load(f);return}}if(playing)info();else load(cur)};
   $('#amp-play').addEventListener('click',toggle);
   $('#amp-next').addEventListener('click',()=>{const w=playing;load(nextAud(cur,1));if(w)play()});
   $('#amp-prev').addEventListener('click',()=>{const w=playing;load(pos>3?cur:nextAud(cur,-1));if(w)play()});
   rng.addEventListener('input',()=>{pos=rng.value/1000*dur;if(srcCur){if(A&&ready)try{A.currentTime=start+pos}catch(e){}}else if(playing)t0=performance.now()-pos*1000;paint()});
-  load(0);fillSlots();
+  load(Math.max(0,ALB.findIndex((a,i)=>discoOn(i))));fillSlots();
 })();
 
 /* catálogo en libro */
@@ -4231,10 +4249,18 @@ window.rebuildPortfolio=function(){
   const ord=(Array.isArray(pf.order)?pf.order:[]).filter((id,k,ar)=>all.some(a=>a.id===id)&&ar.indexOf(id)===k);
   all.forEach(a=>{if(!ord.includes(a.id))ord.push(a.id)});
   let ex=0;
-  ord.forEach((id,k)=>{const a=all.find(z=>z.id===id),slot=k<WORKS.length?WORKS[k]:null;
-    if(a.base){if(off.has(id))return;mk(Object.assign({},a.w,over[id]||{}),id,true,a.i,slot)}
+  const todo=/[?&]ver=todo/.test(location.search),conMedia=id=>!!(imgOf(id)||SITE.vid[id]);
+  /* el mosaico de posiciones fijas solo se usa cuando todas las casillas del sitio tienen su foto o video; si no, los tablones cargados se acomodan solos */
+  const mosaico=todo||WORKS.every((w,i)=>off.has('w'+(i+1))||conMedia('w'+(i+1)));
+  ord.forEach((id,k)=>{const a=all.find(z=>z.id===id),slot=(mosaico&&k<WORKS.length)?WORKS[k]:null;
+    if(a.base){if(off.has(id)||(!todo&&!conMedia(id)))return;mk(Object.assign({},a.w,over[id]||{}),id,true,a.i,slot)}
     else{if(a.x.on===false||!a.x.src)return;mk(a.x,id,false,ex++,slot)}});
   fillSlots(gal);
+  /* sin nada cargado el área se oculta sola; las categorías sin trabajos no salen, y con una sola categoría tampoco hacen falta los filtros */
+  const hayP=$$('.plank',gal).length>0,usadas=new Set($$('.plank',gal).map(t=>t.dataset.c));
+  $$('#filters .chip').forEach(c=>{if(c.dataset.f!=='todo')c.hidden=!usadas.has(c.dataset.f)});
+  fl.hidden=usadas.size<2;
+  window.faroAuto&&window.faroAuto('portafolio',!hayP);
   $$('#filters .chip').forEach(c=>c.addEventListener('click',()=>{
     $$('#filters .chip').forEach(o=>o.setAttribute('aria-pressed',o===c));
     $$('.plank',gal).forEach(t=>t.classList.toggle('off',c.dataset.f!=='todo'&&t.dataset.c!==c.dataset.f));gal.classList.toggle('f',c.dataset.f!=='todo');
@@ -4248,15 +4274,17 @@ window.rebuildPortfolio=function(){
   const cov=$('#covers'),amp=$('#amp'),sec=$('#audio');if(!cov||!amp||!sec)return;
   const pv=$('.cvx-b.prev'),nx=$('.cvx-b.next');
   const step=()=>Math.max(220,cov.clientWidth*.8);
-  const wrap=$('#cvx'),dots=$('#cvx-dots'),nTx=$('#cvx-n'),cards=()=>[...cov.children];
-  const build=()=>{dots.textContent='';cards().forEach((c,i)=>{const d=document.createElement('button');d.type='button';d.setAttribute('role','tab');d.setAttribute('aria-label','Ir al disco '+(i+1));d.addEventListener('click',()=>cov.scrollTo({left:c.offsetLeft-cards()[0].offsetLeft,behavior:'smooth'}));dots.appendChild(d)});if(nTx)nTx.textContent='Desliza para ver los '+cards().length+' discos'};
+  const wrap=$('#cvx'),dots=$('#cvx-dots'),nTx=$('#cvx-n'),cards=()=>[...cov.children].filter(c=>!c.hidden);
+  const build=()=>{dots.textContent='';cards().forEach((c,i)=>{const d=document.createElement('button');d.type='button';d.setAttribute('role','tab');d.setAttribute('aria-label','Ir al disco '+(i+1));d.addEventListener('click',()=>cov.scrollTo({left:c.offsetLeft-cards()[0].offsetLeft,behavior:'smooth'}));dots.appendChild(d)});const n=cards().length;if(nTx)nTx.textContent=n>1?'Desliza para ver los '+n+' discos':'';const ft=$('#cvx-foot');if(ft)ft.hidden=n<2};
   build();
   const upd=()=>{const sl=cov.scrollLeft>8,end=cov.scrollLeft+cov.clientWidth>=cov.scrollWidth-8;pv.disabled=!sl;nx.disabled=end;
+    const ft=$('#cvx-foot');if(ft)ft.hidden=cards().length<2||cov.scrollWidth<=cov.clientWidth+4;
     if(wrap){wrap.classList.toggle('sl',sl);wrap.classList.toggle('sr',!end);if(cov.scrollLeft>24)wrap.classList.add('seen')}
     const cs=cards(),w=cs.length>1?cs[1].offsetLeft-cs[0].offsetLeft:1,k=end?cs.length-1:Math.round(cov.scrollLeft/w);
     $$('button',dots).forEach((d,i)=>d.setAttribute('aria-selected',String(i===k)))};
   /* una sola vez, al llegar a la sección: las tarjetas se mueven un poquito para mostrar que se desliza */
   if(wrap&&'IntersectionObserver' in window)new IntersectionObserver((es,o)=>{es.forEach(en=>{if(!en.isIntersecting)return;o.disconnect();setTimeout(()=>{if(cov.scrollLeft<8&&!wrap.classList.contains('seen')){wrap.classList.add('peek');setTimeout(()=>wrap.classList.remove('peek'),1300)}},500)})},{threshold:.6}).observe(wrap);
+  window.covRebuild=()=>{build();upd()};
   pv.addEventListener('click',()=>cov.scrollBy({left:-step(),behavior:'smooth'}));
   nx.addEventListener('click',()=>cov.scrollBy({left:step(),behavior:'smooth'}));
   cov.addEventListener('scroll',upd,{passive:true});addEventListener('resize',upd);setTimeout(upd,300);
@@ -4560,17 +4588,26 @@ window.rebuildPortfolio&&window.rebuildPortfolio();
 
 /* lista de producciones del reproductor tipo teléfono */
 (function(){const L=$('#amp-list');if(!L)return;
-  function build(){L.innerHTML='';
-    ALB.forEach((a,i)=>{const u=imgOf('alb'+(i+1));const b=document.createElement('button');b.type='button';b.className='pl-i';b.setAttribute('role','listitem');
-      b.innerHTML='<span class="pl-n">'+(i+1)+'</span><span class="pl-c'+(u?' has':'')+'" style="--cov:'+(u?'url(\''+u+'\')':a[2])+'"></span><span class="pl-t"><b></b><small></small></span><span class="pl-p"><svg class="ico-f"><use href="#i-play"/></svg></span>';
+  function build(){L.innerHTML='';let num=0;
+    ALB.forEach((a,i)=>{if(!discoOn(i))return;num++;const u=imgOf('alb'+(i+1));const b=document.createElement('button');b.type='button';b.className='pl-i';b.dataset.i=i;b.setAttribute('role','listitem');
+      b.innerHTML='<span class="pl-n">'+num+'</span><span class="pl-c'+(u?' has':'')+'" style="--cov:'+(u?'url(\''+u+'\')':a[2])+'"></span><span class="pl-t"><b></b><small></small></span><span class="pl-p"><svg class="ico-f"><use href="#i-play"/></svg></span>';
       $('b',b).textContent=a[0];$('small',b).textContent=a[1];
       b.addEventListener('click',()=>{const c=$$('#covers .cv')[i];if(c)c.click()});
       L.appendChild(b)})}
-  function sel(){const k=$$('#covers .cv').findIndex(c=>c.classList.contains('sel'));$$('.pl-i',L).forEach((x,i)=>x.classList.toggle('sel',i===k))}
+  function sel(){const k=$$('#covers .cv').findIndex(c=>c.classList.contains('sel'));$$('.pl-i',L).forEach(x=>x.classList.toggle('sel',+x.dataset.i===k))}
   build();
   const cv=$('#covers');if(cv)new MutationObserver(sel).observe(cv,{subtree:true,attributes:true,attributeFilter:['class']});
-  const _r=window.refreshCovers;window.refreshCovers=function(){_r&&_r();build();sel()};
+  const _r=window.refreshCovers;window.refreshCovers=function(){_r&&_r();build();sel();window.musVac&&window.musVac()};
   const _v=window.v12Config;window.v12Config=function(){_v&&_v();build();sel()};
+  /* música sin nada cargado: la sección y sus enlaces se ocultan; con discos, aparece el aviso de que hay más por subir */
+  window.musVac=function(){
+    const hay=ALB.some((a,i)=>discoOn(i)),mas=$('#mus-mas');
+    window.covRebuild&&window.covRebuild();
+    if(mas)mas.hidden=!hay||/[?&]ver=todo/.test(location.search);
+    window.ampRefresh&&window.ampRefresh();
+    window.faroAuto&&window.faroAuto('audio',!hay);
+  };
+  window.musVac();
 })();
 
 </script>
