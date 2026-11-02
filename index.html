@@ -721,7 +721,7 @@ html.menu-open .nav-scrim{opacity:1;visibility:visible;transition:opacity .35s}
 
 /* hero claro: fondo marfil, faro en pizarra y aro de luz */
 #inicio.hero-light::before{background:radial-gradient(46% 58% at 24% 52%,rgba(184,160,106,.22),transparent 72%)}
-#inicio.hero-light .lhw>img{filter:brightness(.152) drop-shadow(0 26px 22px rgba(37,37,40,.28))}
+@media not all and (prefers-color-scheme:dark){#inicio.hero-light .lhw>img{filter:brightness(.152) drop-shadow(0 26px 22px rgba(37,37,40,.28))}}
 #inicio.hero-light .floor{background:radial-gradient(closest-side,rgba(37,37,40,.32),transparent)}
 #inicio.hero-light .glow{display:none}
 #inicio.hero-light .sweep{filter:drop-shadow(0 0 6px rgba(214,176,86,.6)) drop-shadow(0 0 22px rgba(184,160,106,.4))}
@@ -2063,7 +2063,7 @@ dialog:not(.apl){background:var(--dk3);color:var(--dk-ink)}
 #inicio.hero-light h1{color:var(--marfil)}
 #inicio.hero-light p.kick{color:var(--oro)}
 #inicio.hero-light p.kick .blink{color:#F0DEAA}
-#inicio.hero-light .lhw>img{filter:drop-shadow(0 0 34px rgba(184,160,106,.28))}
+#inicio.hero-light .lhw>img{filter:drop-shadow(0 0 34px rgba(184,160,106,.28))!important}
 #inicio.hero-light .glow{display:block}
 #inicio.hero-light .floor{background:radial-gradient(closest-side,rgba(0,0,0,.55),transparent)}
 #inicio.hero-light .btn-solid{background:linear-gradient(180deg,#CBB583,#B8A06A 55%,#A58E5A);color:var(--pizarra)}
@@ -2170,6 +2170,8 @@ html[data-page="academy"] .hero2,html[data-page="music"] .hero2,html[data-page="
     linear-gradient(180deg,var(--marfil) 0,var(--marfil) 6%,var(--a2) 20%,var(--marfil) 35%,var(--a2) 50%,var(--marfil) 64%,var(--a2) 78%,var(--marfil) 88%,var(--a3) 100%)}
   #presentacion,#servicios,#portafolio,#porque,#audio,#catalogo,#descargas-s,#testimonios,#faq{--bg:transparent;--card:var(--a1);background-color:transparent;background-image:none;box-shadow:none}
 }
+/* la tilde de PROPÓSITO no se corta: el renglón deja aire arriba sin mover el texto */
+.hero h1 .line{padding-top:.2em;margin-top:-.2em}
 </style>
 <style id="v13">
 /* ===== v13: video de portada, servicios con medios, portafolio en bucle, fichas del equipo, logos de pago ===== */
