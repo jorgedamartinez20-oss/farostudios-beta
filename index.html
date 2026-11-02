@@ -73,8 +73,13 @@ window.__faroCfg=fetch('https://keivqvsgdfhthouzlqxo.supabase.co/rest/v1/sitio_c
   document.addEventListener('DOMContentLoaded',ajustar);
   window.faroOculto=function(k){return !!H[k]};
   window.faroAuto=function(k,v){if(!!A[k]===!!v)return;if(v)A[k]=1;else delete A[k];aplicar(R)};
+  /* mientras llega la configuración nueva, lo que podría estar apagado no se muestra (así no aparece un instante y luego desaparece) */
+  var de=document.documentElement,hold=document.createElement('style');
+  hold.textContent='html.cfg-wait .nav-links,html.cfg-wait .hero .cta,html.cfg-wait .hero .svc-row,html.cfg-wait #presentacion,html.cfg-wait #quienes{visibility:hidden!important}';
+  document.head.appendChild(hold);de.classList.add('cfg-wait');
+  var listo=function(){de.classList.remove('cfg-wait')};setTimeout(listo,1600);
   try{aplicar(JSON.parse(localStorage.getItem('faro_cfg')||'[]'))}catch(e){}
-  if(window.__faroCfg)window.__faroCfg.then(function(r){if(r&&r.length)aplicar(r)});  /* si no hay respuesta, se queda lo último que se sabía (no reaparece lo apagado) */
+  if(window.__faroCfg)window.__faroCfg.then(function(r){if(r&&r.length)aplicar(r);listo()},listo);  /* si no hay respuesta, se queda lo último que se sabía (no reaparece lo apagado) */
 })();
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
