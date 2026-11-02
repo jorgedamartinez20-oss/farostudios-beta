@@ -4204,25 +4204,33 @@ window.v12Team=function(){
 };
 
 /* ---- Portafolio: fotos, videos, categorías y tablones activables desde el Workspace ---- */
-/* ---- Portafolio con pocas casillas: galería con proporción Fibonacci y espacios acordes a cada foto ----
-   Cada franja llena todo el ancho con columnas de 2·3·5·8 (3·5 / 3·3·2 / 2·2·2·2 …) y alturas de 3·5·8 filas.
-   Se elige la combinación cuyo marco más se parece a la proporción real de cada foto; nunca quedan huecos. */
+/* ---- Portafolio: mosaico de bloques como el diseño original (una foto grande, otras medianas y alargadas) ----
+   Las fotos cargadas se reparten en bloques de 5, 6 y 3 casillas (como el mosaico completo); si sobran, el último bloque se
+   adapta a las que queden. Dentro de cada bloque cada foto toma el hueco que mejor se parece a su proporción. Sin huecos vacíos. */
 (function(){
-  const COMP={8:{1:[[8]],2:[[5,3],[3,5]],3:[[3,3,2],[3,2,3],[2,3,3]],4:[[2,2,2,2]]},4:{1:[[4]],2:[[2,2]]}};
-  const HS={8:[3,5,8],4:[2,3,5]};
+  const BL={1:[[1,1,8,4]],2:[[1,1,5,4],[6,1,3,4]],3:[[1,1,2,3],[3,1,3,3],[6,1,3,3]],
+    4:[[1,1,4,4],[5,1,4,2],[5,3,2,2],[7,3,2,2]],
+    5:[[1,1,3,4],[4,1,2,2],[4,3,2,2],[6,1,3,2],[6,3,3,2]],
+    6:[[1,1,4,2],[5,1,2,4],[7,1,2,2],[1,3,2,2],[3,3,2,2],[7,3,2,2]]};
+  const perms=a=>a.length<2?[a]:a.flatMap((x,i)=>perms(a.slice(0,i).concat(a.slice(i+1))).map(r=>[x].concat(r)));
   window.fibLayout=function(gal){
     const vis=$$('.plank',gal).filter(p=>!p.classList.contains('off'));if(!vis.length)return;
-    const C=innerWidth<=900?4:8,gap=8,cs=getComputedStyle(gal),rh=parseFloat(cs.gridAutoRows)||88,W=gal.clientWidth||1200;
-    const cw=(W-gap*(C-1))/C,pw=c=>c*cw+(c-1)*gap,ph=h=>h*rh+(h-1)*gap,ar=vis.map(p=>p._ar||1.5),n=vis.length;
-    const K=Math.max(...Object.keys(COMP[C]).map(Number));
-    const band=(i,k)=>{let best=null;
-      (COMP[C][k]||[]).forEach(comp=>HS[C].forEach(h=>{let e=comp.length>1?0:.9;comp.forEach((c,j)=>{e+=Math.abs(Math.log(pw(c)/ph(h)/ar[i+j]))});if(!best||e<best.e)best={e,comp,h}}));
-      return best};
-    const memo=[],solve=i=>{if(i>=n)return{e:0,b:[]};if(memo[i])return memo[i];let best=null;
-      for(let k=1;k<=K&&i+k<=n;k++){const b=band(i,k);if(!b)continue;const r=solve(i+k),e=b.e+r.e;if(!best||e<best.e)best={e,b:[b].concat(r.b)}}
-      return memo[i]=best};
-    let r=1,i=0;
-    solve(0).b.forEach(b=>{let c=1;b.comp.forEach(w=>{const p=vis[i++];p.classList.remove('auto');p.classList.add('fib');p.style.setProperty('--c',c);p.style.setProperty('--r',r);p.style.setProperty('--w',w);p.style.setProperty('--h',b.h);c+=w});r+=b.h});
+    const mob=innerWidth<=900,gap=8,cs=getComputedStyle(gal),rh=parseFloat(cs.gridAutoRows)||88,W=gal.clientWidth||1200,C=mob?4:8;
+    const cw=(W-gap*(C-1))/C,pw=c=>c*cw+(c-1)*gap,ph=h=>h*rh+(h-1)*gap;
+    const put=(p,c,r,w,h)=>{p.classList.remove('auto');p.classList.add('fib');p.style.setProperty('--c',c);p.style.setProperty('--r',r);p.style.setProperty('--w',w);p.style.setProperty('--h',h)};
+    let row=1;
+    if(mob){ /* teléfono: una foto grande y luego pares, como el diseño original */
+      for(let i=0;i<vis.length;){const hero=vis[i++];put(hero,1,row,4,3);row+=3;
+        const g=vis.slice(i,i+4);i+=g.length;
+        g.forEach((p,j)=>{const alone=(j===g.length-1&&g.length%2===1);put(p,alone?1:(j%2)*2+1,row+Math.floor(j/2)*2,alone?4:2,2)});
+        row+=Math.ceil(g.length/2)*2}
+      return}
+    let i=0,k=0;const cyc=[5,6,3];
+    while(i<vis.length){const m=vis.length-i;let n=m<=6?m:cyc[k++%3];if(m-n===0)n=m;
+      const tl=BL[n],grp=vis.slice(i,i+n);
+      let best=null;perms(grp.map((_,j)=>j)).forEach(pm=>{let e=0;pm.forEach((pi,t)=>{const T=tl[t],ar=grp[pi]._ar||1.5;e+=Math.abs(Math.log(pw(T[2])/ph(T[3])/ar))+.4*Math.abs(pi-t)});if(!best||e<best.e)best={e,pm}});
+      best.pm.forEach((pi,t)=>{const T=tl[t];put(grp[pi],T[0],row+T[1]-1,T[2],T[3])});
+      row+=Math.max(...tl.map(T=>T[1]+T[3]-1));i+=n}
   };
   let t=0;addEventListener('resize',()=>{clearTimeout(t);t=setTimeout(()=>{const g=$('#gallery');if(g&&g.dataset.fib==='1')window.fibLayout(g)},220)});
 })();
@@ -4260,7 +4268,7 @@ window.rebuildPortfolio=function(){
     if(vu)addV(b,vu);
     if(pos){const pv=b.querySelector('.pf-v');if(pv)pv.style.objectPosition=pos}
     b.addEventListener('click',()=>openLb(w,vu||(base?imgOf(id):iu),!!vu,vu?(iu||miniOf(vu)):''));
-    if(!slot){const du=miniOf(iu)||iu||miniOf(vu),fb=vu&&!iu?16/9:1.5;
+    {const du=miniOf(iu)||iu||miniOf(vu),fb=vu&&!iu?16/9:1.5;
       b._arp=new Promise(res=>{if(!du)return res(fb);const im=new Image(),to=setTimeout(()=>res(fb),3500);im.onload=()=>{clearTimeout(to);res(im.naturalWidth&&im.naturalHeight?im.naturalWidth/im.naturalHeight:fb)};im.onerror=()=>{clearTimeout(to);res(fb)};im.src=du}).then(a=>{b._ar=a})}
     gal.appendChild(b);
   };
@@ -4270,7 +4278,7 @@ window.rebuildPortfolio=function(){
   let ex=0;
   const todo=/[?&]ver=todo/.test(location.search),conMedia=id=>!!(imgOf(id)||SITE.vid[id]);
   /* el mosaico de posiciones fijas solo se usa cuando todas las casillas del sitio tienen su foto o video; si no, los tablones cargados se acomodan solos */
-  const mosaico=todo||WORKS.every((w,i)=>off.has('w'+(i+1))||conMedia('w'+(i+1)));
+  const mosaico=false;
   ord.forEach((id,k)=>{const a=all.find(z=>z.id===id),slot=(mosaico&&k<WORKS.length)?WORKS[k]:null;
     if(a.base){if(off.has(id)||(!todo&&!conMedia(id)))return;mk(Object.assign({},a.w,over[id]||{}),id,true,a.i,slot)}
     else{if(a.x.on===false||!a.x.src)return;mk(a.x,id,false,ex++,slot)}});
