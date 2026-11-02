@@ -801,7 +801,7 @@ html[data-page="academy"] .split{background:var(--marfil)}
 
 /* portafolio: tablones */
 #portafolio .wrap{max-width:1440px}
-.planks{display:grid;grid-template-columns:repeat(8,1fr);grid-auto-rows:88px;grid-auto-flow:dense;gap:8px}
+.planks{display:grid;grid-template-columns:repeat(8,1fr);grid-auto-rows:89px;grid-auto-flow:dense;gap:8px}
 .plank{position:relative;border:0;padding:0;border-radius:3px;overflow:hidden;cursor:pointer;text-align:left;font:inherit;color:var(--marfil);
   background:repeating-linear-gradient(91deg,rgba(0,0,0,.09) 0 2px,transparent 2px 9px),repeating-linear-gradient(88deg,rgba(255,255,255,.035) 0 1px,transparent 1px 14px),var(--wd);
   box-shadow:0 18px 26px -14px rgba(0,0,0,.8),inset 0 1px 0 rgba(255,255,255,.16),inset 0 -2px 0 rgba(0,0,0,.35);
@@ -828,7 +828,7 @@ html[data-page="academy"] .split{background:var(--marfil)}
 .planks .plank.fib{grid-column:var(--c) / span var(--w);grid-row:var(--r) / span var(--h)}
 .planks{transition:opacity .5s}
 .planks.f .plank{grid-column:span 2;grid-row:span 3}
-@media (max-width:900px){.planks{grid-template-columns:repeat(4,1fr);grid-auto-rows:84px}.plank,.planks.f .plank{grid-column:span 2;grid-row:span 2}.plank:nth-child(5n+1){grid-column:span 4;grid-row:span 3}}
+@media (max-width:900px){.planks{grid-template-columns:repeat(8,1fr);grid-auto-rows:55px}.plank,.planks.f .plank{grid-column:span 4;grid-row:span 3}.plank:nth-child(5n+1){grid-column:span 8;grid-row:span 5}}
 
 /* por qué */
 .why .ico{transition:transform .5s var(--ease)}
@@ -2299,6 +2299,27 @@ html[data-page="academy"] .hero2,html[data-page="music"] .hero2,html[data-page="
 .bk-wrap[hidden]{display:none!important}
 .bk-wrap.cat-in{animation:catIn .55s var(--ease) both}
 @keyframes catIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+
+/* ===== v14 · escala Fibonacci (8·13·21·34·55 px) y proporción áurea 1:1.618 ===== */
+@media (min-width:961px){
+  .nav-links button[data-page-go="reservas"],.nav-links a.acc{height:34px!important;padding:0 21px!important;font-size:.875rem!important}
+  .nav-acc{gap:8px;margin-left:13px}
+}
+@media (min-width:961px) and (max-width:1320px){.nav-links button[data-page-go="reservas"],.nav-links a.acc{padding:0 13px!important}.nav-acc{gap:8px;margin-left:8px}}
+@media (min-width:961px) and (max-width:1220px){.nav-links button[data-page-go="reservas"],.nav-links a.acc{padding:0 8px!important;height:34px!important;font-size:.8rem!important}.nav-acc{gap:5px;margin-left:5px}}
+.hero .cta{gap:13px 21px}
+.hero .cta .btn.btn-main{min-height:55px;height:55px;padding:0 34px}
+.hero .cta .btn-ghost,.hero .cta .btn-link{min-height:34px;height:34px;padding:0 21px;position:relative}
+.hero .cta .btn-ghost::before,.hero .cta .btn-link::before{content:"";position:absolute;inset:-5px 0}
+.cat-tabs{gap:5px;padding:5px;margin-bottom:34px}
+.cat-tabs button{padding:13px 34px}
+#dlg-lb .dlg{padding:55px 34px 34px;gap:13px}
+#dlg-lb .x{top:13px;right:13px;width:34px;height:34px}
+.vbar{padding:34px 21px 21px}.vtxt{margin-bottom:13px}.vtrack{height:8px}
+.why>div{padding:34px 21px}.why .ico{margin-bottom:21px}
+.why>div::before{height:3px}
+
+@media (max-width:900px){.plank .cap{padding:21px 13px 13px}.plank .cap b{font-size:1.13rem;line-height:1.05;overflow-wrap:anywhere}}
 </style>
 </head>
 <body>
@@ -4326,25 +4347,26 @@ window.v12Team=function(){
 
 /* ---- Portafolio: fotos, videos, categorías y tablones activables desde el Workspace ---- */
 /* ---- Portafolio: mosaico de bloques como el diseño original (una foto grande, otras medianas y alargadas) ----
-   Las fotos cargadas se reparten en bloques de 5, 6 y 3 casillas (como el mosaico completo); si sobran, el último bloque se
+   Todo el mosaico usa medidas Fibonacci (anchos 2·3·5·8 columnas, alturas 2·3·5 filas, separación de 8 px). Las fotos cargadas se reparten en bloques de 5, 6 y 3 casillas; si sobran, el último bloque se
    adapta a las que queden. Dentro de cada bloque cada foto toma el hueco que mejor se parece a su proporción. Sin huecos vacíos. */
 (function(){
-  const BL={1:[[1,1,8,4]],2:[[1,1,5,4],[6,1,3,4]],3:[[1,1,2,3],[3,1,3,3],[6,1,3,3]],
-    4:[[1,1,4,4],[5,1,4,2],[5,3,2,2],[7,3,2,2]],
-    5:[[1,1,3,4],[4,1,2,2],[4,3,2,2],[6,1,3,2],[6,3,3,2]],
-    6:[[1,1,4,2],[5,1,2,4],[7,1,2,2],[1,3,2,2],[3,3,2,2],[7,3,2,2]]};
+  const BL={1:[[1,1,8,5]],2:[[1,1,5,5],[6,1,3,5]],
+    3:[[1,1,3,5],[4,1,5,3],[4,4,5,2]],
+    4:[[1,1,3,5],[4,1,3,3],[7,1,2,3],[4,4,5,2]],
+    5:[[1,1,3,5],[4,1,2,3],[6,1,3,3],[4,4,3,2],[7,4,2,2]],
+    6:[[1,1,5,3],[6,1,3,3],[1,4,2,2],[3,4,2,2],[5,4,2,2],[7,4,2,2]]};
   const perms=a=>a.length<2?[a]:a.flatMap((x,i)=>perms(a.slice(0,i).concat(a.slice(i+1))).map(r=>[x].concat(r)));
   window.fibLayout=function(gal){
     const vis=$$('.plank',gal).filter(p=>!p.classList.contains('off'));if(!vis.length)return;
-    const mob=innerWidth<=900,gap=8,cs=getComputedStyle(gal),rh=parseFloat(cs.gridAutoRows)||88,W=gal.clientWidth||1200,C=mob?4:8;
+    const mob=innerWidth<=900,gap=8,cs=getComputedStyle(gal),rh=parseFloat(cs.gridAutoRows)||89,W=gal.clientWidth||1200,C=8;
     const cw=(W-gap*(C-1))/C,pw=c=>c*cw+(c-1)*gap,ph=h=>h*rh+(h-1)*gap;
     const put=(p,c,r,w,h)=>{p.classList.remove('auto');p.classList.add('fib');p.style.setProperty('--c',c);p.style.setProperty('--r',r);p.style.setProperty('--w',w);p.style.setProperty('--h',h)};
     let row=1;
-    if(mob){ /* teléfono: una foto grande y luego pares, como el diseño original */
-      for(let i=0;i<vis.length;){const hero=vis[i++];put(hero,1,row,4,3);row+=3;
+    if(mob){ /* teléfono: una foto grande y luego franjas de 5+3 y 3+5 columnas, alternadas */
+      for(let i=0;i<vis.length;){const hero=vis[i++];put(hero,1,row,8,5);row+=5;
         const g=vis.slice(i,i+4);i+=g.length;
-        g.forEach((p,j)=>{const alone=(j===g.length-1&&g.length%2===1);put(p,alone?1:(j%2)*2+1,row+Math.floor(j/2)*2,alone?4:2,2)});
-        row+=Math.ceil(g.length/2)*2}
+        g.forEach((p,j)=>{const alone=(j===g.length-1&&g.length%2===1),band=Math.floor(j/2),first=j%2===0,wide=(band%2===0)===first;put(p,alone?1:(first?1:(wide?4:6)),row+band*3,alone?8:(wide?5:3),3);if(!alone&&!first){const f=g[j-1];f.style.setProperty('--w',wide?3:5)}});
+        row+=Math.ceil(g.length/2)*3}
       return}
     let i=0,k=0;const cyc=[5,6,3];
     while(i<vis.length){const m=vis.length-i;let n=m<=6?m:cyc[k++%3];if(m-n===0)n=m;
