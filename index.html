@@ -16,7 +16,8 @@ window.__faroCfg=fetch('https://keivqvsgdfhthouzlqxo.supabase.co/rest/v1/sitio_c
    Para ver la página completa aunque haya áreas apagadas, agrega ?ver=todo a la dirección. */
 (function(){
   var M={
-    presentacion:['#presentacion','a[href="#presentacion"]','a[href="#quienes"]'],
+    presentacion:['#pres-video','a[href="#presentacion"]'],
+    quienes:['#quienes','a[href="#quienes"]'],
     servicios:['#servicios','a[href="#servicios"]'],
     portafolio:['#portafolio','a[href="#portafolio"]'],
     porque:['#porque','a[href="#porque"]'],
@@ -48,7 +49,9 @@ window.__faroCfg=fetch('https://keivqvsgdfhthouzlqxo.supabase.co/rest/v1/sitio_c
   }
   /* la portada se reacomoda: sin Agendar, Cotizar pasa a ser el botón principal; la frase guía se adapta o desaparece; si no queda ningún botón, se quita la fila */
   function ajustar(){
-    var d=document,cta=d.querySelector('.hero .cta');if(!cta)return;
+    var d=document,sp=d.getElementById('presentacion');
+    if(sp)sp.style.display=(H.presentacion&&H.quienes)?'none':'';
+    var cta=d.querySelector('.hero .cta');if(!cta)return;
     var ra=!H.reservas,co=!H.cotizar,po=!H.portafolio,g=cta.querySelector('.cta-guia'),cb=cta.querySelector('[data-page-go="cotizar"]');
     if(g){if(!g.dataset.o)g.dataset.o=g.textContent;
       g.style.display=(ra||co)?'':'none';
@@ -2311,9 +2314,11 @@ html[data-page="academy"] .hero2,html[data-page="music"] .hero2,html[data-page="
   <section class="sec pal-studios wm fl" id="presentacion">
     <i class="orb o1"></i><i class="orb o3"></i>
     <div class="wrap">
+      <div id="pres-video">
       <div class="sec-head"><div class="rule"></div><h2>Conoce lo que hacemos</h2><p class="lead" data-cfg="lead.presentacion">Un minuto para ver cómo trabajamos en cada evento, producción y sesión.</p></div>
       <div class="film" id="film" role="button" tabindex="0" aria-label="Reproducir video de presentación">
         <div><div class="play"><svg class="ico-f"><use href="#i-play"/></svg></div><span class="t">Aquí irá tu video de presentación</span></div>
+      </div>
       </div>
       <div class="who" id="quienes">
         <div>
