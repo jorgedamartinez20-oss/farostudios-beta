@@ -4508,11 +4508,11 @@ window.rebuildPortfolio=function(){
       v.src=u;const pr=v.play();if(pr&&pr.catch)pr.catch(()=>{})};
     const useLite=async()=>{
       try{
-        const ac=new AbortController(),to6=setTimeout(()=>ac.abort(),7000);   /* si la copia ligera aún se está preparando, no se espera: se usa el original */
+        const ohP=fetch(u,{method:'HEAD'}).catch(()=>null),ac=new AbortController(),to6=setTimeout(()=>ac.abort(),2500);   /* si la copia ligera aún se está preparando, no se espera: se usa el original */
         const r=await fetch(lu,{signal:ac.signal});clearTimeout(to6);if(!r.ok||!r.body)throw 0;
         const tot=+r.headers.get('content-length')||0,rd=r.body.getReader(),parts=[];let got=0;
         /* la copia ligera es mucho más chica que el original: solo se usa si de verdad lo es */
-        const oh=await fetch(u,{method:'HEAD'}).catch(()=>null),ot=oh&&oh.ok?+oh.headers.get('content-length')||0:0;
+        const oh=await ohP,ot=oh&&oh.ok?+oh.headers.get('content-length')||0:0;
         if((ot&&tot&&tot>=ot*.85)||(!ot&&tot>30e6)){rd.cancel();throw 0}
         const sm=document.createElement('video');sm.preload='metadata';sm.muted=true;sm.src=lu;sm.addEventListener('loadedmetadata',()=>{sampled=false;sample(lu,sm.duration);sm.removeAttribute('src');sm.load()});
         for(;;){const x=await rd.read();if(x.done)break;parts.push(x.value);got+=x.value.length;if(!alive){rd.cancel();return}
